@@ -5,9 +5,13 @@ import dev.architectury.platform.Platform;
 import org.slf4j.Logger;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
+import java.util.List;
+import java.util.stream.Stream;
 
 public class FileManager {
 
@@ -55,6 +59,186 @@ public class FileManager {
 
         } catch (IOException e) {
             BanditsQuirkLib.LOGGER.error("Failed to move file to config: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Copies FancyMenu layouts from the addon to config and merges the GUI screens
+     * This method detects the addon context and handles FancyMenu-specific file operations
+     * @param addonName - Identifier of said addon
+     * @return
+     */
+    public static boolean setupFancyMenuFiles(String addonName, String addonId) {
+        try {
+            Path configDir = Platform.getConfigFolder();
+            Path markerFile = configDir.resolve(".delete_to_reload_fancymenu");
+
+            // Check if the marker file exists - if so, skip execution
+            if (Files.exists(markerFile)) {
+                BanditsQuirkLib.LOGGER.info("FancyMenu setup already completed for " + addonName);
+                BanditsQuirkLib.LOGGER.info("Delete the marker file to re-run FancyMenu setup.");
+                return true;
+            }
+
+            Path gameDir = Platform.getGameFolder();
+
+            // Construct the paths for the addon
+            Path addonPath = gameDir.resolve("addonpacks").resolve(addonName);
+            Path layoutsPath = addonPath.resolve("assets").resolve(addonId).resolve("fancy_menu").resolve("layouts");
+            Path guiPath = addonPath.resolve("assets").resolve(addonId).resolve("fancy_menu").resolve("gui");
+
+            // Target paths in config
+            Path fancyMenuConfigDir = configDir.resolve("fancymenu");
+            Path customizationDir = fancyMenuConfigDir.resolve("customization");
+            Path customGuiScreensFile = fancyMenuConfigDir.resolve("custom_gui_screens.txt");
+
+            BanditsQuirkLib.LOGGER.info("Setting up FancyMenu files for addon: " + addonName);
+            BanditsQuirkLib.LOGGER.info("Layouts source: " + layoutsPath.toString());
+            BanditsQuirkLib.LOGGER.info("GUI source: " + guiPath.toString());
+
+            // Ensure target directories exist
+            Files.createDirectories(customizationDir);
+            Files.createDirectories(fancyMenuConfigDir);
+
+            // Copy all layout files
+            if (Files.exists(layoutsPath)) {
+                copyLayoutFiles(layoutsPath, customizationDir);
+            } else {
+                BanditsQuirkLib.LOGGER.info("Layouts directory not found: " + layoutsPath.toString());
+            }
+
+            // Handle GUI screen files
+            if (Files.exists(guiPath)) {
+                mergeGuiScreenFiles(guiPath, customGuiScreensFile);
+            } else {
+                BanditsQuirkLib.LOGGER.info("GUI directory not found: " + guiPath.toString());
+            }
+
+            // Create marker file to prevent re-running
+            createMarkerFile(markerFile, addonName);
+
+            return true;
+
+
+        } catch (IOException e) {
+            BanditsQuirkLib.LOGGER.error("Failed to setup FancyMenu Files: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * Creates a marker file to indicate FancyMenu setup has been completed
+     */
+    private static void createMarkerFile(Path markerFile, String addonName) throws IOException {
+        String markerContent = "# FancyMenu Setup Marker File\n" +
+                "# This file was created to prevent re-running FancyMenu setup on every world load.\n" +
+                "# Delete this file to force FancyMenu files to be reloaded from the addon.\n" +
+                "# \n" +
+                "# Addon: " + addonName + "\n" +
+                "# Created: " + java.time.LocalDateTime.now().toString() + "\n" +
+                "# \n" +
+                "# This file can be safely deleted if you want to refresh your FancyMenu configuration\n" +
+                "# from the addon files.\n";
+
+        Files.write(markerFile, markerContent.getBytes(StandardCharsets.UTF_8),
+                StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+
+        BanditsQuirkLib.LOGGER.info("Created marker file: " + markerFile.toString());
+        BanditsQuirkLib.LOGGER.info("Delete this file to re-run FancyMenu setup in the future.");
+    }
+
+    private static void copyLayoutFiles(Path sourceDir, Path targetDir) throws IOException {
+        BanditsQuirkLib.LOGGER.info("Copying layout files from: " + sourceDir.toString());
+
+        try (Stream<Path> files = Files.walk(sourceDir)) {
+            files.filter(Files::isRegularFile)
+                    .forEach(sourceFile -> {
+                        try {
+                            Path relativePath = sourceDir.relativize(sourceFile);
+                            Path targetFile = targetDir.resolve(relativePath);
+
+                            // Ensure parent directories exist
+                            Files.createDirectories(targetFile.getParent());
+
+                            // Copy file
+                            Files.copy(sourceFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
+                            BanditsQuirkLib.LOGGER.info("Copied layout file: " + relativePath.toString());
+
+                        } catch (IOException e) {
+                            BanditsQuirkLib.LOGGER.error("Failed to copy layout file: " + sourceFile.toString());
+                        }
+                    });
+        }
+    }
+
+    private static void mergeGuiScreenFiles(Path sourceDir, Path targetFile) throws IOException {
+        BanditsQuirkLib.LOGGER.info("Merging GUI screen files from: " + sourceDir.toString());
+
+        StringBuilder contentBuilder = new StringBuilder();
+
+        // Check if target file exists and read existing content
+        if (Files.exists(targetFile)) {
+            List<String> existingLines = Files.readAllLines(targetFile, StandardCharsets.UTF_8);
+            for (String line : existingLines) {
+                contentBuilder.append(line).append("\n");
+            }
+            BanditsQuirkLib.LOGGER.info("Appending to existing custom_gui_screens.txt");
+        } else {
+            // Create a new file with header
+            contentBuilder.append("type = custom_gui_screens\n");
+            contentBuilder.append("overridden_screens {\n");
+            contentBuilder.append("}\n");
+            BanditsQuirkLib.LOGGER.info("Creating new custom_gui_screens.txt");
+        }
+
+        // Read all GUI files and append their content
+        try (Stream<Path> files = Files.walk(sourceDir)) {
+            files.filter(Files::isRegularFile)
+                    .forEach(guiFile -> {
+                        try {
+                            BanditsQuirkLib.LOGGER.info("Processing GUI file: " + guiFile.getFileName().toString());
+                            List<String> lines = Files.readAllLines(guiFile, StandardCharsets.UTF_8);
+
+                            // Add the file content
+                            for (String line : lines) {
+                                contentBuilder.append(line).append("\n");
+                            }
+
+                        } catch (IOException e) {
+                            BanditsQuirkLib.LOGGER.error("Failed to read GUI file: " + guiFile.toString() + " - " + e.getMessage());
+                        }
+                    });
+        }
+
+        // Write the merged content to the target file
+        Files.write(targetFile, contentBuilder.toString().getBytes(StandardCharsets.UTF_8),
+                StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+
+        BanditsQuirkLib.LOGGER.info("Successfully merged GUI screen files to: " + targetFile.toString());
+    }
+
+    /**
+     * Deletes the marker file to force a re-run of FancyMenu setup
+     */
+    public static boolean deleteMarkerFile() {
+        try {
+            Path configDir = Platform.getConfigFolder();
+            Path markerFile = configDir.resolve(".delete_to_reload_fancymenu");
+
+            if (Files.exists(markerFile)) {
+                Files.delete(markerFile);
+                System.out.println("Deleted marker file: " + markerFile.toString());
+                System.out.println("FancyMenu setup will run again on next world load.");
+                return true;
+            } else {
+                System.out.println("Marker file does not exist: " + markerFile.toString());
+                return true; // Not an error if it doesn't exist
+            }
+
+        } catch (IOException e) {
+            System.err.println("Failed to delete marker file: " + e.getMessage());
             return false;
         }
     }
