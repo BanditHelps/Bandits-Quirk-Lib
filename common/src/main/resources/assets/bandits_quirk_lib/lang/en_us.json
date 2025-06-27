@@ -1,0 +1,8 @@
+{
+  "banditsquirklib.gui.elements.iconbutton.key": "Set Image Key",
+  "banditsquirklib.gui.editor.add.iconbutton": "Icon Button",
+  "banditsquirklib.gui.editor.add.iconbutton.desc": "An easy to use clickable icon.",
+  "banditsquirklib.gui.elements.iconbutton.icon_offset_x": "Set Icon Offset X",
+  "banditsquirklib.gui.elements.iconbutton.icon_offset_y": "Set Icon Offset Y",
+  "banditsquirklib.gui.elements.iconbutton.icon_scale": "Set Image Scale"
+}
