@@ -45,12 +45,6 @@ public class ScoreboardBitmapPlaceholder extends Placeholder {
 
             Scoreboard scoreboard = level.getScoreboard();
 
-
-
-            scoreboard.getObjectiveNames().forEach( (n) -> {
-                BanditsQuirkLibForge.LOGGER.info("The dumb names are: " + n);
-            });
-
             Objective objective = scoreboard.getObjective(scoreboardName);
 
             if (objective == null) {
