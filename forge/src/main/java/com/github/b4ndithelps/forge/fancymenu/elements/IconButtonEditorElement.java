@@ -61,7 +61,7 @@ public class IconButtonEditorElement extends AbstractEditorElement {
                 .setTooltipSupplier((menu, entry) -> Tooltip.of(LocalizationUtils.splitLocalizedLines("fancymenu.elements.button.active_state_controller.desc")))
                 .setStackable(false);
 
-        this.rightClickMenu.addSeparatorEntry("separator_1");
+        this.rightClickMenu.addSeparatorEntry("bql_separator_1");
 
         // Button properties
         this.addStringInputContextMenuEntryTo(this.rightClickMenu, "edit_label",
@@ -101,7 +101,7 @@ public class IconButtonEditorElement extends AbstractEditorElement {
                 .setTooltipSupplier((menu, entry) -> Tooltip.of(LocalizationUtils.splitLocalizedLines("fancymenu.editor.items.button.btndescription.desc")))
                 .setIcon(ContextMenu.IconFactory.getIcon("talk"));
 
-        this.rightClickMenu.addSeparatorEntry("separator_2");
+        this.rightClickMenu.addSeparatorEntry("bql_separator_2");
 
         // Icon properties
         ConsumingSupplier<IconButtonEditorElement, String> itemKeyTargetFieldGetter = consumes -> consumes.getElement().itemKey;
@@ -173,7 +173,7 @@ public class IconButtonEditorElement extends AbstractEditorElement {
                         true, null, null, null)
                 .setTooltipSupplier((menu, entry) -> Tooltip.of(LocalizationUtils.splitLocalizedLines("fancymenu.elements.item.nbt.desc")));
 
-        this.rightClickMenu.addSeparatorEntry("separator_3");
+        this.rightClickMenu.addSeparatorEntry("bql_separator_3");
 
         // Icon positioning and scaling
         this.addIntegerInputContextMenuEntryTo(this.rightClickMenu, "icon_offset_x", IconButtonEditorElement.class,
@@ -191,7 +191,7 @@ public class IconButtonEditorElement extends AbstractEditorElement {
                 (iconButtonEditorElement, aFloat) -> iconButtonEditorElement.getElement().iconScale = aFloat,
                 Component.translatable("banditsquirklib.gui.elements.iconbutton.icon_scale"), true, 1.0f, null, null);
 
-        this.rightClickMenu.addSeparatorEntry("separator_4");
+        this.rightClickMenu.addSeparatorEntry("bql_separator_4");
 
         // Audio settings
         this.addAudioResourceChooserContextMenuEntryTo(this.rightClickMenu, "hover_sound",
@@ -210,12 +210,12 @@ public class IconButtonEditorElement extends AbstractEditorElement {
                         Component.translatable("fancymenu.editor.items.button.clicksound"), true, null, true, true, true)
                 .setIcon(ContextMenu.IconFactory.getIcon("sound"));
 
-        this.rightClickMenu.addSeparatorEntry("separator_5");
+        this.rightClickMenu.addSeparatorEntry("bql_separator_5");
 
         // Background textures
         this.addBackgroundTextureOptions();
 
-        this.rightClickMenu.addSeparatorEntry("separator_6");
+        this.rightClickMenu.addSeparatorEntry("bql_separator_6");
 
         // Navigation
         this.addToggleContextMenuEntryTo(this.rightClickMenu, "toggle_navigatable", IconButtonEditorElement.class,

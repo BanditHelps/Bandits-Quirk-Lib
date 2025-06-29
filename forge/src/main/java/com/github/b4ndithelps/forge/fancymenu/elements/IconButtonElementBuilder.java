@@ -30,7 +30,7 @@ public class IconButtonElementBuilder extends ElementBuilder<IconButtonElement, 
         IconButtonElement element = new IconButtonElement(this);
         element.baseWidth = 100;
         element.baseHeight = 100;
-        element.label = "Icon Button";
+        element.label = "";
         element.setWidget(new ExtendedButton(0, 0, 0, 0, Component.empty(), (press) -> {
             if ((CustomizationOverlay.getCurrentMenuBarInstance() == null) || !CustomizationOverlay.getCurrentMenuBarInstance().isUserNavigatingInMenuBar()) {
                 boolean isMousePressed = MouseInput.isLeftMouseDown() || MouseInput.isRightMouseDown();
