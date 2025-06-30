@@ -1,9 +1,7 @@
 package com.github.b4ndithelps.forge;
 
 import com.github.b4ndithelps.forge.fancymenu.ForgeFancyMenuIntegration;
-import de.keksuccino.fancymenu.customization.placeholder.PlaceholderRegistry;
 import dev.architectury.platform.forge.EventBuses;
-import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 
