@@ -11,5 +11,6 @@ public class CommandEventHandler {
     @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent event) {
         MineHaSlotCommand.register(event.getDispatcher());
+        MineHaCreationCommand.register(event.getDispatcher());
     }
 }
