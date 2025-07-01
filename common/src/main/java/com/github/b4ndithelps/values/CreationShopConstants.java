@@ -97,6 +97,48 @@ public class CreationShopConstants {
         put("minecraft:diamond_boots", 524288);
     }};
 
+    public static final Map<String, Integer> BIT_MAP_4_TABLE = new HashMap<String, Integer>() {{
+        put("minecraft:unbreaking", 1);
+        put("minecraft:projectile_protection", 2);
+        put("minecraft:smite", 4);
+        put("minecraft:lure", 8);
+        put("minecraft:fire_protection", 16);
+        put("minecraft:knockback", 32);
+        put("minecraft:punch", 64);
+        put("minecraft:sweeping_edge", 128);
+        put("minecraft:loyaty", 256);
+        put("minecraft:piercing", 512);
+        put("minecraft:flame", 1024);
+        put("minecraft:blast_protection", 2048);
+        put("minecraft:efficiency", 4096);
+        put("minecraft:feather_falling", 8192);
+        put("minecraft:depth_strider", 16384);
+        put("minecraft:power", 32768);
+        put("minecraft:respiration", 65536);
+        put("minecraft:riptide", 131072);
+        put("minecraft:aqua_affinity", 262144);
+        put("minecraft:silk_touch", 524288);
+        put("minecraft:fortune", 1048576);
+        put("minecraft:fire_aspect", 2097152);
+        put("minecraft:luck_of_the_sea", 4194304);
+        put("minecraft:thorns", 8388608);
+        put("minecraft:sharpness", 16777216);
+        put("minecraft:protection", 33554432);
+        put("minecraft:frost_walker", 67108864);
+        put("minecraft:multishot", 134217728);
+        put("minecraft:quick_charge", 268435456);
+        put("minecraft:swift_sneak", 536870812);
+    }};
+
+    public static final Map<String, Integer> BIT_MAP_5_TABLE = new HashMap<String, Integer>() {{
+        put("minecraft:mending", 1);
+        put("minecraft:infinity", 2);
+        put("minecraft:looting", 4);
+        put("minecraft:soul_speed", 8);
+        put("minecraft:channeling", 16);
+        put("minecraft:impaling", 32);
+    }};
+
     // Stores the creation prices for items
     public static final Map<String, Integer> CREATION_PRICE_TABLE = new HashMap<String, Integer>() {{
         put("minecraft:coal", 10);

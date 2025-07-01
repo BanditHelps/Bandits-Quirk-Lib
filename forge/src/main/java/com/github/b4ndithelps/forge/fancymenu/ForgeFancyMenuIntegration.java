@@ -19,6 +19,7 @@ public class ForgeFancyMenuIntegration {
     public static final ScoreboardPlaceholder SCOREBOARD_PLACEHOLDER = new ScoreboardPlaceholder();
     public static final NBTPlaceholder NBT_PLACEHOLDER = new NBTPlaceholder();
     public static final PersistentDataPlaceholder PERSISTENT_DATA_PLACEHOLDER = new PersistentDataPlaceholder();
+    public static final EnchantmentDataPlaceholder ENCHANTMENT_DATA_PLACEHOLDER = new EnchantmentDataPlaceholder();
 
 
     @SuppressWarnings("removal")

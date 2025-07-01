@@ -6,57 +6,53 @@ import de.keksuccino.fancymenu.customization.placeholder.Placeholder;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.scores.Objective;
 import net.minecraft.world.scores.Score;
 import net.minecraft.world.scores.Scoreboard;
+import net.minecraftforge.registries.ForgeRegistries;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
-public class ScoreboardPlaceholder extends Placeholder {
+public class EnchantmentDataPlaceholder extends Placeholder {
 
-    public ScoreboardPlaceholder() {
-        super("get_scoreboard");
+    public EnchantmentDataPlaceholder() {
+        super("get_enchant_data");
     }
 
+    @SuppressWarnings("removal")
     @Override
     public String getReplacementFor(DeserializedPlaceholderString dps) {
-        String scoreboardName = dps.values.get("scoreboard");
-        String playerName = dps.values.get("player");
+        String enchantId = dps.values.get("enchant");
+        String data = dps.values.get("data");
 
-        if (scoreboardName == null) {
-            BanditsQuirkLibForge.LOGGER.error("Scoreboard placeholder requires 'scoreboard' parameter");
+        if (enchantId == null || data == null) {
+            BanditsQuirkLibForge.LOGGER.error("Enchantment placeholder requires 'enchant' and 'data' parameters");
             return "0";
         }
 
         try {
-            Minecraft mc = Minecraft.getInstance();
-            ClientLevel level = mc.level;
-            LocalPlayer player = mc.player;
+            ResourceLocation location = new ResourceLocation(enchantId);
+            Optional<Enchantment> possibleEnchant = Optional.ofNullable(ForgeRegistries.ENCHANTMENTS.getValue(location));
 
-            if (level == null || player == null) {
-                return "0";
+            if (possibleEnchant.isPresent()) {
+                Enchantment enchant = possibleEnchant.get();
+
+                // Depending on the data type, return that information
+                switch (data) {
+                    case "max_level":
+                        return String.valueOf(enchant.getMaxLevel());
+                    default:
+                        return "INVALID data type!";
+                }
             }
 
-            Scoreboard scoreboard = level.getScoreboard();
 
-            Objective objective = scoreboard.getObjective(scoreboardName);
-
-            if (objective == null) {
-                BanditsQuirkLibForge.LOGGER.warn("Scoreboard '{}' not found", scoreboardName);
-                return "0";
-            }
-
-            // Determine what player to check
-            String targetPlayer = playerName != null ? playerName : player.getGameProfile().getName();
-
-            // Get score for the player
-            Score score = scoreboard.getOrCreatePlayerScore(targetPlayer, objective);
-            int scoreValue = score.getScore();
-
-            return String.valueOf(scoreValue);
+            return "ENCHANTMENT_NOT_FOUND";
         } catch (Exception e) {
             BanditsQuirkLibForge.LOGGER.error("Error in Scoreboard placeholder" + e.getMessage());
             return "0";
@@ -66,25 +62,24 @@ public class ScoreboardPlaceholder extends Placeholder {
     @Override
     public @Nullable List<String> getValueNames() {
         List<String> values = new ArrayList<>();
-        values.add("scoreboard");
-        values.add("player"); // this one is optional
+        values.add("enchant");
+        values.add("data"); // this one is optional
 
         return values;
     }
 
     @Override
     public @NotNull String getDisplayName() {
-        return "Scoreboard Value";
+        return "Enchantment Data";
     }
 
     @Override
     public @Nullable List<String> getDescription() {
         return Arrays.asList(
-                "Retrieves a specific scoreboard value as a String.",
+                "Retrieves information about a specific enchantment.",
                 "Parameters:",
-                "- scoreboard: Name of the scoreboard objective",
-                "- player: Player name (optional, defaults to the current player)",
-                "Example: %scoreboard{scoreboard:\"scoreboard_name\"}%"
+                "- enchant: Minecraft id of the enchantment. i.e minecraft:sharpness",
+                "- data: What data to receive. Accepts max_level"
         );
     }
 
@@ -97,7 +92,8 @@ public class ScoreboardPlaceholder extends Placeholder {
     @Override
     public @NotNull DeserializedPlaceholderString getDefaultPlaceholderString() {
         Map<String, String> defaultValues = new HashMap<>();
-        defaultValues.put("scoreboard", "scoreboard_name");
+        defaultValues.put("enchant", "minecraft:sharpness");
+        defaultValues.put("data", "max_level");
         return DeserializedPlaceholderString.build(this.getIdentifier(), defaultValues);
     }
 }
