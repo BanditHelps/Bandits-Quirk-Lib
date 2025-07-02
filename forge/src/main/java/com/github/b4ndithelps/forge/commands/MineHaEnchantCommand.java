@@ -70,6 +70,24 @@ public class MineHaEnchantCommand {
         swordEnchants.put("creation_e8", Enchantments.MOB_LOOTING);
         ENCHANTMENT_MAPPINGS.put("sword_type", swordEnchants);
 
+        // Utility type enchantments
+        Map<String, Enchantment> utilityEnchants = new HashMap<>();
+        utilityEnchants.put("creation_e1", Enchantments.UNBREAKING);
+        utilityEnchants.put("creation_e2", Enchantments.MENDING);
+        ENCHANTMENT_MAPPINGS.put("utility_type", utilityEnchants);
+
+        // Ranged type enchantments
+        Map<String, Enchantment> rangedEnchants = new HashMap<>();
+        rangedEnchants.put("creation_e1", Enchantments.UNBREAKING);
+        rangedEnchants.put("creation_e2", Enchantments.PUNCH_ARROWS);
+        rangedEnchants.put("creation_e3", Enchantments.PIERCING);
+        rangedEnchants.put("creation_e4", Enchantments.FLAMING_ARROWS);
+        rangedEnchants.put("creation_e5", Enchantments.POWER_ARROWS);
+        rangedEnchants.put("creation_e6", Enchantments.MULTISHOT);
+        rangedEnchants.put("creation_e7", Enchantments.QUICK_CHARGE);
+        rangedEnchants.put("creation_e8", Enchantments.MENDING);
+        ENCHANTMENT_MAPPINGS.put("ranged_type", rangedEnchants);
+
         // Helmet type enchantments -
         Map<String, Enchantment> helmetEnchants = new HashMap<>();
         helmetEnchants.put("creation_e1", Enchantments.MENDING);
