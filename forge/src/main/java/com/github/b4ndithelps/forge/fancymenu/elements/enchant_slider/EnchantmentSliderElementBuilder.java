@@ -1,5 +1,6 @@
 package com.github.b4ndithelps.forge.fancymenu.elements.enchant_slider;
 
+import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
 import de.keksuccino.fancymenu.customization.action.blocks.AbstractExecutableBlock;
 import de.keksuccino.fancymenu.customization.action.blocks.ExecutableBlockDeserializer;
 import de.keksuccino.fancymenu.customization.action.blocks.GenericExecutableBlock;
@@ -14,6 +15,7 @@ import de.keksuccino.fancymenu.util.LocalizationUtils;
 import de.keksuccino.konkrete.math.MathUtils;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jetbrains.annotations.NotNull;
@@ -39,13 +41,32 @@ public class EnchantmentSliderElementBuilder extends ElementBuilder<EnchantmentS
         i.minRangeValue = 0.0;
         i.enchant = ForgeRegistries.ENCHANTMENTS.getValue(new ResourceLocation("minecraft:sharpness"));
         assert i.enchant != null;
-        i.label = i.enchant.getDescriptionId() + ": $$value";
+        i.label = Component.translatable(i.enchant.getDescriptionId()).getString() + ": $$value";
         i.maxRangeValue = i.enchant.getMaxLevel();
         return i;
     }
 
     public EnchantmentSliderElement deserializeElement(@NotNull SerializedElement serialized) {
         EnchantmentSliderElement element = this.buildDefaultInstance();
+
+        // Deserialize the enchantment first
+        String enchantmentId = serialized.getValue("enchantment");
+        if (enchantmentId != null) {
+            try {
+                ResourceLocation enchantLoc = new ResourceLocation(enchantmentId);
+                Enchantment enchant = ForgeRegistries.ENCHANTMENTS.getValue(enchantLoc);
+                if (enchant != null) {
+                    element.setEnchant(enchant);
+                    // Update label if not explicitly set
+                    if (serialized.getValue("slider_label") == null) {
+                        element.label = Component.translatable(enchant.getDescriptionId()).getString() + ": $$value";
+                    }
+                }
+            } catch (Exception e) {
+                BanditsQuirkLibForge.LOGGER.error("Something went wrong with the enchant slider: " + e.getMessage());
+            }
+        }
+
         String sliderTypeString = serialized.getValue("slider_type");
         if (sliderTypeString != null) {
             EnchantmentSliderElement.SliderType t = EnchantmentSliderElement.SliderType.getByName(sliderTypeString);
@@ -130,6 +151,14 @@ public class EnchantmentSliderElementBuilder extends ElementBuilder<EnchantmentS
     }
 
     protected SerializedElement serializeElement(@NotNull EnchantmentSliderElement element, @NotNull SerializedElement serializeTo) {
+        // Serialize the enchantment
+        if (element.enchant != null) {
+            ResourceLocation enchantLoc = ForgeRegistries.ENCHANTMENTS.getKey(element.enchant);
+            if (enchantLoc != null) {
+                serializeTo.putProperty("enchantment", enchantLoc.toString());
+            }
+        }
+
         serializeTo.putProperty("slider_type", element.type.getName());
         serializeTo.putProperty("pre_selected_value", element.preSelectedValue);
         serializeTo.putProperty("slider_label", element.label);
@@ -188,7 +217,7 @@ public class EnchantmentSliderElementBuilder extends ElementBuilder<EnchantmentS
     }
 
     public @NotNull Component getDisplayName(@Nullable AbstractElement element) {
-        return Component.translatable("fancymenu.elements.slider.v2");
+        return Component.translatable("banditsquirklib.gui.editor.add.enchant_slider");
     }
 
     public @Nullable Component[] getDescription(@Nullable AbstractElement element) {
