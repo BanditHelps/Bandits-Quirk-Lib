@@ -105,8 +105,8 @@ public class CreationShopConstants {
         put("minecraft:fire_protection", 16);
         put("minecraft:knockback", 32);
         put("minecraft:punch", 64);
-        put("minecraft:sweeping_edge", 128);
-        put("minecraft:loyaty", 256);
+        put("minecraft:sweeping", 128);
+        put("minecraft:loyalty", 256);
         put("minecraft:piercing", 512);
         put("minecraft:flame", 1024);
         put("minecraft:blast_protection", 2048);
