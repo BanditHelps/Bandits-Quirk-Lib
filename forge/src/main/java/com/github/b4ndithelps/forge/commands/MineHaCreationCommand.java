@@ -1,5 +1,6 @@
 package com.github.b4ndithelps.forge.commands;
 
+import com.github.b4ndithelps.values.CreationShopConstants;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -10,12 +11,18 @@ import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.EnchantedBookItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.scores.Objective;
 import net.minecraft.world.scores.Score;
@@ -31,7 +38,7 @@ import static com.github.b4ndithelps.values.CreationShopConstants.*;
 public class MineHaCreationCommand {
 
     private static final SuggestionProvider<CommandSourceStack> MODE_SUGGESTIONS = (context, builder) -> {
-        return SharedSuggestionProvider.suggest(new String[]{"buy", "shop", "learn"}, builder);
+        return SharedSuggestionProvider.suggest(new String[]{"buy", "shop", "learn", "enchant"}, builder);
     };
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
@@ -62,6 +69,8 @@ public class MineHaCreationCommand {
                     return executeShopMode(player);
                 case "learn":
                     return executeLearnMode(context, player);
+                case "enchant":
+                    return executeEnchantMode(context, player);
                 default:
                     player.sendSystemMessage(Component.literal("Invalid mode! Use: buy, shop, or learn"));
                     return 0;
@@ -189,6 +198,113 @@ public class MineHaCreationCommand {
     }
 
     @SuppressWarnings("removal")
+    private static int executeEnchantMode(CommandContext<CommandSourceStack> context, ServerPlayer player) {
+        String enchantmentId = StringArgumentType.getString(context, "item");
+        int cost = IntegerArgumentType.getInteger(context, "cost");
+
+        // Determine which bitmap table contains the item
+        Map<String, Integer> valueTable = null;
+        int foundBitMap = 0;
+
+        if (BIT_MAP_4_TABLE.containsKey(enchantmentId)) {
+            valueTable = BIT_MAP_4_TABLE;
+            foundBitMap = 4;
+        } else if (BIT_MAP_5_TABLE.containsKey(enchantmentId)) {
+            valueTable = BIT_MAP_5_TABLE;
+            foundBitMap = 5;
+        } else {
+            player.sendSystemMessage(Component.literal("Something is wrong with that enchantment, please check the config"));
+            return 0;
+        }
+
+        // Check if already learned
+        int bitMapScore = getPlayerScore(player, "MineHa.Creation.BitMap" + foundBitMap);
+        int itemValue = valueTable.get(enchantmentId);
+
+        if ((bitMapScore & itemValue) == itemValue) {
+            player.sendSystemMessage(Component.literal("You already know this enchantment!"));
+            return 1;
+        }
+
+        // Get the enchantment we're looking for
+        ResourceLocation enchantLoc = new ResourceLocation(enchantmentId);
+        Enchantment targetEnchantment = ForgeRegistries.ENCHANTMENTS.getValue(enchantLoc);
+
+        if (targetEnchantment == null) {
+            player.sendSystemMessage(Component.literal("Invalid enchantment ID: " + enchantmentId));
+            return 0;
+        }
+
+        // Count enchanted books with the target enchantment in inventory
+        int totalBookCount = 0;
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            ItemStack stack = player.getInventory().getItem(i);
+
+            // Check if it's an enchanted book
+            if (stack.getItem() == Items.ENCHANTED_BOOK) {
+                // Get the enchantments on the book
+                ListTag enchantmentList = EnchantedBookItem.getEnchantments(stack);
+
+                // Check if this book has our target enchantment
+                for (int j = 0; j < enchantmentList.size(); j++) {
+                    CompoundTag enchantmentTag = enchantmentList.getCompound(j);
+                    String bookEnchantId = enchantmentTag.getString("id");
+
+                    if (bookEnchantId.equals(enchantmentId)) {
+                        totalBookCount += stack.getCount();
+                        break; // Found the enchantment on this book, no need to check other enchantments
+                    }
+                }
+            }
+        }
+
+        if (totalBookCount < cost) {
+            player.sendSystemMessage(Component.literal(
+                    String.format("You don't have enough enchanted books with %s! You need %d but you only have %d",
+                            enchantmentId, cost, totalBookCount)));
+            return 0;
+        }
+
+        // Remove enchanted books with the target enchantment from inventory
+        int remainingToRemove = cost;
+        for (int i = 0; i < player.getInventory().getContainerSize() && remainingToRemove > 0; i++) {
+            ItemStack stack = player.getInventory().getItem(i);
+
+            // Check if it's an enchanted book with our target enchantment
+            if (stack.getItem() == Items.ENCHANTED_BOOK) {
+                ListTag enchantmentList = EnchantedBookItem.getEnchantments(stack);
+
+                // Check if this book has our target enchantment
+                boolean hasTargetEnchantment = false;
+                for (int j = 0; j < enchantmentList.size(); j++) {
+                    CompoundTag enchantmentTag = enchantmentList.getCompound(j);
+                    String bookEnchantId = enchantmentTag.getString("id");
+
+                    if (bookEnchantId.equals(enchantmentId)) {
+                        hasTargetEnchantment = true;
+                        break;
+                    }
+                }
+
+                if (hasTargetEnchantment) {
+                    int toRemove = Math.min(stack.getCount(), remainingToRemove);
+                    stack.shrink(toRemove);
+                    remainingToRemove -= toRemove;
+                }
+            }
+        }
+
+        // Learn the recipe (update bitmap)
+        int newScore = bitMapScore + itemValue;
+        setPlayerScore(player, "MineHa.Creation.BitMap" + foundBitMap, newScore);
+
+        player.sendSystemMessage(Component.literal(
+                String.format("Successfully learned %s! Removed %d enchanted books from inventory.", enchantmentId, cost)));
+
+        return 1;
+    }
+
+    @SuppressWarnings("removal")
     private static void spawnCreatedItem(ServerPlayer player, String itemId) {
         try {
             ServerLevel level = player.serverLevel();
@@ -237,8 +353,6 @@ public class MineHaCreationCommand {
     }
 
     private static boolean hasCreationSuperpower(ServerPlayer player) {
-        // You'll need to implement this based on your superpower system
-        // This is a placeholder implementation
         return true; // Replace with actual superpower check
     }
 

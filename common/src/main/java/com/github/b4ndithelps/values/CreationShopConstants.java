@@ -139,7 +139,7 @@ public class CreationShopConstants {
         put("minecraft:impaling", 32);
     }};
 
-    // Stores the creation prices for items
+    // Stores the creation buy prices for items
     public static final Map<String, Integer> CREATION_PRICE_TABLE = new HashMap<String, Integer>() {{
         put("minecraft:coal", 10);
         put("minecraft:copper_ingot", 20);
@@ -215,6 +215,46 @@ public class CreationShopConstants {
         put("minecraft:diamond_chestplate", 5);
         put("minecraft:diamond_leggings", 5);
         put("minecraft:diamond_boots", 5);
+    }};
+
+    // Buy Price
+    public static final Map<String, Integer> CREATION_ENCHANT_PRICE_TABLE = new HashMap<String, Integer>() {{
+        put("minecraft:unbreaking", 1);
+        put("minecraft:projectile_protection", 1);
+        put("minecraft:smite", 1);
+        put("minecraft:lure", 1);
+        put("minecraft:fire_protection", 1);
+        put("minecraft:knockback", 1);
+        put("minecraft:punch", 1);
+        put("minecraft:sweeping_edge", 1);
+        put("minecraft:loyaty", 1);
+        put("minecraft:piercing", 1);
+        put("minecraft:flame", 1);
+        put("minecraft:blast_protection", 1);
+        put("minecraft:efficiency", 1);
+        put("minecraft:feather_falling", 1);
+        put("minecraft:depth_strider", 1);
+        put("minecraft:power", 1);
+        put("minecraft:respiration", 1);
+        put("minecraft:riptide", 1);
+        put("minecraft:aqua_affinity", 1);
+        put("minecraft:silk_touch", 1);
+        put("minecraft:fortune", 1);
+        put("minecraft:fire_aspect", 1);
+        put("minecraft:luck_of_the_sea", 1);
+        put("minecraft:thorns", 1);
+        put("minecraft:sharpness", 1);
+        put("minecraft:protection", 1);
+        put("minecraft:frost_walker", 1);
+        put("minecraft:multishot", 1);
+        put("minecraft:quick_charge", 1);
+        put("minecraft:swift_sneak", 1);
+        put("minecraft:mending", 1);
+        put("minecraft:infinity", 1);
+        put("minecraft:looting", 1);
+        put("minecraft:soul_speed", 1);
+        put("minecraft:channeling", 1);
+        put("minecraft:impaling", 1);
     }};
 
     // Private constructor to prevent instantiation
