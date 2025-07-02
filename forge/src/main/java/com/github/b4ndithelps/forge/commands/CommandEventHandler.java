@@ -12,5 +12,6 @@ public class CommandEventHandler {
     public static void onRegisterCommands(RegisterCommandsEvent event) {
         MineHaSlotCommand.register(event.getDispatcher());
         MineHaCreationCommand.register(event.getDispatcher());
+        MineHaEnchantCommand.register(event.getDispatcher());
     }
 }
