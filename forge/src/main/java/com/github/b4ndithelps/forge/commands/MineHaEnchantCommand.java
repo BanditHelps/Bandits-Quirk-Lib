@@ -47,19 +47,58 @@ public class MineHaEnchantCommand {
         toolEnchants.put("creation_e3", Enchantments.BLOCK_EFFICIENCY);
         toolEnchants.put("creation_e4", Enchantments.SHARPNESS);
         toolEnchants.put("creation_e5", Enchantments.MENDING);
+        toolEnchants.put("creation_e6", Enchantments.BLOCK_FORTUNE);
         ENCHANTMENT_MAPPINGS.put("tool_type", toolEnchants);
 
-        // Chestplate type enchantments
+        // Helmet type enchantments -
+        Map<String, Enchantment> helmetEnchants = new HashMap<>();
+        helmetEnchants.put("creation_e1", Enchantments.MENDING);
+        helmetEnchants.put("creation_e2", Enchantments.UNBREAKING);
+        helmetEnchants.put("creation_e3", Enchantments.ALL_DAMAGE_PROTECTION);
+        helmetEnchants.put("creation_e4", Enchantments.THORNS);
+        helmetEnchants.put("creation_e5", Enchantments.PROJECTILE_PROTECTION);
+        helmetEnchants.put("creation_e7", Enchantments.RESPIRATION);
+        helmetEnchants.put("creation_e6", Enchantments.FIRE_PROTECTION);
+        helmetEnchants.put("creation_e8", Enchantments.AQUA_AFFINITY);
+        helmetEnchants.put("creation_e9", Enchantments.BLAST_PROTECTION);
+        ENCHANTMENT_MAPPINGS.put("helmet_type", helmetEnchants);
+
+        // Chestplate type enchantments - verified
         Map<String, Enchantment> chestplateEnchants = new HashMap<>();
-        chestplateEnchants.put("creation_e1", Enchantments.ALL_DAMAGE_PROTECTION);
-        chestplateEnchants.put("creation_e2", Enchantments.FIRE_PROTECTION);
-        chestplateEnchants.put("creation_e3", Enchantments.BLAST_PROTECTION);
-        chestplateEnchants.put("creation_e4", Enchantments.PROJECTILE_PROTECTION);
-        chestplateEnchants.put("creation_e5", Enchantments.THORNS);
-        chestplateEnchants.put("creation_e6", Enchantments.MENDING);
-        chestplateEnchants.put("creation_e7", Enchantments.UNBREAKING);
-        chestplateEnchants.put("creation_e8", Enchantments.BINDING_CURSE);
+        chestplateEnchants.put("creation_e1", Enchantments.MENDING);
+        chestplateEnchants.put("creation_e2", Enchantments.UNBREAKING);
+        chestplateEnchants.put("creation_e3", Enchantments.ALL_DAMAGE_PROTECTION);
+        chestplateEnchants.put("creation_e4", Enchantments.THORNS);
+        chestplateEnchants.put("creation_e5", Enchantments.PROJECTILE_PROTECTION);
+        chestplateEnchants.put("creation_e6", Enchantments.FIRE_PROTECTION);
         ENCHANTMENT_MAPPINGS.put("chestplate_type", chestplateEnchants);
+
+        // Leggings type enchantments - Verified
+        Map<String, Enchantment> leggingsEnchants = new HashMap<>();
+        leggingsEnchants.put("creation_e1", Enchantments.MENDING);
+        leggingsEnchants.put("creation_e2", Enchantments.UNBREAKING);
+        leggingsEnchants.put("creation_e3", Enchantments.ALL_DAMAGE_PROTECTION);
+        leggingsEnchants.put("creation_e4", Enchantments.THORNS);
+        leggingsEnchants.put("creation_e5", Enchantments.PROJECTILE_PROTECTION);
+        leggingsEnchants.put("creation_e7", Enchantments.SWIFT_SNEAK);
+        leggingsEnchants.put("creation_e6", Enchantments.FIRE_PROTECTION);
+        leggingsEnchants.put("creation_e9", Enchantments.BLAST_PROTECTION);
+        ENCHANTMENT_MAPPINGS.put("leggings_type", leggingsEnchants);
+
+        // Boots type enchantments - Verified
+        Map<String, Enchantment> bootsEnchants = new HashMap<>();
+        bootsEnchants.put("creation_e1", Enchantments.MENDING);
+        bootsEnchants.put("creation_e2", Enchantments.UNBREAKING);
+        bootsEnchants.put("creation_e3", Enchantments.ALL_DAMAGE_PROTECTION);
+        bootsEnchants.put("creation_e4", Enchantments.THORNS);
+        bootsEnchants.put("creation_e5", Enchantments.PROJECTILE_PROTECTION);
+        bootsEnchants.put("creation_e7", Enchantments.FALL_PROTECTION);
+        bootsEnchants.put("creation_e6", Enchantments.FIRE_PROTECTION);
+        bootsEnchants.put("creation_e8", Enchantments.DEPTH_STRIDER);
+        bootsEnchants.put("creation_e9", Enchantments.BLAST_PROTECTION);
+        bootsEnchants.put("creation_e10", Enchantments.SOUL_SPEED);
+        bootsEnchants.put("creation_e11", Enchantments.FROST_WALKER);
+        ENCHANTMENT_MAPPINGS.put("boots_type", bootsEnchants);
 
         // Weapon type enchantments
         Map<String, Enchantment> weaponEnchants = new HashMap<>();
@@ -153,7 +192,7 @@ public class MineHaEnchantCommand {
         }
 
         // Send success message
-        String itemName = customName != null ? customName : item.getDescription().getString();
+        String itemName = ((customName != null) && !customName.equals("0")) ? customName : item.getDescription().getString();
         int finalAppliedEnchants = appliedEnchants;
         source.sendSuccess(() -> Component.literal(
                 String.format("Gave %s a custom %s with %d enchantments!",
