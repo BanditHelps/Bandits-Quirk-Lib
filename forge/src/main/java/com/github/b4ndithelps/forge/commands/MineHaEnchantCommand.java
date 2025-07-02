@@ -1,5 +1,6 @@
 package com.github.b4ndithelps.forge.commands;
 
+import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
 import com.google.gson.JsonParser;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -19,8 +20,15 @@ import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.Enchantments;
 
 import com.google.gson.JsonObject;
+import net.minecraft.world.scores.Objective;
+import net.minecraft.world.scores.Score;
+import net.minecraft.world.scores.Scoreboard;
+
 import java.util.HashMap;
 import java.util.Map;
+
+import static com.github.b4ndithelps.values.CreationShopConstants.*;
+import static com.github.b4ndithelps.values.CreationShopConstants.BIT_MAP_3_TABLE;
 
 public class MineHaEnchantCommand {
 
@@ -49,6 +57,18 @@ public class MineHaEnchantCommand {
         toolEnchants.put("creation_e5", Enchantments.MENDING);
         toolEnchants.put("creation_e6", Enchantments.BLOCK_FORTUNE);
         ENCHANTMENT_MAPPINGS.put("tool_type", toolEnchants);
+
+        // Sword type enchantments
+        Map<String, Enchantment> swordEnchants = new HashMap<>();
+        swordEnchants.put("creation_e1", Enchantments.UNBREAKING);
+        swordEnchants.put("creation_e2", Enchantments.SMITE);
+        swordEnchants.put("creation_e3", Enchantments.KNOCKBACK);
+        swordEnchants.put("creation_e4", Enchantments.SWEEPING_EDGE);
+        swordEnchants.put("creation_e5", Enchantments.FIRE_ASPECT);
+        swordEnchants.put("creation_e6", Enchantments.SHARPNESS);
+        swordEnchants.put("creation_e7", Enchantments.MENDING);
+        swordEnchants.put("creation_e8", Enchantments.MOB_LOOTING);
+        ENCHANTMENT_MAPPINGS.put("sword_type", swordEnchants);
 
         // Helmet type enchantments -
         Map<String, Enchantment> helmetEnchants = new HashMap<>();
@@ -155,6 +175,40 @@ public class MineHaEnchantCommand {
             throw INVALID_ITEM.create();
         }
 
+        // Check the scoreboard bitmap to see if the player has learned the item
+        // Determine which bitmap table contains the item
+        try {
+            Map<String, Integer> valueTable = null;
+            int foundBitMap = 0;
+            String itemKey = itemId.toString();
+
+            if (BIT_MAP_1_TABLE.containsKey(itemKey)) {
+                valueTable = BIT_MAP_1_TABLE;
+                foundBitMap = 1;
+            } else if (BIT_MAP_2_TABLE.containsKey(itemKey)) {
+                valueTable = BIT_MAP_2_TABLE;
+                foundBitMap = 2;
+            } else if (BIT_MAP_3_TABLE.containsKey(itemKey)) {
+                valueTable = BIT_MAP_3_TABLE;
+                foundBitMap = 3;
+            } else {
+                player.sendSystemMessage(Component.literal("Something is wrong with that item, please check the config"));
+                return 0;
+            }
+
+            // Check if already learned
+            int bitMapScore = getPlayerScore(player, "MineHa.Creation.BitMap" + foundBitMap);
+            int itemValue = valueTable.get(itemKey);
+
+            if ((bitMapScore & itemValue) != itemValue) {
+                player.sendSystemMessage(Component.literal("You don't know this recipe!"));
+                return 1;
+            }
+        } catch (Exception e) {
+            BanditsQuirkLibForge.LOGGER.error("Error with enchant command: " + e.getMessage());
+        }
+
+
         //Parse the JSON object for enchant values
         JsonObject enchantValues;
         try {
@@ -166,7 +220,7 @@ public class MineHaEnchantCommand {
         ItemStack itemStack = new ItemStack(item);
 
         // Apply custom name if provided
-        if (customName != null && !customName.isEmpty()) {
+        if (customName != null && !customName.isEmpty() && !customName.equals("0")) {
             itemStack.setHoverName(Component.literal(customName));
         }
 
@@ -199,5 +253,18 @@ public class MineHaEnchantCommand {
                         player.getName().getString(), itemName, finalAppliedEnchants)), true);
 
         return 1;
+    }
+
+    // TODO Make this in a common lib because MineHaCreationCommand uses it
+    private static int getPlayerScore(ServerPlayer player, String objectiveName) {
+        Scoreboard scoreboard = player.getServer().getScoreboard();
+        Objective objective = scoreboard.getObjective(objectiveName);
+        if (objective == null) {
+            objective = scoreboard.addObjective(objectiveName, net.minecraft.world.scores.criteria.ObjectiveCriteria.DUMMY,
+                    Component.literal(objectiveName), net.minecraft.world.scores.criteria.ObjectiveCriteria.RenderType.INTEGER);
+        }
+
+        Score score = scoreboard.getOrCreatePlayerScore(player.getScoreboardName(), objective);
+        return score.getScore();
     }
 }
