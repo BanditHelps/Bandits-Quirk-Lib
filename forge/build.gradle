@@ -57,11 +57,26 @@ dependencies {
     modImplementation "curse.maven:konkrete-410295:5028413"
     modImplementation "curse.maven:melody-938643:5109692"
 
+    // Deaded Stuff
+    modApi("net.threetag:palladium-forge:${rootProject.palladium_version}") {
+        exclude group: "software.bernie.geckolib"
+    }
+    // Mixin Extras
+    implementation(annotationProcessor("io.github.llamalad7:mixinextras-common:0.2.0"))
+    implementation(include("io.github.llamalad7:mixinextras-forge:0.2.0"))
+
+    modImplementation("com.github.Virtuoel:Pehkui:${rootProject.pehkui_version}-forge")
+
+    //modImplementation("software.bernie.geckolib:geckolib-forge-${rootProject.minecraft_version}:${rootProject.geckolib_version}")
+    implementation("com.eliotlash.mclib:mclib:20")
+    forgeRuntimeLibrary("com.eliotlash.mclib:mclib:20")
+    modApi("software.bernie.geckolib:geckolib-forge-${rootProject.minecraft_version}:${rootProject.geckolib_version}")
+
     common(project(path: ':common', configuration: 'namedElements')) { transitive false }
     shadowBundle project(path: ':common', configuration: 'transformProductionForge')
 
-    implementation(annotationProcessor("com.github.llamalad7.mixinextras:mixinextras-common:${mixin_extras}"))
-    implementation(include("com.github.llamalad7.mixinextras:mixinextras-forge:${mixin_extras}"))
+//    implementation(annotationProcessor("com.github.llamalad7.mixinextras:mixinextras-common:${mixin_extras}"))
+//    implementation(include("com.github.llamalad7.mixinextras:mixinextras-forge:${mixin_extras}"))
 }
 
 processResources {

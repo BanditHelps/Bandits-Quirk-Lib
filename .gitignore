@@ -6,3 +6,4 @@ common/build/
 build/
 fabric/run
 forge/run
+.architectury-transformer/debug.log
