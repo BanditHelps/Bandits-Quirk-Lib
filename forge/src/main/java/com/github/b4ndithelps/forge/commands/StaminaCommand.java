@@ -1,38 +1,53 @@
 package com.github.b4ndithelps.forge.commands;
 
 import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
-import com.github.b4ndithelps.forge.capabilities.IStaminaData;
 import com.github.b4ndithelps.forge.systems.StaminaHelper;
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.common.util.LazyOptional;
+
+import static com.github.b4ndithelps.values.StaminaConstants.EXHAUSTION_LEVELS;
+import static com.github.b4ndithelps.values.StaminaConstants.PLUS_ULTRA_TAG;
 
 public class StaminaCommand {
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(
                 Commands.literal("bql_stamina")
+                        .then(Commands.argument("player", EntityArgument.player())
                         .then(Commands.literal("get")
                                 .executes(StaminaCommand::getStaminaStats)
                         )
                         .then(Commands.literal("set")
                                 .requires(source -> source.hasPermission(2))
-                                .then(Commands.argument("amount", IntegerArgumentType.integer(0))
-                                        .executes(StaminaCommand::setCurrentStamina)))
+                                .then(Commands.literal("max")
+                                        .then(Commands.argument("amount", IntegerArgumentType.integer(0))
+                                                .executes(StaminaCommand::setMaxStamina)))
+                                .then(Commands.literal("current")
+                                        .then(Commands.argument("amount", IntegerArgumentType.integer(0))
+                                                .executes(StaminaCommand::setCurrentStamina)))
+                                .then(Commands.literal("exhaust")
+                                        .then(Commands.argument("level", IntegerArgumentType.integer(0))
+                                                .executes(StaminaCommand::setExhaustionLevel)))
+                                .then(Commands.literal("plus_ultra")
+                                        .then(Commands.argument("value", BoolArgumentType.bool())
+                                                .executes(StaminaCommand::setPlusUltra))))
                         .then(Commands.literal("debug")
                                 .requires(source -> source.hasPermission(2))
                                 .executes(StaminaCommand::debugStamina))
-        );
+                        ));
     }
 
     private static int getStaminaStats(CommandContext<CommandSourceStack> context) {
         try {
-            ServerPlayer player = context.getSource().getPlayerOrException();
+            ServerPlayer player = EntityArgument.getPlayer(context, "player");
 
             String staminaInfo = StaminaHelper.getStaminaInfo(player);
 
@@ -53,7 +68,7 @@ public class StaminaCommand {
      */
     private static int debugStamina(CommandContext<CommandSourceStack> context) {
         try {
-            ServerPlayer player = context.getSource().getPlayerOrException();
+            ServerPlayer player = EntityArgument.getPlayer(context, "player");
             StaminaHelper.debugStamina(player);
             return 1;
         } catch (Exception e) {
@@ -64,32 +79,66 @@ public class StaminaCommand {
 
     private static int setCurrentStamina(CommandContext<CommandSourceStack> context) {
         try {
-            ServerPlayer player = context.getSource().getPlayerOrException();
+            ServerPlayer player = EntityArgument.getPlayer(context, "player");
             int amount = IntegerArgumentType.getInteger(context, "amount");
 
-            // Add this debug logging
-            BanditsQuirkLibForge.LOGGER.info("Attempting to set stamina for player: " + player.getName().getString());
+            StaminaHelper.setCurrentStamina(player, amount);
+            return 1;
 
-            LazyOptional<IStaminaData> staminaOpt = StaminaHelper.getStaminaData(player);
-            if (!staminaOpt.isPresent()) {
-                BanditsQuirkLibForge.LOGGER.error("No stamina data found for player: " + player.getName().getString());
-                player.sendSystemMessage(Component.literal("Error: No stamina data found!"));
+        } catch (Exception e) {
+            context.getSource().sendFailure(Component.literal("Error: " + e.getMessage()));
+            BanditsQuirkLibForge.LOGGER.error("Command error: " + e.getMessage(), e);
+            return 0;
+        }
+    }
+
+    private static int setMaxStamina(CommandContext<CommandSourceStack> context) {
+        try {
+            ServerPlayer player = EntityArgument.getPlayer(context, "player");
+            int amount = IntegerArgumentType.getInteger(context, "amount");
+
+            StaminaHelper.setMaxStamina(player, amount);
+            return 1;
+
+        } catch (Exception e) {
+            context.getSource().sendFailure(Component.literal("Error: " + e.getMessage()));
+            BanditsQuirkLibForge.LOGGER.error("Command error: " + e.getMessage(), e);
+            return 0;
+        }
+    }
+
+    private static int setExhaustionLevel(CommandContext<CommandSourceStack> context) {
+        try {
+            ServerPlayer player = EntityArgument.getPlayer(context, "player");
+            int level = IntegerArgumentType.getInteger(context, "level");
+
+            if (level > (EXHAUSTION_LEVELS.length - 1) || level < 0) {
+                player.sendSystemMessage(Component.literal("Invalid Level: range: 0-" + (EXHAUSTION_LEVELS.length - 1)));
                 return 0;
             }
 
-            staminaOpt.ifPresent(staminaData -> {
-                BanditsQuirkLibForge.LOGGER.info("Setting stamina from " + staminaData.getCurrentStamina() + " to " + amount);
+            StaminaHelper.setExhaustionLevel(player, level);
+            return 1;
 
-                int maxStamina = staminaData.getMaxStamina();
-                int newStamina = Math.min(amount, maxStamina);
-                staminaData.setCurrentStamina(newStamina);
+        } catch (Exception e) {
+            context.getSource().sendFailure(Component.literal("Error: " + e.getMessage()));
+            BanditsQuirkLibForge.LOGGER.error("Command error: " + e.getMessage(), e);
+            return 0;
+        }
+    }
 
-                BanditsQuirkLibForge.LOGGER.info("Stamina set successfully to: " + newStamina);
+    private static int setPlusUltra(CommandContext<CommandSourceStack> context) {
+        try {
+            ServerPlayer player = EntityArgument.getPlayer(context, "player");
+            boolean val = BoolArgumentType.getBool(context, "value");
 
-                player.sendSystemMessage(Component.literal(
-                        String.format("Stamina set to %d/%d", newStamina, maxStamina)
-                ));
-            });
+            if (!val) {
+                player.removeTag(PLUS_ULTRA_TAG);
+                player.sendSystemMessage(Component.literal("§lPLUS ULTRA DISABLED! §rYou can no longer push through your limits."));
+            } else {
+                player.addTag(PLUS_ULTRA_TAG);
+                player.sendSystemMessage(Component.literal("§b§lPLUS ULTRA! §rYou can now push beyond your normal limits!"));
+            }
 
             return 1;
 

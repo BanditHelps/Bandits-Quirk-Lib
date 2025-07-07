@@ -6,6 +6,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.common.util.LazyOptional;
 
+import static com.github.b4ndithelps.values.StaminaConstants.EXHAUSTION_LEVELS;
+
 public class StaminaHelper {
     public static LazyOptional<IStaminaData> getStaminaData(Player player) {
         return player.getCapability(StaminaDataProvider.STAMINA_DATA, null);
@@ -52,6 +54,21 @@ public class StaminaHelper {
     public static void setCurrentStamina(Player player, int amount) {
         getStaminaData(player).ifPresent(staminaData -> {
             staminaData.setCurrentStamina(amount);
+        });
+    }
+
+    public static void setMaxStamina(Player player, int amount) {
+        getStaminaData(player).ifPresent(staminaData -> {
+            staminaData.setMaxStamina(amount);
+        });
+    }
+
+    // Not only does this set the level of exhaustion, it also adjusts the current stamina to
+    // reflect the level. This makes it equivalent to draining stamina
+    public static void setExhaustionLevel(Player player, int level) {
+        getStaminaData(player).ifPresent(staminaData -> {
+            staminaData.setExhaustionLevel(level);
+            staminaData.setCurrentStamina(EXHAUSTION_LEVELS[level]);
         });
     }
 
