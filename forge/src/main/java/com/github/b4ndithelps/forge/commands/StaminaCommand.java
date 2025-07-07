@@ -24,6 +24,9 @@ public class StaminaCommand {
                                 .requires(source -> source.hasPermission(2))
                                 .then(Commands.argument("amount", IntegerArgumentType.integer(0))
                                         .executes(StaminaCommand::setCurrentStamina)))
+                        .then(Commands.literal("debug")
+                                .requires(source -> source.hasPermission(2))
+                                .executes(StaminaCommand::debugStamina))
         );
     }
 
@@ -39,6 +42,22 @@ public class StaminaCommand {
             return 1;
         } catch (Exception e) {
             context.getSource().sendFailure(Component.literal("Error: " + e.getMessage()));
+            return 0;
+        }
+    }
+
+    /**
+     * Displays all information to the player about their current stamina setup.
+     * @param context
+     * @return
+     */
+    private static int debugStamina(CommandContext<CommandSourceStack> context) {
+        try {
+            ServerPlayer player = context.getSource().getPlayerOrException();
+            StaminaHelper.debugStamina(player);
+            return 1;
+        } catch (Exception e) {
+            BanditsQuirkLibForge.LOGGER.error("Command error: " + e.getMessage(), e);
             return 0;
         }
     }
