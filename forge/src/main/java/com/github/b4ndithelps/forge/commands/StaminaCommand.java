@@ -11,7 +11,6 @@ import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.common.util.LazyOptional;
 
 import static com.github.b4ndithelps.values.StaminaConstants.EXHAUSTION_LEVELS;
 import static com.github.b4ndithelps.values.StaminaConstants.PLUS_ULTRA_TAG;
@@ -23,7 +22,10 @@ public class StaminaCommand {
                 Commands.literal("bql_stamina")
                         .then(Commands.argument("player", EntityArgument.player())
                         .then(Commands.literal("get")
-                                .executes(StaminaCommand::getStaminaStats)
+                                .then(Commands.literal("stamina")
+                                        .executes(StaminaCommand::getStaminaStats))
+                                .then(Commands.literal("upgrade_points")
+                                        .executes(StaminaCommand::getUpgradePoints))
                         )
                         .then(Commands.literal("set")
                                 .requires(source -> source.hasPermission(2))
@@ -38,7 +40,10 @@ public class StaminaCommand {
                                                 .executes(StaminaCommand::setExhaustionLevel)))
                                 .then(Commands.literal("plus_ultra")
                                         .then(Commands.argument("value", BoolArgumentType.bool())
-                                                .executes(StaminaCommand::setPlusUltra))))
+                                                .executes(StaminaCommand::setPlusUltra)))
+                                .then(Commands.literal("upgrade_points")
+                                        .then(Commands.argument("points", IntegerArgumentType.integer(0))
+                                                .executes(StaminaCommand::setUpgradePoints))))
                         .then(Commands.literal("debug")
                                 .requires(source -> source.hasPermission(2))
                                 .executes(StaminaCommand::debugStamina))
@@ -72,6 +77,32 @@ public class StaminaCommand {
             StaminaHelper.debugStamina(player);
             return 1;
         } catch (Exception e) {
+            BanditsQuirkLibForge.LOGGER.error("Command error: " + e.getMessage(), e);
+            return 0;
+        }
+    }
+
+    private static int getUpgradePoints(CommandContext<CommandSourceStack> context) {
+        try {
+            ServerPlayer player = EntityArgument.getPlayer(context, "player");
+            StaminaHelper.getUpgradePoints(player);
+            return 1;
+        } catch (Exception e) {
+            BanditsQuirkLibForge.LOGGER.error("Command error: " + e.getMessage(), e);
+            return 0;
+        }
+    }
+
+    private static int setUpgradePoints(CommandContext<CommandSourceStack> context) {
+        try {
+            ServerPlayer player = EntityArgument.getPlayer(context, "player");
+            int amount = IntegerArgumentType.getInteger(context, "points");
+
+            StaminaHelper.setUpgradePoints(player, amount);
+            return 1;
+
+        } catch (Exception e) {
+            context.getSource().sendFailure(Component.literal("Error: " + e.getMessage()));
             BanditsQuirkLibForge.LOGGER.error("Command error: " + e.getMessage(), e);
             return 0;
         }

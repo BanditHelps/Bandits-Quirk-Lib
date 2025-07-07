@@ -7,6 +7,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.common.util.LazyOptional;
 
 import static com.github.b4ndithelps.values.StaminaConstants.EXHAUSTION_LEVELS;
+import static com.github.b4ndithelps.values.StaminaConstants.POINTS_TO_UPGRADE;
 
 public class StaminaHelper {
     public static LazyOptional<IStaminaData> getStaminaData(Player player) {
@@ -57,6 +58,12 @@ public class StaminaHelper {
         });
     }
 
+    public static void setUpgradePoints(Player player, int amount) {
+        getStaminaData(player).ifPresent(staminaData -> {
+            staminaData.setUpgradePoints(amount);
+        });
+    }
+
     public static void setMaxStamina(Player player, int amount) {
         getStaminaData(player).ifPresent(staminaData -> {
             staminaData.setMaxStamina(amount);
@@ -83,7 +90,17 @@ public class StaminaHelper {
             player.sendSystemMessage(Component.literal("§ePlus Ultra: " + (player.getTags().contains("MineHa.PlusUltra") ? "§bYes" : "§cNo")));
             player.sendSystemMessage(Component.literal("§eUsage Total: " + staminaData.getUsageTotal()));
             player.sendSystemMessage(Component.literal("§aUpgrade Points: " + staminaData.getUpgradePoints()));
-            player.sendSystemMessage(Component.literal("§7Points Progress: " + staminaData.getPointsProgress() + "/500"));
+            player.sendSystemMessage(Component.literal("§7Points Progress: " + staminaData.getPointsProgress() + "/" + POINTS_TO_UPGRADE));
+        });
+    }
+
+    public static void getUpgradePoints(Player player) {
+        getStaminaData(player).ifPresent(staminaData -> {
+            player.sendSystemMessage(Component.literal("§6=== " + player.getGameProfile().getName() + "'s Upgrade Points ==="));
+            player.sendSystemMessage(Component.literal("§aTotal Points: " + staminaData.getUpgradePoints()));
+            player.sendSystemMessage(Component.literal("§7Progress to next point: " + staminaData.getPointsProgress() + "/" + POINTS_TO_UPGRADE));
+            player.sendSystemMessage(Component.literal("§eUse these points to unlock new abilities!"));
+            player.sendSystemMessage(Component.literal("§7Tip: Using abilities while exhausted gives bonus points!"));
         });
     }
 }
