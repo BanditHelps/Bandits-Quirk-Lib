@@ -1,7 +1,10 @@
 package com.github.b4ndithelps.forge;
 
+import com.github.b4ndithelps.forge.damage.ModDamageTypes;
 import com.github.b4ndithelps.forge.fancymenu.ForgeFancyMenuIntegration;
 import dev.architectury.platform.forge.EventBuses;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 
@@ -16,13 +19,18 @@ public final class BanditsQuirkLibForge {
     public static final Logger LOGGER = LoggerFactory.getLogger(LOGGING_ID);
 
     public BanditsQuirkLibForge() {
+        IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
         // Submit our event bus to let Architectury API register our content on the right time.
-        EventBuses.registerModEventBus(BanditsQuirkLib.MOD_ID, FMLJavaModLoadingContext.get().getModEventBus());
+        EventBuses.registerModEventBus(BanditsQuirkLib.MOD_ID, modEventBus);
+
 
         // Run our common setup.
         BanditsQuirkLib.init();
 
+        // Forge Specific
         ForgeFancyMenuIntegration.init();
+
+
     }
 
 
