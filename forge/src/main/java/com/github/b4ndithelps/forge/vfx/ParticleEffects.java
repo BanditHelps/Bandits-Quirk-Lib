@@ -56,7 +56,43 @@ public class ParticleEffects {
                     0.01
             );
         }
+    }
 
+    public static void powersEnabledVfx(Player player) {
+        Level level = player.level();
 
+        // Spawn particles on the server side
+        if (level instanceof ServerLevel serverLevel) {
+            double x = player.getX();
+            double y = player.getY() + 1.0;
+            double z = player.getZ();
+
+            serverLevel.sendParticles(
+                    ParticleTypes.HAPPY_VILLAGER,
+                    x, y, z,
+                    10,
+                    0.5, 0.5, 0.5,
+                    0.01
+            );
+        }
+    }
+
+    public static void finalExhaustionLevel(Player player) {
+        Level level = player.level();
+
+        // Spawn particles on the server side
+        if (level instanceof ServerLevel serverLevel) {
+            double x = player.getX();
+            double y = player.getY() + 2.0;
+            double z = player.getZ();
+
+            serverLevel.sendParticles(
+                    ParticleTypes.ANGRY_VILLAGER,
+                    x, y, z,
+                    30,
+                    1, 1, 1,
+                    0.1
+            );
+        }
     }
 }

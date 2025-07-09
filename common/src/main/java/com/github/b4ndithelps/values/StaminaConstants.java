@@ -5,10 +5,14 @@ public class StaminaConstants {
     public static final int[] EXHAUSTION_LEVELS = {0, -10, -35, -60, -80};
     public static final double[] EXHAUSTION_MULTIPLIERS = {1.0, 1.2, 1.5, 2.0, 3.0};
     public static final int[] STAMINA_REGEN_COOLDOWNS = {3, 6, 8, 9, 10};
+    public static final double[] STAMINA_REGEN_RATE = {1, 0.5, 0.3, 0.2, 0.1};
 
     // The percent chance that stamina maximum increases when used
     public static final double STAMINA_GAIN_CHANCE = 0.05;
     public static final double STAMINA_GAIN_EXHAUSTED_CHANCE = 0.1;
+
+    // The percentage stamina required to re-enable powers after losing them due to exhaustion
+    public static final double STAMINA_ENABLE_PERCENT = 0.02;
 
     // How much stamina needs to be used in order to have a chance at increasing the max value
     public static final int STAMINA_GAIN_REQ = 100;
@@ -23,5 +27,11 @@ public class StaminaConstants {
     public static final String PLUS_ULTRA_TAG = "MineHa.PlusUltra";
     public static final String POWERS_DISABLED_TAG = "MineHa.PowersDisabled";
 
+    // Scoreboards
+    public static final String STAMINA_PERCENT_SCOREBOARD = "MineHa.StaminaPercentage";
+    public static final String UPGRADE_POINTS_SCOREBOARD = "MineHa.UpgradePoints";
+
     public static final int POINTS_TO_UPGRADE = 500;
+    public static final int STARTING_STAMINA_MIN = 50;
+    public static final int STARTING_STAMINA_MAX = 200;
 }

@@ -5,7 +5,12 @@ import com.github.b4ndithelps.forge.capabilities.StaminaDataProvider;
 import com.github.b4ndithelps.forge.damage.ModDamageTypes;
 import com.github.b4ndithelps.forge.vfx.ParticleEffects;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.scores.Objective;
+import net.minecraft.world.scores.Score;
+import net.minecraft.world.scores.Scoreboard;
 import net.minecraftforge.common.util.LazyOptional;
 
 import static com.github.b4ndithelps.values.StaminaConstants.*;
@@ -26,6 +31,71 @@ public class StaminaHelper {
     public static boolean hasStamina(Player player, int required) {
         return getStaminaData(player).map(staminaData ->
                 staminaData.getCurrentStamina() >= required).orElse(false);
+    }
+
+    /**
+     * This function is the main one for determining stamina percentage, regeneration, and exhaustion effects.
+     * @param player
+     */
+    public static void handleStaminaTick(Player player) {
+        getStaminaData(player).ifPresent(staminaData -> {
+
+            int curStamina = staminaData.getCurrentStamina();
+            int maxStamina = staminaData.getMaxStamina();
+            int exhaustLevel = staminaData.getExhaustionLevel();
+
+            // First things first. Decide whether to regenerate stamina
+            if (staminaData.getRegenCooldown() > 0) {
+               staminaData.setRegenCooldown(staminaData.getRegenCooldown() - 1);
+
+            } else if (curStamina <= maxStamina) {
+                // Regeneration rate is dependent on exhaustion level
+                double regenRate = STAMINA_REGEN_RATE[staminaData.getExhaustionLevel()];
+
+                // If not exhausted, just linearly increase. Else use a bit of randomness to slow it down
+                if (regenRate >= 1 || Math.random() < regenRate) {
+                    int newCurrent = curStamina + 1;
+                    if (newCurrent > maxStamina) {
+                        newCurrent = maxStamina;
+                    }
+
+                    int newExhaustLevel = calculateExhaustionLevel(newCurrent);
+
+                    // Send a message if the exhaustion has updated
+                    if (newExhaustLevel != exhaustLevel) {
+                        sendExhaustionMessage(player, newExhaustLevel, exhaustLevel);
+                    }
+
+                    staminaData.setCurrentStamina(newCurrent);
+                    staminaData.setExhaustionLevel(newExhaustLevel);
+                }
+
+            }
+
+            // It could have updated above, so re-get it
+            exhaustLevel = staminaData.getExhaustionLevel();
+
+            // Time to apply the exhaustion effects
+            if (exhaustLevel > 0) {
+                applyExhaustionEffects(player, exhaustLevel);
+            }
+
+            // Re-enable powers based on PlusUltra status
+            if (staminaData.isPowersDisabled()) {
+                if (player.getTags().contains(PLUS_ULTRA_TAG)) {
+                    // PlusUltra users: re-enable powers when not at death level with last hurrah used
+                    if (!(exhaustLevel == 4 && getLastHurrahUsed(player))) {
+                        enablePowers(player);
+                    }
+                } else {
+                    // Normal users: re-enable powers when stamina is above 2% of max and not exhausted
+                    if (curStamina > (maxStamina * STAMINA_ENABLE_PERCENT) && exhaustLevel == 0) {
+                        enablePowers(player);
+                    }
+                }
+            }
+        });
+
     }
 
     /**
@@ -126,6 +196,46 @@ public class StaminaHelper {
         }
     }
 
+    // Function that gives the player a variety of negative effects, dependent on the level of exhaustion
+    private static void applyExhaustionEffects(Player player, int exhaustLevel) {
+        switch(exhaustLevel) {
+            case 1:
+                player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 40, 2, false, false, true));
+                break;
+
+            case 2:
+                player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 40, 3, false, false, true));
+                player.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 40, 0, false, false, true));
+                player.addEffect(new MobEffectInstance(MobEffects.HUNGER, 40, 1, false, false, true));
+                break;
+
+            case 3:
+                player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 40, 4, false, false, true));
+                player.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 40, 1, false, false, true));
+                player.addEffect(new MobEffectInstance(MobEffects.DIG_SLOWDOWN, 40, 2, false, false, true));
+                player.addEffect(new MobEffectInstance(MobEffects.HUNGER, 40, 2, false, false, true));
+                break;
+
+            case 4:
+                if (player.getTags().contains(PLUS_ULTRA_TAG)) {
+                    // Plus ultra users don't get (most) the effects at the final stage.
+                    player.removeEffect(MobEffects.MOVEMENT_SLOWDOWN);
+                    player.removeEffect(MobEffects.WEAKNESS);
+                    player.removeEffect(MobEffects.DIG_SLOWDOWN);
+                } else {
+                    player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 40, 4, false, false, true));
+                    player.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 40, 1, false, false, true));
+                    player.addEffect(new MobEffectInstance(MobEffects.DIG_SLOWDOWN, 40, 2, false, false, true));
+                    player.addEffect(new MobEffectInstance(MobEffects.HUNGER, 40, 2, false, false, true));
+                    player.addEffect(new MobEffectInstance(MobEffects.WITHER, 40, 4, false, false, true));
+                }
+
+                // Visual warning
+                ParticleEffects.finalExhaustionLevel(player);
+                break;
+        }
+    }
+
     // Since EXHAUSTION_LEVELS is expected to be of length 5, range of return value is 0-4
     private static int calculateExhaustionLevel(int stamina) {
         for (int i = 0; i < EXHAUSTION_LEVELS.length - 1; i++) {
@@ -157,9 +267,7 @@ public class StaminaHelper {
         if (pointsToAward > 0) {
             player.sendSystemMessage(Component.literal("§a+" + pointsToAward + " Upgrade Point" + (pointsToAward > 1 ? "s" : "") + "!"));
             int newUpgradePointTotal = getUpgradePoints(player) + pointsToAward;
-            getStaminaData(player).ifPresent(staminaData -> {
-                staminaData.setUpgradePoints(newUpgradePointTotal);
-            });
+            setUpgradePoints(player, newUpgradePointTotal);
         }
 
     }
@@ -174,6 +282,57 @@ public class StaminaHelper {
 
         player.getTags().add(POWERS_DISABLED_TAG);
         ParticleEffects.powersDisabledVfx(player);
+    }
+
+    public static void enablePowers(Player player) {
+        player.sendSystemMessage(Component.literal("§aYou've recovered from your exhaustion."));
+        player.sendSystemMessage(Component.literal("§aYour quirk is recharged and ready to use!"));
+        player.getTags().remove(POWERS_DISABLED_TAG);
+
+        // Reset the last hurrah
+        int currentStamina = getCurrentStamina(player);
+        boolean lastHurrahUsed = getLastHurrahUsed(player);
+
+        if (currentStamina > 0 && lastHurrahUsed) {
+            getStaminaData(player).ifPresent(staminaData -> {
+                staminaData.setLastHurrahUsed(false);
+            });
+        }
+
+        ParticleEffects.powersEnabledVfx(player);
+    }
+
+    // This one is specifically used to update the scoreboard for stamina percentage.
+    // A scoreboard is needed because it is tied to a Palladium HUD.
+    private static void updateStaminaPercentage(Player player, int current, int max) {
+        Scoreboard scoreboard = player.level().getScoreboard();
+        Objective objective = scoreboard.getObjective(STAMINA_PERCENT_SCOREBOARD);
+        int score;
+
+        if (objective != null) {
+            if (max == 0 || current < 0) {
+                score = 0;
+            } else if (current == max) {
+                score = 100;
+            } else {
+                double percentage = ((double) current / max) * 100;
+
+                // Round to the nearest 14% increment
+                score = (int) Math.round(percentage / 7) * 7;
+            }
+
+            scoreboard.getOrCreatePlayerScore(player.getGameProfile().getName(), objective).setScore(score);
+        }
+    }
+
+    // This function makes sure the capability matches the scoreboard. Since Palladium needs it to be buy-able
+    private static void syncUpgradePointsToBoard(Player player, int amount) {
+        Scoreboard scoreboard = player.level().getScoreboard();
+        Objective objective = scoreboard.getObjective(UPGRADE_POINTS_SCOREBOARD);
+
+        if (objective != null) {
+            scoreboard.getOrCreatePlayerScore(player.getGameProfile().getName(), objective).setScore(amount);
+        }
     }
 
     // Sends the player a message that changes based on the current level of exhaustion, but only if it increases
@@ -194,6 +353,18 @@ public class StaminaHelper {
         }
     }
 
+    /**
+     * Returns a random amount of stamina. Ranges defined in StaminaConstants.
+     * This is a more biased random generation towards lower values. Used in player init
+     * @param player
+     * @return
+     */
+    public static int getRandomStamina(Player player) {
+        double biasedRandom = Math.min(Math.random(), Math.random());
+
+        return (int) Math.floor(STARTING_STAMINA_MIN + (biasedRandom * STARTING_STAMINA_MAX));
+    }
+
     public static int getMaxStamina(Player player) {
         return getStaminaData(player).map(IStaminaData::getMaxStamina).orElse(0);
     }
@@ -210,6 +381,10 @@ public class StaminaHelper {
         return getStaminaData(player).map(IStaminaData::getUpgradePoints).orElse(0);
     }
 
+    public static boolean getLastHurrahUsed(Player player) {
+        return getStaminaData(player).map(IStaminaData::getLastHurrahUsed).orElse(false);
+    }
+
     public static String getStaminaInfo(Player player) {
         return getStaminaData(player).map(staminaData ->
                 staminaData.getCurrentStamina() + " / " + staminaData.getMaxStamina()
@@ -219,18 +394,21 @@ public class StaminaHelper {
     public static void setCurrentStamina(Player player, int amount) {
         getStaminaData(player).ifPresent(staminaData -> {
             staminaData.setCurrentStamina(amount);
+            updateStaminaPercentage(player, amount, staminaData.getMaxStamina());
         });
     }
 
     public static void setUpgradePoints(Player player, int amount) {
         getStaminaData(player).ifPresent(staminaData -> {
             staminaData.setUpgradePoints(amount);
+            syncUpgradePointsToBoard(player, amount);
         });
     }
 
     public static void setMaxStamina(Player player, int amount) {
         getStaminaData(player).ifPresent(staminaData -> {
             staminaData.setMaxStamina(amount);
+            updateStaminaPercentage(player, staminaData.getCurrentStamina(), amount);
         });
     }
 
@@ -240,6 +418,30 @@ public class StaminaHelper {
         getStaminaData(player).ifPresent(staminaData -> {
             staminaData.setExhaustionLevel(level);
             staminaData.setCurrentStamina(EXHAUSTION_LEVELS[level]);
+        });
+    }
+
+    /**
+     * This function is meant to be ran on a player's first login. Initializes all stamina variables.
+     * @param player
+     */
+    public static void initializePlayerStamina(Player player) {
+        getStaminaData(player).ifPresent(staminaData -> {
+            if (!staminaData.isInitialized()) {
+                int maxStamina = getRandomStamina(player);
+                staminaData.setMaxStamina(maxStamina);
+                staminaData.setCurrentStamina(maxStamina);
+                staminaData.setUsageTotal(0);
+                staminaData.setRegenCooldown(0);
+                staminaData.setExhaustionLevel(0);
+                staminaData.setLastHurrahUsed(false);
+                staminaData.setInitialized(true);
+                staminaData.setPointsProgress(0);
+
+                setUpgradePoints(player, 0);
+
+                player.sendSystemMessage(Component.literal("§6Your quirk manifests with " + maxStamina + " stamina capacity!"));
+            }
         });
     }
 
