@@ -43,7 +43,13 @@ public class StaminaCommand {
                                                 .executes(StaminaCommand::setPlusUltra)))
                                 .then(Commands.literal("upgrade_points")
                                         .then(Commands.argument("points", IntegerArgumentType.integer(0))
-                                                .executes(StaminaCommand::setUpgradePoints))))
+                                                .executes(StaminaCommand::setUpgradePoints)))
+                        )
+                        .then(Commands.literal("use")
+                                .requires(source -> source.hasPermission(2))
+                                .then(Commands.argument("amount", IntegerArgumentType.integer(0))
+                                        .executes(StaminaCommand::useStamina))
+                        )
                         .then(Commands.literal("debug")
                                 .requires(source -> source.hasPermission(2))
                                 .executes(StaminaCommand::debugStamina))
@@ -85,7 +91,7 @@ public class StaminaCommand {
     private static int getUpgradePoints(CommandContext<CommandSourceStack> context) {
         try {
             ServerPlayer player = EntityArgument.getPlayer(context, "player");
-            StaminaHelper.getUpgradePoints(player);
+            StaminaHelper.getUpgradePointsInfo(player);
             return 1;
         } catch (Exception e) {
             BanditsQuirkLibForge.LOGGER.error("Command error: " + e.getMessage(), e);
@@ -171,6 +177,21 @@ public class StaminaCommand {
                 player.sendSystemMessage(Component.literal("§b§lPLUS ULTRA! §rYou can now push beyond your normal limits!"));
             }
 
+            return 1;
+
+        } catch (Exception e) {
+            context.getSource().sendFailure(Component.literal("Error: " + e.getMessage()));
+            BanditsQuirkLibForge.LOGGER.error("Command error: " + e.getMessage(), e);
+            return 0;
+        }
+    }
+
+    private static int useStamina(CommandContext<CommandSourceStack> context) {
+        try {
+            ServerPlayer player = EntityArgument.getPlayer(context, "player");
+            int amount = IntegerArgumentType.getInteger(context, "amount");
+
+            StaminaHelper.useStamina(player, amount);
             return 1;
 
         } catch (Exception e) {
