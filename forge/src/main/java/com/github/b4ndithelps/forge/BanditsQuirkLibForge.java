@@ -1,5 +1,6 @@
 package com.github.b4ndithelps.forge;
 
+import com.github.b4ndithelps.forge.conditions.CustomConditionSerializers;
 import com.github.b4ndithelps.forge.damage.ModDamageTypes;
 import com.github.b4ndithelps.forge.fancymenu.ForgeFancyMenuIntegration;
 import dev.architectury.platform.forge.EventBuses;
@@ -29,6 +30,7 @@ public final class BanditsQuirkLibForge {
 
         // Forge Specific
         ForgeFancyMenuIntegration.init();
+        CustomConditionSerializers.CUSTOM_SERIALIZERS.register();
 
 
     }

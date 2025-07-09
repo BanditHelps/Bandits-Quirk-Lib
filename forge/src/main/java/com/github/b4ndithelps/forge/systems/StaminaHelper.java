@@ -325,15 +325,15 @@ public class StaminaHelper {
         }
     }
 
-    // This function makes sure the capability matches the scoreboard. Since Palladium needs it to be buy-able
-    private static void syncUpgradePointsToBoard(Player player, int amount) {
-        Scoreboard scoreboard = player.level().getScoreboard();
-        Objective objective = scoreboard.getObjective(UPGRADE_POINTS_SCOREBOARD);
-
-        if (objective != null) {
-            scoreboard.getOrCreatePlayerScore(player.getGameProfile().getName(), objective).setScore(amount);
-        }
-    }
+//    // This function makes sure the capability matches the scoreboard. Since Palladium needs it to be buy-able
+//    private static void syncUpgradePointsToBoard(Player player, int amount) {
+//        Scoreboard scoreboard = player.level().getScoreboard();
+//        Objective objective = scoreboard.getObjective(UPGRADE_POINTS_SCOREBOARD);
+//
+//        if (objective != null) {
+//            scoreboard.getOrCreatePlayerScore(player.getGameProfile().getName(), objective).setScore(amount);
+//        }
+//    }
 
     // Sends the player a message that changes based on the current level of exhaustion, but only if it increases
     // Might get replaced in the future with just the stamina HUD changing
@@ -401,7 +401,7 @@ public class StaminaHelper {
     public static void setUpgradePoints(Player player, int amount) {
         getStaminaData(player).ifPresent(staminaData -> {
             staminaData.setUpgradePoints(amount);
-            syncUpgradePointsToBoard(player, amount);
+//            syncUpgradePointsToBoard(player, amount);
         });
     }
 
