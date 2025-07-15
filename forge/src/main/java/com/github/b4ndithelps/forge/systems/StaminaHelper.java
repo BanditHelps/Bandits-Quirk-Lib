@@ -1,5 +1,6 @@
 package com.github.b4ndithelps.forge.systems;
 
+import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
 import com.github.b4ndithelps.forge.capabilities.IStaminaData;
 import com.github.b4ndithelps.forge.capabilities.StaminaDataProvider;
 import com.github.b4ndithelps.forge.damage.ModDamageTypes;
@@ -271,6 +272,18 @@ public class StaminaHelper {
             setUpgradePoints(player, newUpgradePointTotal);
         }
 
+    }
+
+    // The following will be called when the player dies. It changes the players stamina values on death
+    // to prevent them from insta-resetting it after they die.
+    public static void handlePlayerDeath(Player player) {
+        setCurrentStamina(player, (int)Math.floor((double) getMaxStamina(player) / 2));
+        BanditsQuirkLibForge.LOGGER.info("Making the player have only: " + getCurrentStamina(player) );
+        setExhaustionLevel(player, 0);
+
+        getStaminaData(player).ifPresent(staminaData -> {
+            staminaData.setLastHurrahUsed(false);
+        });
     }
 
     // Disables powers if they have any exhaustion. TODO Add compat for Hertz power thing

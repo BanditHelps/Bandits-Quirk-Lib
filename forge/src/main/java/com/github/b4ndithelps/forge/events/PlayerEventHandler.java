@@ -5,6 +5,8 @@ import com.github.b4ndithelps.forge.abilities.HappenOnceAbility;
 import com.github.b4ndithelps.forge.systems.StaminaHelper;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
+import net.minecraftforge.event.entity.EntityEvent;
+import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -35,5 +37,12 @@ public class PlayerEventHandler {
         StaminaHelper.initializePlayerStamina(player);
 
         SuperpowerUtil.addSuperpower(player, ResourceLocation.parse("bql:base_quirk"));
+    }
+
+    @SubscribeEvent
+    public static void onPlayerDeath(LivingDeathEvent event) {
+        if (event.getEntity() instanceof Player player) {
+            StaminaHelper.handlePlayerDeath(player);
+        }
     }
 }
