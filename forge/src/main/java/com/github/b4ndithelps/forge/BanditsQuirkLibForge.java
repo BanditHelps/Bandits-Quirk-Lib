@@ -1,10 +1,9 @@
 package com.github.b4ndithelps.forge;
 
+import com.github.b4ndithelps.forge.abilities.AbilityRegister;
 import com.github.b4ndithelps.forge.conditions.CustomConditionSerializers;
-import com.github.b4ndithelps.forge.damage.ModDamageTypes;
 import com.github.b4ndithelps.forge.fancymenu.ForgeFancyMenuIntegration;
 import dev.architectury.platform.forge.EventBuses;
-import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
@@ -31,7 +30,7 @@ public final class BanditsQuirkLibForge {
         // Forge Specific
         ForgeFancyMenuIntegration.init();
         CustomConditionSerializers.CUSTOM_SERIALIZERS.register();
-
+        AbilityRegister.ABILITIES.register();
 
     }
 

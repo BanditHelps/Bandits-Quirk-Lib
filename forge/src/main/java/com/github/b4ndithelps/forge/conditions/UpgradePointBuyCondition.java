@@ -53,7 +53,7 @@ public class UpgradePointBuyCondition extends BuyableCondition {
     }
 
     public static class Serializer extends ConditionSerializer {
-        public static final PalladiumProperty<Integer> POINTS = (new IntegerProperty("score")).configurable("Required upgrade points for the upgrade");
+        public static final PalladiumProperty<Integer> POINTS = (new IntegerProperty("points")).configurable("Required upgrade points for the upgrade");
         public static final PalladiumProperty<IIcon> ICON = (new IconProperty("icon")).configurable("Icon that will be displayed during buying");
         public static final PalladiumProperty<Component> DESCRIPTION = (new ComponentProperty("description")).configurable("Name that is displayed by the points in the upgrade menu");
 
