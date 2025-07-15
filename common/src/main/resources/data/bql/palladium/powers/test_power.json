@@ -1,0 +1,29 @@
+{
+  "name": "Base Quirk",
+  "background": "minecraft:textures/block/stone.png",
+  "icon": "minecraft:wooden_sword",
+  "gui_display_type": "tree",
+  "abilities": {
+    "stamina_1": {
+      "type": "bandits_quirk_lib:happen_once",
+      "commands": [
+        "scoreboard players add @s MineHa.StaminaMax 50",
+        "tellraw @s {\"text\":\"Training Session complete! +50 stamina capacity\",\"color\":\"gold\"}"
+      ],
+      "key": "base_stamina_1",
+      "icon": "minecraft:feather",
+      "title": "Stamina Training - I",
+      "description": "Your rigorous training increases your stamina capacity by 50 points.",
+      "hidden_in_bar": true,
+      "gui_position": [2, -1],
+      "conditions": {
+        "unlocking": [
+          {
+            "type": "bandits_quirk_lib:upgrade_point_buy",
+            "score": 1
+          }
+        ]
+      }
+    }
+  }
+}

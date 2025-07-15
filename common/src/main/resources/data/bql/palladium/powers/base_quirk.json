@@ -1,0 +1,501 @@
+{
+  "name": "Base Quirk",
+  "background": "minecraft:textures/block/stone.png",
+  "icon": "minecraft:wooden_sword",
+  "gui_display_type": "tree",
+  "abilities": {
+    "startup": {
+      "type": "palladium:command",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "first_tick_commands": [
+        "scoreboard players set @p MineHa.QuirkFactor 0",
+        "scoreboard objectives add MineHa.StaminaPercentage dummy",
+        "scoreboard players set @p MineHa.StaminaPercentage 100"
+      ],
+      "commands": [],
+      "last_tick_commands": [
+        "scoreboard players set @p MineHa.QuirkFactor 0"
+      ]
+    },
+    "info_block": {
+      "type": "palladium:dummy",
+      "icon": "minecraft:coal",
+      "title": "Quirk Factor - I",
+      "description": "Although you have the weakest starting quirk factor, do not give up! Through training, you can become a powerful hero!",
+      "hidden_in_bar": true,
+      "gui_position": [0, 0]
+    },
+    "health_1_attr": {
+      "type": "palladium:attribute_modifier",
+      "icon": "minecraft:cookie",
+      "title": "Health - I",
+      "description": "Increase your health by a small amount.",
+      "attribute": "minecraft:generic.max_health",
+      "amount": 1,
+      "operation": "0",
+      "hidden_in_bar": true,
+      "gui_position": [-2, -1],
+      "uuid": "305faee9-6f70-4849-b135-7e7ea0a69385",
+      "conditions": {
+        "unlocking": [
+          {
+            "type": "palladium:ability_unlocked",
+            "power": "null",
+            "ability": "info_block"
+          },
+          {
+            "type": "bandits_quirk_lib:upgrade_point_buy",
+            "score": 1
+          }
+        ]
+      }
+    },
+    "health_2_attr": {
+      "type": "palladium:attribute_modifier",
+      "icon": "minecraft:potato",
+      "title": "Health - II",
+      "description": "Further increase your health, still by a small amount.",
+      "attribute": "minecraft:generic.max_health",
+      "amount": 1,
+      "operation": "0",
+      "hidden_in_bar": true,
+      "gui_position": [-2, -2],
+      "uuid": "9292fb1b-ae40-4707-816a-58f331180808",
+      "conditions": {
+        "unlocking": [
+          {
+            "type": "palladium:ability_unlocked",
+            "power": "null",
+            "ability": "health_1_attr"
+          },
+          {
+            "type": "bandits_quirk_lib:upgrade_point_buy",
+            "score": 2
+          }
+        ]
+      }
+    },
+    "health_3_attr": {
+      "type": "palladium:attribute_modifier",
+      "icon": "minecraft:beetroot",
+      "title": "Health - III",
+      "description": "More health, still a small amount.",
+      "attribute": "minecraft:generic.max_health",
+      "amount": 1,
+      "operation": "0",
+      "hidden_in_bar": true,
+      "gui_position": [-2, -3],
+      "uuid": "c5150941-c833-49e6-9a60-a1e2b57dbc58",
+      "conditions": {
+        "unlocking": [
+          {
+            "type": "palladium:ability_unlocked",
+            "power": "null",
+            "ability": "health_2_attr"
+          },
+          {
+            "type": "bandits_quirk_lib:upgrade_point_buy",
+            "score": 2
+          }
+        ]
+      }
+    },
+    "health_4_attr": {
+      "type": "palladium:attribute_modifier",
+      "icon": "minecraft:carrot",
+      "title": "Health - IV",
+      "description": "Final increase in health.",
+      "attribute": "minecraft:generic.max_health",
+      "amount": 1,
+      "operation": "0",
+      "hidden_in_bar": true,
+      "gui_position": [-2, -4],
+      "uuid": "594b46de-60b5-443c-9590-c9f779939244",
+      "conditions": {
+        "unlocking": [
+          {
+            "type": "palladium:ability_unlocked",
+            "power": "null",
+            "ability": "health_3_attr"
+          },
+          {
+            "type": "bandits_quirk_lib:upgrade_point_buy",
+            "score": 2
+          }
+        ]
+      }
+    },
+    "strength_1_attr": {
+      "type": "palladium:attribute_modifier",
+      "icon": "minecraft:wooden_sword",
+      "title": "Strength - I",
+      "description": "Increase your strength by a small amount.",
+      "attribute": "minecraft:generic.attack_damage",
+      "amount": 0.25,
+      "operation": "0",
+      "hidden_in_bar": true,
+      "gui_position": [-1, -2],
+      "uuid": "9d10ec88-164e-464e-99be-1d169d4ed677",
+      "conditions": {
+        "unlocking": [
+          {
+            "type": "palladium:ability_unlocked",
+            "power": "null",
+            "ability": "info_block"
+          },
+          {
+            "type": "bandits_quirk_lib:upgrade_point_buy",
+            "score": 1
+          }
+        ]
+      }
+    },
+    "strength_2_attr": {
+      "type": "palladium:attribute_modifier",
+      "icon": "minecraft:stone_sword",
+      "title": "Strength - II",
+      "description": "More training, more strength.",
+      "attribute": "minecraft:generic.attack_damage",
+      "amount": 0.25,
+      "operation": "0",
+      "hidden_in_bar": true,
+      "gui_position": [-1, -3],
+      "uuid": "2c4c1916-b8dc-4324-99a2-05d82840786f",
+      "conditions": {
+        "unlocking": [
+          {
+            "type": "palladium:ability_unlocked",
+            "power": "null",
+            "ability": "strength_1_attr"
+          },
+          {
+            "type": "bandits_quirk_lib:upgrade_point_buy",
+            "score": 2
+          }
+        ]
+      }
+    },
+    "strength_3_attr": {
+      "type": "palladium:attribute_modifier",
+      "icon": "minecraft:iron_sword",
+      "title": "Strength - III",
+      "description": "Again, still a small amount, but you're getting there!",
+      "attribute": "minecraft:generic.attack_damage",
+      "amount": 0.5,
+      "operation": "0",
+      "hidden_in_bar": true,
+      "gui_position": [-1, -4],
+      "uuid": "84518802-7c60-4518-a52c-22d82b28771e",
+      "conditions": {
+        "unlocking": [
+          {
+            "type": "palladium:ability_unlocked",
+            "power": "null",
+            "ability": "strength_2_attr"
+          },
+          {
+            "type": "bandits_quirk_lib:upgrade_point_buy",
+            "score": 3
+          }
+        ]
+      }
+    },
+    "armor_1_attr": {
+      "type": "palladium:attribute_modifier",
+      "icon": "minecraft:leather_chestplate",
+      "title": "Armor - I",
+      "description": "Increase your natural armor by a small amount.",
+      "attribute": "minecraft:generic.armor",
+      "amount": 1,
+      "operation": "0",
+      "hidden_in_bar": true,
+      "gui_position": [0, -3],
+      "uuid": "56dc64ab-cc19-4214-9d57-ea4cc50cdbb6",
+      "conditions": {
+        "unlocking": [
+          {
+            "type": "palladium:ability_unlocked",
+            "power": "null",
+            "ability": "info_block"
+          },
+          {
+            "type": "bandits_quirk_lib:upgrade_point_buy",
+            "score": 1
+          }
+        ]
+      }
+    },
+    "armor_2_attr": {
+      "type": "palladium:attribute_modifier",
+      "icon": "minecraft:chainmail_chestplate",
+      "title": "Armor - II",
+      "description": "A little more armor, but still not much.",
+      "attribute": "minecraft:generic.armor",
+      "amount": 1,
+      "operation": "0",
+      "hidden_in_bar": true,
+      "gui_position": [0, -4],
+      "uuid": "f0cd7dab-f1f9-4b67-ab11-4425b2215153",
+      "conditions": {
+        "unlocking": [
+          {
+            "type": "palladium:ability_unlocked",
+            "power": "null",
+            "ability": "armor_1_attr"
+          },
+          {
+            "type": "bandits_quirk_lib:upgrade_point_buy",
+            "score": 2
+          }
+        ]
+      }
+    },
+    "speed_1_attr": {
+      "type": "palladium:attribute_modifier",
+      "icon": "minecraft:leather_boots",
+      "title": "Speed - I",
+      "description": "Practice makes you ever so slightly faster.",
+      "attribute": "minecraft:generic.movement_speed",
+      "amount": 0.005,
+      "operation": "0",
+      "hidden_in_bar": true,
+      "gui_position": [1, -2],
+      "uuid": "6913849d-6e79-4b54-8b33-3bb97989c9dd",
+      "conditions": {
+        "unlocking": [
+          {
+            "type": "palladium:ability_unlocked",
+            "power": "null",
+            "ability": "info_block"
+          },
+          {
+            "type": "bandits_quirk_lib:upgrade_point_buy",
+            "score": 1
+          }
+        ]
+      }
+    },
+    "speed_2_attr": {
+      "type": "palladium:attribute_modifier",
+      "icon": "minecraft:chainmail_boots",
+      "title": "Speed - II",
+      "description": "A small speed boost, but not a race car yet.",
+      "attribute": "minecraft:generic.movement_speed",
+      "amount": 0.005,
+      "operation": "0",
+      "hidden_in_bar": true,
+      "gui_position": [1, -3],
+      "uuid": "d5133455-90fe-41c0-b093-aa300d0aec98",
+      "conditions": {
+        "unlocking": [
+          {
+            "type": "palladium:ability_unlocked",
+            "power": "null",
+            "ability": "speed_1_attr"
+          },
+          {
+            "type": "bandits_quirk_lib:upgrade_point_buy",
+            "score": 2
+          }
+        ]
+      }
+    },
+    "speed_3_attr": {
+      "type": "palladium:attribute_modifier",
+      "icon": "minecraft:iron_boots",
+      "title": "Speed - III",
+      "description": "Your gym teacher would be proud.",
+      "attribute": "minecraft:generic.movement_speed",
+      "amount": 0.005,
+      "operation": "0",
+      "hidden_in_bar": true,
+      "gui_position": [1, -4],
+      "uuid": "2c659baf-04ae-4b0b-bfda-133e1b4f34fc",
+      "conditions": {
+        "unlocking": [
+          {
+            "type": "palladium:ability_unlocked",
+            "power": "null",
+            "ability": "speed_2_attr"
+          },
+          {
+            "type": "bandits_quirk_lib:upgrade_point_buy",
+            "score": 2
+          }
+        ]
+      }
+    },
+    "stamina_1": {
+      "type": "mineha:happen_once",
+      "commands": "[{\"command\":\"scoreboard players add @s MineHa.StaminaMax 50\"},{\"command\":\"tellraw @s {\\\"text\\\":\\\"Training Session complete! +50 stamina capacity\\\",\\\"color\\\":\\\"gold\\\"}\"}]",
+      "identifier": "base_stamina_1",
+      "icon": "minecraft:feather",
+      "title": "Stamina Training - I",
+      "description": "Your rigorous training increases your stamina capacity by 50 points.",
+      "hidden_in_bar": true,
+      "gui_position": [2, -1],
+      "conditions": {
+        "unlocking": [
+          {
+            "type": "palladium:ability_unlocked",
+            "power": "null",
+            "ability": "info_block"
+          },
+          {
+            "type": "bandits_quirk_lib:upgrade_point_buy",
+            "score": 1
+          }
+        ]
+      }
+    },
+    "stamina_2": {
+      "type": "mineha:happen_once",
+      "commands": "[{\"command\":\"scoreboard players add @s MineHa.StaminaMax 50\"},{\"command\":\"tellraw @s {\\\"text\\\":\\\"Advanced training complete! +50 stamina capacity\\\",\\\"color\\\":\\\"gold\\\"}\"}]",
+      "identifier": "base_stamina_2",
+      "icon": "minecraft:feather",
+      "title": "Stamina Training - II",
+      "description": "Further training increases your stamina capacity by another 50 points.",
+      "hidden_in_bar": true,
+      "gui_position": [2, -2],
+      "conditions": {
+        "unlocking": [
+          {
+            "type": "palladium:ability_unlocked",
+            "power": "null",
+            "ability": "stamina_1"
+          },
+          {
+            "type": "bandits_quirk_lib:upgrade_point_buy",
+            "score": 2
+          }
+        ]
+      }
+    },
+    "stamina_3": {
+      "type": "mineha:happen_once",
+      "commands": "[{\"command\":\"scoreboard players add @s MineHa.StaminaMax 50\"},{\"command\":\"tellraw @s {\\\"text\\\":\\\"Expert training complete! +50 stamina capacity\\\",\\\"color\\\":\\\"gold\\\"}\"}]",
+      "identifier": "base_stamina_3",
+      "icon": "minecraft:feather",
+      "title": "Stamina Training - III",
+      "description": "Advanced training increases your stamina capacity by 50 points.",
+      "hidden_in_bar": true,
+      "gui_position": [2, -3],
+      "conditions": {
+        "unlocking": [
+          {
+            "type": "palladium:ability_unlocked",
+            "power": "null",
+            "ability": "stamina_2"
+          },
+          {
+            "type": "bandits_quirk_lib:upgrade_point_buy",
+            "score": 3
+          }
+        ]
+      }
+    },
+    "stamina_4": {
+      "type": "mineha:happen_once",
+      "commands": "[{\"command\":\"scoreboard players add @s MineHa.StaminaMax 50\"},{\"command\":\"tellraw @s {\\\"text\\\":\\\"Master training complete! +50 stamina capacity\\\",\\\"color\\\":\\\"gold\\\"}\"}]",
+      "identifier": "base_stamina_4",
+      "icon": "minecraft:feather",
+      "title": "Stamina Training - IV",
+      "description": "Master-level training increases your stamina capacity by 50 points.",
+      "hidden_in_bar": true,
+      "gui_position": [2, -4],
+      "conditions": {
+        "unlocking": [
+          {
+            "type": "palladium:ability_unlocked",
+            "power": "null",
+            "ability": "stamina_3"
+          },
+          {
+            "type": "bandits_quirk_lib:upgrade_point_buy",
+            "score": 2
+          }
+        ]
+      }
+    },
+    "stamina_gui_base": {
+      "type": "palladium:gui_overlay",
+      "texture": "mineha:textures/gui/hud/stamina_base2.png",
+      "texture_width": 64,
+      "texture_height": 32,
+      "translate": [
+        0, -30, 0
+      ],
+      "rotate": [
+        0, 0, 0
+      ],
+      "scale": [
+        2, 2, 2
+      ],
+      "alignment": "bottom_left"
+    },
+    "stamina_gui": {
+      "type": "palladium:gui_overlay",
+      "texture": "#mineha:stamina_dt",
+      "texture_width": 64,
+      "texture_height": 32,
+      "translate": [
+        0, -30, 0
+      ],
+      "rotate": [
+        0, 0, 0
+      ],
+      "scale": [
+        2, 2, 2
+      ],
+      "alignment": "bottom_left"
+    },
+    "quirk_evolve": {
+      "type": "palladium:command",
+      "icon": "minecraft:copper_ingot",
+      "title": "Quirk Evolve - II",
+      "description": "Your training has paid off! Your quirk can now evolve into a higher quirk factor!",
+      "hidden_in_bar": true,
+      "gui_position": [0, -5],
+      "first_tick_commands": [
+        "superpower add mineha:base_quirk_evolved @p",
+        "superpower remove mineha:base_quirk @p"
+      ],
+      "commands": [],
+      "conditions": {
+        "unlocking": [
+          {
+            "type": "palladium:ability_unlocked",
+            "power": "null",
+            "ability": "health_4_attr"
+          },
+          {
+            "type": "palladium:ability_unlocked",
+            "power": "null",
+            "ability": "strength_3_attr"
+          },
+          {
+            "type": "palladium:ability_unlocked",
+            "power": "null",
+            "ability": "armor_2_attr"
+          },
+          {
+            "type": "palladium:ability_unlocked",
+            "power": "null",
+            "ability": "speed_3_attr"
+          },
+          {
+            "type": "palladium:ability_unlocked",
+            "power": "null",
+            "ability": "stamina_4"
+          },
+          {
+            "type": "bandits_quirk_lib:upgrade_point_buy",
+            "score": 2
+          }
+        ]
+      }
+    }
+
+  }
+}
