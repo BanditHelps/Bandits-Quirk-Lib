@@ -19,7 +19,7 @@ public class StaminaCommand {
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(
-                Commands.literal("bql_stamina")
+                Commands.literal("bql")
                         .then(Commands.argument("player", EntityArgument.player())
                         .then(Commands.literal("get")
                                 .then(Commands.literal("stamina")
