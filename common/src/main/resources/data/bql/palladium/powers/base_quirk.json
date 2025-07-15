@@ -327,9 +327,12 @@
       }
     },
     "stamina_1": {
-      "type": "mineha:happen_once",
-      "commands": "[{\"command\":\"scoreboard players add @s MineHa.StaminaMax 50\"},{\"command\":\"tellraw @s {\\\"text\\\":\\\"Training Session complete! +50 stamina capacity\\\",\\\"color\\\":\\\"gold\\\"}\"}]",
-      "identifier": "base_stamina_1",
+      "type": "bandits_quirk_lib:happen_once",
+      "commands": [
+        "scoreboard players add @s MineHa.StaminaMax 50",
+        "tellraw @s {\"text\":\"Training Session complete! +50 stamina capacity\",\"color\":\"gold\"}"
+      ],
+      "key": "base_stamina_1",
       "icon": "minecraft:feather",
       "title": "Stamina Training - I",
       "description": "Your rigorous training increases your stamina capacity by 50 points.",
@@ -350,9 +353,12 @@
       }
     },
     "stamina_2": {
-      "type": "mineha:happen_once",
-      "commands": "[{\"command\":\"scoreboard players add @s MineHa.StaminaMax 50\"},{\"command\":\"tellraw @s {\\\"text\\\":\\\"Advanced training complete! +50 stamina capacity\\\",\\\"color\\\":\\\"gold\\\"}\"}]",
-      "identifier": "base_stamina_2",
+      "type": "bandits_quirk_lib:happen_once",
+      "commands": [
+        "scoreboard players add @s MineHa.StaminaMax 50",
+        "tellraw @s {\"text\":\"Training Session complete! +50 stamina capacity\",\"color\":\"gold\"}"
+      ],
+      "key": "base_stamina_2",
       "icon": "minecraft:feather",
       "title": "Stamina Training - II",
       "description": "Further training increases your stamina capacity by another 50 points.",
@@ -373,9 +379,12 @@
       }
     },
     "stamina_3": {
-      "type": "mineha:happen_once",
-      "commands": "[{\"command\":\"scoreboard players add @s MineHa.StaminaMax 50\"},{\"command\":\"tellraw @s {\\\"text\\\":\\\"Expert training complete! +50 stamina capacity\\\",\\\"color\\\":\\\"gold\\\"}\"}]",
-      "identifier": "base_stamina_3",
+      "type": "bandits_quirk_lib:happen_once",
+      "commands": [
+        "scoreboard players add @s MineHa.StaminaMax 50",
+        "tellraw @s {\"text\":\"Training Session complete! +50 stamina capacity\",\"color\":\"gold\"}"
+      ],
+      "key": "base_stamina_3",
       "icon": "minecraft:feather",
       "title": "Stamina Training - III",
       "description": "Advanced training increases your stamina capacity by 50 points.",
@@ -396,9 +405,12 @@
       }
     },
     "stamina_4": {
-      "type": "mineha:happen_once",
-      "commands": "[{\"command\":\"scoreboard players add @s MineHa.StaminaMax 50\"},{\"command\":\"tellraw @s {\\\"text\\\":\\\"Master training complete! +50 stamina capacity\\\",\\\"color\\\":\\\"gold\\\"}\"}]",
-      "identifier": "base_stamina_4",
+      "type": "bandits_quirk_lib:happen_once",
+      "commands": [
+        "scoreboard players add @s MineHa.StaminaMax 50",
+        "tellraw @s {\"text\":\"Training Session complete! +50 stamina capacity\",\"color\":\"gold\"}"
+      ],
+      "key": "base_stamina_4",
       "icon": "minecraft:feather",
       "title": "Stamina Training - IV",
       "description": "Master-level training increases your stamina capacity by 50 points.",
@@ -420,7 +432,7 @@
     },
     "stamina_gui_base": {
       "type": "palladium:gui_overlay",
-      "texture": "mineha:textures/gui/hud/stamina_base2.png",
+      "texture": "bql:textures/gui/hud/stamina_base2.png",
       "texture_width": 64,
       "texture_height": 32,
       "translate": [
@@ -436,7 +448,7 @@
     },
     "stamina_gui": {
       "type": "palladium:gui_overlay",
-      "texture": "#mineha:stamina_dt",
+      "texture": "#bql:stamina_dt",
       "texture_width": 64,
       "texture_height": 32,
       "translate": [
@@ -458,8 +470,8 @@
       "hidden_in_bar": true,
       "gui_position": [0, -5],
       "first_tick_commands": [
-        "superpower add mineha:base_quirk_evolved @p",
-        "superpower remove mineha:base_quirk @p"
+        "superpower add bql:base_quirk_evolved @p",
+        "superpower remove bql:base_quirk @p"
       ],
       "commands": [],
       "conditions": {
