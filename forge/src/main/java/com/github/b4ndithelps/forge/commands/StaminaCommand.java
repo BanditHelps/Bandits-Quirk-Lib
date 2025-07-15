@@ -142,8 +142,11 @@ public class StaminaCommand {
         try {
             ServerPlayer player = EntityArgument.getPlayer(context, "player");
             int amount = IntegerArgumentType.getInteger(context, "amount");
+            int max = StaminaHelper.getMaxStamina(player);
 
-            StaminaHelper.setCurrentStamina(player, amount);
+            // Make sure the current cannot exceed the max, otherwise we get texture errors or the percentage
+            StaminaHelper.setCurrentStamina(player, Math.min(amount, max));
+
             return 1;
 
         } catch (Exception e) {

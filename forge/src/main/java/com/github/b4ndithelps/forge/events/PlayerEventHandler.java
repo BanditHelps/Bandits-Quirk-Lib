@@ -39,10 +39,10 @@ public class PlayerEventHandler {
         SuperpowerUtil.addSuperpower(player, ResourceLocation.parse("bql:base_quirk"));
     }
 
-    @SubscribeEvent
-    public static void onPlayerDeath(LivingDeathEvent event) {
-        if (event.getEntity() instanceof Player player) {
-            StaminaHelper.handlePlayerDeath(player);
-        }
-    }
+//    @SubscribeEvent
+//    public static void onPlayerDeath(LivingDeathEvent event) {
+//        if (event.getEntity() instanceof Player player) {
+//            StaminaHelper.handlePlayerDeath(player);
+//        }
+//    }
 }
