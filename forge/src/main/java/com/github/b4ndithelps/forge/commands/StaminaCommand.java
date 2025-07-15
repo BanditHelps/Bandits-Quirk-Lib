@@ -21,39 +21,49 @@ public class StaminaCommand {
         dispatcher.register(
                 Commands.literal("bql")
                         .then(Commands.argument("player", EntityArgument.player())
-                        .then(Commands.literal("get")
-                                .then(Commands.literal("stamina")
-                                        .executes(StaminaCommand::getStaminaStats))
-                                .then(Commands.literal("upgrade_points")
-                                        .executes(StaminaCommand::getUpgradePoints))
-                        )
-                        .then(Commands.literal("set")
-                                .requires(source -> source.hasPermission(2))
-                                .then(Commands.literal("max")
+                                .then(Commands.literal("get")
+                                        .then(Commands.literal("stamina")
+                                                .executes(StaminaCommand::getStaminaStats))
+                                        .then(Commands.literal("upgrade_points")
+                                                .executes(StaminaCommand::getUpgradePoints))
+                                )
+                                .then(Commands.literal("set")
+                                        .requires(source -> source.hasPermission(2))
+                                        .then(Commands.literal("max")
+                                                .then(Commands.argument("amount", IntegerArgumentType.integer(0))
+                                                        .executes(StaminaCommand::setMaxStamina)))
+                                        .then(Commands.literal("current")
+                                                .then(Commands.argument("amount", IntegerArgumentType.integer(0))
+                                                        .executes(StaminaCommand::setCurrentStamina)))
+                                        .then(Commands.literal("exhaust")
+                                                .then(Commands.argument("level", IntegerArgumentType.integer(0))
+                                                        .executes(StaminaCommand::setExhaustionLevel)))
+                                        .then(Commands.literal("plus_ultra")
+                                                .then(Commands.argument("value", BoolArgumentType.bool())
+                                                        .executes(StaminaCommand::setPlusUltra)))
+                                        .then(Commands.literal("upgrade_points")
+                                                .then(Commands.argument("points", IntegerArgumentType.integer(0))
+                                                        .executes(StaminaCommand::setUpgradePoints)))
+                                )
+                                .then(Commands.literal("use")
+                                        .requires(source -> source.hasPermission(2))
                                         .then(Commands.argument("amount", IntegerArgumentType.integer(0))
-                                                .executes(StaminaCommand::setMaxStamina)))
-                                .then(Commands.literal("current")
-                                        .then(Commands.argument("amount", IntegerArgumentType.integer(0))
-                                                .executes(StaminaCommand::setCurrentStamina)))
-                                .then(Commands.literal("exhaust")
-                                        .then(Commands.argument("level", IntegerArgumentType.integer(0))
-                                                .executes(StaminaCommand::setExhaustionLevel)))
-                                .then(Commands.literal("plus_ultra")
-                                        .then(Commands.argument("value", BoolArgumentType.bool())
-                                                .executes(StaminaCommand::setPlusUltra)))
-                                .then(Commands.literal("upgrade_points")
-                                        .then(Commands.argument("points", IntegerArgumentType.integer(0))
-                                                .executes(StaminaCommand::setUpgradePoints)))
+                                                .executes(StaminaCommand::useStamina))
+                                )
+                                .then(Commands.literal("add")
+                                        .requires(source -> source.hasPermission(2))
+                                        .then(Commands.literal("max")
+                                                .then(Commands.argument("amount", IntegerArgumentType.integer(0))
+                                                        .executes(StaminaCommand::addMaxStamina)))
+                                        .then(Commands.literal("current")
+                                                .then(Commands.argument("amount", IntegerArgumentType.integer(0))
+                                                        .executes(StaminaCommand::addCurrentStamina)))
+                                )
+                                .then(Commands.literal("debug")
+                                        .requires(source -> source.hasPermission(2))
+                                        .executes(StaminaCommand::debugStamina))
                         )
-                        .then(Commands.literal("use")
-                                .requires(source -> source.hasPermission(2))
-                                .then(Commands.argument("amount", IntegerArgumentType.integer(0))
-                                        .executes(StaminaCommand::useStamina))
-                        )
-                        .then(Commands.literal("debug")
-                                .requires(source -> source.hasPermission(2))
-                                .executes(StaminaCommand::debugStamina))
-                        ));
+        );
     }
 
     private static int getStaminaStats(CommandContext<CommandSourceStack> context) {
@@ -114,6 +124,20 @@ public class StaminaCommand {
         }
     }
 
+    private static int addCurrentStamina(CommandContext<CommandSourceStack> context) {
+        try {
+            ServerPlayer player = EntityArgument.getPlayer(context, "player");
+            int amount = IntegerArgumentType.getInteger(context, "amount");
+
+            StaminaHelper.addCurrentStamina(player, amount);
+            return 1;
+        } catch (Exception e) {
+            context.getSource().sendFailure(Component.literal("Error: " + e.getMessage()));
+            BanditsQuirkLibForge.LOGGER.error("Command error: " + e.getMessage(), e);
+            return 0;
+        }
+    }
+
     private static int setCurrentStamina(CommandContext<CommandSourceStack> context) {
         try {
             ServerPlayer player = EntityArgument.getPlayer(context, "player");
@@ -122,6 +146,20 @@ public class StaminaCommand {
             StaminaHelper.setCurrentStamina(player, amount);
             return 1;
 
+        } catch (Exception e) {
+            context.getSource().sendFailure(Component.literal("Error: " + e.getMessage()));
+            BanditsQuirkLibForge.LOGGER.error("Command error: " + e.getMessage(), e);
+            return 0;
+        }
+    }
+
+    private static int addMaxStamina(CommandContext<CommandSourceStack> context) {
+        try {
+            ServerPlayer player = EntityArgument.getPlayer(context, "player");
+            int amount = IntegerArgumentType.getInteger(context, "amount");
+
+            StaminaHelper.addMaxStamina(player, amount);
+            return 1;
         } catch (Exception e) {
             context.getSource().sendFailure(Component.literal("Error: " + e.getMessage()));
             BanditsQuirkLibForge.LOGGER.error("Command error: " + e.getMessage(), e);

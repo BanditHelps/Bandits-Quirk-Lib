@@ -66,6 +66,7 @@ public class StaminaHelper {
                     }
 
                     staminaData.setCurrentStamina(newCurrent);
+                    updateStaminaPercentage(player, newCurrent, maxStamina);
                     staminaData.setExhaustionLevel(newExhaustLevel);
                 }
 
@@ -156,6 +157,7 @@ public class StaminaHelper {
                 disablePowers(player, newExhaustionLevel);
             }
 
+            updateStaminaPercentage(player, newCurrent, staminaData.getMaxStamina());
             sendExhaustionMessage(player, newExhaustionLevel, oldExhaustionLevel);
 
 
@@ -394,6 +396,20 @@ public class StaminaHelper {
         getStaminaData(player).ifPresent(staminaData -> {
             staminaData.setCurrentStamina(amount);
             updateStaminaPercentage(player, amount, staminaData.getMaxStamina());
+        });
+    }
+
+    public static void addMaxStamina(Player player, int amount) {
+        getStaminaData(player).ifPresent(staminaData -> {
+            staminaData.setMaxStamina(amount + staminaData.getMaxStamina());
+            updateStaminaPercentage(player, staminaData.getCurrentStamina(), staminaData.getMaxStamina());
+        });
+    }
+
+    public static void addCurrentStamina(Player player, int amount) {
+        getStaminaData(player).ifPresent(staminaData -> {
+            staminaData.setCurrentStamina(amount + staminaData.getCurrentStamina());
+            updateStaminaPercentage(player, staminaData.getCurrentStamina(), staminaData.getMaxStamina());
         });
     }
 
