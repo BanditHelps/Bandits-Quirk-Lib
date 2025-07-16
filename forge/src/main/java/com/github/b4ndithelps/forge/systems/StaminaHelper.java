@@ -20,14 +20,6 @@ public class StaminaHelper {
         return player.getCapability(StaminaDataProvider.STAMINA_DATA, null);
     }
 
-    public static void modifyStamina(Player player, int amount) {
-        getStaminaData(player).ifPresent(staminaData -> {
-            int newStamina = Math.max(0, Math.min(staminaData.getMaxStamina(),
-                    staminaData.getCurrentStamina() + amount));
-            staminaData.setCurrentStamina(newStamina);
-        });
-    }
-
     public static boolean hasStamina(Player player, int required) {
         return getStaminaData(player).map(staminaData ->
                 staminaData.getCurrentStamina() >= required).orElse(false);
@@ -274,18 +266,6 @@ public class StaminaHelper {
 
     }
 
-    // The following will be called when the player dies. It changes the players stamina values on death
-    // to prevent them from insta-resetting it after they die.
-    public static void handlePlayerDeath(Player player) {
-        setCurrentStamina(player, (int)Math.floor((double) getMaxStamina(player) / 2));
-        BanditsQuirkLibForge.LOGGER.info("Making the player have only: " + getCurrentStamina(player) );
-        setExhaustionLevel(player, 0);
-
-        getStaminaData(player).ifPresent(staminaData -> {
-            staminaData.setLastHurrahUsed(false);
-        });
-    }
-
     // Disables powers if they have any exhaustion. TODO Add compat for Hertz power thing
     public static void disablePowers(Player player, int exhaustLevel) {
         if (exhaustLevel == 0) {
@@ -340,16 +320,6 @@ public class StaminaHelper {
             scoreboard.getOrCreatePlayerScore(player.getGameProfile().getName(), objective).setScore(score);
         }
     }
-
-//    // This function makes sure the capability matches the scoreboard. Since Palladium needs it to be buy-able
-//    private static void syncUpgradePointsToBoard(Player player, int amount) {
-//        Scoreboard scoreboard = player.level().getScoreboard();
-//        Objective objective = scoreboard.getObjective(UPGRADE_POINTS_SCOREBOARD);
-//
-//        if (objective != null) {
-//            scoreboard.getOrCreatePlayerScore(player.getGameProfile().getName(), objective).setScore(amount);
-//        }
-//    }
 
     private static void setPowersDisabled(Player player, boolean isDisabled) {
         getStaminaData(player).ifPresent(staminaData -> {
