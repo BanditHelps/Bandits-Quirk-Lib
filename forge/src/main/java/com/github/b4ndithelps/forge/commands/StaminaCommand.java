@@ -4,6 +4,8 @@ import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
 import com.github.b4ndithelps.forge.systems.StaminaHelper;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.BoolArgumentType;
+import com.mojang.brigadier.arguments.DoubleArgumentType;
+import com.mojang.brigadier.arguments.FloatArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.commands.CommandSourceStack;
@@ -11,6 +13,7 @@ import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Player;
 
 import static com.github.b4ndithelps.values.StaminaConstants.EXHAUSTION_LEVELS;
 import static com.github.b4ndithelps.values.StaminaConstants.PLUS_ULTRA_TAG;
@@ -63,6 +66,16 @@ public class StaminaCommand {
                                         .requires(source -> source.hasPermission(2))
                                         .executes(StaminaCommand::debugStamina))
                         )
+        );
+
+        // Commands for the powers to use
+        dispatcher.register(
+                Commands.literal("bql_use")
+                        .requires(source -> source.hasPermission(2))
+                        .then(Commands.argument("amount", IntegerArgumentType.integer(0))
+                                .executes(StaminaCommand::useStaminaNoTarget)
+                                .then(Commands.argument("chance", DoubleArgumentType.doubleArg(0.0, 1.0))
+                                        .executes(StaminaCommand::useChanceStamina)))
         );
     }
 
@@ -233,6 +246,44 @@ public class StaminaCommand {
             int amount = IntegerArgumentType.getInteger(context, "amount");
 
             StaminaHelper.useStamina(player, amount);
+            return 1;
+
+        } catch (Exception e) {
+            context.getSource().sendFailure(Component.literal("Error: " + e.getMessage()));
+            BanditsQuirkLibForge.LOGGER.error("Command error: " + e.getMessage(), e);
+            return 0;
+        }
+    }
+
+    // Used for a simple quick use for other
+    private static int useStaminaNoTarget(CommandContext<CommandSourceStack> context) {
+        try {
+            ServerPlayer player = context.getSource().getPlayerOrException();
+            int amount = IntegerArgumentType.getInteger(context, "amount");
+
+            StaminaHelper.useStamina(player, amount);
+            return 1;
+
+        } catch (Exception e) {
+            context.getSource().sendFailure(Component.literal("Error: " + e.getMessage()));
+            BanditsQuirkLibForge.LOGGER.error("Command error: " + e.getMessage(), e);
+            return 0;
+        }
+    }
+
+    // Expects the chance to be between 0.0 and 1.0. The higher the chance, the more common
+    private static int useChanceStamina(CommandContext<CommandSourceStack> context) {
+        try {
+            // Random number
+            double chance = DoubleArgumentType.getDouble(context, "chance");
+
+            if (Math.random() < chance) {
+                ServerPlayer player = context.getSource().getPlayerOrException();
+                int amount = IntegerArgumentType.getInteger(context, "amount");
+
+                StaminaHelper.useStamina(player, amount);
+            }
+
             return 1;
 
         } catch (Exception e) {
