@@ -1,0 +1,15 @@
+{
+    "base": "bql:textures/gui/hud/stamina_0.png",
+    "transformers": [
+        {
+            "type": "palladium:alpha_mask",
+            "mask": "bql:textures/alpha_mask/stamina/stamina_#PERCENTAGE.png"
+        }
+    ],
+    "variables": {
+        "PERCENTAGE": {
+            "type": "palladium:objective_score",
+            "objective": "MineHa.StaminaPercentage"
+        }
+    }
+}

@@ -1,0 +1,12 @@
+{
+  "objectives": [
+    "MineHa.StaminaPercentage",
+    "MineHa.BodyStatus.Damage.MainArm",
+    "MineHa.BodyStatus.Damage.OffArm",
+    "MineHa.BodyStatus.Damage.LeftLeg",
+    "MineHa.BodyStatus.Damage.RightLeg",
+    "MineHa.BodyStatus.Damage.Body",
+    "MineHa.BodyStatus.Damage.MainFingers",
+    "MineHa.BodyStatus.Damage.OffFingers"
+  ]
+}

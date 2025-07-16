@@ -13,5 +13,6 @@ public class CommandEventHandler {
         MineHaSlotCommand.register(event.getDispatcher());
         MineHaCreationCommand.register(event.getDispatcher());
         MineHaEnchantCommand.register(event.getDispatcher());
+        StaminaCommand.register(event.getDispatcher());
     }
 }
