@@ -45,6 +45,7 @@ public class StaminaDataProvider implements ICapabilitySerializable<CompoundTag>
         createStaminaData().loadNBTData(nbt);
     }
 
+    // Need to find someone who knows where I should call this
     public void invalidate() {
         optional.invalidate();
     }

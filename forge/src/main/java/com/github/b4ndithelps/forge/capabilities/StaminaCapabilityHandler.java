@@ -1,6 +1,7 @@
 package com.github.b4ndithelps.forge.capabilities;
 
 import com.github.b4ndithelps.BanditsQuirkLib;
+import com.github.b4ndithelps.values.StaminaConstants;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
@@ -29,20 +30,19 @@ public class StaminaCapabilityHandler {
                 // Get the new player's capability
                 event.getEntity().getCapability(StaminaDataProvider.STAMINA_DATA).ifPresent(newStore -> {
                     // Copy all the data from old to new
-                    newStore.setCurrentStamina(oldStore.getCurrentStamina());
                     newStore.setMaxStamina(oldStore.getMaxStamina());
                     newStore.setUsageTotal(oldStore.getUsageTotal());
-                    newStore.setRegenCooldown(oldStore.getRegenCooldown());
-                    newStore.setExhaustionLevel(oldStore.getExhaustionLevel());
-                    newStore.setLastHurrahUsed(oldStore.getLastHurrahUsed());
                     newStore.setPowersDisabled(oldStore.isPowersDisabled());
                     newStore.setInitialized(oldStore.isInitialized());
                     newStore.setUpgradePoints(oldStore.getUpgradePoints());
                     newStore.setPointsProgress(oldStore.getPointsProgress());
 
-                    // Debug logging
-                    BanditsQuirkLib.LOGGER.info("Cloned stamina data - Old: {}, New: {}",
-                            oldStore.getCurrentStamina(), newStore.getCurrentStamina());
+                    // Special Values that should not be the same on death ie. exhaustion, lastHurrah, and current Stamina
+                    newStore.setCurrentStamina((int) Math.floor( (double) oldStore.getMaxStamina() / 2));
+                    newStore.setExhaustionLevel(0);
+                    newStore.setLastHurrahUsed(false);
+                    newStore.setRegenCooldown(StaminaConstants.STAMINA_REGEN_COOLDOWNS[0]);
+
                 });
             });
             event.getOriginal().invalidateCaps();
