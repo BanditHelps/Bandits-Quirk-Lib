@@ -295,6 +295,7 @@ public class StaminaHelper {
         }
 
         player.getTags().add(POWERS_DISABLED_TAG);
+        setPowersDisabled(player, true);
         ParticleEffects.powersDisabledVfx(player);
     }
 
@@ -302,6 +303,7 @@ public class StaminaHelper {
         player.sendSystemMessage(Component.literal("§aYou've recovered from your exhaustion."));
         player.sendSystemMessage(Component.literal("§aYour quirk is recharged and ready to use!"));
         player.getTags().remove(POWERS_DISABLED_TAG);
+        setPowersDisabled(player, false);
 
         // Reset the last hurrah
         int currentStamina = getCurrentStamina(player);
@@ -348,6 +350,12 @@ public class StaminaHelper {
 //            scoreboard.getOrCreatePlayerScore(player.getGameProfile().getName(), objective).setScore(amount);
 //        }
 //    }
+
+    private static void setPowersDisabled(Player player, boolean isDisabled) {
+        getStaminaData(player).ifPresent(staminaData -> {
+            staminaData.setPowersDisabled(isDisabled);
+        });
+    }
 
     // Sends the player a message that changes based on the current level of exhaustion, but only if it increases
     // Might get replaced in the future with just the stamina HUD changing
