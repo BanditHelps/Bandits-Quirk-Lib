@@ -40,6 +40,8 @@ public class BodyStatusCommand {
                                                                 .executes(BodyStatusCommand::getCustomString))))
                                         .then(Commands.literal("all")
                                                 .executes(BodyStatusCommand::getAllBodyStatus))
+                                        .then(Commands.literal("custom_statuses")
+                                                .executes(BodyStatusCommand::getAllCustomStatuses))
                                 )
                                 .then(Commands.literal("set")
                                         .requires(source -> source.hasPermission(2))
@@ -91,6 +93,17 @@ public class BodyStatusCommand {
                                 .then(Commands.literal("test")
                                         .requires(source -> source.hasPermission(2))
                                         .executes(BodyStatusCommand::runTestScenarios))
+                                .then(Commands.literal("init")
+                                        .requires(source -> source.hasPermission(2))
+                                        .then(Commands.literal("status")
+                                                .then(Commands.argument("bodypart", StringArgumentType.string())
+                                                        .then(Commands.argument("statusName", StringArgumentType.string())
+                                                                .then(Commands.argument("defaultLevel", IntegerArgumentType.integer(0))
+                                                                        .executes(BodyStatusCommand::initializeStatus)))))
+                                        .then(Commands.literal("status_all")
+                                                .then(Commands.argument("statusName", StringArgumentType.string())
+                                                        .then(Commands.argument("defaultLevel", IntegerArgumentType.integer(0))
+                                                                .executes(BodyStatusCommand::initializeStatusAllParts)))))
                         )
         );
     }
@@ -198,6 +211,53 @@ public class BodyStatusCommand {
                 context.getSource().sendSuccess(() -> Component.literal(
                         String.format("§e%s: §7%.2f damage §8(§7%s§8)", 
                                 partName, damage, stage)), false);
+            }
+            
+            return 1;
+        } catch (Exception e) {
+            context.getSource().sendFailure(Component.literal("Error: " + e.getMessage()));
+            return 0;
+        }
+    }
+
+    private static int getAllCustomStatuses(CommandContext<CommandSourceStack> context) {
+        try {
+            ServerPlayer player = EntityArgument.getPlayer(context, "player");
+            
+            context.getSource().sendSuccess(() -> Component.literal(
+                    "§6=== Custom Statuses for " + player.getName().getString() + " ==="), false);
+            
+            boolean hasAnyStatuses = false;
+            
+            for (BodyPart part : BodyPart.values()) {
+                String partName = part.getName();
+                var bodyStatus = BodyStatusHelper.getBodyStatus(player);
+                var partData = bodyStatus.getBodyPartData(part);
+                var activeStatuses = partData.getActiveCustomStatuses();
+                
+                if (!activeStatuses.isEmpty()) {
+                    hasAnyStatuses = true;
+                    StringBuilder statusInfo = new StringBuilder();
+                    statusInfo.append("§e").append(partName).append("§7: ");
+                    
+                    boolean first = true;
+                    for (String statusName : activeStatuses) {
+                        if (!first) {
+                            statusInfo.append("§7, ");
+                        }
+                        int level = bodyStatus.getCustomStatus(part, statusName);
+                        statusInfo.append("§a").append(statusName).append("§8(§a").append(level).append("§8)");
+                        first = false;
+                    }
+                    
+                    String finalMessage = statusInfo.toString();
+                    context.getSource().sendSuccess(() -> Component.literal(finalMessage), false);
+                }
+            }
+            
+            if (!hasAnyStatuses) {
+                context.getSource().sendSuccess(() -> Component.literal(
+                        "§7No custom statuses found for " + player.getName().getString()), false);
             }
             
             return 1;
@@ -436,6 +496,56 @@ public class BodyStatusCommand {
             }
             
             context.getSource().sendSuccess(() -> Component.literal("§aTest scenarios completed!"), false);
+            return 1;
+        } catch (Exception e) {
+            context.getSource().sendFailure(Component.literal("Error: " + e.getMessage()));
+            return 0;
+        }
+    }
+
+    private static int initializeStatus(CommandContext<CommandSourceStack> context) {
+        try {
+            ServerPlayer player = EntityArgument.getPlayer(context, "player");
+            String bodyPartName = StringArgumentType.getString(context, "bodypart");
+            String statusName = StringArgumentType.getString(context, "statusName");
+            int defaultLevel = IntegerArgumentType.getInteger(context, "defaultLevel");
+            
+            boolean initialized = BodyStatusHelper.initializeNewStatus(player, bodyPartName, statusName, defaultLevel);
+            
+            if (initialized) {
+                context.getSource().sendSuccess(() -> Component.literal(
+                        String.format("§aInitialized %s's %s %s status to §e%d", 
+                                player.getName().getString(), bodyPartName, statusName, defaultLevel)), false);
+            } else {
+                context.getSource().sendSuccess(() -> Component.literal(
+                        String.format("§7%s's %s already has %s status (not overwritten)", 
+                                player.getName().getString(), bodyPartName, statusName)), false);
+            }
+            return 1;
+        } catch (Exception e) {
+            context.getSource().sendFailure(Component.literal("Error: " + e.getMessage()));
+            return 0;
+        }
+    }
+
+    private static int initializeStatusAllParts(CommandContext<CommandSourceStack> context) {
+        try {
+            ServerPlayer player = EntityArgument.getPlayer(context, "player");
+            String statusName = StringArgumentType.getString(context, "statusName");
+            int defaultLevel = IntegerArgumentType.getInteger(context, "defaultLevel");
+            
+            int initializedCount = BodyStatusHelper.initializeNewStatusForAllParts(player, statusName, defaultLevel);
+            
+            context.getSource().sendSuccess(() -> Component.literal(
+                    String.format("§aInitialized %s status to §e%d§a on §e%d§a body parts for %s", 
+                            statusName, defaultLevel, initializedCount, player.getName().getString())), false);
+            
+            if (initializedCount < BodyPart.values().length) {
+                int existingCount = BodyPart.values().length - initializedCount;
+                context.getSource().sendSuccess(() -> Component.literal(
+                        String.format("§7(§e%d§7 parts already had this status)", existingCount)), false);
+            }
+            
             return 1;
         } catch (Exception e) {
             context.getSource().sendFailure(Component.literal("Error: " + e.getMessage()));

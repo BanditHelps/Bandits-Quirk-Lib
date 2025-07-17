@@ -113,6 +113,66 @@ public class BodyStatusHelper {
         }
     }
 
+    /**
+     * Initializes a custom status for a body part only if it doesn't already exist.
+     * This is safe to call during player login events as it won't overwrite existing data.
+     * 
+     * @param player The player to initialize the status for
+     * @param bodyPartName The name of the body part (case insensitive)
+     * @param statusName The name of the custom status
+     * @param defaultLevel The default level to set (only if status doesn't exist)
+     * @return true if the status was initialized, false if it already existed
+     */
+    public static boolean initializeNewStatus(Player player, String bodyPartName, String statusName, int defaultLevel) {
+        try {
+            BodyPart part = BodyPart.valueOf(bodyPartName.toUpperCase());
+            IBodyStatusCapability bodyStatus = getBodyStatus(player);
+            
+            // Check if the status already exists (level > 0)
+            if (bodyStatus.hasCustomStatus(part, statusName)) {
+                return false; // Status already exists, don't overwrite
+            }
+            
+            // Validate the default level if status is registered
+            CustomStatus status = getCustomStatus(statusName);
+            if (status != null) {
+                if (!status.isValidLevel(defaultLevel)) {
+                    throw new RuntimeException("Invalid default level " + defaultLevel + " for status " + statusName + 
+                                             ". Valid range: 0-" + status.getMaxLevel());
+                }
+            } else if (defaultLevel < 0) {
+                throw new RuntimeException("Default level cannot be negative for status " + statusName);
+            }
+            
+            // Set the status since it doesn't exist
+            bodyStatus.setCustomStatus(part, statusName, defaultLevel);
+            return true;
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Invalid body part: " + bodyPartName);
+        }
+    }
+
+    /**
+     * Initializes a custom status for all body parts only if they don't already exist.
+     * This is safe to call during player login events as it won't overwrite existing data.
+     * 
+     * @param player The player to initialize the status for
+     * @param statusName The name of the custom status
+     * @param defaultLevel The default level to set (only if status doesn't exist)
+     * @return the number of body parts that had the status initialized
+     */
+    public static int initializeNewStatusForAllParts(Player player, String statusName, int defaultLevel) {
+        int initializedCount = 0;
+        
+        for (BodyPart part : BodyPart.values()) {
+            if (initializeNewStatus(player, part.getName(), statusName, defaultLevel)) {
+                initializedCount++;
+            }
+        }
+        
+        return initializedCount;
+    }
+
     public static boolean isPartBroken(Player player, String bodyPartName) {
         try {
             BodyPart part = BodyPart.valueOf(bodyPartName.toUpperCase());
