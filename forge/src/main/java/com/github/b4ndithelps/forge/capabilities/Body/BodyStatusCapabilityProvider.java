@@ -2,27 +2,31 @@ package com.github.b4ndithelps.forge.capabilities.Body;
 
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.CapabilityManager;
-import net.minecraftforge.common.capabilities.CapabilityToken;
-import net.minecraftforge.common.capabilities.ICapabilityProvider;
-import net.minecraftforge.common.util.INBTSerializable;
+import net.minecraftforge.common.capabilities.*;
 import net.minecraftforge.common.util.LazyOptional;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-public class BodyStatusCapabilityProvider implements ICapabilityProvider, INBTSerializable<CompoundTag> {
+/**
+ * Provider for the Body Status capability. Follows the same pattern as StaminaDataProvider
+ * for consistency across the mod's capability systems.
+ */
+public class BodyStatusCapabilityProvider implements ICapabilitySerializable<CompoundTag> {
     public static final Capability<IBodyStatusCapability> BODY_STATUS_CAPABILITY =
             CapabilityManager.get(new CapabilityToken<IBodyStatusCapability>(){});
 
-    private final IBodyStatusCapability capability;
-    private final LazyOptional<IBodyStatusCapability> lazyCapability;
+    private IBodyStatusCapability capability = null;
+    private final LazyOptional<IBodyStatusCapability> lazyCapability = LazyOptional.of(this::createCapability);
 
-    public BodyStatusCapabilityProvider() {
-        this.capability = new BodyStatusCapability(100.0f);
-        this.lazyCapability = LazyOptional.of(() -> capability);
+    private IBodyStatusCapability createCapability() {
+        if (this.capability == null) {
+            this.capability = new BodyStatusCapability(100.0f);
+        }
+        return this.capability;
     }
 
     @Override
-    public <T> LazyOptional<T> getCapability(Capability<T> cap, Direction side) {
+    public @NotNull <T> LazyOptional<T> getCapability(@NotNull Capability<T> cap, @Nullable Direction side) {
         if (cap == BODY_STATUS_CAPABILITY) {
             return lazyCapability.cast();
         }
@@ -31,11 +35,18 @@ public class BodyStatusCapabilityProvider implements ICapabilityProvider, INBTSe
 
     @Override
     public CompoundTag serializeNBT() {
-        return capability.serializeNBT();
+        return createCapability().serializeNBT();
     }
 
     @Override
     public void deserializeNBT(CompoundTag nbt) {
-        capability.deserializeNBT(nbt);
+        createCapability().deserializeNBT(nbt);
+    }
+
+    /**
+     * Invalidates the capability. Should be called when the capability is no longer needed.
+     */
+    public void invalidate() {
+        lazyCapability.invalidate();
     }
 }

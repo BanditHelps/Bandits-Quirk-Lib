@@ -12,8 +12,33 @@ import java.util.Map;
 public class BodyStatusHelper {
     private static final Map<String, CustomStatus> registeredStatuses = new HashMap<>();
 
+    /**
+     * Registers a custom status for use with body parts.
+     * This allows validation of levels and provides stage names.
+     * 
+     * @param status The custom status to register
+     */
+    public static void registerCustomStatus(CustomStatus status) {
+        registeredStatuses.put(status.getName(), status);
+    }
+
+    /**
+     * Gets a registered custom status by name.
+     * 
+     * @param name The name of the custom status
+     * @return The CustomStatus object, or null if not registered
+     */
     public static CustomStatus getCustomStatus(String name) {
         return registeredStatuses.get(name);
+    }
+
+    /**
+     * Gets all registered custom statuses.
+     * 
+     * @return A copy of the registered statuses map
+     */
+    public static Map<String, CustomStatus> getAllRegisteredStatuses() {
+        return new HashMap<>(registeredStatuses);
     }
 
     public static IBodyStatusCapability getBodyStatus(Player player) {
@@ -71,9 +96,18 @@ public class BodyStatusHelper {
         try {
             BodyPart part = BodyPart.valueOf(bodyPartName.toUpperCase());
             CustomStatus status = getCustomStatus(statusName);
-            if (status != null && status.isValidLevel(level)) {
-                getBodyStatus(player).setCustomStatus(part, statusName, level);
+            
+            // If status is registered, validate the level. Otherwise, allow any positive level (backwards compatibility)
+            if (status != null) {
+                if (!status.isValidLevel(level)) {
+                    throw new RuntimeException("Invalid level " + level + " for status " + statusName + 
+                                             ". Valid range: 0-" + status.getMaxLevel());
+                }
+            } else if (level < 0) {
+                throw new RuntimeException("Level cannot be negative for status " + statusName);
             }
+            
+            getBodyStatus(player).setCustomStatus(part, statusName, level);
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("Invalid body part: " + bodyPartName);
         }
