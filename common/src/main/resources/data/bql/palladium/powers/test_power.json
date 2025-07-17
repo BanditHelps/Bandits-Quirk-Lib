@@ -24,6 +24,26 @@
           }
         ]
       }
+    },
+    "body_arm_break_test": {
+      "type": "palladium:command",
+      "title": "arm test",
+      "first_tick_commands": [],
+      "last_tick_commands": [],
+      "commands": [
+        "say arm broken"
+      ],
+      "hidden": true,
+      "hidden_in_bar": true,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "bandits_quirk_lib:body_damage",
+            "body_part": "right_arm",
+            "damage_state": "broken"
+          }
+        ]
+      }
     }
   }
 }

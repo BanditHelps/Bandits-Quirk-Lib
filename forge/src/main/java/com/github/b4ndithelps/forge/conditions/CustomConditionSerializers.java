@@ -9,7 +9,7 @@ import static com.github.b4ndithelps.BanditsQuirkLib.MOD_ID;
 
 public class CustomConditionSerializers {
     public static final RegistrySupplier<ConditionSerializer> UPGRADE_POINT_BUYABLE;
-//    public static final RegistrySupplier<ConditionSerializer> HAPPEN_ONCE;
+    public static final RegistrySupplier<ConditionSerializer> BODY_CHECK;
     public static final DeferredRegister<ConditionSerializer> CUSTOM_SERIALIZERS;
 
     public CustomConditionSerializers() {
@@ -19,6 +19,6 @@ public class CustomConditionSerializers {
     static {
         CUSTOM_SERIALIZERS = DeferredRegister.create(MOD_ID, ConditionSerializer.REGISTRY);
         UPGRADE_POINT_BUYABLE = CUSTOM_SERIALIZERS.register("upgrade_point_buy", UpgradePointBuyCondition.Serializer::new);
-//        HAPPEN_ONCE = CUSTOM_SERIALIZERS.register("happen_once", HappenOnceCondition.Serializer::new);
+        BODY_CHECK = CUSTOM_SERIALIZERS.register("body_damage", BodyCheckCondition.Serializer::new);
     }
 }

@@ -7,6 +7,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import static com.github.b4ndithelps.values.BodyConstants.DAMAGE_STAGE_PERCENTAGES;
+
 /**
  * Stores damage information as well as custom status values for each body part
  */
@@ -52,13 +54,15 @@ public class BodyStatusData {
         return maxDamage > 0 ? damage / maxDamage : 0;
     }
 
+    // Determines the stage based on the defined Stage Percentages.
+    // DAMAGE_STAGE_PERCENTAGES = [HEALTHY, SPRAINED, BROKEN, DESTROYED]
     private void updateDamageStage() {
         float percentage = getDamagePercentage();
-        if (percentage >= 1.0f) {
+        if (percentage >= DAMAGE_STAGE_PERCENTAGES[3]) {
             stage = DamageStage.DESTROYED;
-        } else if (percentage >= 0.8f) {
+        } else if (percentage >= DAMAGE_STAGE_PERCENTAGES[2]) {
             stage = DamageStage.BROKEN;
-        } else if (percentage >= 0.4f) {
+        } else if (percentage >= DAMAGE_STAGE_PERCENTAGES[1]) {
             stage = DamageStage.SPRAINED;
         } else {
             stage = DamageStage.HEALTHY;

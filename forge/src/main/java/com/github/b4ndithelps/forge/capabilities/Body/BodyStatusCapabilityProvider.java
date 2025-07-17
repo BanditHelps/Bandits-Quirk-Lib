@@ -7,6 +7,8 @@ import net.minecraftforge.common.util.LazyOptional;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static com.github.b4ndithelps.values.BodyConstants.MAX_DAMAGE;
+
 /**
  * Provider for the Body Status capability. Follows the same pattern as StaminaDataProvider
  * for consistency across the mod's capability systems.
@@ -20,7 +22,7 @@ public class BodyStatusCapabilityProvider implements ICapabilitySerializable<Com
 
     private IBodyStatusCapability createCapability() {
         if (this.capability == null) {
-            this.capability = new BodyStatusCapability(100.0f);
+            this.capability = new BodyStatusCapability(MAX_DAMAGE);
         }
         return this.capability;
     }
