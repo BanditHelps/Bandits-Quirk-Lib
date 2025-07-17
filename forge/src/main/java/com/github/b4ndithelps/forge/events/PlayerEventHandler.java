@@ -2,8 +2,10 @@ package com.github.b4ndithelps.forge.events;
 
 import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
 import com.github.b4ndithelps.forge.abilities.HappenOnceAbility;
+import com.github.b4ndithelps.forge.systems.BodyStatusHelper;
 import com.github.b4ndithelps.forge.systems.StaminaHelper;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.event.entity.EntityEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
@@ -43,8 +45,7 @@ public class PlayerEventHandler {
 
 //    @SubscribeEvent
 //    public static void onPlayerDeath(LivingDeathEvent event) {
-//        if (event.getEntity() instanceof Player player) {
-//            StaminaHelper.handlePlayerDeath(player);
+//        if (event.getEntity() instanceof ServerPlayer player) {
 //        }
 //    }
 }
