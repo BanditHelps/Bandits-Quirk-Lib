@@ -1,9 +1,12 @@
 package com.github.b4ndithelps.forge.systems;
 
+import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
 import com.github.b4ndithelps.forge.capabilities.Body.BodyPart;
 import com.github.b4ndithelps.forge.capabilities.Body.BodyStatusCapabilityProvider;
 import com.github.b4ndithelps.forge.capabilities.Body.CustomStatus;
 import com.github.b4ndithelps.forge.capabilities.Body.IBodyStatusCapability;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 
 import java.util.HashMap;

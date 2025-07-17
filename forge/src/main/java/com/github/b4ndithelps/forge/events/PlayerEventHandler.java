@@ -36,6 +36,8 @@ public class PlayerEventHandler {
         // For the player's first log in, initialize to a random stamina, give the base powers, and a random quirk
         StaminaHelper.initializePlayerStamina(player);
 
+        // Need to check if they have been initialized or not with the stamina Helper returning a boolean TODO
+        SuperpowerUtil.addSuperpower(player, ResourceLocation.parse("bql:base_quirk"));
         SuperpowerUtil.addSuperpower(player, ResourceLocation.parse("bql:base_quirk"));
     }
 
