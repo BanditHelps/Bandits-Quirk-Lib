@@ -83,29 +83,39 @@ public class FileManager {
 
             Path gameDir = Platform.getGameFolder();
 
-            // Construct the paths for the addon
+            // Construct the paths for the fancymenu files inside the addon
             Path addonPath = gameDir.resolve("addonpacks").resolve(addonName);
             Path layoutsPath = addonPath.resolve("assets").resolve(addonId).resolve("fancy_menu").resolve("layouts");
             Path guiPath = addonPath.resolve("assets").resolve(addonId).resolve("fancy_menu").resolve("gui");
+            Path variablesPath = addonPath.resolve("assets").resolve(addonId).resolve("fancy_menu").resolve("variables");
+            Path assetsPath = addonPath.resolve("assets").resolve(addonId).resolve("fancy_menu").resolve("assets");
 
-            // Target paths in config
+            // Find the target files inside of the /config/fancymenu folder of the minecraft instance
             Path fancyMenuConfigDir = configDir.resolve("fancymenu");
             Path customizationDir = fancyMenuConfigDir.resolve("customization");
             Path customGuiScreensFile = fancyMenuConfigDir.resolve("custom_gui_screens.txt");
+            Path userVariablesFile = fancyMenuConfigDir.resolve("user_variables.db");
+            Path fancyMenuAssetDir = fancyMenuConfigDir.resolve("assets");
 
             BanditsQuirkLib.LOGGER.info("Setting up FancyMenu files for addon: " + addonName);
-            BanditsQuirkLib.LOGGER.info("Layouts source: " + layoutsPath.toString());
-            BanditsQuirkLib.LOGGER.info("GUI source: " + guiPath.toString());
 
             // Ensure target directories exist
             Files.createDirectories(customizationDir);
             Files.createDirectories(fancyMenuConfigDir);
+            Files.createDirectories(fancyMenuAssetDir);
 
             // Copy all layout files
             if (Files.exists(layoutsPath)) {
-                copyLayoutFiles(layoutsPath, customizationDir);
+                copyFiles(layoutsPath, customizationDir);
             } else {
                 BanditsQuirkLib.LOGGER.info("Layouts directory not found: " + layoutsPath.toString());
+            }
+
+            // Copy all asset files (mostly custom images)
+            if (Files.exists(assetsPath)) {
+                copyFiles(assetsPath, fancyMenuAssetDir);
+            } else {
+                BanditsQuirkLib.LOGGER.info("Assets directory not found: " + assetsPath.toString());
             }
 
             // Handle GUI screen files
@@ -113,6 +123,13 @@ public class FileManager {
                 mergeGuiScreenFiles(guiPath, customGuiScreensFile);
             } else {
                 BanditsQuirkLib.LOGGER.info("GUI directory not found: " + guiPath.toString());
+            }
+
+            // Handle the user_variables merge
+            if (Files.exists(variablesPath)) {
+                mergeUserVariables(variablesPath, userVariablesFile);
+            } else {
+                BanditsQuirkLib.LOGGER.info("Variables directory not found: " + variablesPath.toString());
             }
 
             // Create marker file to prevent re-running
@@ -149,7 +166,7 @@ public class FileManager {
         BanditsQuirkLib.LOGGER.info("Delete this file to re-run FancyMenu setup in the future.");
     }
 
-    private static void copyLayoutFiles(Path sourceDir, Path targetDir) throws IOException {
+    private static void copyFiles(Path sourceDir, Path targetDir) throws IOException {
         BanditsQuirkLib.LOGGER.info("Copying layout files from: " + sourceDir.toString());
 
         try (Stream<Path> files = Files.walk(sourceDir)) {
@@ -164,10 +181,10 @@ public class FileManager {
 
                             // Copy file
                             Files.copy(sourceFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
-                            BanditsQuirkLib.LOGGER.info("Copied layout file: " + relativePath.toString());
+                            BanditsQuirkLib.LOGGER.info("Copied file: " + relativePath.toString());
 
                         } catch (IOException e) {
-                            BanditsQuirkLib.LOGGER.error("Failed to copy layout file: " + sourceFile.toString());
+                            BanditsQuirkLib.LOGGER.error("Failed to copy file: " + sourceFile.toString());
                         }
                     });
         }
@@ -217,6 +234,50 @@ public class FileManager {
                 StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 
         BanditsQuirkLib.LOGGER.info("Successfully merged GUI screen files to: " + targetFile.toString());
+    }
+
+    private static void mergeUserVariables(Path sourceDir, Path targetFile) throws IOException {
+        BanditsQuirkLib.LOGGER.info("Merging user_variable files from: " + sourceDir.toString());
+
+        StringBuilder contentBuilder = new StringBuilder();
+
+        // Check if target file exists and read existing content
+        if (Files.exists(targetFile)) {
+            List<String> existingLines = Files.readAllLines(targetFile, StandardCharsets.UTF_8);
+            for (String line : existingLines) {
+                contentBuilder.append(line).append("\n");
+            }
+            BanditsQuirkLib.LOGGER.info("Appending to existing user_variables.db");
+        } else {
+            // Create a new file with header
+            contentBuilder.append("type = user_variables\n");
+            BanditsQuirkLib.LOGGER.info("Creating new user_variables.db");
+        }
+
+        // Read all variable files and append their content
+        try (Stream<Path> files = Files.walk(sourceDir)) {
+            files.filter(Files::isRegularFile)
+                    .forEach(variableFile -> {
+                        try {
+                            BanditsQuirkLib.LOGGER.info("Processing Variable file: " + variableFile.getFileName().toString());
+                            List<String> lines = Files.readAllLines(variableFile, StandardCharsets.UTF_8);
+
+                            // Add the file content
+                            for (String line : lines) {
+                                contentBuilder.append(line).append("\n");
+                            }
+
+                        } catch (IOException e) {
+                            BanditsQuirkLib.LOGGER.error("Failed to read Variable file: " + variableFile.toString() + " - " + e.getMessage());
+                        }
+                    });
+        }
+
+        // Write the merged content to the target file
+        Files.write(targetFile, contentBuilder.toString().getBytes(StandardCharsets.UTF_8),
+                StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+
+        BanditsQuirkLib.LOGGER.info("Successfully merged variable files to: " + targetFile.toString());
     }
 
     /**
