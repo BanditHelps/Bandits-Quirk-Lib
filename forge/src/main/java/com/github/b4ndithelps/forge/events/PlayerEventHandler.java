@@ -35,12 +35,14 @@ public class PlayerEventHandler {
     public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
         Player player = event.getEntity();
 
-        // For the player's first log in, initialize to a random stamina, give the base powers, and a random quirk
-        StaminaHelper.initializePlayerStamina(player);
+        // Only runs if they haven't been here before
+        boolean wasInitialized = StaminaHelper.initializePlayerStamina(player);
 
-        // Need to check if they have been initialized or not with the stamina Helper returning a boolean TODO
-        SuperpowerUtil.addSuperpower(player, ResourceLocation.parse("bql:base_quirk"));
-        SuperpowerUtil.addSuperpower(player, ResourceLocation.parse("bql:body_status"));
+        // Since I store a "was initialized" inside of the StaminaHelper, just use it to decide if we need these again
+        if (wasInitialized) {
+            SuperpowerUtil.addSuperpower(player, ResourceLocation.parse("bql:base_quirk"));
+            SuperpowerUtil.addSuperpower(player, ResourceLocation.parse("bql:body_status"));
+        }
     }
 
 //    @SubscribeEvent

@@ -1,6 +1,5 @@
 package com.github.b4ndithelps.forge.systems;
 
-import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
 import com.github.b4ndithelps.forge.capabilities.IStaminaData;
 import com.github.b4ndithelps.forge.capabilities.StaminaDataProvider;
 import com.github.b4ndithelps.forge.damage.ModDamageTypes;
@@ -12,6 +11,8 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.scores.Objective;
 import net.minecraft.world.scores.Scoreboard;
 import net.minecraftforge.common.util.LazyOptional;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.github.b4ndithelps.values.StaminaConstants.*;
 
@@ -430,8 +431,10 @@ public class StaminaHelper {
     /**
      * This function is meant to be ran on a player's first login. Initializes all stamina variables.
      * @param player
+     * @return True if the player was just initialized. False otherwise
      */
-    public static void initializePlayerStamina(Player player) {
+    public static boolean initializePlayerStamina(Player player) {
+        AtomicBoolean retValue = new AtomicBoolean(false);
         getStaminaData(player).ifPresent(staminaData -> {
             if (!staminaData.isInitialized()) {
                 int maxStamina = getRandomStamina(player);
@@ -447,8 +450,11 @@ public class StaminaHelper {
                 setUpgradePoints(player, 0);
 
                 player.sendSystemMessage(Component.literal("§6Your quirk manifests with " + maxStamina + " stamina capacity!"));
+                retValue.set(true);
             }
         });
+        
+        return retValue.get();
     }
 
     public static void debugStamina(Player player) {
