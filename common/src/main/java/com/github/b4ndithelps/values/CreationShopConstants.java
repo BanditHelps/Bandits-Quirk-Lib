@@ -12,7 +12,7 @@ import java.util.Map;
 public class CreationShopConstants {
 
     // Stores the bit values for the Creation Shop - Map 1
-    public static final Map<String, Integer> BIT_MAP_1_TABLE = new HashMap<String, Integer>() {{
+    public static Map<String, Integer> BIT_MAP_1_TABLE = new HashMap<String, Integer>() {{
         put("minecraft:coal", 1);
         put("minecraft:copper_ingot", 2);
         put("minecraft:iron_ingot", 4);
@@ -45,7 +45,7 @@ public class CreationShopConstants {
     }};
 
     // Stores the bit values for the Creation Shop - Map 2
-    public static final Map<String, Integer> BIT_MAP_2_TABLE = new HashMap<String, Integer>() {{
+    public static Map<String, Integer> BIT_MAP_2_TABLE = new HashMap<String, Integer>() {{
         put("minecraft:stone_axe", 1);
         put("minecraft:stone_pickaxe", 2);
         put("minecraft:stone_shovel", 4);
@@ -74,7 +74,7 @@ public class CreationShopConstants {
     }};
 
     // Stores the bit values for the Creation Shop - Map 3
-    public static final Map<String, Integer> BIT_MAP_3_TABLE = new HashMap<String, Integer>() {{
+    public static Map<String, Integer> BIT_MAP_3_TABLE = new HashMap<String, Integer>() {{
         put("minecraft:leather_helmet", 1);
         put("minecraft:leather_chestplate", 2);
         put("minecraft:leather_leggings", 4);
@@ -97,7 +97,7 @@ public class CreationShopConstants {
         put("minecraft:diamond_boots", 524288);
     }};
 
-    public static final Map<String, Integer> BIT_MAP_4_TABLE = new HashMap<String, Integer>() {{
+    public static Map<String, Integer> BIT_MAP_4_TABLE = new HashMap<String, Integer>() {{
         put("minecraft:unbreaking", 1);
         put("minecraft:projectile_protection", 2);
         put("minecraft:smite", 4);
@@ -130,7 +130,7 @@ public class CreationShopConstants {
         put("minecraft:swift_sneak", 536870812);
     }};
 
-    public static final Map<String, Integer> BIT_MAP_5_TABLE = new HashMap<String, Integer>() {{
+    public static Map<String, Integer> BIT_MAP_5_TABLE = new HashMap<String, Integer>() {{
         put("minecraft:mending", 1);
         put("minecraft:infinity", 2);
         put("minecraft:looting", 4);
@@ -140,7 +140,7 @@ public class CreationShopConstants {
     }};
 
     // Stores the creation buy prices for items
-    public static final Map<String, Integer> CREATION_PRICE_TABLE = new HashMap<String, Integer>() {{
+    public static Map<String, Integer> CREATION_PRICE_TABLE = new HashMap<String, Integer>() {{
         put("minecraft:coal", 10);
         put("minecraft:copper_ingot", 20);
         put("minecraft:iron_ingot", 40);
@@ -218,7 +218,7 @@ public class CreationShopConstants {
     }};
 
     // Buy Price
-    public static final Map<String, Integer> CREATION_ENCHANT_PRICE_TABLE = new HashMap<String, Integer>() {{
+    public static Map<String, Integer> CREATION_ENCHANT_PRICE_TABLE = new HashMap<String, Integer>() {{
         put("minecraft:unbreaking", 1);
         put("minecraft:projectile_protection", 1);
         put("minecraft:smite", 1);
