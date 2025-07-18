@@ -10,7 +10,9 @@ public enum BodyPart {
     LEFT_HAND("left_hand"),
     RIGHT_HAND("right_hand"),
     LEFT_FOOT("left_foot"),
-    RIGHT_FOOT("right_foot");
+    RIGHT_FOOT("right_foot"),
+    MAIN_ARM("main_arm"),
+    OFF_ARM("off_arm");
 
     private final String name;
 
