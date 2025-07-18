@@ -1,6 +1,7 @@
 package com.github.b4ndithelps.forge;
 
 import com.github.b4ndithelps.forge.abilities.AbilityRegister;
+import com.github.b4ndithelps.forge.capabilities.CapabilityRegistration;
 import com.github.b4ndithelps.forge.conditions.CustomConditionSerializers;
 import com.github.b4ndithelps.forge.fancymenu.ForgeFancyMenuIntegration;
 import dev.architectury.platform.forge.EventBuses;

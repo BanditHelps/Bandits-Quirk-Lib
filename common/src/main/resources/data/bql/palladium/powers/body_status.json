@@ -1,0 +1,569 @@
+{
+  "name": "Body Status",
+  "background": "minecraft:textures/block/smooth_quartz_block.png",
+  "icon": "minecraft:skeleton_skull",
+  "gui_display_type": "tree",
+  "abilities": {
+    "startup": {
+      "type": "palladium:command",
+      "description": "Commands to apply when the player starts up",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "first_tick_commands": [
+
+      ],
+      "commands": []
+    },
+    "main_arm_sprained": {
+      "type": "palladium:command",
+      "description": "Commands to apply when the main arm is sprained",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "commands": [
+        "execute as @s run effect give @s minecraft:mining_fatigue 1 0 true"
+      ],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "bandits_quirk_lib:body_damage",
+            "body_part": "right_arm",
+            "damage_state": "sprained"
+          }
+        ]
+      }
+    },
+    "main_arm_sprained_render": {
+      "type": "palladium:render_layer",
+      "title": "Main Arm Sprained Render Layer",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "render_layer": "bql:main_arm_sprained",
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:ability_enabled",
+            "power": "null",
+            "ability": "main_arm_sprained"
+          }
+        ]
+      }
+    },
+    "main_arm_broken": {
+      "type": "palladium:command",
+      "description": "Commands to apply when the main arm is broken",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "commands": [
+        "execute as @s run effect give @s minecraft:mining_fatigue 1 1 true",
+        "execute as @s run effect give @s minecraft:weakness 1 0 true"
+      ],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "bandits_quirk_lib:body_damage",
+            "body_part": "right_arm",
+            "damage_state": "broken"
+          }
+        ]
+      }
+    },
+    "main_arm_broken_sleeve": {
+      "type": "palladium:remove_body_part",
+      "icon": "minecraft:iron_ingot",
+      "title": "Main Arm Broken Sleeve",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "body_parts": [
+        "right_arm_overlay"
+      ],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:ability_enabled",
+            "power": "null",
+            "ability": "main_arm_broken"
+          }
+        ]
+      }
+    },
+    "main_arm_broken_render": {
+      "type": "palladium:render_layer",
+      "title": "Main Arm Broken Render Layer",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "render_layer": "bql:main_arm_broken",
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:ability_enabled",
+            "power": "null",
+            "ability": "main_arm_broken"
+          }
+        ]
+      }
+    },
+    "main_arm_destroyed": {
+      "type": "palladium:remove_body_part",
+      "icon": "minecraft:iron_ingot",
+      "title": "Right Arm Missing",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "body_parts": [
+        "right_arm",
+        "right_arm_overlay"
+      ],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "bandits_quirk_lib:body_damage",
+            "body_part": "right_arm",
+            "damage_state": "destroyed"
+          }
+        ]
+      }
+    },
+    "main_arm_destroyed_commands": {
+      "type": "palladium:command",
+      "description": "Commands to apply when just the main arm is missing",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "commands": [
+        "execute as @s run effect give @s minecraft:mining_fatigue 1 0 true",
+        "execute as @s run effect give @s minecraft:weakness 1 0 true"
+      ],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:ability_enabled",
+            "power": "null",
+            "ability": "main_arm_destroyed"
+          },
+          {
+            "type": "palladium:not",
+            "conditions": [
+              {
+                "type": "palladium:ability_enabled",
+                "power": "null",
+                "ability": "both_arms_destroyed"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "off_arm_sprained": {
+      "type": "palladium:command",
+      "description": "Commands to apply when the off arm is sprained",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "commands": [],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "bandits_quirk_lib:body_damage",
+            "body_part": "left_arm",
+            "damage_state": "sprained"
+          }
+        ]
+      }
+    },
+    "off_arm_sprained_render": {
+      "type": "palladium:render_layer",
+      "title": "Off Arm Sprained Render Layer",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "render_layer": "bql:off_arm_sprained",
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:ability_enabled",
+            "power": "null",
+            "ability": "off_arm_sprained"
+          }
+        ]
+      }
+    },
+    "off_arm_broken": {
+      "type": "palladium:command",
+      "description": "Commands to apply when the off arm is broken",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "commands": [
+        "execute as @s run effect give @s minecraft:weakness 1 0 true"
+      ],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "bandits_quirk_lib:body_damage",
+            "body_part": "left_arm",
+            "damage_state": "broken"
+          }
+        ]
+      }
+    },
+    "off_arm_broken_sleeve": {
+      "type": "palladium:remove_body_part",
+      "icon": "minecraft:iron_ingot",
+      "title": "Off Arm Broken Sleeve",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "body_parts": [
+        "left_arm_overlay"
+      ],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:ability_enabled",
+            "power": "null",
+            "ability": "off_arm_broken"
+          }
+        ]
+      }
+    },
+    "off_arm_broken_render": {
+      "type": "palladium:render_layer",
+      "title": "Off Arm Broken Render Layer",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "render_layer": "bql:off_arm_broken",
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:ability_enabled",
+            "power": "null",
+            "ability": "off_arm_broken"
+          }
+        ]
+      }
+    },
+    "off_arm_destroyed": {
+      "type": "palladium:remove_body_part",
+      "icon": "minecraft:iron_ingot",
+      "title": "Off Arm Missing",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "body_parts": [
+        "left_arm",
+        "left_arm_overlay"
+      ],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "bandits_quirk_lib:body_damage",
+            "body_part": "left_arm",
+            "damage_state": "destroyed"
+          }
+        ]
+      }
+    },
+    "both_arms_destroyed": {
+      "type": "palladium:command",
+      "description": "Commands to apply when both arms are missing",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "commands": [
+        "execute as @s run effect give @s minecraft:mining_fatigue 1 4 true",
+        "execute as @s run effect give @s minecraft:weakness 1 4 true"
+      ],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:ability_enabled",
+            "power": "null",
+            "ability": "main_arm_destroyed"
+          },
+          {
+            "type": "palladium:ability_enabled",
+            "power": "null",
+            "ability": "off_arm_destroyed"
+          }
+        ]
+      }
+    },
+    "show_offhand": {
+      "type": "palladium:show_both_arms",
+      "title": "Show off hand if one arm is missing",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:or",
+            "conditions": [
+              {
+                "type": "palladium:ability_enabled",
+                "power": "null",
+                "ability": "main_arm_destroyed"
+              },
+              {
+                "type": "palladium:ability_enabled",
+                "power": "null",
+                "ability": "off_arm_destroyed"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "left_leg_sprained": {
+      "type": "palladium:command",
+      "description": "Commands to apply when the left leg is sprained",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "commands": [
+        "execute as @s run effect give @s minecraft:slowness 1 0 true"
+      ],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "bandits_quirk_lib:body_damage",
+            "body_part": "left_leg",
+            "damage_state": "sprained"
+          }
+        ]
+      }
+    },
+    "left_leg_broken": {
+      "type": "palladium:command",
+      "description": "Commands to apply when the left leg is broken",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "commands": [
+        "execute as @s run effect give @s minecraft:slowness 1 1 true",
+        "scale set pehkui:jump_height 0.5 @s"
+      ],
+      "last_tick_commands": [
+        "scale set pehkui:jump_height 1.0 @s"
+      ],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "bandits_quirk_lib:body_damage",
+            "body_part": "left_leg",
+            "damage_state": "broken"
+          }
+        ]
+      }
+    },
+    "left_leg_broken_pants": {
+      "type": "palladium:remove_body_part",
+      "icon": "minecraft:iron_ingot",
+      "title": "Left Leg Broken Pants",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "body_parts": [
+        "left_leg_overlay"
+      ],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:ability_enabled",
+            "power": "null",
+            "ability": "left_leg_broken"
+          }
+        ]
+      }
+    },
+    "left_leg_broken_render": {
+      "type": "palladium:render_layer",
+      "title": "Left Leg Broken Render Layer",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "render_layer": "bql:left_leg_broken",
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:ability_enabled",
+            "power": "null",
+            "ability": "left_leg_broken"
+          }
+        ]
+      }
+    },
+    "left_leg_destroyed": {
+      "type": "palladium:remove_body_part",
+      "icon": "minecraft:iron_ingot",
+      "title": "Left Leg Missing",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "body_parts": [
+        "left_leg",
+        "left_leg_overlay"
+      ],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "bandits_quirk_lib:body_damage",
+            "body_part": "left_leg",
+            "damage_state": "destroyed"
+          }
+        ]
+      }
+    },
+    "right_leg_sprained": {
+      "type": "palladium:command",
+      "description": "Commands to apply when the right leg is sprained",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "commands": [
+        "execute as @s run effect give @s minecraft:slowness 1 0 true"
+      ],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "bandits_quirk_lib:body_damage",
+            "body_part": "right_leg",
+            "damage_state": "sprained"
+          }
+        ]
+      }
+    },
+    "right_leg_broken": {
+      "type": "palladium:command",
+      "description": "Commands to apply when the right leg is broken",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "commands": [
+        "execute as @s run effect give @s minecraft:slowness 1 1 true",
+        "scale set pehkui:jump_height 0.5 @s"
+      ],
+      "last_tick_commands": [
+        "scale set pehkui:jump_height 1.0 @s"
+      ],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "bandits_quirk_lib:body_damage",
+            "body_part": "right_leg",
+            "damage_state": "broken"
+          }
+        ]
+      }
+    },
+    "right_leg_broken_pants": {
+      "type": "palladium:remove_body_part",
+      "icon": "minecraft:iron_ingot",
+      "title": "Right Leg Broken Pants",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "body_parts": [
+        "right_leg_overlay"
+      ],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:ability_enabled",
+            "power": "null",
+            "ability": "right_leg_broken"
+          }
+        ]
+      }
+    },
+    "right_leg_broken_render": {
+      "type": "palladium:render_layer",
+      "title": "Right Leg Broken Render Layer",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "render_layer": "bql:right_leg_broken",
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:ability_enabled",
+            "power": "null",
+            "ability": "right_leg_broken"
+          }
+        ]
+      }
+    },
+    "right_leg_destroyed": {
+      "type": "palladium:remove_body_part",
+      "icon": "minecraft:iron_ingot",
+      "title": "Right Leg Missing",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "body_parts": [
+        "right_leg",
+        "right_leg_overlay"
+      ],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "bandits_quirk_lib:body_damage",
+            "body_part": "right_leg",
+            "damage_state": "destroyed"
+          }
+        ]
+      }
+    },
+    "both_legs_destroyed": {
+      "type": "palladium:command",
+      "description": "Commands to apply when both legs are missing",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "commands": [
+        "execute as @s run effect give @s minecraft:slowness 1 2 true",
+        "scale set pehkui:eye_height 0.5 @s",
+        "scale set pehkui:jump_height 0 @s"
+      ],
+      "last_tick_commands": [
+        "scale set pehkui:eye_height 1.0 @s",
+        "scale set pehkui:jump_height 1.0 @s"
+      ],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:ability_enabled",
+            "power": "null",
+            "ability": "left_leg_destroyed"
+          },
+          {
+            "type": "palladium:ability_enabled",
+            "power": "null",
+            "ability": "right_leg_destroyed"
+          }
+        ]
+      }
+    },
+    "no_legs_animation": {
+      "type": "palladium:animation_timer",
+      "icon": "minecraft:blaze_rod",
+      "title": "null",
+      "bar_color": "light_gray",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "list_index": -1,
+      "gui_position": "null",
+      "description": "null",
+      "start_value": 0,
+      "max_value": 20,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:ability_enabled",
+            "power": "null",
+            "ability": "both_legs_destroyed"
+          }
+        ]
+      }
+    },
+    "body_damage": {
+      "type": "palladium:command",
+      "description": "Once this takes damage, player gets a lot of damage",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "commands": [
+        "execute as @s run effect clear @s mineha:power_stock_overuse",
+        "execute as @s run effect give @s minecraft:instant_damage 1 200 true"
+      ],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "bandits_quirk_lib:body_damage",
+            "body_part": "chest",
+            "damage_state": "destroyed"
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,5 @@
+{
+    "type": "palladium:skin_overlay",
+    "render_type": "solid",
+    "texture": "bql:textures/models/main_arm_sprained.png"
+}
