@@ -8,6 +8,7 @@ public interface IBodyStatusCapability {
     float getDamage(BodyPart part);
     void setDamage(BodyPart part, float damage);
     void addDamage(BodyPart part, float amount);
+    void damageAll(float amount);
     void healDamage(BodyPart part, float amount);
 
     DamageStage getDamageStage(BodyPart part);

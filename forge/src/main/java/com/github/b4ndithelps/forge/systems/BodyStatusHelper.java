@@ -77,6 +77,14 @@ public class BodyStatusHelper {
         }
     }
 
+    public static void damageAll(Player player, float amount) {
+        try {
+            getBodyStatus(player).damageAll(amount);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public static String getDamageStage(Player player, String bodyPartName) {
         try {
             BodyPart part = BodyPart.valueOf(bodyPartName.toUpperCase());

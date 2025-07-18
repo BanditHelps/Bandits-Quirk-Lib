@@ -40,6 +40,13 @@ public class BodyStatusCapability implements IBodyStatusCapability {
     }
 
     @Override
+    public void damageAll(float amount) {
+        bodyParts.forEach((bodyPart, bodyStatusData) -> {
+            bodyStatusData.addDamage(amount);
+        });
+    }
+
+    @Override
     public void healDamage(BodyPart part, float amount) {
         BodyStatusData data = bodyParts.get(part);
         data.setDamage(data.getDamage() - amount);

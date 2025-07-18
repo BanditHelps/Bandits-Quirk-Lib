@@ -40,7 +40,7 @@ public class PlayerEventHandler {
 
         // Need to check if they have been initialized or not with the stamina Helper returning a boolean TODO
         SuperpowerUtil.addSuperpower(player, ResourceLocation.parse("bql:base_quirk"));
-        SuperpowerUtil.addSuperpower(player, ResourceLocation.parse("bql:base_quirk"));
+        SuperpowerUtil.addSuperpower(player, ResourceLocation.parse("bql:body_status"));
     }
 
 //    @SubscribeEvent
