@@ -453,7 +453,7 @@ public class StaminaHelper {
                 retValue.set(true);
             }
         });
-        
+
         return retValue.get();
     }
 

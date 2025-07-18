@@ -7,6 +7,6 @@ ServerEvents.loaded(event => {
 // Player login event
 PlayerEvents.loggedIn(event => {
 
-    BodyStatus.initializeNewStatusForAllParts(event.player, "frost", 0);
+//    BodyStatus.initializeNewStatusForAllParts(event.player, "frost", 0);
 
 });
