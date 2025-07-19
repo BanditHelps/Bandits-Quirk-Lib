@@ -19,6 +19,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.Arrays;
 
 public class ConfigManager {
     private static final Logger LOGGER = LoggerFactory.getLogger("BQL-Config");
@@ -35,16 +36,12 @@ public class ConfigManager {
         // Register the main config
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, BQLConfig.SPEC, "bql-common.toml");
         
-        // Load creation shop data
-        loadCreationShopData();
-        
-        // Update constants with config values
-        updateConstants();
-        
-        LOGGER.info("Config system initialized");
+        LOGGER.info("Config system initialized - waiting for config to load");
     }
     
     public static void updateConstants() {
+        LOGGER.info("Updating constants from config...");
+        
         // Update Body Constants
         List<? extends Double> damagePercentages = BQLConfig.INSTANCE.damageStagePercentages.get();
         if (damagePercentages.size() >= 4) {
@@ -54,114 +51,101 @@ public class ConfigManager {
                 damagePercentages.get(2).floatValue(),
                 damagePercentages.get(3).floatValue()
             };
+            LOGGER.info("Updated damage stage percentages: {}", Arrays.toString(BodyConstants.DAMAGE_STAGE_PERCENTAGES));
         }
         BodyConstants.MAX_DAMAGE = BQLConfig.INSTANCE.maxDamage.get().floatValue();
+        LOGGER.info("Updated max damage: {}", BodyConstants.MAX_DAMAGE);
         
         // Update Stamina Constants
         List<? extends Integer> exhaustionLevels = BQLConfig.INSTANCE.exhaustionLevels.get();
         if (exhaustionLevels.size() == 5) {
             StaminaConstants.EXHAUSTION_LEVELS = exhaustionLevels.stream().mapToInt(Integer::intValue).toArray();
+            LOGGER.info("Updated exhaustion levels: {}", Arrays.toString(StaminaConstants.EXHAUSTION_LEVELS));
         }
         
         List<? extends Double> exhaustionMultipliers = BQLConfig.INSTANCE.exhaustionMultipliers.get();
         if (exhaustionMultipliers.size() == 5) {
             StaminaConstants.EXHAUSTION_MULTIPLIERS = exhaustionMultipliers.stream().mapToDouble(Double::doubleValue).toArray();
+            LOGGER.info("Updated exhaustion multipliers: {}", Arrays.toString(StaminaConstants.EXHAUSTION_MULTIPLIERS));
         }
         
         List<? extends Integer> regenCooldowns = BQLConfig.INSTANCE.staminaRegenCooldowns.get();
         if (regenCooldowns.size() == 5) {
             StaminaConstants.STAMINA_REGEN_COOLDOWNS = regenCooldowns.stream().mapToInt(Integer::intValue).toArray();
+            LOGGER.info("Updated stamina regen cooldowns: {}", Arrays.toString(StaminaConstants.STAMINA_REGEN_COOLDOWNS));
         }
         
         List<? extends Double> regenRates = BQLConfig.INSTANCE.staminaRegenRate.get();
         if (regenRates.size() == 5) {
             StaminaConstants.STAMINA_REGEN_RATE = regenRates.stream().mapToDouble(Double::doubleValue).toArray();
+            LOGGER.info("Updated stamina regen rates: {}", Arrays.toString(StaminaConstants.STAMINA_REGEN_RATE));
         }
         
-        // Update other stamina constants using reflection to maintain compatibility
-        try {
-            java.lang.reflect.Field field;
-            
-            field = StaminaConstants.class.getDeclaredField("STAMINA_GAIN_CHANCE");
-            field.setAccessible(true);
-            field.set(null, BQLConfig.INSTANCE.staminaGainChance.get());
-            
-            field = StaminaConstants.class.getDeclaredField("STAMINA_GAIN_EXHAUSTED_CHANCE");
-            field.setAccessible(true);
-            field.set(null, BQLConfig.INSTANCE.staminaGainExhaustedChance.get());
-            
-            field = StaminaConstants.class.getDeclaredField("STAMINA_ENABLE_PERCENT");
-            field.setAccessible(true);
-            field.set(null, BQLConfig.INSTANCE.staminaEnablePercent.get());
-            
-            field = StaminaConstants.class.getDeclaredField("STAMINA_GAIN_REQ");
-            field.setAccessible(true);
-            field.set(null, BQLConfig.INSTANCE.staminaGainReq.get());
-            
-            field = StaminaConstants.class.getDeclaredField("STAMINA_MAX_INCREASE");
-            field.setAccessible(true);
-            field.set(null, BQLConfig.INSTANCE.staminaMaxIncrease.get());
-            
-            field = StaminaConstants.class.getDeclaredField("UPGRADE_POINT_COST");
-            field.setAccessible(true);
-            field.set(null, BQLConfig.INSTANCE.upgradePointCost.get());
-            
-            field = StaminaConstants.class.getDeclaredField("PLUS_ULTRA_TAG");
-            field.setAccessible(true);
-            field.set(null, BQLConfig.INSTANCE.plusUltraTag.get());
-            
-            field = StaminaConstants.class.getDeclaredField("POWERS_DISABLED_TAG");
-            field.setAccessible(true);
-            field.set(null, BQLConfig.INSTANCE.powersDisabledTag.get());
-            
-            field = StaminaConstants.class.getDeclaredField("STAMINA_PERCENT_SCOREBOARD");
-            field.setAccessible(true);
-            field.set(null, BQLConfig.INSTANCE.staminaPercentScoreboard.get());
-            
-            field = StaminaConstants.class.getDeclaredField("UPGRADE_POINTS_SCOREBOARD");
-            field.setAccessible(true);
-            field.set(null, BQLConfig.INSTANCE.upgradePointsScoreboard.get());
-            
-            field = StaminaConstants.class.getDeclaredField("POINTS_TO_UPGRADE");
-            field.setAccessible(true);
-            field.set(null, BQLConfig.INSTANCE.pointsToUpgrade.get());
-            
-            field = StaminaConstants.class.getDeclaredField("STARTING_STAMINA_MIN");
-            field.setAccessible(true);
-            field.set(null, BQLConfig.INSTANCE.startingStaminaMin.get());
-            
-            field = StaminaConstants.class.getDeclaredField("STARTING_STAMINA_MAX");
-            field.setAccessible(true);
-            field.set(null, BQLConfig.INSTANCE.startingStaminaMax.get());
-            
-        } catch (Exception e) {
-            LOGGER.error("Failed to update stamina constants via reflection", e);
-        }
+        // Update other stamina constants directly (no reflection needed)
+        StaminaConstants.STAMINA_GAIN_CHANCE = BQLConfig.INSTANCE.staminaGainChance.get();
+        StaminaConstants.STAMINA_GAIN_EXHAUSTED_CHANCE = BQLConfig.INSTANCE.staminaGainExhaustedChance.get();
+        StaminaConstants.STAMINA_ENABLE_PERCENT = BQLConfig.INSTANCE.staminaEnablePercent.get();
+        StaminaConstants.STAMINA_GAIN_REQ = BQLConfig.INSTANCE.staminaGainReq.get();
+        StaminaConstants.STAMINA_MAX_INCREASE = BQLConfig.INSTANCE.staminaMaxIncrease.get();
+        StaminaConstants.UPGRADE_POINT_COST = BQLConfig.INSTANCE.upgradePointCost.get();
+        StaminaConstants.PLUS_ULTRA_TAG = BQLConfig.INSTANCE.plusUltraTag.get();
+        StaminaConstants.POWERS_DISABLED_TAG = BQLConfig.INSTANCE.powersDisabledTag.get();
+        StaminaConstants.STAMINA_PERCENT_SCOREBOARD = BQLConfig.INSTANCE.staminaPercentScoreboard.get();
+        StaminaConstants.UPGRADE_POINTS_SCOREBOARD = BQLConfig.INSTANCE.upgradePointsScoreboard.get();
+        StaminaConstants.POINTS_TO_UPGRADE = BQLConfig.INSTANCE.pointsToUpgrade.get();
+        StaminaConstants.STARTING_STAMINA_MIN = BQLConfig.INSTANCE.startingStaminaMin.get();
+        StaminaConstants.STARTING_STAMINA_MAX = BQLConfig.INSTANCE.startingStaminaMax.get();
+        
+        LOGGER.info("Updated stamina constants - gain chance: {}, max damage: {}", 
+                   StaminaConstants.STAMINA_GAIN_CHANCE, BodyConstants.MAX_DAMAGE);
         
         LOGGER.info("Constants updated from config");
     }
     
-    private static void loadCreationShopData() {
-        Path configDir = FMLPaths.CONFIGDIR.get();
-        Path creationShopFile = configDir.resolve(BQLConfig.INSTANCE.creationShopDataPath.get());
-        
+    public static void loadCreationShopData() {
         try {
-            if (!Files.exists(creationShopFile)) {
-                // Create default creation shop data file
-                createDefaultCreationShopData(creationShopFile);
+            Path configDir = FMLPaths.CONFIGDIR.get();
+            String configPath = BQLConfig.INSTANCE.creationShopDataPath.get();
+            Path creationShopFile = configDir.resolve(configPath);
+        
+            try {
+                if (!Files.exists(creationShopFile)) {
+                    // Create default creation shop data file
+                    createDefaultCreationShopData(creationShopFile);
+                }
+                
+                String content = Files.readString(creationShopFile);
+                creationShopData = GSON.fromJson(content, CreationShopData.class);
+                
+                // Update the constants class maps if needed
+                updateCreationShopConstants();
+                
+                LOGGER.info("Loaded creation shop data from: " + creationShopFile);
+                
+            } catch (Exception e) {
+                LOGGER.error("Failed to load creation shop data", e);
+                creationShopData = createDefaultCreationShopDataObject();
             }
-            
-            String content = Files.readString(creationShopFile);
-            creationShopData = GSON.fromJson(content, CreationShopData.class);
-            
-            // Update the constants class maps if needed
-            updateCreationShopConstants();
-            
-            LOGGER.info("Loaded creation shop data from: " + creationShopFile);
-            
         } catch (Exception e) {
-            LOGGER.error("Failed to load creation shop data", e);
-            creationShopData = createDefaultCreationShopDataObject();
+            LOGGER.error("Failed to access config value for creation shop data path, using default", e);
+            // Use default path when config is not available
+            Path configDir = FMLPaths.CONFIGDIR.get();
+            Path creationShopFile = configDir.resolve("bql/creation_shop_data.json");
+            
+            try {
+                if (!Files.exists(creationShopFile)) {
+                    createDefaultCreationShopData(creationShopFile);
+                }
+                
+                String content = Files.readString(creationShopFile);
+                creationShopData = GSON.fromJson(content, CreationShopData.class);
+                updateCreationShopConstants();
+                
+                LOGGER.info("Loaded creation shop data from default path: " + creationShopFile);
+            } catch (Exception e2) {
+                LOGGER.error("Failed to load creation shop data from default path", e2);
+                creationShopData = createDefaultCreationShopDataObject();
+            }
         }
     }
     
@@ -187,42 +171,35 @@ public class ConfigManager {
     }
     
     private static void updateCreationShopConstants() {
-        if (creationShopData == null) return;
-        
-        try {
-            java.lang.reflect.Field field;
-            
-            field = CreationShopConstants.class.getDeclaredField("BIT_MAP_1_TABLE");
-            field.setAccessible(true);
-            field.set(null, creationShopData.bitMap1Table);
-            
-            field = CreationShopConstants.class.getDeclaredField("BIT_MAP_2_TABLE");
-            field.setAccessible(true);
-            field.set(null, creationShopData.bitMap2Table);
-            
-            field = CreationShopConstants.class.getDeclaredField("BIT_MAP_3_TABLE");
-            field.setAccessible(true);
-            field.set(null, creationShopData.bitMap3Table);
-            
-            field = CreationShopConstants.class.getDeclaredField("BIT_MAP_4_TABLE");
-            field.setAccessible(true);
-            field.set(null, creationShopData.bitMap4Table);
-            
-            field = CreationShopConstants.class.getDeclaredField("BIT_MAP_5_TABLE");
-            field.setAccessible(true);
-            field.set(null, creationShopData.bitMap5Table);
-            
-            field = CreationShopConstants.class.getDeclaredField("CREATION_PRICE_TABLE");
-            field.setAccessible(true);
-            field.set(null, creationShopData.creationPriceTable);
-            
-            field = CreationShopConstants.class.getDeclaredField("CREATION_ENCHANT_PRICE_TABLE");
-            field.setAccessible(true);
-            field.set(null, creationShopData.creationEnchantPriceTable);
-            
-        } catch (Exception e) {
-            LOGGER.error("Failed to update creation shop constants", e);
+        if (creationShopData == null) {
+            LOGGER.warn("Creation shop data is null, cannot update constants");
+            return;
         }
+        
+        // Update creation shop constants directly (no reflection needed)
+        CreationShopConstants.BIT_MAP_1_TABLE.clear();
+        CreationShopConstants.BIT_MAP_1_TABLE.putAll(creationShopData.bitMap1Table);
+        
+        CreationShopConstants.BIT_MAP_2_TABLE.clear();
+        CreationShopConstants.BIT_MAP_2_TABLE.putAll(creationShopData.bitMap2Table);
+        
+        CreationShopConstants.BIT_MAP_3_TABLE.clear();
+        CreationShopConstants.BIT_MAP_3_TABLE.putAll(creationShopData.bitMap3Table);
+        
+        CreationShopConstants.BIT_MAP_4_TABLE.clear();
+        CreationShopConstants.BIT_MAP_4_TABLE.putAll(creationShopData.bitMap4Table);
+        
+        CreationShopConstants.BIT_MAP_5_TABLE.clear();
+        CreationShopConstants.BIT_MAP_5_TABLE.putAll(creationShopData.bitMap5Table);
+        
+        CreationShopConstants.CREATION_PRICE_TABLE.clear();
+        CreationShopConstants.CREATION_PRICE_TABLE.putAll(creationShopData.creationPriceTable);
+        
+        CreationShopConstants.CREATION_ENCHANT_PRICE_TABLE.clear();
+        CreationShopConstants.CREATION_ENCHANT_PRICE_TABLE.putAll(creationShopData.creationEnchantPriceTable);
+        
+        LOGGER.info("Updated creation shop constants - BIT_MAP_1 entries: {}, CREATION_PRICE entries: {}", 
+                   CreationShopConstants.BIT_MAP_1_TABLE.size(), CreationShopConstants.CREATION_PRICE_TABLE.size());
     }
     
     // Dynamic config methods for KubeJS
@@ -316,6 +293,21 @@ public class ConfigManager {
     // Getters for creation shop data
     public static CreationShopData getCreationShopData() {
         return creationShopData;
+    }
+    
+    /**
+     * Manually reload and update all configs (useful for testing)
+     */
+    public static void forceReloadAll() {
+        LOGGER.info("Forcing manual reload of all configs...");
+        try {
+            loadCreationShopData();
+            updateConstants();
+            loadDynamicConfigs();
+            LOGGER.info("Manual config reload completed successfully");
+        } catch (Exception e) {
+            LOGGER.error("Failed to manually reload configs", e);
+        }
     }
     
     public static class CreationShopData {

@@ -357,6 +357,14 @@ public class ConfigHelper {
     }
     
     /**
+     * Forces a complete reload of all config systems (for testing/debugging)
+     */
+    public static void forceReloadAll() {
+        ConfigManager.forceReloadAll();
+        ConsoleJS.STARTUP.info("Forced complete config reload");
+    }
+    
+    /**
      * Gets all current config values as a map (for debugging/inspection)
      * @return Map of all config values
      */

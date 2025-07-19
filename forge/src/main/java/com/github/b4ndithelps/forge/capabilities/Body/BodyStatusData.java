@@ -8,21 +8,20 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.github.b4ndithelps.values.BodyConstants.DAMAGE_STAGE_PERCENTAGES;
+import static com.github.b4ndithelps.values.BodyConstants.MAX_DAMAGE;
 
 /**
  * Stores damage information as well as custom status values for each body part
  */
 public class BodyStatusData {
     private float damage;
-    private float maxDamage;
     private DamageStage stage;
     private Map<String, Integer> customStatuses;
     private Map<String, Float> customFloatData;
     private Map<String, String> customStringData;
 
-    public BodyStatusData(float maxDamage) {
+    public BodyStatusData() {
         this.damage = 0;
-        this.maxDamage = maxDamage;
         this.stage = DamageStage.HEALTHY;
         this.customStatuses = new HashMap<>();
         this.customFloatData = new HashMap<>();
@@ -34,7 +33,7 @@ public class BodyStatusData {
     }
 
     public void setDamage(float damage) {
-        this.damage = Math.max(0, Math.min(damage, maxDamage));
+        this.damage = Math.max(0, Math.min(damage, MAX_DAMAGE));
         updateDamageStage();
     }
 
@@ -42,16 +41,12 @@ public class BodyStatusData {
         setDamage(this.damage + amount);
     }
 
-    public float getMaxDamage() {
-        return maxDamage;
-    }
-
     public DamageStage getStage() {
         return stage;
     }
 
     public float getDamagePercentage() {
-        return maxDamage > 0 ? damage / maxDamage : 0;
+        return MAX_DAMAGE > 0 ? damage / MAX_DAMAGE : 0;
     }
 
     // Determines the stage based on the defined Stage Percentages.
@@ -135,7 +130,6 @@ public class BodyStatusData {
     public CompoundTag serializeNBT() {
         CompoundTag tag = new CompoundTag();
         tag.putFloat("damage", damage);
-        tag.putFloat("maxDamage", maxDamage);
         tag.putString("stage", stage.name());
 
         CompoundTag customTag = new CompoundTag();
@@ -161,7 +155,6 @@ public class BodyStatusData {
 
     public void deserializeNBT(CompoundTag tag) {
         damage = tag.getFloat("damage");
-        maxDamage = tag.getFloat("maxDamage");
         stage = DamageStage.valueOf(tag.getString("stage"));
 
         customStatuses.clear();

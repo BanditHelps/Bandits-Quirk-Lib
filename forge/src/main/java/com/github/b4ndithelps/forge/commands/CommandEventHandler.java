@@ -15,5 +15,6 @@ public class CommandEventHandler {
         MineHaEnchantCommand.register(event.getDispatcher());
         StaminaCommand.register(event.getDispatcher());
         BodyStatusCommand.register(event.getDispatcher());
+        ConfigCommand.register(event.getDispatcher());
     }
 }

@@ -13,6 +13,8 @@ import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
+import static com.github.b4ndithelps.values.BodyConstants.MAX_DAMAGE;
+
 public class BodyStatusCommand {
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
@@ -447,8 +449,8 @@ public class BodyStatusCommand {
                 boolean sprained = BodyStatusHelper.isPartSprained(player, partName);
                 
                 context.getSource().sendSuccess(() -> Component.literal(
-                        String.format("§e%s: §7%.2f/100.0 §8(§7%s§8) §8[§7B:%s D:%s S:%s§8]", 
-                                partName, damage, stage, broken, destroyed, sprained)), false);
+                        String.format("§e%s: §7%.2f/%.2f §8(§7%s§8) §8[§7B:%s D:%s S:%s§8]",
+                                partName, damage, MAX_DAMAGE, stage, broken, destroyed, sprained)), false);
             }
             
             return 1;
