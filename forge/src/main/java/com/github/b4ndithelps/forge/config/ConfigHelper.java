@@ -1,10 +1,14 @@
 package com.github.b4ndithelps.forge.config;
 
+import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
 import com.github.b4ndithelps.values.BodyConstants;
 import com.github.b4ndithelps.values.CreationShopConstants;
 import com.github.b4ndithelps.values.StaminaConstants;
 import dev.latvian.mods.kubejs.util.ConsoleJS;
+import net.minecraftforge.fml.loading.FMLPaths;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 
 /**
@@ -75,23 +79,92 @@ public class ConfigHelper {
      */
     public static void saveConfigs() {
         ConfigManager.saveDynamicConfigs();
-        ConsoleJS.STARTUP.info("Dynamic configs saved to file");
+        BanditsQuirkLibForge.LOGGER.info("Dynamic configs saved to file");
     }
     
     /**
      * Generates a config file template for the specified addon
+     * Only runs if .delete_to_reload_dynamic_configs file does NOT exist in /config/bql folder
+     * Creates the flag file after successful generation to prevent future regenerations
      * @param addonName The name of the addon
      * @param configs Map of config key -> default value
      * @param descriptions Map of config key -> description (optional)
      */
     public static void generateConfigTemplate(String addonName, Map<String, Object> configs, Map<String, String> descriptions) {
+        try {
+            Path configDir = FMLPaths.CONFIGDIR.get();
+            Path reloadFlagFile = configDir.resolve("bql/.delete_to_reload_dynamic_configs");
+            
+            if (Files.exists(reloadFlagFile)) {
+                BanditsQuirkLibForge.LOGGER.info("Skipping config template generation for addon '{}' - reload flag file exists. Delete '/config/bql/.delete_to_reload_dynamic_configs' to allow regeneration.", addonName);
+                return;
+            }
+            
+            for (Map.Entry<String, Object> entry : configs.entrySet()) {
+                String key = addonName + "." + entry.getKey();
+                String description = descriptions != null ? descriptions.get(entry.getKey()) : null;
+                ConfigManager.setDynamicConfig(key, entry.getValue(), description);
+            }
+            ConfigManager.saveDynamicConfigs();
+            BanditsQuirkLibForge.LOGGER.info("Generated config template for addon: " + addonName);
+            
+            // Create the flag file to prevent future regenerations
+            try {
+                Files.createDirectories(reloadFlagFile.getParent());
+                if (!Files.exists(reloadFlagFile)) {
+                    Files.createFile(reloadFlagFile);
+                    BanditsQuirkLibForge.LOGGER.info("Created reload flag file to prevent future config regenerations. Delete '/config/bql/.delete_to_reload_dynamic_configs' to allow regeneration.");
+                } else {
+                    BanditsQuirkLibForge.LOGGER.info("Reload flag file already exists at '/config/bql/.delete_to_reload_dynamic_configs'.");
+                }
+            } catch (Exception flagFileException) {
+                BanditsQuirkLibForge.LOGGER.warn("Failed to create reload flag file, config may regenerate on next startup: " + flagFileException.getMessage());
+            }
+            
+        } catch (Exception e) {
+            BanditsQuirkLibForge.LOGGER.error("Failed to check for reload flag file, proceeding with config generation for addon: " + addonName);
+            // Fall back to original behavior if file check fails
+            for (Map.Entry<String, Object> entry : configs.entrySet()) {
+                String key = addonName + "." + entry.getKey();
+                String description = descriptions != null ? descriptions.get(entry.getKey()) : null;
+                ConfigManager.setDynamicConfig(key, entry.getValue(), description);
+            }
+            ConfigManager.saveDynamicConfigs();
+            BanditsQuirkLibForge.LOGGER.info("Generated config template for addon: " + addonName);
+        }
+    }
+    
+    /**
+     * Forces generation of a config file template for the specified addon
+     * Ignores the presence of .delete_to_reload_dynamic_configs file
+     * Creates the flag file after successful generation to prevent future regenerations
+     * @param addonName The name of the addon
+     * @param configs Map of config key -> default value
+     * @param descriptions Map of config key -> description (optional)
+     */
+    public static void forceGenerateConfigTemplate(String addonName, Map<String, Object> configs, Map<String, String> descriptions) {
         for (Map.Entry<String, Object> entry : configs.entrySet()) {
             String key = addonName + "." + entry.getKey();
             String description = descriptions != null ? descriptions.get(entry.getKey()) : null;
             ConfigManager.setDynamicConfig(key, entry.getValue(), description);
         }
         ConfigManager.saveDynamicConfigs();
-        ConsoleJS.STARTUP.info("Generated config template for addon: " + addonName);
+        BanditsQuirkLibForge.LOGGER.info("Force generated config template for addon: " + addonName);
+        
+        // Create the flag file to prevent future regenerations
+        try {
+            Path configDir = FMLPaths.CONFIGDIR.get();
+            Path reloadFlagFile = configDir.resolve("bql/.delete_to_reload_dynamic_configs");
+            Files.createDirectories(reloadFlagFile.getParent());
+            if (!Files.exists(reloadFlagFile)) {
+                Files.createFile(reloadFlagFile);
+                BanditsQuirkLibForge.LOGGER.info("Created reload flag file to prevent future config regenerations. Delete '/config/bql/.delete_to_reload_dynamic_configs' to allow regeneration.");
+            } else {
+                BanditsQuirkLibForge.LOGGER.info("Reload flag file already exists at '/config/bql/.delete_to_reload_dynamic_configs'.");
+            }
+        } catch (Exception flagFileException) {
+            BanditsQuirkLibForge.LOGGER.warn("Failed to create reload flag file, config may regenerate on next startup: " + flagFileException.getMessage());
+        }
     }
     
     // ===== Body Constants Retrieval =====
@@ -353,7 +426,7 @@ public class ConfigHelper {
     public static void reloadConfigs() {
         ConfigManager.loadDynamicConfigs();
         ConfigManager.updateConstants();
-        ConsoleJS.STARTUP.info("Configs reloaded from files");
+        BanditsQuirkLibForge.LOGGER.info("Configs reloaded from files");
     }
     
     /**
@@ -361,7 +434,7 @@ public class ConfigHelper {
      */
     public static void forceReloadAll() {
         ConfigManager.forceReloadAll();
-        ConsoleJS.STARTUP.info("Forced complete config reload");
+        BanditsQuirkLibForge.LOGGER.info("Forced complete config reload");
     }
     
     /**
