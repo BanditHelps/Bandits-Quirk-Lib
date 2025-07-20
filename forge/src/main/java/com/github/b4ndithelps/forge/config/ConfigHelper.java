@@ -366,19 +366,35 @@ public class ConfigHelper {
     }
     
     /**
-     * Gets a copy of the Creation Price Table
-     * @return Map of item -> price
+     * Gets a copy of the Item Buy Cost Table
+     * @return Map of item -> buy cost
      */
-    public static Map<String, Integer> getCreationPriceTable() {
-        return new HashMap<>(CreationShopConstants.CREATION_PRICE_TABLE);
+    public static Map<String, Integer> getItemBuyCostTable() {
+        return new HashMap<>(CreationShopConstants.ITEM_BUY_COST_TABLE);
     }
     
     /**
-     * Gets a copy of the Creation Enchant Price Table
-     * @return Map of enchantment -> price
+     * Gets a copy of the Enchant Buy Cost Table
+     * @return Map of enchantment -> buy cost
      */
-    public static Map<String, Integer> getCreationEnchantPriceTable() {
-        return new HashMap<>(CreationShopConstants.CREATION_ENCHANT_PRICE_TABLE);
+    public static Map<String, Integer> getEnchantBuyCostTable() {
+        return new HashMap<>(CreationShopConstants.ENCHANT_BUY_COST_TABLE);
+    }
+    
+    /**
+     * Gets a copy of the Item Learn Cost Table
+     * @return Map of item -> learn cost
+     */
+    public static Map<String, Integer> getItemLearnCostTable() {
+        return new HashMap<>(CreationShopConstants.ITEM_LEARN_COST_TABLE);
+    }
+    
+    /**
+     * Gets a copy of the Enchant Learn Cost Table
+     * @return Map of enchantment -> learn cost
+     */
+    public static Map<String, Integer> getEnchantLearnCostTable() {
+        return new HashMap<>(CreationShopConstants.ENCHANT_LEARN_COST_TABLE);
     }
     
     /**
@@ -401,21 +417,39 @@ public class ConfigHelper {
     }
     
     /**
-     * Gets the creation price for an item
+     * Gets the buy cost for an item
      * @param itemId The item ID
-     * @return The price or 0 if not found
+     * @return The buy cost or 0 if not found
      */
-    public static int getCreationPrice(String itemId) {
-        return CreationShopConstants.CREATION_PRICE_TABLE.getOrDefault(itemId, 0);
+    public static int getItemBuyCost(String itemId) {
+        return CreationShopConstants.ITEM_BUY_COST_TABLE.getOrDefault(itemId, 0);
     }
     
     /**
-     * Gets the creation enchant price for an enchantment
-     * @param enchantId The enchantment ID
-     * @return The price or 0 if not found
+     * Gets the learn cost for an item
+     * @param itemId The item ID
+     * @return The learn cost or 0 if not found
      */
-    public static int getCreationEnchantPrice(String enchantId) {
-        return CreationShopConstants.CREATION_ENCHANT_PRICE_TABLE.getOrDefault(enchantId, 0);
+    public static int getItemLearnCost(String itemId) {
+        return CreationShopConstants.ITEM_LEARN_COST_TABLE.getOrDefault(itemId, 0);
+    }
+    
+    /**
+     * Gets the buy cost for an enchantment
+     * @param enchantId The enchantment ID
+     * @return The buy cost or 0 if not found
+     */
+    public static int getEnchantBuyCost(String enchantId) {
+        return CreationShopConstants.ENCHANT_BUY_COST_TABLE.getOrDefault(enchantId, 0);
+    }
+    
+    /**
+     * Gets the learn cost for an enchantment
+     * @param enchantId The enchantment ID
+     * @return The learn cost or 0 if not found
+     */
+    public static int getEnchantLearnCost(String enchantId) {
+        return CreationShopConstants.ENCHANT_LEARN_COST_TABLE.getOrDefault(enchantId, 0);
     }
     
     // ===== Utility Methods =====

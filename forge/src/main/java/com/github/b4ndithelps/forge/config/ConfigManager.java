@@ -156,9 +156,11 @@ public class ConfigManager {
     
     private static CreationShopData createDefaultCreationShopDataObject() {
         CreationShopData data = new CreationShopData();
-        // Only initialize price tables - bitmap tables are now static final
-        data.creationPriceTable = new HashMap<>(CreationShopConstants.CREATION_PRICE_TABLE);
-        data.creationEnchantPriceTable = new HashMap<>(CreationShopConstants.CREATION_ENCHANT_PRICE_TABLE);
+        // Initialize all configurable cost tables
+        data.itemBuyCostTable = new HashMap<>(CreationShopConstants.ITEM_BUY_COST_TABLE);
+        data.enchantBuyCostTable = new HashMap<>(CreationShopConstants.ENCHANT_BUY_COST_TABLE);
+        data.itemLearnCostTable = new HashMap<>(CreationShopConstants.ITEM_LEARN_COST_TABLE);
+        data.enchantLearnCostTable = new HashMap<>(CreationShopConstants.ENCHANT_LEARN_COST_TABLE);
         return data;
     }
     
@@ -168,19 +170,33 @@ public class ConfigManager {
             return;
         }
         
-        // Only update price tables - bitmap tables are now static final and cannot be modified
-        if (creationShopData.creationPriceTable != null) {
-            CreationShopConstants.CREATION_PRICE_TABLE.clear();
-            CreationShopConstants.CREATION_PRICE_TABLE.putAll(creationShopData.creationPriceTable);
+        // Update buy cost tables
+        if (creationShopData.itemBuyCostTable != null) {
+            CreationShopConstants.ITEM_BUY_COST_TABLE.clear();
+            CreationShopConstants.ITEM_BUY_COST_TABLE.putAll(creationShopData.itemBuyCostTable);
         }
         
-        if (creationShopData.creationEnchantPriceTable != null) {
-            CreationShopConstants.CREATION_ENCHANT_PRICE_TABLE.clear();
-            CreationShopConstants.CREATION_ENCHANT_PRICE_TABLE.putAll(creationShopData.creationEnchantPriceTable);
+        if (creationShopData.enchantBuyCostTable != null) {
+            CreationShopConstants.ENCHANT_BUY_COST_TABLE.clear();
+            CreationShopConstants.ENCHANT_BUY_COST_TABLE.putAll(creationShopData.enchantBuyCostTable);
         }
         
-        LOGGER.info("Updated creation shop price tables - CREATION_PRICE entries: {}, CREATION_ENCHANT_PRICE entries: {}", 
-                   CreationShopConstants.CREATION_PRICE_TABLE.size(), CreationShopConstants.CREATION_ENCHANT_PRICE_TABLE.size());
+        // Update learn cost tables
+        if (creationShopData.itemLearnCostTable != null) {
+            CreationShopConstants.ITEM_LEARN_COST_TABLE.clear();
+            CreationShopConstants.ITEM_LEARN_COST_TABLE.putAll(creationShopData.itemLearnCostTable);
+        }
+        
+        if (creationShopData.enchantLearnCostTable != null) {
+            CreationShopConstants.ENCHANT_LEARN_COST_TABLE.clear();
+            CreationShopConstants.ENCHANT_LEARN_COST_TABLE.putAll(creationShopData.enchantLearnCostTable);
+        }
+        
+        LOGGER.info("Updated creation shop cost tables - Item Buy: {}, Enchant Buy: {}, Item Learn: {}, Enchant Learn: {}", 
+                   CreationShopConstants.ITEM_BUY_COST_TABLE.size(), 
+                   CreationShopConstants.ENCHANT_BUY_COST_TABLE.size(),
+                   CreationShopConstants.ITEM_LEARN_COST_TABLE.size(),
+                   CreationShopConstants.ENCHANT_LEARN_COST_TABLE.size());
     }
     
     // Dynamic config methods for KubeJS
@@ -292,9 +308,9 @@ public class ConfigManager {
     }
     
     public static class CreationShopData {
-        // Bitmap tables removed - they are now static final in CreationShopConstants
-        // Only price tables remain configurable
-        public Map<String, Integer> creationPriceTable = new HashMap<>();
-        public Map<String, Integer> creationEnchantPriceTable = new HashMap<>();
+        public Map<String, Integer> itemBuyCostTable = new HashMap<>();
+        public Map<String, Integer> enchantBuyCostTable = new HashMap<>();
+        public Map<String, Integer> itemLearnCostTable = new HashMap<>();
+        public Map<String, Integer> enchantLearnCostTable = new HashMap<>();
     }
 } 

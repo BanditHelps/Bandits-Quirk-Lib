@@ -7,9 +7,14 @@ import java.util.Map;
  * The following class contains constants available to the scripts
  * inside of the /data/mineha/kubejs_scripts/ folder.
  *
- * TODO: Add config settings for the following
+ * This class manages both buy costs and learn costs for the Creation Shop.
+ * Buy costs are for purchasing items you already know how to make.
+ * Learn costs are for learning new items/enchantments for the first time.
  */
 public class CreationShopConstants {
+
+    // ===== BIT MAPS FOR TRACKING UNLOCKED ITEMS =====
+    // These are static and not configurable - they define which bit represents each item
 
     // Stores the bit values for the Creation Shop - Map 1 (Static - not configurable)
     public static final Map<String, Integer> BIT_MAP_1_TABLE = new HashMap<String, Integer>() {{
@@ -141,8 +146,11 @@ public class CreationShopConstants {
         put("minecraft:impaling", 32);
     }};
 
-    // Stores the creation buy prices for items (Configurable)
-    public static Map<String, Integer> CREATION_PRICE_TABLE = new HashMap<String, Integer>() {{
+    // ===== BUY COSTS (Configurable) =====
+    // These are the costs for purchasing items you already know how to make
+
+    // Buy costs for items (Configurable)
+    public static Map<String, Integer> ITEM_BUY_COST_TABLE = new HashMap<String, Integer>() {{
         put("minecraft:coal", 10);
         put("minecraft:copper_ingot", 20);
         put("minecraft:iron_ingot", 40);
@@ -219,8 +227,8 @@ public class CreationShopConstants {
         put("minecraft:diamond_boots", 5);
     }};
 
-    // Buy Price (Configurable)
-    public static Map<String, Integer> CREATION_ENCHANT_PRICE_TABLE = new HashMap<String, Integer>() {{
+    // Buy costs for enchantments (Configurable)
+    public static Map<String, Integer> ENCHANT_BUY_COST_TABLE = new HashMap<String, Integer>() {{
         put("minecraft:unbreaking", 1);
         put("minecraft:projectile_protection", 1);
         put("minecraft:smite", 1);
@@ -257,6 +265,127 @@ public class CreationShopConstants {
         put("minecraft:soul_speed", 1);
         put("minecraft:channeling", 1);
         put("minecraft:impaling", 1);
+    }};
+
+    // ===== LEARN COSTS (Configurable) =====
+    // These are the costs for learning new items/enchantments for the first time
+
+    // Learn costs for items (Configurable)
+    public static Map<String, Integer> ITEM_LEARN_COST_TABLE = new HashMap<String, Integer>() {{
+        put("minecraft:coal", 64);
+        put("minecraft:copper_ingot", 64);
+        put("minecraft:iron_ingot", 64);
+        put("minecraft:lapis_lazuli", 64);
+        put("minecraft:redstone", 64);
+        put("minecraft:gold_ingot", 64);
+        put("minecraft:quartz", 64);
+        put("minecraft:diamond", 64);
+        put("minecraft:emerald", 64);
+        put("minecraft:stone_axe", 3);
+        put("minecraft:stone_pickaxe", 3);
+        put("minecraft:stone_shovel", 3);
+        put("minecraft:stone_hoe", 3);
+        put("minecraft:stone_sword", 3);
+        put("minecraft:iron_axe", 4);
+        put("minecraft:iron_pickaxe", 4);
+        put("minecraft:iron_shovel", 4);
+        put("minecraft:iron_hoe", 4);
+        put("minecraft:iron_sword", 4);
+        put("minecraft:gold_axe", 4);
+        put("minecraft:gold_pickaxe", 4);
+        put("minecraft:gold_shovel", 4);
+        put("minecraft:gold_hoe", 4);
+        put("minecraft:gold_sword", 4);
+        put("minecraft:diamond_axe", 5);
+        put("minecraft:diamond_pickaxe", 5);
+        put("minecraft:diamond_shovel", 5);
+        put("minecraft:diamond_hoe", 5);
+        put("minecraft:diamond_sword", 5);
+        put("minecraft:shield", 3);
+        put("minecraft:bow", 3);
+        put("minecraft:arrow", 24);
+        put("minecraft:crossbow", 3);
+        put("minecraft:firework_rocket", 64);
+        put("minecraft:dirt", 32);
+        put("minecraft:gravel", 32);
+        put("minecraft:sand", 32);
+        put("minecraft:grass_block", 32);
+        put("minecraft:red_sand", 32);
+        put("minecraft:cobblestone", 64);
+        put("minecraft:stone", 64);
+        put("minecraft:andesite", 64);
+        put("minecraft:granite", 64);
+        put("minecraft:diorite", 64);
+        put("minecraft:netherrack", 64);
+        put("minecraft:nether_bricks", 64);
+        put("minecraft:blackstone", 64);
+        put("minecraft:soul_sand", 128);
+        put("minecraft:obsidian", 64);
+        put("minecraft:deepslate", 64);
+        put("minecraft:cobbled_deepslate", 64);
+        put("minecraft:tuff", 64);
+        put("minecraft:stone_bricks", 64);
+        put("minecraft:calcite", 64);
+        put("minecraft:leather_helmet", 2);
+        put("minecraft:leather_chestplate", 2);
+        put("minecraft:leather_leggings", 2);
+        put("minecraft:leather_boots", 2);
+        put("minecraft:chainmail_helmet", 3);
+        put("minecraft:chainmail_chestplate", 3);
+        put("minecraft:chainmail_leggings", 3);
+        put("minecraft:chainmail_boots", 3);
+        put("minecraft:iron_helmet", 3);
+        put("minecraft:iron_chestplate", 3);
+        put("minecraft:iron_leggings", 3);
+        put("minecraft:iron_boots", 3);
+        put("minecraft:golden_helmet", 4);
+        put("minecraft:golden_chestplate", 4);
+        put("minecraft:golden_leggings", 4);
+        put("minecraft:golden_boots", 4);
+        put("minecraft:diamond_helmet", 4);
+        put("minecraft:diamond_chestplate", 4);
+        put("minecraft:diamond_leggings", 4);
+        put("minecraft:diamond_boots", 4);
+    }};
+
+    // Learn costs for enchantments (Configurable)
+    public static Map<String, Integer> ENCHANT_LEARN_COST_TABLE = new HashMap<String, Integer>() {{
+        put("minecraft:unbreaking", 1);
+        put("minecraft:projectile_protection", 1);
+        put("minecraft:smite", 1);
+        put("minecraft:lure", 1);
+        put("minecraft:fire_protection", 1);
+        put("minecraft:knockback", 1);
+        put("minecraft:punch", 1);
+        put("minecraft:sweeping_edge", 1);
+        put("minecraft:loyaty", 1);
+        put("minecraft:piercing", 1);
+        put("minecraft:flame", 1);
+        put("minecraft:blast_protection", 1);
+        put("minecraft:efficiency", 1);
+        put("minecraft:feather_falling", 1);
+        put("minecraft:depth_strider", 1);
+        put("minecraft:power", 1);
+        put("minecraft:respiration", 1);
+        put("minecraft:riptide", 1);
+        put("minecraft:aqua_affinity", 1);
+        put("minecraft:silk_touch", 1);
+        put("minecraft:fortune", 1);
+        put("minecraft:fire_aspect", 1);
+        put("minecraft:luck_of_the_sea", 1);
+        put("minecraft:thorns", 1);
+        put("minecraft:sharpness", 1);
+        put("minecraft:protection",1);
+        put("minecraft:frost_walker",1);
+        put("minecraft:multishot",1);
+        put("minecraft:quick_charge",1);
+        put("minecraft:swift_sneak",1);
+        put("minecraft:mending",1);
+        put("minecraft:infinity",1);
+        put("minecraft:looting",1);
+        put("minecraft:soul_speed",1);
+        put("minecraft:channeling",1);
+        put("minecraft:impaling",1);
     }};
 
     // Private constructor to prevent instantiation
