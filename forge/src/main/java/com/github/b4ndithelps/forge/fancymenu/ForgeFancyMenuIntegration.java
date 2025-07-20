@@ -20,6 +20,7 @@ public class ForgeFancyMenuIntegration {
     public static final NBTPlaceholder NBT_PLACEHOLDER = new NBTPlaceholder();
     public static final PersistentDataPlaceholder PERSISTENT_DATA_PLACEHOLDER = new PersistentDataPlaceholder();
     public static final EnchantmentDataPlaceholder ENCHANTMENT_DATA_PLACEHOLDER = new EnchantmentDataPlaceholder();
+    public static final DynamicConfigPlaceholder DYNAMIC_CONFIG_PLACEHOLDER = new DynamicConfigPlaceholder();
 
 
     @SuppressWarnings("removal")
@@ -36,6 +37,7 @@ public class ForgeFancyMenuIntegration {
                     PlaceholderRegistry.register(SCOREBOARD_PLACEHOLDER);
                     PlaceholderRegistry.register(NBT_PLACEHOLDER);
                     PlaceholderRegistry.register(PERSISTENT_DATA_PLACEHOLDER);
+                    PlaceholderRegistry.register(DYNAMIC_CONFIG_PLACEHOLDER);
 
                     BanditsQuirkLibForge.LOGGER.info("Fancy Menu Integration loaded successfully!");
                 } catch (Exception e) {
