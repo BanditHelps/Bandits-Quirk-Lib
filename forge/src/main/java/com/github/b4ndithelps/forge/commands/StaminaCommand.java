@@ -1,6 +1,7 @@
 package com.github.b4ndithelps.forge.commands;
 
 import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
+import com.github.b4ndithelps.forge.commands.ConfigCommand;
 import com.github.b4ndithelps.forge.systems.StaminaHelper;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.BoolArgumentType;
@@ -23,6 +24,7 @@ public class StaminaCommand {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(
                 Commands.literal("bql")
+                        .then(ConfigCommand.createConfigBranch())
                         .then(Commands.argument("player", EntityArgument.player())
                                 .then(Commands.literal("get")
                                         .then(Commands.literal("stamina")

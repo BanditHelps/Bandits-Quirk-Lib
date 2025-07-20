@@ -98,7 +98,7 @@ public class MineHaCreationCommand {
             itemId = slotInfo;
         }
 
-        Integer cost = CREATION_PRICE_TABLE.get(itemId);
+        Integer cost = ITEM_BUY_COST_TABLE.get(itemId);
 
         if (cost == null) {
             player.sendSystemMessage(Component.literal("Unknown item: " + itemId));

@@ -4,6 +4,7 @@ import com.github.b4ndithelps.forge.abilities.AbilityRegister;
 import com.github.b4ndithelps.forge.capabilities.CapabilityRegistration;
 import com.github.b4ndithelps.forge.conditions.CustomConditionSerializers;
 import com.github.b4ndithelps.forge.fancymenu.ForgeFancyMenuIntegration;
+import com.github.b4ndithelps.forge.config.ConfigManager;
 import dev.architectury.platform.forge.EventBuses;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
@@ -24,6 +25,9 @@ public final class BanditsQuirkLibForge {
         // Submit our event bus to let Architectury API register our content on the right time.
         EventBuses.registerModEventBus(BanditsQuirkLib.MOD_ID, modEventBus);
 
+
+        // Initialize config system
+        ConfigManager.initialize();
 
         // Run our common setup.
         BanditsQuirkLib.init();

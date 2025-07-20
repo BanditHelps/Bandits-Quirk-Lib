@@ -2,6 +2,7 @@ package com.github.b4ndithelps.forge.kubejs;
 
 import com.github.b4ndithelps.forge.systems.BodyStatusHelper;
 import com.github.b4ndithelps.forge.systems.StaminaHelper;
+import com.github.b4ndithelps.forge.config.ConfigHelper;
 import com.github.b4ndithelps.util.FileManager;
 import dev.latvian.mods.kubejs.KubeJSPlugin;
 import dev.latvian.mods.kubejs.script.BindingsEvent;
@@ -14,6 +15,7 @@ public class KubeJSForgeBindings extends KubeJSPlugin {
         event.add("Stamina", new StaminaHelper());
         event.add("BodyStatus", new BodyStatusHelper());
         event.add("FileUtils", new FileUtilsJS());
+        event.add("Config", new ConfigHelper());
     }
 
     public static class FileUtilsJS {

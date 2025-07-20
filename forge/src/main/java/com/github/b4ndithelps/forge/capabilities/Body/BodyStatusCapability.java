@@ -7,15 +7,13 @@ import java.util.Map;
 
 public class BodyStatusCapability implements IBodyStatusCapability {
     private final Map<BodyPart, BodyStatusData> bodyParts;
-    private final float defaultMaxDamage;
 
-    public BodyStatusCapability(float defaultMaxDamage) {
-        this.defaultMaxDamage = defaultMaxDamage;
+    public BodyStatusCapability() {
         this.bodyParts = new EnumMap<>(BodyPart.class);
 
         // Initialize all body parts
         for (BodyPart part : BodyPart.values()) {
-            bodyParts.put(part, new BodyStatusData(defaultMaxDamage));
+            bodyParts.put(part, new BodyStatusData());
         }
     }
 
@@ -124,7 +122,7 @@ public class BodyStatusCapability implements IBodyStatusCapability {
 
     @Override
     public void resetPart(BodyPart part) {
-        bodyParts.put(part, new BodyStatusData(defaultMaxDamage));
+        bodyParts.put(part, new BodyStatusData());
     }
 
     @Override

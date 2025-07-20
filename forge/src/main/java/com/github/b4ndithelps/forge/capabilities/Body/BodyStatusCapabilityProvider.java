@@ -22,7 +22,7 @@ public class BodyStatusCapabilityProvider implements ICapabilitySerializable<Com
 
     private IBodyStatusCapability createCapability() {
         if (this.capability == null) {
-            this.capability = new BodyStatusCapability(MAX_DAMAGE);
+            this.capability = new BodyStatusCapability();
         }
         return this.capability;
     }
