@@ -88,10 +88,6 @@ public class ConfigManager {
         StaminaConstants.STAMINA_GAIN_REQ = BQLConfig.INSTANCE.staminaGainReq.get();
         StaminaConstants.STAMINA_MAX_INCREASE = BQLConfig.INSTANCE.staminaMaxIncrease.get();
         StaminaConstants.UPGRADE_POINT_COST = BQLConfig.INSTANCE.upgradePointCost.get();
-        StaminaConstants.PLUS_ULTRA_TAG = BQLConfig.INSTANCE.plusUltraTag.get();
-        StaminaConstants.POWERS_DISABLED_TAG = BQLConfig.INSTANCE.powersDisabledTag.get();
-        StaminaConstants.STAMINA_PERCENT_SCOREBOARD = BQLConfig.INSTANCE.staminaPercentScoreboard.get();
-        StaminaConstants.UPGRADE_POINTS_SCOREBOARD = BQLConfig.INSTANCE.upgradePointsScoreboard.get();
         StaminaConstants.POINTS_TO_UPGRADE = BQLConfig.INSTANCE.pointsToUpgrade.get();
         StaminaConstants.STARTING_STAMINA_MIN = BQLConfig.INSTANCE.startingStaminaMin.get();
         StaminaConstants.STARTING_STAMINA_MAX = BQLConfig.INSTANCE.startingStaminaMax.get();

@@ -24,12 +24,12 @@ public class StaminaConstants {
     public static int UPGRADE_POINT_COST = 500;
 
     // Tags
-    public static String PLUS_ULTRA_TAG = "MineHa.PlusUltra";
-    public static String POWERS_DISABLED_TAG = "MineHa.PowersDisabled";
+    public static final String PLUS_ULTRA_TAG = "MineHa.PlusUltra";
+    public static final String POWERS_DISABLED_TAG = "MineHa.PowersDisabled";
 
     // Scoreboards
-    public static String STAMINA_PERCENT_SCOREBOARD = "MineHa.StaminaPercentage";
-    public static String UPGRADE_POINTS_SCOREBOARD = "MineHa.UpgradePoints";
+    public static final String STAMINA_PERCENT_SCOREBOARD = "MineHa.StaminaPercentage";
+    public static final String UPGRADE_POINTS_SCOREBOARD = "MineHa.UpgradePoints";
 
     public static int POINTS_TO_UPGRADE = 500;
     public static int STARTING_STAMINA_MIN = 50;

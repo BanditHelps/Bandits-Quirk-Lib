@@ -35,10 +35,6 @@ public class BQLConfig {
     public final ForgeConfigSpec.IntValue staminaGainReq;
     public final ForgeConfigSpec.IntValue staminaMaxIncrease;
     public final ForgeConfigSpec.IntValue upgradePointCost;
-    public final ForgeConfigSpec.ConfigValue<String> plusUltraTag;
-    public final ForgeConfigSpec.ConfigValue<String> powersDisabledTag;
-    public final ForgeConfigSpec.ConfigValue<String> staminaPercentScoreboard;
-    public final ForgeConfigSpec.ConfigValue<String> upgradePointsScoreboard;
     public final ForgeConfigSpec.IntValue pointsToUpgrade;
     public final ForgeConfigSpec.IntValue startingStaminaMin;
     public final ForgeConfigSpec.IntValue startingStaminaMax;
@@ -68,25 +64,25 @@ public class BQLConfig {
                 .push("stamina");
 
         this.exhaustionLevels = builder
-                .comment("Exhaustion levels (max 5 elements)")
+                .comment("Exhaustion level stamina range (max 5 elements)")
                 .defineList("exhaustion_levels",
                     Arrays.asList(0, -10, -35, -60, -80),
                     obj -> obj instanceof Integer);
 
         this.exhaustionMultipliers = builder
-                .comment("Exhaustion multipliers corresponding to exhaustion levels")
+                .comment("Percentage learn boost for each exhaustion level")
                 .defineList("exhaustion_multipliers",
                     Arrays.asList(1.0, 1.2, 1.5, 2.0, 3.0),
                     obj -> obj instanceof Double && (Double) obj > 0.0);
 
         this.staminaRegenCooldowns = builder
-                .comment("Stamina regeneration cooldowns in ticks")
+                .comment("Default stamina regeneration cooldowns per exhaustion level")
                 .defineList("stamina_regen_cooldowns",
                     Arrays.asList(3, 6, 8, 9, 10),
                     obj -> obj instanceof Integer && (Integer) obj > 0);
 
         this.staminaRegenRate = builder
-                .comment("Stamina regeneration rates")
+                .comment("Stamina regeneration rates. (% chance stamina point is recovered on tick)")
                 .defineList("stamina_regen_rate",
                     Arrays.asList(1.0, 0.5, 0.3, 0.2, 0.1),
                     obj -> obj instanceof Double && (Double) obj > 0.0);
@@ -115,24 +111,8 @@ public class BQLConfig {
                 .comment("Progress required to redeem an upgrade point")
                 .defineInRange("upgrade_point_cost", 500, 1, 10000);
 
-        this.plusUltraTag = builder
-                .comment("Plus Ultra tag identifier")
-                .define("plus_ultra_tag", "MineHa.PlusUltra");
-
-        this.powersDisabledTag = builder
-                .comment("Powers disabled tag identifier")
-                .define("powers_disabled_tag", "MineHa.PowersDisabled");
-
-        this.staminaPercentScoreboard = builder
-                .comment("Stamina percentage scoreboard name")
-                .define("stamina_percent_scoreboard", "MineHa.StaminaPercentage");
-
-        this.upgradePointsScoreboard = builder
-                .comment("Upgrade points scoreboard name")
-                .define("upgrade_points_scoreboard", "MineHa.UpgradePoints");
-
         this.pointsToUpgrade = builder
-                .comment("Points required to upgrade")
+                .comment("Stamina usage needed to get an upgrade point")
                 .defineInRange("points_to_upgrade", 500, 1, 10000);
 
         this.startingStaminaMin = builder
