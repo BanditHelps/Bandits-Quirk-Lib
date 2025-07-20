@@ -29,7 +29,7 @@ public class ConfigManager {
     private static final Map<String, Object> dynamicConfigs = new ConcurrentHashMap<>();
     private static final Map<String, String> configDescriptions = new ConcurrentHashMap<>();
     
-    // Creation shop data cache
+    // Creation shop data cache (only price tables now)
     private static CreationShopData creationShopData;
     
     public static void initialize() {
@@ -117,7 +117,7 @@ public class ConfigManager {
                 String content = Files.readString(creationShopFile);
                 creationShopData = GSON.fromJson(content, CreationShopData.class);
                 
-                // Update the constants class maps if needed
+                // Update the constants class price tables if needed
                 updateCreationShopConstants();
                 
                 LOGGER.info("Loaded creation shop data from: " + creationShopFile);
@@ -160,11 +160,7 @@ public class ConfigManager {
     
     private static CreationShopData createDefaultCreationShopDataObject() {
         CreationShopData data = new CreationShopData();
-        data.bitMap1Table = new HashMap<>(CreationShopConstants.BIT_MAP_1_TABLE);
-        data.bitMap2Table = new HashMap<>(CreationShopConstants.BIT_MAP_2_TABLE);
-        data.bitMap3Table = new HashMap<>(CreationShopConstants.BIT_MAP_3_TABLE);
-        data.bitMap4Table = new HashMap<>(CreationShopConstants.BIT_MAP_4_TABLE);
-        data.bitMap5Table = new HashMap<>(CreationShopConstants.BIT_MAP_5_TABLE);
+        // Only initialize price tables - bitmap tables are now static final
         data.creationPriceTable = new HashMap<>(CreationShopConstants.CREATION_PRICE_TABLE);
         data.creationEnchantPriceTable = new HashMap<>(CreationShopConstants.CREATION_ENCHANT_PRICE_TABLE);
         return data;
@@ -176,30 +172,19 @@ public class ConfigManager {
             return;
         }
         
-        // Update creation shop constants directly (no reflection needed)
-        CreationShopConstants.BIT_MAP_1_TABLE.clear();
-        CreationShopConstants.BIT_MAP_1_TABLE.putAll(creationShopData.bitMap1Table);
+        // Only update price tables - bitmap tables are now static final and cannot be modified
+        if (creationShopData.creationPriceTable != null) {
+            CreationShopConstants.CREATION_PRICE_TABLE.clear();
+            CreationShopConstants.CREATION_PRICE_TABLE.putAll(creationShopData.creationPriceTable);
+        }
         
-        CreationShopConstants.BIT_MAP_2_TABLE.clear();
-        CreationShopConstants.BIT_MAP_2_TABLE.putAll(creationShopData.bitMap2Table);
+        if (creationShopData.creationEnchantPriceTable != null) {
+            CreationShopConstants.CREATION_ENCHANT_PRICE_TABLE.clear();
+            CreationShopConstants.CREATION_ENCHANT_PRICE_TABLE.putAll(creationShopData.creationEnchantPriceTable);
+        }
         
-        CreationShopConstants.BIT_MAP_3_TABLE.clear();
-        CreationShopConstants.BIT_MAP_3_TABLE.putAll(creationShopData.bitMap3Table);
-        
-        CreationShopConstants.BIT_MAP_4_TABLE.clear();
-        CreationShopConstants.BIT_MAP_4_TABLE.putAll(creationShopData.bitMap4Table);
-        
-        CreationShopConstants.BIT_MAP_5_TABLE.clear();
-        CreationShopConstants.BIT_MAP_5_TABLE.putAll(creationShopData.bitMap5Table);
-        
-        CreationShopConstants.CREATION_PRICE_TABLE.clear();
-        CreationShopConstants.CREATION_PRICE_TABLE.putAll(creationShopData.creationPriceTable);
-        
-        CreationShopConstants.CREATION_ENCHANT_PRICE_TABLE.clear();
-        CreationShopConstants.CREATION_ENCHANT_PRICE_TABLE.putAll(creationShopData.creationEnchantPriceTable);
-        
-        LOGGER.info("Updated creation shop constants - BIT_MAP_1 entries: {}, CREATION_PRICE entries: {}", 
-                   CreationShopConstants.BIT_MAP_1_TABLE.size(), CreationShopConstants.CREATION_PRICE_TABLE.size());
+        LOGGER.info("Updated creation shop price tables - CREATION_PRICE entries: {}, CREATION_ENCHANT_PRICE entries: {}", 
+                   CreationShopConstants.CREATION_PRICE_TABLE.size(), CreationShopConstants.CREATION_ENCHANT_PRICE_TABLE.size());
     }
     
     // Dynamic config methods for KubeJS
@@ -311,11 +296,8 @@ public class ConfigManager {
     }
     
     public static class CreationShopData {
-        public Map<String, Integer> bitMap1Table = new HashMap<>();
-        public Map<String, Integer> bitMap2Table = new HashMap<>();
-        public Map<String, Integer> bitMap3Table = new HashMap<>();
-        public Map<String, Integer> bitMap4Table = new HashMap<>();
-        public Map<String, Integer> bitMap5Table = new HashMap<>();
+        // Bitmap tables removed - they are now static final in CreationShopConstants
+        // Only price tables remain configurable
         public Map<String, Integer> creationPriceTable = new HashMap<>();
         public Map<String, Integer> creationEnchantPriceTable = new HashMap<>();
     }
