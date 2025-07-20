@@ -9,23 +9,31 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
-public class DynamicConfigPlaceholder extends Placeholder {
+public class ShopConstantPlaceholder extends Placeholder {
 
-    public DynamicConfigPlaceholder() { super("dyn_config"); }
+    public ShopConstantPlaceholder() { super("shop_constant"); }
 
     @Override
     public String getReplacementFor(DeserializedPlaceholderString dps) {
-        String configKey = dps.values.get("key");
+        String key = dps.values.get("key");
+        String type = dps.values.get("type");
 
-        if (configKey == null) {
-            BanditsQuirkLibForge.LOGGER.error("Dynamic Config Placeholder requires 'key' value");
+        if (key == null || type == null) {
+            BanditsQuirkLibForge.LOGGER.error("Shop Constant Placeholder requires 'key' and 'type' values");
         }
 
         try {
-            return ConfigHelper.getConfig(configKey).toString();
+
+            return switch (type) {
+                case "item_learn" -> String.valueOf(ConfigHelper.getItemLearnCost(key));
+                case "enchant_learn" -> String.valueOf(ConfigHelper.getEnchantLearnCost(key));
+                case "item_buy" -> String.valueOf(ConfigHelper.getItemBuyCost(key));
+                case "enchant_buy" -> String.valueOf(ConfigHelper.getEnchantBuyCost(key));
+                default -> "error";
+            };
 
         } catch (Exception e) {
-            BanditsQuirkLibForge.LOGGER.error("Error in DynConfig placeholder" + e.getMessage());
+            BanditsQuirkLibForge.LOGGER.error("Error in ShopConstant placeholder" + e.getMessage());
             return "error";
         }
     }
@@ -34,21 +42,23 @@ public class DynamicConfigPlaceholder extends Placeholder {
     public @Nullable List<String> getValueNames() {
         List<String> values = new ArrayList<>();
         values.add("key");
+        values.add("type");
         return values;
     }
 
     @Override
     public @NotNull String getDisplayName() {
-        return "Get Dynamic Config";
+        return "Get Shop value from config";
     }
 
     @Override
     public @Nullable List<String> getDescription() {
         return Arrays.asList(
-                "Gets a value from the dynamic configs",
-                "Returns the value of the config key as a String, or 'error'",
+                "Gets a value from the shop constants",
+                "Returns the value of the as a String, or 'error'",
                 "Parameters:",
-                "- key: The Key located inside of the dynamic config file"
+                "- key: The minecraft item key",
+                "- type: 'item_buy', 'item_learn', 'enchant_buy', 'enchant_learn'"
         );
     }
 
@@ -61,7 +71,9 @@ public class DynamicConfigPlaceholder extends Placeholder {
     @Override
     public @NotNull DeserializedPlaceholderString getDefaultPlaceholderString() {
         Map<String, String> defaultValues = new HashMap<>();
-        defaultValues.put("key", "Bql.Example");
+        defaultValues.put("key", "minecraft:coal");
+        defaultValues.put("type",  "item_learn");
         return DeserializedPlaceholderString.build(this.getIdentifier(), defaultValues);
     }
 }
+
