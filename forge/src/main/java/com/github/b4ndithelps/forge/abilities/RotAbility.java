@@ -189,62 +189,43 @@ public class RotAbility extends Ability {
         int maxBlocksPerTick = 60; // Reduced for performance
         Set<BlockPos> processedPositions = new HashSet<>();
         
-        // Create a more defined cone shape using area filling
+        // Create a cone shape by checking all blocks in expanding squares
         int coneLength = newRadius;
         double coneHalfAngle = Math.toRadians(30); // 60 degree total cone (30 degrees each side)
         
-        // Process blocks in cone layers from current radius to new radius
-        for (int distance = Math.max(1, currentRadius); distance <= coneLength && blocksProcessed < maxBlocksPerTick; distance++) {
-            // Calculate the cone width at this distance
-            double coneHalfWidth = Math.tan(coneHalfAngle) * distance;
-            int maxWidth = (int) Math.ceil(coneHalfWidth);
-            
-            // Create perpendicular direction vectors for scanning across the cone
-            double perpX = -lookZ;  // Perpendicular to look direction
-            double perpZ = lookX;
-            
-            // Calculate base position at this distance along look direction
-            double baseX = centerPos.getX() + lookX * distance;
-            double baseZ = centerPos.getZ() + lookZ * distance;
-            
-            // Scan across the cone width at this distance
-            for (int width = -maxWidth; width <= maxWidth; width++) {
-                // Calculate position across the cone width
-                double scanX = baseX + perpX * width;
-                double scanZ = baseZ + perpZ * width;
+        // Process blocks in expanding area from current radius to new radius
+        int startRadius = Math.max(1, currentRadius);
+        int searchSize = coneLength + 2; // Add buffer for edge cases
+        
+        // Check all blocks in a square area, but only process those in the cone and within the expanding radius
+        for (int x = centerPos.getX() - searchSize; x <= centerPos.getX() + searchSize && blocksProcessed < maxBlocksPerTick; x++) {
+            for (int z = centerPos.getZ() - searchSize; z <= centerPos.getZ() + searchSize && blocksProcessed < maxBlocksPerTick; z++) {
+                // Calculate distance from center
+                double deltaX = x - centerPos.getX();
+                double deltaZ = z - centerPos.getZ();
+                double distance = Math.sqrt(deltaX * deltaX + deltaZ * deltaZ);
                 
-                // Convert to block coordinates
-                int blockX = (int) Math.floor(scanX);
-                int blockZ = (int) Math.floor(scanZ);
+                // Skip blocks that are too close (already processed) or too far
+                if (distance < startRadius || distance > coneLength) continue;
                 
-                // Check if this position is actually within the cone angle
-                double deltaX = blockX - centerPos.getX();
-                double deltaZ = blockZ - centerPos.getZ();
-                double blockDistance = Math.sqrt(deltaX * deltaX + deltaZ * deltaZ);
-                
-                if (blockDistance > 0.5) { // Skip center block to avoid division by zero
-                    // Calculate angle from look direction to this block
-                    double blockAngle = Math.atan2(deltaZ, deltaX);
-                    double lookAngle = Math.atan2(lookZ, lookX);
-                    double angleDiff = Math.abs(blockAngle - lookAngle);
+                // Check if this block is within the cone angle
+                if (distance > 0.5) { // Skip center to avoid division by zero
+                    // Calculate dot product to check if block is in front of player
+                    double dotProduct = (deltaX * lookX + deltaZ * lookZ) / distance;
                     
-                    // Normalize angle difference to [0, PI]
-                    if (angleDiff > Math.PI) angleDiff = 2 * Math.PI - angleDiff;
+                    // Convert dot product to angle (dot product = cos(angle))
+                    double angleFromLookDirection = Math.acos(Math.max(-1.0, Math.min(1.0, dotProduct)));
                     
                     // Skip blocks outside the cone angle
-                    if (angleDiff > coneHalfAngle) continue;
+                    if (angleFromLookDirection > coneHalfAngle) continue;
                 }
                 
-                // Process blocks at this position
-                BlockPos targetPos = new BlockPos(blockX, centerPos.getY(), blockZ);
+                // This block is within the cone and distance range - process it
+                BlockPos targetPos = new BlockPos(x, centerPos.getY(), z);
                 if (processRotBlockColumn(level, targetPos, processedPositions)) {
                     blocksProcessed++;
                 }
-                
-                if (blocksProcessed >= maxBlocksPerTick) break;
             }
-            
-            if (blocksProcessed >= maxBlocksPerTick) break;
         }
 
         // Apply decay effect to entities within the rot cone
@@ -270,13 +251,15 @@ public class RotAbility extends Ability {
     private boolean processRotBlockColumn(ServerLevel level, BlockPos centerPos, Set<BlockPos> processedPositions) {
         boolean processedAny = false;
         
-        // Check blocks in a vertical range
-        for (int y = -4; y <= 6; y++) {
-            int checkY = centerPos.getY() + y;
-            
-            // Don't go too deep underground or too high
-            if (checkY < level.getMinBuildHeight() || checkY > centerPos.getY() + 12) continue;
-            
+        // Find the terrain surface at this X,Z coordinate
+        int surfaceY = findTerrainSurface(level, centerPos.getX(), centerPos.getZ(), centerPos.getY());
+        
+        // Process blocks around the surface level
+        // Go from a few blocks below surface to well above for trees
+        int minY = Math.max(level.getMinBuildHeight(), surfaceY - 3);
+        int maxY = Math.min(level.getMaxBuildHeight() - 1, surfaceY + 15);
+        
+        for (int checkY = minY; checkY <= maxY; checkY++) {
             BlockPos checkPos = new BlockPos(centerPos.getX(), checkY, centerPos.getZ());
             
             // Skip if already processed
@@ -333,6 +316,38 @@ public class RotAbility extends Ability {
         }
         
         return processedAny;
+    }
+
+    /**
+     * Finds the terrain surface at the given X,Z coordinate by scanning from above.
+     * Returns the Y coordinate of the highest solid, non-plant block (the "ground").
+     */
+    private int findTerrainSurface(ServerLevel level, int x, int z, int startY) {
+        // Start scanning from above the player position
+        int scanStartY = Math.min(level.getMaxBuildHeight() - 1, startY + 20);
+        int scanEndY = Math.max(level.getMinBuildHeight(), startY - 40);
+        
+        // Scan downward to find the terrain surface
+        for (int y = scanStartY; y >= scanEndY; y--) {
+            BlockPos checkPos = new BlockPos(x, y, z);
+            BlockState blockState = level.getBlockState(checkPos);
+            Block block = blockState.getBlock();
+            
+            // Skip air and plant-like blocks to find actual terrain
+            if (block == Blocks.AIR || 
+                PLANT_BLOCKS.contains(block) || 
+                LEAF_BLOCKS.contains(block) ||
+                block == Blocks.SNOW ||
+                block == Blocks.POWDER_SNOW) {
+                continue;
+            }
+            
+            // Found a solid block - this is our terrain surface
+            return y;
+        }
+        
+        // If no solid block found, return the start Y as fallback
+        return startY;
     }
 
     private void propagateTreeDecay(ServerLevel level, BlockPos startPos, Set<BlockPos> processedPositions) {
