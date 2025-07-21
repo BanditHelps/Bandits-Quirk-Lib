@@ -35,16 +35,12 @@ import net.threetag.palladiumcore.util.Platform;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class RotAbility extends Ability implements AnimationTimer {
+public class RotAbility extends Ability {
 
     // Configurable properties
     public static final PalladiumProperty<Integer> DAMAGE = new IntegerProperty("damage").configurable("Base damage value for the rot ability");
     public static final PalladiumProperty<Integer> MAX_RADIUS = new IntegerProperty("max_radius").configurable("Maximum radius the rot can reach");
     public static final PalladiumProperty<Float> SPEED = new FloatProperty("speed").configurable("Speed at which the rot ability activates. Use 0 for instant activation.");
-    
-    // Animation properties
-    public static final PalladiumProperty<Float> VALUE;
-    public static final PalladiumProperty<Float> PREV_VALUE;
     
     private static final String ROT_RADIUS_OBJECTIVE = "MineHa.Decay.RotRadius";
     
@@ -67,36 +63,45 @@ public class RotAbility extends Ability implements AnimationTimer {
         Blocks.VINE, Blocks.GLOW_LICHEN, Blocks.MOSS_CARPET, Blocks.MOSS_BLOCK
     );
 
-    static {
-        VALUE = new FloatProperty("value").sync(SyncType.NONE).disablePersistence();
-        PREV_VALUE = new FloatProperty("prev_value").sync(SyncType.NONE).disablePersistence();
-    }
+    // Tree blocks for propagation
+    private static final Set<Block> WOOD_BLOCKS = Set.of(
+        Blocks.OAK_LOG, Blocks.SPRUCE_LOG, Blocks.BIRCH_LOG,
+        Blocks.JUNGLE_LOG, Blocks.ACACIA_LOG, Blocks.DARK_OAK_LOG,
+        Blocks.CRIMSON_STEM, Blocks.WARPED_STEM,
+        Blocks.STRIPPED_OAK_LOG, Blocks.STRIPPED_SPRUCE_LOG, Blocks.STRIPPED_BIRCH_LOG,
+        Blocks.STRIPPED_JUNGLE_LOG, Blocks.STRIPPED_ACACIA_LOG, Blocks.STRIPPED_DARK_OAK_LOG,
+        Blocks.STRIPPED_CRIMSON_STEM, Blocks.STRIPPED_WARPED_STEM,
+        Blocks.OAK_WOOD, Blocks.SPRUCE_WOOD, Blocks.BIRCH_WOOD,
+        Blocks.JUNGLE_WOOD, Blocks.ACACIA_WOOD, Blocks.DARK_OAK_WOOD,
+        Blocks.CRIMSON_HYPHAE, Blocks.WARPED_HYPHAE,
+        Blocks.STRIPPED_OAK_WOOD, Blocks.STRIPPED_SPRUCE_WOOD, Blocks.STRIPPED_BIRCH_WOOD,
+        Blocks.STRIPPED_JUNGLE_WOOD, Blocks.STRIPPED_ACACIA_WOOD, Blocks.STRIPPED_DARK_OAK_WOOD,
+        Blocks.STRIPPED_CRIMSON_HYPHAE, Blocks.STRIPPED_WARPED_HYPHAE
+    );
+
+    private static final Set<Block> LEAF_BLOCKS = Set.of(
+        Blocks.OAK_LEAVES, Blocks.SPRUCE_LEAVES, Blocks.BIRCH_LEAVES,
+        Blocks.JUNGLE_LEAVES, Blocks.ACACIA_LEAVES, Blocks.DARK_OAK_LEAVES,
+        Blocks.AZALEA_LEAVES, Blocks.FLOWERING_AZALEA_LEAVES,
+        Blocks.NETHER_WART_BLOCK, Blocks.WARPED_WART_BLOCK
+    );
 
     public RotAbility() {
-        super();
         this.withProperty(DAMAGE, 10)
             .withProperty(MAX_RADIUS, 15)
             .withProperty(SPEED, 0.1F); // Slower activation for dramatic effect
     }
 
     @Override
-    public void registerUniqueProperties(PropertyManager manager) {
-        manager.register(VALUE, 0.0F);
-        manager.register(PREV_VALUE, 0.0F);
-    }
-
-    @Override
     public void firstTick(LivingEntity entity, AbilityInstance entry, IPowerHolder holder, boolean enabled) {
         if (enabled && entity instanceof ServerPlayer player) {
-            if (entry.getProperty(VALUE) <= 0.0F) {
                 // Start the rot effect - damage held item and play initial sound
                 damageHeldItem(player, entry.getProperty(DAMAGE));
                 
                 if (entity.level() instanceof ServerLevel serverLevel) {
-                    serverLevel.playSound(null, player.blockPosition(), 
-                        SoundEvents.WITHER_SPAWN, SoundSource.PLAYERS, 0.3f, 1.5f);
+                    serverLevel.playSound(null, player.blockPosition(),
+                            SoundEvents.WITHER_SPAWN, SoundSource.PLAYERS, 0.3f, 1.5f);
                 }
-            }
         }
     }
 
@@ -106,34 +111,36 @@ public class RotAbility extends Ability implements AnimationTimer {
         if (!(entity.level() instanceof ServerLevel serverLevel)) return;
 
         float speed = entry.getProperty(SPEED);
-        float value = entry.getProperty(VALUE);
-        entry.setUniqueProperty(PREV_VALUE, value);
-
-        boolean active = enabled;
-        
-        if (speed > 0.0F) {
-            // Handle animation progression
-            if (entry.isEnabled() && value < 1.0F) {
-                entry.setUniqueProperty(VALUE, value = Math.min(value + speed, 1.0F));
-            } else if (!entry.isEnabled() && value > 0.0F) {
-                entry.setUniqueProperty(VALUE, value = Math.max(value - speed, 0.0F));
-            }
-            
-            active = value >= 1.0F;
-        }
 
         // Execute rot effect when fully active
-        if (active) {
+        if (enabled) {
             try {
                 executeRotEffect(player, serverLevel, entry);
             } catch (Exception e) {
                 BanditsQuirkLibForge.LOGGER.error("Error executing rot ability: ", e);
             }
         }
-        
-        // Add continuous visual effects while charging up
-        if (value > 0.0F && value < 1.0F) {
-            addChargingEffects(serverLevel, player, value);
+    }
+
+    @Override
+    public void lastTick(LivingEntity entity, AbilityInstance entry, IPowerHolder holder, boolean enabled) {
+        // Reset the decay radius when the ability ends
+        if (entity instanceof ServerPlayer player) {
+            resetDecayRadius(player);
+            
+            if (entity.level() instanceof ServerLevel serverLevel) {
+                // Play ending sound effect
+                serverLevel.playSound(null, player.blockPosition(),
+                        SoundEvents.WITHER_DEATH, SoundSource.PLAYERS, 0.5f, 1.2f);
+            }
+        }
+    }
+
+    private void resetDecayRadius(ServerPlayer player) {
+        Scoreboard scoreboard = player.getServer().getScoreboard();
+        Objective rotRadiusObj = scoreboard.getObjective(ROT_RADIUS_OBJECTIVE);
+        if (rotRadiusObj != null) {
+            scoreboard.getOrCreatePlayerScore(player.getGameProfile().getName(), rotRadiusObj).setScore(0);
         }
     }
 
@@ -180,55 +187,34 @@ public class RotAbility extends Ability implements AnimationTimer {
 
         int blocksProcessed = 0;
         int maxBlocksPerTick = 60; // Reduced for performance
+        Set<BlockPos> processedPositions = new HashSet<>();
         
-        // Create a cone-shaped rot pattern extending forward from the player
+        // Create a more defined cone shape
         int coneLength = newRadius;
-        double coneAngle = Math.toRadians(60); // Wider 60 degree cone
+        double coneHalfAngle = Math.toRadians(30); // 60 degree total cone (30 degrees each side)
         
-        // Process blocks in a cone shape in front of the player
-        for (int distance = Math.max(0, currentRadius); distance <= coneLength && blocksProcessed < maxBlocksPerTick; distance++) {
-            // Calculate cone width at this distance
-            double coneWidth = Math.tan(coneAngle) * distance;
-            int maxWidth = Math.max(1, (int) Math.floor(coneWidth));
+        // Process blocks in cone layers from current radius to new radius
+        for (int distance = Math.max(1, currentRadius); distance <= coneLength && blocksProcessed < maxBlocksPerTick; distance++) {
+            // Calculate number of rays to cast at this distance for smoother cone
+            int numRays = Math.max(8, distance * 2);
             
-            // Include center area for close distances
-            boolean includeCenter = distance <= 3;
-            
-            for (int side = -maxWidth; side <= maxWidth; side++) {
-                // Calculate perpendicular direction
-                double perpX = -lookZ;
-                double perpZ = lookX;
+            for (int ray = 0; ray < numRays; ray++) {
+                double rayAngle = (ray / (double)numRays) * (coneHalfAngle * 2) - coneHalfAngle;
                 
-                // Calculate position in the cone
-                double baseX = lookX * distance;
-                double baseZ = lookZ * distance;
-                double offsetX = perpX * side;
-                double offsetZ = perpZ * side;
+                // Calculate ray direction
+                double rayX = lookX * Math.cos(rayAngle) - lookZ * Math.sin(rayAngle);
+                double rayZ = lookX * Math.sin(rayAngle) + lookZ * Math.cos(rayAngle);
                 
-                int x = (int) Math.round(baseX + offsetX);
-                int z = (int) Math.round(baseZ + offsetZ);
+                // Calculate target position along this ray
+                int targetX = (int) Math.round(centerPos.getX() + rayX * distance);
+                int targetZ = (int) Math.round(centerPos.getZ() + rayZ * distance);
                 
-                // Process center area for close distances
-                if (includeCenter && distance <= 2) {
-                    for (int centerX = -1; centerX <= 1; centerX++) {
-                        for (int centerZ = -1; centerZ <= 1; centerZ++) {
-                            if (Math.abs(centerX) + Math.abs(centerZ) <= distance) {
-                                if (processRotBlock(level, centerPos, centerX, centerZ, distance)) {
-                                    blocksProcessed++;
-                                }
-                                if (blocksProcessed >= maxBlocksPerTick) break;
-                            }
-                        }
-                        if (blocksProcessed >= maxBlocksPerTick) break;
-                    }
+                // Process blocks at this position
+                if (processRotBlockColumn(level, new BlockPos(targetX, centerPos.getY(), targetZ), processedPositions)) {
+                    blocksProcessed++;
                 }
                 
-                // Process the main cone block
-                if (blocksProcessed < maxBlocksPerTick) {
-                    if (processRotBlock(level, centerPos, x, z, distance)) {
-                        blocksProcessed++;
-                    }
-                }
+                if (blocksProcessed >= maxBlocksPerTick) break;
             }
         }
 
@@ -236,7 +222,7 @@ public class RotAbility extends Ability implements AnimationTimer {
         applyDecayToEntities(player, level, centerPos, newRadius, lookX, lookZ);
 
         // Add visual and audio effects
-        addRotVisualization(level, centerPos, newRadius);
+        addRotVisualization(level, centerPos, newRadius, lookX, lookZ);
         
         if (newRadius > currentRadius) {
             // Enhanced effects when radius increases
@@ -252,35 +238,22 @@ public class RotAbility extends Ability implements AnimationTimer {
         }
     }
 
-    private void addChargingEffects(ServerLevel level, ServerPlayer player, float chargeProgress) {
-        BlockPos pos = player.blockPosition();
-        
-        // Charging particles at player's feet
-        if (ThreadLocalRandom.current().nextFloat() < chargeProgress * 0.5f) {
-            level.sendParticles(ParticleTypes.SMOKE, 
-                pos.getX() + ThreadLocalRandom.current().nextFloat() - 0.5f, 
-                pos.getY() - 0.2, 
-                pos.getZ() + ThreadLocalRandom.current().nextFloat() - 0.5f, 
-                1, 0.1, 0.1, 0.1, 0.01);
-        }
-        
-        // Play charging sound
-        if (chargeProgress > 0.8f && ThreadLocalRandom.current().nextFloat() < 0.1f) {
-            level.playSound(null, pos, SoundEvents.WITHER_HURT, SoundSource.PLAYERS, 0.2f, 1.8f);
-        }
-    }
-
-    private boolean processRotBlock(ServerLevel level, BlockPos centerPos, int offsetX, int offsetZ, int distance) {
+    private boolean processRotBlockColumn(ServerLevel level, BlockPos centerPos, Set<BlockPos> processedPositions) {
         boolean processedAny = false;
         
         // Check blocks in a vertical range
-        for (int y = -4; y <= 3; y++) {
+        for (int y = -4; y <= 6; y++) {
             int checkY = centerPos.getY() + y;
             
             // Don't go too deep underground or too high
-            if (checkY < level.getMinBuildHeight() || checkY > centerPos.getY() + 8) continue;
+            if (checkY < level.getMinBuildHeight() || checkY > centerPos.getY() + 12) continue;
             
-            BlockPos checkPos = new BlockPos(centerPos.getX() + offsetX, checkY, centerPos.getZ() + offsetZ);
+            BlockPos checkPos = new BlockPos(centerPos.getX(), checkY, centerPos.getZ());
+            
+            // Skip if already processed
+            if (processedPositions.contains(checkPos)) continue;
+            processedPositions.add(checkPos);
+            
             BlockState blockState = level.getBlockState(checkPos);
             Block block = blockState.getBlock();
             
@@ -297,10 +270,15 @@ public class RotAbility extends Ability implements AnimationTimer {
                     3, 0.3, 0.3, 0.3, 0.05);
                 processedAny = true;
             }
-            // Destroy plant life
-            else if (PLANT_BLOCKS.contains(block)) {
+            // Destroy plant life and propagate to connected trees
+            else if (PLANT_BLOCKS.contains(block) || LEAF_BLOCKS.contains(block)) {
+                // If it's a leaf block, propagate decay to connected tree parts
+                if (LEAF_BLOCKS.contains(block)) {
+                    propagateTreeDecay(level, checkPos, processedPositions);
+                }
+                
                 // Schedule destruction with delay for visual effect
-                int delay = ThreadLocalRandom.current().nextInt(10) + distance;
+                int delay = ThreadLocalRandom.current().nextInt(10) + 1;
                 scheduleBlockDestroy(level, checkPos, delay);
                 
                 // Add withering particles
@@ -309,9 +287,77 @@ public class RotAbility extends Ability implements AnimationTimer {
                     2, 0.2, 0.2, 0.2, 0.02);
                 processedAny = true;
             }
+            // If it's a wood block, decay it and connected tree parts
+            else if (WOOD_BLOCKS.contains(block)) {
+                propagateTreeDecay(level, checkPos, processedPositions);
+                
+                // Schedule destruction with delay
+                int delay = ThreadLocalRandom.current().nextInt(15) + 5;
+                scheduleBlockDestroy(level, checkPos, delay);
+                
+                // Add decay particles
+                level.sendParticles(ParticleTypes.LARGE_SMOKE, 
+                    checkPos.getX() + 0.5, checkPos.getY() + 0.5, checkPos.getZ() + 0.5, 
+                    4, 0.3, 0.3, 0.3, 0.08);
+                processedAny = true;
+            }
         }
         
         return processedAny;
+    }
+
+    private void propagateTreeDecay(ServerLevel level, BlockPos startPos, Set<BlockPos> processedPositions) {
+        Queue<BlockPos> toProcess = new LinkedList<>();
+        Set<BlockPos> visited = new HashSet<>();
+        toProcess.offer(startPos);
+        visited.add(startPos);
+        
+        int maxBlocks = 50; // Limit to prevent lag
+        int processedBlocks = 0;
+        
+        while (!toProcess.isEmpty() && processedBlocks < maxBlocks) {
+            BlockPos currentPos = toProcess.poll();
+            processedBlocks++;
+            
+            // Check all 26 adjacent positions (including diagonals)
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dy = -1; dy <= 1; dy++) {
+                    for (int dz = -1; dz <= 1; dz++) {
+                        if (dx == 0 && dy == 0 && dz == 0) continue;
+                        
+                        BlockPos neighborPos = currentPos.offset(dx, dy, dz);
+                        
+                        // Skip if already visited or processed
+                        if (visited.contains(neighborPos) || processedPositions.contains(neighborPos)) continue;
+                        
+                        BlockState neighborState = level.getBlockState(neighborPos);
+                        Block neighborBlock = neighborState.getBlock();
+                        
+                        // If it's a tree-related block, add it to the decay queue
+                        if (WOOD_BLOCKS.contains(neighborBlock) || LEAF_BLOCKS.contains(neighborBlock)) {
+                            visited.add(neighborPos);
+                            toProcess.offer(neighborPos);
+                            processedPositions.add(neighborPos);
+                            
+                            // Schedule destruction
+                            int delay = ThreadLocalRandom.current().nextInt(20) + processedBlocks;
+                            scheduleBlockDestroy(level, neighborPos, delay);
+                            
+                            // Add particles
+                            if (WOOD_BLOCKS.contains(neighborBlock)) {
+                                level.sendParticles(ParticleTypes.LARGE_SMOKE, 
+                                    neighborPos.getX() + 0.5, neighborPos.getY() + 0.5, neighborPos.getZ() + 0.5, 
+                                    3, 0.3, 0.3, 0.3, 0.05);
+                            } else {
+                                level.sendParticles(ParticleTypes.SMOKE, 
+                                    neighborPos.getX() + 0.5, neighborPos.getY() + 0.5, neighborPos.getZ() + 0.5, 
+                                    2, 0.2, 0.2, 0.2, 0.02);
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private void applyDecayToEntities(ServerPlayer caster, ServerLevel level, BlockPos centerPos, int radius, double lookX, double lookZ) {
@@ -322,6 +368,7 @@ public class RotAbility extends Ability implements AnimationTimer {
         );
         
         List<LivingEntity> entities = level.getEntitiesOfClass(LivingEntity.class, searchArea);
+        double coneHalfAngle = Math.toRadians(30); // 30 degrees each side
         
         for (LivingEntity entity : entities) {
             // Skip the caster
@@ -335,11 +382,16 @@ public class RotAbility extends Ability implements AnimationTimer {
             // Only affect entities within radius
             if (distance > radius) continue;
             
-            // Check if entity is in front of the player (cone check)
+            // Check if entity is within the cone
             if (distance > 1) {
-                double dotProduct = (entityX * lookX + entityZ * lookZ) / distance;
-                double coneThreshold = Math.cos(Math.toRadians(60)); // 60 degree cone
-                if (dotProduct < coneThreshold) continue;
+                double entityAngle = Math.atan2(entityZ, entityX);
+                double lookAngle = Math.atan2(lookZ, lookX);
+                double angleDiff = Math.abs(entityAngle - lookAngle);
+                
+                // Normalize angle difference
+                if (angleDiff > Math.PI) angleDiff = 2 * Math.PI - angleDiff;
+                
+                if (angleDiff > coneHalfAngle) continue;
             }
             
             // Calculate effect duration and amplifier based on proximity
@@ -363,23 +415,31 @@ public class RotAbility extends Ability implements AnimationTimer {
         }
     }
 
-    private void addRotVisualization(ServerLevel level, BlockPos centerPos, int radius) {
+    private void addRotVisualization(ServerLevel level, BlockPos centerPos, int radius, double lookX, double lookZ) {
         if (radius <= 0) return;
         
-        // Create particle ring around the perimeter
-        double circumference = 2 * Math.PI * radius;
-        int numPerimeterParticles = Math.min(Math.max(6, (int)(circumference / 3)), 20);
+        double coneHalfAngle = Math.toRadians(30);
         
-        for (int i = 0; i < numPerimeterParticles; i++) {
-            double angle = (i / (double)numPerimeterParticles) * 2 * Math.PI;
-            double x = centerPos.getX() + Math.cos(angle) * radius;
-            double z = centerPos.getZ() + Math.sin(angle) * radius;
-            double y = centerPos.getY() - 0.5 + ThreadLocalRandom.current().nextDouble() * 1.5;
-            
-            level.sendParticles(ParticleTypes.LARGE_SMOKE, x, y, z, 1, 0.1, 0.2, 0.1, 0.02);
-            
-            if (ThreadLocalRandom.current().nextDouble() < 0.4) {
-                level.sendParticles(ParticleTypes.ASH, x, y + 0.3, z, 1, 0.1, 0.3, 0.1, 0.01);
+        // Create particle cone outline
+        int numParticles = Math.min(Math.max(8, radius * 2), 24);
+        
+        for (int i = 0; i < numParticles; i++) {
+            // Create particles along both edges of the cone
+            for (int side = -1; side <= 1; side += 2) {
+                double angle = side * coneHalfAngle;
+                double rayX = lookX * Math.cos(angle) - lookZ * Math.sin(angle);
+                double rayZ = lookX * Math.sin(angle) + lookZ * Math.cos(angle);
+                
+                double distance = radius * (0.5 + (i / (double)numParticles) * 0.5);
+                double x = centerPos.getX() + rayX * distance;
+                double z = centerPos.getZ() + rayZ * distance;
+                double y = centerPos.getY() - 0.5 + ThreadLocalRandom.current().nextDouble() * 1.5;
+                
+                level.sendParticles(ParticleTypes.LARGE_SMOKE, x, y, z, 1, 0.1, 0.2, 0.1, 0.02);
+                
+                if (ThreadLocalRandom.current().nextDouble() < 0.3) {
+                    level.sendParticles(ParticleTypes.ASH, x, y + 0.3, z, 1, 0.1, 0.3, 0.1, 0.01);
+                }
             }
         }
     }
@@ -410,17 +470,7 @@ public class RotAbility extends Ability implements AnimationTimer {
     }
 
     @Override
-    public float getAnimationValue(AbilityInstance entry, float partialTick) {
-        return Mth.lerp(partialTick, entry.getProperty(PREV_VALUE), entry.getProperty(VALUE));
-    }
-
-    @Override
-    public float getAnimationTimer(AbilityInstance entry, float partialTick, boolean maxedOut) {
-        return maxedOut ? 1.0F : Mth.lerp(partialTick, entry.getProperty(PREV_VALUE), entry.getProperty(VALUE));
-    }
-
-    @Override
     public String getDocumentationDescription() {
-        return "Sends out a cone-shaped wave of rot in front of the player, destroying plant life and applying decay effects to entities. Hold the activation key to charge up the ability.";
+        return "Sends out a cone-shaped wave of rot in front of the player, destroying plant life and applying decay effects to entities. Decay spreads to connected tree parts. Hold the activation key to charge up the ability.";
     }
 } 
