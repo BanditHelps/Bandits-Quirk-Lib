@@ -189,33 +189,62 @@ public class RotAbility extends Ability {
         int maxBlocksPerTick = 60; // Reduced for performance
         Set<BlockPos> processedPositions = new HashSet<>();
         
-        // Create a more defined cone shape
+        // Create a more defined cone shape using area filling
         int coneLength = newRadius;
         double coneHalfAngle = Math.toRadians(30); // 60 degree total cone (30 degrees each side)
         
         // Process blocks in cone layers from current radius to new radius
         for (int distance = Math.max(1, currentRadius); distance <= coneLength && blocksProcessed < maxBlocksPerTick; distance++) {
-            // Calculate number of rays to cast at this distance for smoother cone
-            int numRays = Math.max(8, distance * 2);
+            // Calculate the cone width at this distance
+            double coneHalfWidth = Math.tan(coneHalfAngle) * distance;
+            int maxWidth = (int) Math.ceil(coneHalfWidth);
             
-            for (int ray = 0; ray < numRays; ray++) {
-                double rayAngle = (ray / (double)numRays) * (coneHalfAngle * 2) - coneHalfAngle;
+            // Create perpendicular direction vectors for scanning across the cone
+            double perpX = -lookZ;  // Perpendicular to look direction
+            double perpZ = lookX;
+            
+            // Calculate base position at this distance along look direction
+            double baseX = centerPos.getX() + lookX * distance;
+            double baseZ = centerPos.getZ() + lookZ * distance;
+            
+            // Scan across the cone width at this distance
+            for (int width = -maxWidth; width <= maxWidth; width++) {
+                // Calculate position across the cone width
+                double scanX = baseX + perpX * width;
+                double scanZ = baseZ + perpZ * width;
                 
-                // Calculate ray direction
-                double rayX = lookX * Math.cos(rayAngle) - lookZ * Math.sin(rayAngle);
-                double rayZ = lookX * Math.sin(rayAngle) + lookZ * Math.cos(rayAngle);
+                // Convert to block coordinates
+                int blockX = (int) Math.floor(scanX);
+                int blockZ = (int) Math.floor(scanZ);
                 
-                // Calculate target position along this ray
-                int targetX = (int) Math.round(centerPos.getX() + rayX * distance);
-                int targetZ = (int) Math.round(centerPos.getZ() + rayZ * distance);
+                // Check if this position is actually within the cone angle
+                double deltaX = blockX - centerPos.getX();
+                double deltaZ = blockZ - centerPos.getZ();
+                double blockDistance = Math.sqrt(deltaX * deltaX + deltaZ * deltaZ);
+                
+                if (blockDistance > 0.5) { // Skip center block to avoid division by zero
+                    // Calculate angle from look direction to this block
+                    double blockAngle = Math.atan2(deltaZ, deltaX);
+                    double lookAngle = Math.atan2(lookZ, lookX);
+                    double angleDiff = Math.abs(blockAngle - lookAngle);
+                    
+                    // Normalize angle difference to [0, PI]
+                    if (angleDiff > Math.PI) angleDiff = 2 * Math.PI - angleDiff;
+                    
+                    // Skip blocks outside the cone angle
+                    if (angleDiff > coneHalfAngle) continue;
+                }
                 
                 // Process blocks at this position
-                if (processRotBlockColumn(level, new BlockPos(targetX, centerPos.getY(), targetZ), processedPositions)) {
+                BlockPos targetPos = new BlockPos(blockX, centerPos.getY(), blockZ);
+                if (processRotBlockColumn(level, targetPos, processedPositions)) {
                     blocksProcessed++;
                 }
                 
                 if (blocksProcessed >= maxBlocksPerTick) break;
             }
+            
+            if (blocksProcessed >= maxBlocksPerTick) break;
         }
 
         // Apply decay effect to entities within the rot cone
