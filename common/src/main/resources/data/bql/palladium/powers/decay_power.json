@@ -30,7 +30,7 @@
       "description": "Send out a cone-shaped wave of rot in front of you, destroying plant life and affecting enemies. Hold the activation key to charge up the ability.",
       "damage": 8,
       "max_radius": 12,
-      "speed": 0.08,
+      "speed": 1.0,
       "hidden_in_bar": false,
       "gui_position": [0, -1],
       "conditions": {

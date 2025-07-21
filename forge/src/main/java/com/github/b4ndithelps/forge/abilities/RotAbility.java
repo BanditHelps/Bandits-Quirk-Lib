@@ -31,6 +31,12 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class RotAbility extends Ability {
 
+    // Quirk Factor Scaling Constants - Adjust these to balance the ability
+    private static final float QUIRK_SPEED_MULTIPLIER = 3.0f; // How much quirk factor affects speed (3x at 100% quirk)
+    private static final float QUIRK_RANGE_MULTIPLIER = 4.0f; // How much quirk factor affects range (2x at 100% quirk)
+    private static final float QUIRK_DECAY_MULTIPLIER = 4.0f; // How much quirk factor affects decay strength (4 extra levels at 100% quirk)
+    private static final float MAX_EFFECTIVE_SPEED = 15.0f; // Maximum speed cap to prevent crashes
+    
     // Configurable properties
     public static final PalladiumProperty<Integer> DAMAGE = new IntegerProperty("damage").configurable("Base damage value for the rot ability");
     public static final PalladiumProperty<Integer> MAX_RADIUS = new IntegerProperty("max_radius").configurable("Maximum radius the rot can reach");
@@ -165,17 +171,21 @@ public class RotAbility extends Ability {
         // Get current ticks from property
         int ticksSinceStart = entry.getProperty(TICKS_SINCE_START);
         
+        // Apply quirk factor to speed - higher quirk factor = much faster expansion
+        float speedMultiplier = 1.0f + ((float)quirkFactor * QUIRK_SPEED_MULTIPLIER);
+        float effectiveSpeed = Math.min(speed * speedMultiplier, MAX_EFFECTIVE_SPEED);
+        
+        // Apply quirk factor to range - higher quirk factor = larger max radius
+        int effectiveMaxRadius = maxPossibleRadius + (int)(quirkFactor * QUIRK_RANGE_MULTIPLIER * maxPossibleRadius);
+        
         // Calculate how many ticks should pass before each radius expansion  
-        int ticksPerExpansion = Math.max(1, (int)(5 / speed));
+        int ticksPerExpansion = Math.max(1, (int)(5 / effectiveSpeed));
         
         // Calculate expected radius based on time elapsed
-        int expectedRadius = Math.min(1 + (ticksSinceStart / ticksPerExpansion), maxPossibleRadius + (int)(quirkFactor * 10));
+        int expectedRadius = Math.min(1 + (ticksSinceStart / ticksPerExpansion), effectiveMaxRadius);
         
         // Add warning particles before expansion
         if (expectedRadius > currentRadius) {
-            // Add buildup warning particles at the edge that will be affected next
-            addWarningParticles(level, player.blockPosition(), expectedRadius, player.getLookAngle());
-            
             // Update the distance property to new radius
             entry.setUniqueProperty(DISTANCE, expectedRadius);
             
@@ -246,7 +256,7 @@ public class RotAbility extends Ability {
         }
 
         // Apply decay effect to entities within the rot cone
-        applyDecayToEntities(player, level, centerPos, newRadius, lookX, lookZ);
+        applyDecayToEntities(player, level, centerPos, newRadius, lookX, lookZ, quirkFactor);
 
         // Add visual and audio effects
         addRotVisualization(level, centerPos, newRadius, lookX, lookZ);
@@ -421,7 +431,7 @@ public class RotAbility extends Ability {
         }
     }
 
-    private void applyDecayToEntities(ServerPlayer caster, ServerLevel level, BlockPos centerPos, int radius, double lookX, double lookZ) {
+    private void applyDecayToEntities(ServerPlayer caster, ServerLevel level, BlockPos centerPos, int radius, double lookX, double lookZ, double quirkFactor) {
         // Get entities in a wider area but filter to cone in front of player
         AABB searchArea = new AABB(
             centerPos.getX() - radius, centerPos.getY() - 4, centerPos.getZ() - radius,
@@ -455,10 +465,14 @@ public class RotAbility extends Ability {
                 if (angleDiff > coneHalfAngle) continue;
             }
             
-            // Calculate effect duration and amplifier based on proximity
+            // Calculate effect duration and amplifier based on proximity and quirk factor
             double proximityFactor = 1.0 - (distance / radius);
             int effectDuration = (int) (80 + (proximityFactor * 160)); // 4-12 seconds
-            int effectAmplifier = (int) Math.floor(proximityFactor * 2); // 0-2 amplifier
+            
+            // Scale amplifier with both proximity and quirk factor
+            int baseAmplifier = (int) Math.floor(proximityFactor * 2); // 0-2 amplifier
+            int quirkBonus = (int) Math.floor(quirkFactor * QUIRK_DECAY_MULTIPLIER); // Additional levels from quirk factor
+            int effectAmplifier = Math.min(baseAmplifier + quirkBonus, 6); // Cap at level 6 to prevent excessive damage
             
             // Apply wither effect as decay
             entity.addEffect(new MobEffectInstance(
@@ -468,6 +482,13 @@ public class RotAbility extends Ability {
                 false, 
                 true
             ));
+
+            // Add extra ominous particles for high quirk factor
+            if (quirkFactor > 0.5) {
+                level.sendParticles(ParticleTypes.LARGE_SMOKE, 
+                    entity.getX(), entity.getY() + 0.5, entity.getZ(), 
+                    2, 0.3, 0.3, 0.3, 0.02);
+            }
         }
     }
 
@@ -496,35 +517,6 @@ public class RotAbility extends Ability {
                 if (ThreadLocalRandom.current().nextDouble() < 0.3) {
                     level.sendParticles(ParticleTypes.ASH, x, y + 0.3, z, 1, 0.1, 0.3, 0.1, 0.01);
                 }
-            }
-        }
-    }
-
-    private void addWarningParticles(ServerLevel level, BlockPos centerPos, int nextRadius, Vec3 lookDirection) {
-        if (nextRadius <= 1) return;
-        
-        double lookX = lookDirection.x;
-        double lookZ = lookDirection.z;
-        double lookLength = Math.sqrt(lookX * lookX + lookZ * lookZ);
-        if (lookLength > 0) {
-            lookX /= lookLength;
-            lookZ /= lookLength;
-        }
-        
-        double coneHalfAngle = Math.toRadians(30);
-        
-        // Create warning particles at the expanding edge
-        int numWarningParticles = Math.max(8, nextRadius);
-        
-        for (int i = 0; i < numWarningParticles; i++) {
-            for (int side = -1; side <= 1; side += 2) {
-                double angle = side * coneHalfAngle * (0.3 + (i / (double)numWarningParticles) * 0.7);
-                double rayX = lookX * Math.cos(angle) - lookZ * Math.sin(angle);
-                double rayZ = lookX * Math.sin(angle) + lookZ * Math.cos(angle);
-                
-                double x = centerPos.getX() + rayX * nextRadius;
-                double z = centerPos.getZ() + rayZ * nextRadius;
-                double y = centerPos.getY() + ThreadLocalRandom.current().nextDouble() * 2;
             }
         }
     }
@@ -585,7 +577,7 @@ public class RotAbility extends Ability {
 
     @Override
     public String getDocumentationDescription() {
-        return "Sends out a cone-shaped wave of rot in front of the player, destroying plant life and applying decay effects to entities. Decay spreads to connected tree parts. Hold the activation key to charge up the ability.";
+        return "Sends out a cone-shaped wave of rot in front of the player, destroying plant life and applying decay effects to entities. Decay spreads to connected tree parts. Quirk factor significantly increases expansion speed (up to 4x), range (up to 3x), and decay effect strength (up to +4 levels).";
     }
 
     static {
