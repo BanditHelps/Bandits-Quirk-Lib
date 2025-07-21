@@ -8,29 +8,23 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.util.Mth;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.minecraft.world.scores.Objective;
-import net.minecraft.world.scores.Scoreboard;
+
 import net.threetag.palladium.power.IPowerHolder;
 import net.threetag.palladium.power.ability.AbilityInstance;
 import net.threetag.palladium.power.ability.Ability;
-import net.threetag.palladium.power.ability.AnimationTimer;
 import net.threetag.palladium.util.property.FloatProperty;
 import net.threetag.palladium.util.property.IntegerProperty;
 import net.threetag.palladium.util.property.PalladiumProperty;
 import net.threetag.palladium.util.property.PropertyManager;
 import net.threetag.palladium.util.property.SyncType;
-import net.threetag.palladiumcore.util.Platform;
 
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
@@ -41,8 +35,13 @@ public class RotAbility extends Ability {
     public static final PalladiumProperty<Integer> DAMAGE = new IntegerProperty("damage").configurable("Base damage value for the rot ability");
     public static final PalladiumProperty<Integer> MAX_RADIUS = new IntegerProperty("max_radius").configurable("Maximum radius the rot can reach");
     public static final PalladiumProperty<Float> SPEED = new FloatProperty("speed").configurable("Speed at which the rot ability activates. Use 0 for instant activation.");
-    
-    private static final String ROT_RADIUS_OBJECTIVE = "MineHa.Decay.RotRadius";
+
+    // Unique values for "faux animation" and timing
+    public static final PalladiumProperty<Integer> DISTANCE;
+    public static final PalladiumProperty<Integer> PREV_DISTANCE;
+    public static final PalladiumProperty<Integer> TICKS_SINCE_START;
+
+
     
     // Plant blocks that can be affected by rot
     private static final Set<Block> PLANT_BLOCKS = Set.of(
@@ -89,12 +88,23 @@ public class RotAbility extends Ability {
     public RotAbility() {
         this.withProperty(DAMAGE, 10)
             .withProperty(MAX_RADIUS, 15)
-            .withProperty(SPEED, 0.1F); // Slower activation for dramatic effect
+            .withProperty(SPEED, 1.5F);
+    }
+
+    public void registerUniqueProperties(PropertyManager manager) {
+        manager.register(DISTANCE, 0);
+        manager.register(PREV_DISTANCE, 0);
+        manager.register(TICKS_SINCE_START, 0);
     }
 
     @Override
     public void firstTick(LivingEntity entity, AbilityInstance entry, IPowerHolder holder, boolean enabled) {
         if (enabled && entity instanceof ServerPlayer player) {
+                // Reset timer when ability starts
+                entry.setUniqueProperty(TICKS_SINCE_START, 0);
+                entry.setUniqueProperty(DISTANCE, 0);
+                entry.setUniqueProperty(PREV_DISTANCE, 0);
+                
                 // Start the rot effect - damage held item and play initial sound
                 damageHeldItem(player, entry.getProperty(DAMAGE));
                 
@@ -110,10 +120,12 @@ public class RotAbility extends Ability {
         if (!(entity instanceof ServerPlayer player)) return;
         if (!(entity.level() instanceof ServerLevel serverLevel)) return;
 
-        float speed = entry.getProperty(SPEED);
-
         // Execute rot effect when fully active
         if (enabled) {
+            // Increment timer
+            int currentTicks = entry.getProperty(TICKS_SINCE_START);
+            entry.setUniqueProperty(TICKS_SINCE_START, currentTicks + 1);
+            
             try {
                 executeRotEffect(player, serverLevel, entry);
             } catch (Exception e) {
@@ -124,9 +136,11 @@ public class RotAbility extends Ability {
 
     @Override
     public void lastTick(LivingEntity entity, AbilityInstance entry, IPowerHolder holder, boolean enabled) {
-        // Reset the decay radius when the ability ends
+        // Reset the properties when the ability ends
         if (entity instanceof ServerPlayer player) {
-            resetDecayRadius(player);
+            entry.setUniqueProperty(DISTANCE, 0);
+            entry.setUniqueProperty(PREV_DISTANCE, 0);
+            entry.setUniqueProperty(TICKS_SINCE_START, 0);
             
             if (entity.level() instanceof ServerLevel serverLevel) {
                 // Play ending sound effect
@@ -136,40 +150,43 @@ public class RotAbility extends Ability {
         }
     }
 
-    private void resetDecayRadius(ServerPlayer player) {
-        Scoreboard scoreboard = player.getServer().getScoreboard();
-        Objective rotRadiusObj = scoreboard.getObjective(ROT_RADIUS_OBJECTIVE);
-        if (rotRadiusObj != null) {
-            scoreboard.getOrCreatePlayerScore(player.getGameProfile().getName(), rotRadiusObj).setScore(0);
-        }
-    }
+
 
     private void executeRotEffect(ServerPlayer player, ServerLevel level, AbilityInstance entry) {
         double quirkFactor = QuirkFactorHelper.getQuirkFactor(player);
         int baseDamage = entry.getProperty(DAMAGE);
         int maxPossibleRadius = entry.getProperty(MAX_RADIUS);
+        float speed = entry.getProperty(SPEED);
 
-        // Get or create rot radius scoreboard
-        Scoreboard scoreboard = player.getServer().getScoreboard();
-        Objective rotRadiusObj = scoreboard.getObjective(ROT_RADIUS_OBJECTIVE);
-        if (rotRadiusObj == null) {
-            rotRadiusObj = scoreboard.addObjective(ROT_RADIUS_OBJECTIVE, 
-                net.minecraft.world.scores.criteria.ObjectiveCriteria.DUMMY, 
-                net.minecraft.network.chat.Component.literal("Rot Radius"), 
-                net.minecraft.world.scores.criteria.ObjectiveCriteria.RenderType.INTEGER);
+        // Get current radius from property and store previous
+        int currentRadius = entry.getProperty(DISTANCE);
+        entry.setUniqueProperty(PREV_DISTANCE, currentRadius);
+        
+        // Get current ticks from property
+        int ticksSinceStart = entry.getProperty(TICKS_SINCE_START);
+        
+        // Calculate how many ticks should pass before each radius expansion  
+        int ticksPerExpansion = Math.max(1, (int)(5 / speed));
+        
+        // Calculate expected radius based on time elapsed
+        int expectedRadius = Math.min(1 + (ticksSinceStart / ticksPerExpansion), maxPossibleRadius + (int)(quirkFactor * 10));
+        
+        // Add warning particles before expansion
+        if (expectedRadius > currentRadius) {
+            // Add buildup warning particles at the edge that will be affected next
+            addWarningParticles(level, player.blockPosition(), expectedRadius, player.getLookAngle());
+            
+            // Update the distance property to new radius
+            entry.setUniqueProperty(DISTANCE, expectedRadius);
+            
+            // Execute the actual rot effect for the new area
+            performRotWave(player, level, expectedRadius, currentRadius, quirkFactor);
         }
-
-        int currentRadius = scoreboard.getOrCreatePlayerScore(player.getGameProfile().getName(), rotRadiusObj).getScore();
         
-        // Calculate new radius based on damage and quirk factor
-        int radiusIncrease = Math.max(1, baseDamage / 5);
-        int newRadius = Math.min(currentRadius + radiusIncrease, maxPossibleRadius + (int)(quirkFactor * 10));
-        
-        // Update scoreboard
-        scoreboard.getOrCreatePlayerScore(player.getGameProfile().getName(), rotRadiusObj).setScore(newRadius);
-
-        // Execute the actual rot effect
-        performRotWave(player, level, newRadius, currentRadius, quirkFactor);
+        // Always show some ongoing effect particles if we have any radius
+        if (currentRadius > 0) {
+            addOngoingEffectParticles(level, player.blockPosition(), currentRadius, player.getLookAngle());
+        }
     }
 
     private void performRotWave(ServerPlayer player, ServerLevel level, int newRadius, int currentRadius, double quirkFactor) {
@@ -451,11 +468,6 @@ public class RotAbility extends Ability {
                 false, 
                 true
             ));
-            
-            // Add visual indication
-            level.sendParticles(ParticleTypes.SOUL, 
-                entity.getX(), entity.getY() + 1, entity.getZ(), 
-                5, 0.5, 0.5, 0.5, 0.05);
         }
     }
 
@@ -488,6 +500,64 @@ public class RotAbility extends Ability {
         }
     }
 
+    private void addWarningParticles(ServerLevel level, BlockPos centerPos, int nextRadius, Vec3 lookDirection) {
+        if (nextRadius <= 1) return;
+        
+        double lookX = lookDirection.x;
+        double lookZ = lookDirection.z;
+        double lookLength = Math.sqrt(lookX * lookX + lookZ * lookZ);
+        if (lookLength > 0) {
+            lookX /= lookLength;
+            lookZ /= lookLength;
+        }
+        
+        double coneHalfAngle = Math.toRadians(30);
+        
+        // Create warning particles at the expanding edge
+        int numWarningParticles = Math.max(8, nextRadius);
+        
+        for (int i = 0; i < numWarningParticles; i++) {
+            for (int side = -1; side <= 1; side += 2) {
+                double angle = side * coneHalfAngle * (0.3 + (i / (double)numWarningParticles) * 0.7);
+                double rayX = lookX * Math.cos(angle) - lookZ * Math.sin(angle);
+                double rayZ = lookX * Math.sin(angle) + lookZ * Math.cos(angle);
+                
+                double x = centerPos.getX() + rayX * nextRadius;
+                double z = centerPos.getZ() + rayZ * nextRadius;
+                double y = centerPos.getY() + ThreadLocalRandom.current().nextDouble() * 2;
+            }
+        }
+    }
+
+    private void addOngoingEffectParticles(ServerLevel level, BlockPos centerPos, int currentRadius, Vec3 lookDirection) {
+        if (currentRadius <= 0) return;
+        
+        double lookX = lookDirection.x;
+        double lookZ = lookDirection.z;
+        double lookLength = Math.sqrt(lookX * lookX + lookZ * lookZ);
+        if (lookLength > 0) {
+            lookX /= lookLength;
+            lookZ /= lookLength;
+        }
+        
+        // Subtle ongoing effect particles throughout the affected area
+        int numParticles = Math.min(currentRadius / 2, 8);
+        
+        for (int i = 0; i < numParticles; i++) {
+            double randomRadius = ThreadLocalRandom.current().nextDouble() * currentRadius;
+            double randomAngle = (ThreadLocalRandom.current().nextDouble() - 0.5) * Math.toRadians(60);
+            
+            double rayX = lookX * Math.cos(randomAngle) - lookZ * Math.sin(randomAngle);
+            double rayZ = lookX * Math.sin(randomAngle) + lookZ * Math.cos(randomAngle);
+            
+            double x = centerPos.getX() + rayX * randomRadius;
+            double z = centerPos.getZ() + rayZ * randomRadius;
+            double y = centerPos.getY() + ThreadLocalRandom.current().nextDouble() * 1.5;
+            
+            level.sendParticles(ParticleTypes.ASH, x, y, z, 1, 0.1, 0.2, 0.1, 0.01);
+        }
+    }
+
     private void scheduleBlockDestroy(ServerLevel level, BlockPos pos, int delayTicks) {
         level.getServer().tell(new net.minecraft.server.TickTask(
             level.getServer().getTickCount() + delayTicks,
@@ -516,5 +586,11 @@ public class RotAbility extends Ability {
     @Override
     public String getDocumentationDescription() {
         return "Sends out a cone-shaped wave of rot in front of the player, destroying plant life and applying decay effects to entities. Decay spreads to connected tree parts. Hold the activation key to charge up the ability.";
+    }
+
+    static {
+        DISTANCE = (new IntegerProperty("distance")).sync(SyncType.NONE).disablePersistence();
+        PREV_DISTANCE = (new IntegerProperty("prev_distance")).sync(SyncType.NONE).disablePersistence();
+        TICKS_SINCE_START = (new IntegerProperty("ticks_since_start")).sync(SyncType.NONE).disablePersistence();
     }
 } 

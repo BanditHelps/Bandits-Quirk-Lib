@@ -57,7 +57,7 @@
       "description": "A more powerful version of the rot ability with increased damage, radius, and faster activation.",
       "damage": 15,
       "max_radius": 100,
-      "speed": 0.12,
+      "speed": 1.0,
       "hidden_in_bar": false,
       "gui_position": [0, -2],
       "conditions": {
