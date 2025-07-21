@@ -10,6 +10,7 @@ public class AbilityRegister {
     public static final DeferredRegister<Ability> ABILITIES;
     public static final RegistrySupplier<Ability> HAPPEN_ONCE;
     public static final RegistrySupplier<Ability> ROT_ABILITY;
+    public static final RegistrySupplier<Ability> ENVIRONMENT_DECAY;
 
     public AbilityRegister() {
 
@@ -23,5 +24,6 @@ public class AbilityRegister {
         ABILITIES = DeferredRegister.create(MOD_ID, Ability.REGISTRY);
         HAPPEN_ONCE = ABILITIES.register("happen_once", HappenOnceAbility::new);
         ROT_ABILITY = ABILITIES.register("rot_ability", RotAbility::new);
+        ENVIRONMENT_DECAY = ABILITIES.register("environment_decay", EnvironmentDecayAbility::new);
     }
 }
