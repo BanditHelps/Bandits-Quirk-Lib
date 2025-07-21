@@ -1,0 +1,81 @@
+{
+  "name": "Decay Power",
+  "background": "minecraft:textures/block/wither_rose.png",
+  "icon": "minecraft:wither_rose",
+  "gui_display_type": "tree",
+  "abilities": {
+    "startup": {
+      "type": "palladium:command",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "first_tick_commands": [
+        "scoreboard players set @p MineHa.QuirkFactor 2",
+        "scoreboard objectives add MineHa.Decay.RotRadius dummy \"Rot Radius\""
+      ],
+      "commands": [],
+      "last_tick_commands": []
+    },
+    "info_block": {
+      "type": "palladium:dummy",
+      "icon": "minecraft:wither_rose",
+      "title": "Decay Quirk",
+      "description": "A dangerous quirk that allows you to rot and decay the environment around you. Use with caution!",
+      "hidden_in_bar": true,
+      "gui_position": [0, 0]
+    },
+    "rot_ability": {
+      "type": "bandits_quirk_lib:rot_ability",
+      "icon": "minecraft:bone_meal",
+      "title": "Rotting Wave",
+      "description": "Send out a cone-shaped wave of rot in front of you, destroying plant life and affecting enemies. Hold the activation key to charge up the ability.",
+      "damage": 8,
+      "max_radius": 12,
+      "speed": 0.08,
+      "hidden_in_bar": false,
+      "gui_position": [0, -1],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:action",
+            "key_type": "key_bind",
+            "needs_empty_hand": false
+          }
+        ],
+        "unlocking": [
+          {
+            "type": "palladium:ability_unlocked",
+            "power": "null",
+            "ability": "info_block"
+          }
+        ]
+      }
+    },
+    "enhanced_rot": {
+      "type": "bandits_quirk_lib:rot_ability", 
+      "icon": "minecraft:wither_skeleton_skull",
+      "title": "Enhanced Rot",
+      "description": "A more powerful version of the rot ability with increased damage, radius, and faster activation.",
+      "damage": 15,
+      "max_radius": 20,
+      "speed": 0.12,
+      "hidden_in_bar": false,
+      "gui_position": [0, -2],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:action",
+            "key_type": "key_bind",
+            "needs_empty_hand": false
+          }
+        ],
+        "unlocking": [
+          {
+            "type": "palladium:ability_unlocked",
+            "power": "null",
+            "ability": "rot_ability"
+          }
+        ]
+      }
+    }
+  }
+} 

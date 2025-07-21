@@ -9,6 +9,7 @@ import static com.github.b4ndithelps.BanditsQuirkLib.MOD_ID;
 public class AbilityRegister {
     public static final DeferredRegister<Ability> ABILITIES;
     public static final RegistrySupplier<Ability> HAPPEN_ONCE;
+    public static final RegistrySupplier<Ability> ROT_ABILITY;
 
     public AbilityRegister() {
 
@@ -21,5 +22,6 @@ public class AbilityRegister {
     static {
         ABILITIES = DeferredRegister.create(MOD_ID, Ability.REGISTRY);
         HAPPEN_ONCE = ABILITIES.register("happen_once", HappenOnceAbility::new);
+        ROT_ABILITY = ABILITIES.register("rot_ability", RotAbility::new);
     }
 }
