@@ -186,7 +186,7 @@ public class RotAbility extends Ability {
         }
 
         int blocksProcessed = 0;
-        int maxBlocksPerTick = 60; // Reduced for performance
+        int maxBlocksPerTick = 300; // Increased to handle larger cone areas properly
         Set<BlockPos> processedPositions = new HashSet<>();
         
         // Create a cone shape by checking all blocks in expanding squares
