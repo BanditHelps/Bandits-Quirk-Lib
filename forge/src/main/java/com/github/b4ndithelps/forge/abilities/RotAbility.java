@@ -33,7 +33,7 @@ public class RotAbility extends Ability {
 
     // Quirk Factor Scaling Constants - Adjust these to balance the ability
     private static final float QUIRK_SPEED_MULTIPLIER = 3.0f; // How much quirk factor affects speed (3x at 100% quirk)
-    private static final float QUIRK_RANGE_MULTIPLIER = 4.0f; // How much quirk factor affects range (2x at 100% quirk)
+    private static final float QUIRK_RANGE_MULTIPLIER = 2.0f; // How much quirk factor affects range (2x at 100% quirk)
     private static final float QUIRK_DECAY_MULTIPLIER = 4.0f; // How much quirk factor affects decay strength (4 extra levels at 100% quirk)
     private static final float MAX_EFFECTIVE_SPEED = 15.0f; // Maximum speed cap to prevent crashes
     
@@ -265,11 +265,11 @@ public class RotAbility extends Ability {
             // Enhanced effects when radius increases
             level.sendParticles(ParticleTypes.LARGE_SMOKE, 
                 centerPos.getX(), centerPos.getY() + 1, centerPos.getZ(), 
-                15, 1, 0.5, 1, 0.1);
+                2, 1, 0.5, 1, 0.1);
                 
             level.sendParticles(ParticleTypes.ASH, 
                 centerPos.getX(), centerPos.getY() + 1, centerPos.getZ(), 
-                20, 2, 1, 2, 0.1);
+                2, 2, 1, 2, 0.1);
                 
             level.playSound(null, centerPos, SoundEvents.WITHER_AMBIENT, SoundSource.PLAYERS, 0.7f, 0.8f);
         }
