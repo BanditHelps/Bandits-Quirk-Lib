@@ -44,7 +44,7 @@ public class EnvironmentDecayAbility extends Ability {
     public static final PalladiumProperty<Integer> DAMAGE = new IntegerProperty("damage").configurable("Base damage value for held items");
     public static final PalladiumProperty<Integer> MAX_BLOCKS = new IntegerProperty("max_blocks").configurable("Maximum number of blocks to decay");
     public static final PalladiumProperty<Integer> BASE_INTENSITY = new IntegerProperty("base_intensity").configurable("Base intensity level (1-4) determining which blocks can be decayed");
-    public static final PalladiumProperty<String> DECAY_TYPE = new StringProperty("decay_type").configurable("Type of decay pattern: layer, all, quarry");
+    public static final PalladiumProperty<String> DECAY_TYPE = new StringProperty("decay_type").configurable("Type of decay pattern: layer, all, quarry, connected, fissure");
     public static final PalladiumProperty<Float> RANGE = new FloatProperty("range").configurable("Range for targeting blocks");
     public static final PalladiumProperty<Float> SPREAD_SPEED = new FloatProperty("spread_speed").configurable("How fast the decay spreads (ticks between waves)");
 
@@ -165,12 +165,12 @@ public class EnvironmentDecayAbility extends Ability {
         
         // Process wave if we've reached the expected wave number
         if (expectedWave > currentWave) {
-            processCurrentWave(level, entry, effectiveIntensity, effectiveMaxBlocks);
+            processCurrentWave(level, entry, effectiveIntensity, effectiveMaxBlocks, player);
             entry.setUniqueProperty(CURRENT_WAVE, expectedWave);
         }
     }
 
-    private void processCurrentWave(ServerLevel level, AbilityInstance entry, int intensity, int maxBlocks) {
+    private void processCurrentWave(ServerLevel level, AbilityInstance entry, int intensity, int maxBlocks, ServerPlayer player) {
         Set<BlockPos> currentWaveBlocks = parseBlockPositions(entry.getProperty(CURRENT_WAVE_BLOCKS));
         Set<BlockPos> processedBlocks = parseBlockPositions(entry.getProperty(PROCESSED_BLOCKS));
         int blocksDecayed = entry.getProperty(BLOCKS_DECAYED);
@@ -207,7 +207,7 @@ public class EnvironmentDecayAbility extends Ability {
             processedBlocks.add(pos);
 
             // Find connected blocks for next wave
-            Set<BlockPos> connectedBlocks = findConnectedBlocks(level, pos, decayType, intensity, processedBlocks, entry);
+            Set<BlockPos> connectedBlocks = findConnectedBlocks(level, pos, decayType, intensity, processedBlocks, entry, player);
             nextWaveBlocks.addAll(connectedBlocks);
         }
 
@@ -218,7 +218,7 @@ public class EnvironmentDecayAbility extends Ability {
     }
 
     private Set<BlockPos> findConnectedBlocks(ServerLevel level, BlockPos center, String decayType,
-                                              int intensity, Set<BlockPos> alreadyProcessed, AbilityInstance entry) {
+                                              int intensity, Set<BlockPos> alreadyProcessed, AbilityInstance entry, ServerPlayer player) {
         Set<BlockPos> connectedBlocks = new HashSet<>();
 
         switch (decayType.toLowerCase()) {
@@ -231,6 +231,9 @@ public class EnvironmentDecayAbility extends Ability {
             case "connected":
                 String originalBlockType = entry.getProperty(ORIGINAL_BLOCK_TYPE);
                 connectedBlocks.addAll(getConnectedSameTypeBlocks(level, center, intensity, alreadyProcessed, originalBlockType));
+                break;
+            case "fissure":
+                connectedBlocks.addAll(getFissureConnectedBlocks(level, center, intensity, alreadyProcessed, player, entry));
                 break;
             case "quarry":
             default:
@@ -319,6 +322,71 @@ public class EnvironmentDecayAbility extends Ability {
             }
         }
 
+        return blocks;
+    }
+
+    private Set<BlockPos> getFissureConnectedBlocks(ServerLevel level, BlockPos center, int intensity,
+                                                    Set<BlockPos> alreadyProcessed, ServerPlayer player, AbilityInstance entry) {
+        Set<BlockPos> blocks = new HashSet<>();
+        
+        // Get player's look direction and normalize to horizontal
+        Vec3 lookDirection = player.getLookAngle();
+        double lookX = lookDirection.x;
+        double lookZ = lookDirection.z;
+        double lookLength = Math.sqrt(lookX * lookX + lookZ * lookZ);
+        if (lookLength > 0) {
+            lookX /= lookLength;
+            lookZ /= lookLength;
+        }
+        
+        // Get the original target position for cone calculations
+        BlockPos targetPos = new BlockPos(
+                entry.getProperty(TARGET_X),
+                entry.getProperty(TARGET_Y),
+                entry.getProperty(TARGET_Z)
+        );
+        
+        // Define cone angle (30 degrees each side like RotAbility)
+        double coneHalfAngle = Math.toRadians(30); // 60 degree total cone
+        
+        // Check all 26 surrounding positions (3x3x3 cube minus center) like connected mode
+        for (int x = -1; x <= 1; x++) {
+            for (int y = -1; y <= 1; y++) {
+                for (int z = -1; z <= 1; z++) {
+                    // Skip the center position
+                    if (x == 0 && y == 0 && z == 0) continue;
+                    
+                    BlockPos pos = center.offset(x, y, z);
+                    
+                    if (!alreadyProcessed.contains(pos)) {
+                        BlockState blockState = level.getBlockState(pos);
+                        
+                        // Check if block is decayable
+                        if (isDecayable(blockState, intensity)) {
+                            // Calculate if this block is within the cone from the original target
+                            double deltaX = pos.getX() - targetPos.getX();
+                            double deltaZ = pos.getZ() - targetPos.getZ();
+                            double distance = Math.sqrt(deltaX * deltaX + deltaZ * deltaZ);
+                            
+                            // Always include blocks very close to the target
+                            if (distance <= 1.5) {
+                                blocks.add(pos);
+                            } else {
+                                // Check if block is within cone angle
+                                double dotProduct = (deltaX * lookX + deltaZ * lookZ) / distance;
+                                double angleFromLookDirection = Math.acos(Math.max(-1.0, Math.min(1.0, dotProduct)));
+                                
+                                // Include block if it's within the cone angle
+                                if (angleFromLookDirection <= coneHalfAngle) {
+                                    blocks.add(pos);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
         return blocks;
     }
 
@@ -508,7 +576,8 @@ public class EnvironmentDecayAbility extends Ability {
     @Override
     public String getDocumentationDescription() {
         return "Creates a wave of destruction that spreads from a target block to connected blocks. " +
-                "Supports layered (4-directional), all (6-directional), quarry (8-directional), and connected (same block type only) spread patterns. " +
+                "Supports layered (4-directional), all (6-directional), quarry (8-directional), " +
+                "connected (same block type only), and fissure (spreads in player's look direction) spread patterns. " +
                 "Intensity determines tool requirements: 1=instant break, 2=shovel materials, 3=wood pickaxe materials, " +
                 "4=iron pickaxe materials, 5=diamond pickaxe materials. " +
                 "Quirk factor increases intensity, block count, and spread speed for more devastating wave effects. " +
