@@ -38,7 +38,7 @@ public class EnvironmentDecayAbility extends Ability {
     private static final float QUIRK_INTENSITY_MULTIPLIER = 1.0f;
     private static final float QUIRK_BLOCKS_MULTIPLIER = 1.5f;
     private static final float QUIRK_RANGE_MULTIPLIER = 1.2f;
-    private static final float QUIRK_SPEED_MULTIPLIER = 0.8f; // Lower = faster spread
+    private static final float QUIRK_SPEED_MULTIPLIER = 0.008f; // Lower = faster spread
 
     // Configurable properties
     public static final PalladiumProperty<Integer> DAMAGE = new IntegerProperty("damage").configurable("Base damage value for held items");
@@ -64,7 +64,7 @@ public class EnvironmentDecayAbility extends Ability {
                 .withProperty(BASE_INTENSITY, 2)
                 .withProperty(DECAY_TYPE, "circular")
                 .withProperty(RANGE, 8.0F)
-                .withProperty(SPREAD_SPEED, 4.0F); // Ticks between waves
+                .withProperty(SPREAD_SPEED, 1.0F); // Ticks between waves
     }
 
     public void registerUniqueProperties(PropertyManager manager) {
@@ -140,7 +140,14 @@ public class EnvironmentDecayAbility extends Ability {
         double quirkFactor = QuirkFactorHelper.getQuirkFactor(player);
         int effectiveMaxBlocks = entry.getProperty(MAX_BLOCKS) + (int)(quirkFactor * QUIRK_BLOCKS_MULTIPLIER * entry.getProperty(MAX_BLOCKS));
         int effectiveIntensity = Math.min(5, entry.getProperty(BASE_INTENSITY) + (int)(quirkFactor * QUIRK_INTENSITY_MULTIPLIER));
-        float effectiveSpreadSpeed = entry.getProperty(SPREAD_SPEED) * (1.0f - (float)(quirkFactor * QUIRK_SPEED_MULTIPLIER));
+
+
+        // float effectiveSpreadSpeed = entry.getProperty(SPREAD_SPEED) * ((float)(quirkFactor * QUIRK_SPEED_MULTIPLIER));
+        // Calculate effective spread speed with proper scaling and cap
+        float baseSpreadSpeed = entry.getProperty(SPREAD_SPEED);
+        double cappedQuirkFactor = Math.min(quirkFactor, 50.0); // Cap quirk factor at 50 for speed calculations
+        float speedReduction = (float)(cappedQuirkFactor * QUIRK_SPEED_MULTIPLIER); // 0 to 0.8 reduction max
+        float effectiveSpreadSpeed = baseSpreadSpeed * (1.0f - speedReduction);
 
         // Stop if we've hit the block limit
         if (blocksDecayed >= effectiveMaxBlocks) return;
