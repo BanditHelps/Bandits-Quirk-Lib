@@ -56,6 +56,7 @@ public class EnvironmentDecayAbility extends Ability {
     public static final PalladiumProperty<Integer> TARGET_Z;
     public static final PalladiumProperty<String> CURRENT_WAVE_BLOCKS; // Blocks in current wave front
     public static final PalladiumProperty<String> PROCESSED_BLOCKS; // All processed blocks
+    public static final PalladiumProperty<String> ORIGINAL_BLOCK_TYPE; // Original block type for "connected" decay
     public static final PalladiumProperty<Integer> TICKS_SINCE_START; // Timer for wave progression
 
     public EnvironmentDecayAbility() {
@@ -75,6 +76,7 @@ public class EnvironmentDecayAbility extends Ability {
         manager.register(TARGET_Z, 0);
         manager.register(CURRENT_WAVE_BLOCKS, "");
         manager.register(PROCESSED_BLOCKS, "");
+        manager.register(ORIGINAL_BLOCK_TYPE, "");
         manager.register(TICKS_SINCE_START, 0);
     }
 
@@ -86,6 +88,7 @@ public class EnvironmentDecayAbility extends Ability {
             entry.setUniqueProperty(BLOCKS_DECAYED, 0);
             entry.setUniqueProperty(CURRENT_WAVE_BLOCKS, "");
             entry.setUniqueProperty(PROCESSED_BLOCKS, "");
+            entry.setUniqueProperty(ORIGINAL_BLOCK_TYPE, "");
             entry.setUniqueProperty(TICKS_SINCE_START, 0);
 
             // Damage held item
@@ -102,6 +105,7 @@ public class EnvironmentDecayAbility extends Ability {
                 Set<BlockPos> firstWave = new HashSet<>();
                 firstWave.add(targetPos);
                 entry.setUniqueProperty(CURRENT_WAVE_BLOCKS, serializeBlockPositions(firstWave));
+                entry.setUniqueProperty(ORIGINAL_BLOCK_TYPE, player.level().getBlockState(targetPos).getBlock().toString());
 
                 if (entity.level() instanceof ServerLevel serverLevel) {
                     // Play initial sound and effect
@@ -203,7 +207,7 @@ public class EnvironmentDecayAbility extends Ability {
             processedBlocks.add(pos);
 
             // Find connected blocks for next wave
-            Set<BlockPos> connectedBlocks = findConnectedBlocks(level, pos, decayType, intensity, processedBlocks);
+            Set<BlockPos> connectedBlocks = findConnectedBlocks(level, pos, decayType, intensity, processedBlocks, entry);
             nextWaveBlocks.addAll(connectedBlocks);
         }
 
@@ -214,7 +218,7 @@ public class EnvironmentDecayAbility extends Ability {
     }
 
     private Set<BlockPos> findConnectedBlocks(ServerLevel level, BlockPos center, String decayType,
-                                              int intensity, Set<BlockPos> alreadyProcessed) {
+                                              int intensity, Set<BlockPos> alreadyProcessed, AbilityInstance entry) {
         Set<BlockPos> connectedBlocks = new HashSet<>();
 
         switch (decayType.toLowerCase()) {
@@ -223,6 +227,10 @@ public class EnvironmentDecayAbility extends Ability {
                 break;
             case "all":
                 connectedBlocks.addAll(getAllConnectedBlocks(level, center, intensity, alreadyProcessed));
+                break;
+            case "connected":
+                String originalBlockType = entry.getProperty(ORIGINAL_BLOCK_TYPE);
+                connectedBlocks.addAll(getConnectedSameTypeBlocks(level, center, intensity, alreadyProcessed, originalBlockType));
                 break;
             case "quarry":
             default:
@@ -308,6 +316,35 @@ public class EnvironmentDecayAbility extends Ability {
         for (BlockPos pos : diagonals) {
             if (!alreadyProcessed.contains(pos) && isDecayable(level.getBlockState(pos), intensity)) {
                 blocks.add(pos);
+            }
+        }
+
+        return blocks;
+    }
+
+    private Set<BlockPos> getConnectedSameTypeBlocks(ServerLevel level, BlockPos center,
+                                                     int intensity, Set<BlockPos> alreadyProcessed, String originalBlockType) {
+        Set<BlockPos> blocks = new HashSet<>();
+
+        // Check all 26 surrounding positions (3x3x3 cube minus center) for vein miner-like behavior
+        for (int x = -1; x <= 1; x++) {
+            for (int y = -1; y <= 1; y++) {
+                for (int z = -1; z <= 1; z++) {
+                    // Skip the center position
+                    if (x == 0 && y == 0 && z == 0) continue;
+                    
+                    BlockPos pos = center.offset(x, y, z);
+                    
+                    if (!alreadyProcessed.contains(pos)) {
+                        BlockState blockState = level.getBlockState(pos);
+                        String currentBlockType = blockState.getBlock().toString();
+                        
+                        // Only add if it's the same block type as original AND it's decayable
+                        if (currentBlockType.equals(originalBlockType) && isDecayable(blockState, intensity)) {
+                            blocks.add(pos);
+                        }
+                    }
+                }
             }
         }
 
@@ -471,7 +508,7 @@ public class EnvironmentDecayAbility extends Ability {
     @Override
     public String getDocumentationDescription() {
         return "Creates a wave of destruction that spreads from a target block to connected blocks. " +
-                "Supports layered (4-directional), all (6-directional), and quarry (8-directional) spread patterns. " +
+                "Supports layered (4-directional), all (6-directional), quarry (8-directional), and connected (same block type only) spread patterns. " +
                 "Intensity determines tool requirements: 1=instant break, 2=shovel materials, 3=wood pickaxe materials, " +
                 "4=iron pickaxe materials, 5=diamond pickaxe materials. " +
                 "Quirk factor increases intensity, block count, and spread speed for more devastating wave effects. " +
@@ -486,6 +523,7 @@ public class EnvironmentDecayAbility extends Ability {
         TARGET_Z = (new IntegerProperty("target_z")).sync(SyncType.NONE).disablePersistence();
         CURRENT_WAVE_BLOCKS = (new StringProperty("current_wave_blocks")).sync(SyncType.NONE).disablePersistence();
         PROCESSED_BLOCKS = (new StringProperty("processed_blocks")).sync(SyncType.NONE).disablePersistence();
+        ORIGINAL_BLOCK_TYPE = (new StringProperty("original_block_type")).sync(SyncType.NONE).disablePersistence();
         TICKS_SINCE_START = (new IntegerProperty("ticks_since_start")).sync(SyncType.NONE).disablePersistence();
     }
 } 
