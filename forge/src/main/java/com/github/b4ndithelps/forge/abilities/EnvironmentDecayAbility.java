@@ -1,6 +1,7 @@
 package com.github.b4ndithelps.forge.abilities;
 
 import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
+import com.github.b4ndithelps.forge.effects.ModEffects;
 import com.github.b4ndithelps.forge.systems.QuirkFactorHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
@@ -217,10 +218,10 @@ public class EnvironmentDecayAbility extends Ability {
             nextWaveBlocks.addAll(connectedBlocks);
         }
 
-        // Apply decay effects to players above destroyed blocks
+        // Apply decay effects to living entities above destroyed blocks
         if (!destroyedBlocks.isEmpty()) {
             double quirkFactor = QuirkFactorHelper.getQuirkFactor(player);
-            applyDecayToPlayersAboveBlocks(level, destroyedBlocks, quirkFactor);
+            applyDecayToEntitiesAboveBlocks(level, destroyedBlocks, quirkFactor, player);
         }
 
         // Update properties
@@ -229,21 +230,26 @@ public class EnvironmentDecayAbility extends Ability {
         entry.setUniqueProperty(CURRENT_WAVE_BLOCKS, serializeBlockPositions(nextWaveBlocks));
     }
 
-    private void applyDecayToPlayersAboveBlocks(ServerLevel level, Set<BlockPos> destroyedBlocks, double quirkFactor) {
+    private void applyDecayToEntitiesAboveBlocks(ServerLevel level, Set<BlockPos> destroyedBlocks, double quirkFactor, ServerPlayer player) {
         for (BlockPos blockPos : destroyedBlocks) {
-            // Check for players above this block (within a reasonable height range)
+            // Check for living entities above this block (within a reasonable height range)
             for (int yOffset = 0; yOffset <= 4; yOffset++) {
                 BlockPos checkPos = blockPos.above(yOffset);
                 
-                // Create a small search area around this position to catch players
+                // Create a small search area around this position to catch entities
                 AABB searchArea = new AABB(
                     checkPos.getX() - 0.5, checkPos.getY() - 0.5, checkPos.getZ() - 0.5,
                     checkPos.getX() + 1.5, checkPos.getY() + 2.5, checkPos.getZ() + 1.5
                 );
                 
-                List<ServerPlayer> players = level.getEntitiesOfClass(ServerPlayer.class, searchArea);
+                List<LivingEntity> entities = level.getEntitiesOfClass(LivingEntity.class, searchArea);
                 
-                for (ServerPlayer affectedPlayer : players) {
+                for (LivingEntity affectedEntity : entities) {
+                    // Skip the user of the ability
+                    if (affectedEntity == player) {
+                        continue;
+                    }
+
                     // Apply decay effect scaled by quirk factor only
                     int baseAmplifier = 0; // Base level 1 (amplifier 0)
                     int quirkBonus = (int) Math.floor(quirkFactor * QUIRK_INTENSITY_MULTIPLIER * 2); // Use intensity multiplier for consistency
@@ -251,24 +257,24 @@ public class EnvironmentDecayAbility extends Ability {
                     
                     int effectDuration = 100; // 5 seconds base duration
                     
-                    // Apply wither effect as decay
-                    affectedPlayer.addEffect(new MobEffectInstance(
-                        net.minecraft.world.effect.MobEffects.WITHER,
+                    // Apply decay effect
+                    affectedEntity.addEffect(new MobEffectInstance(
+                            ModEffects.DECAY_EFFECT.get(),
                         effectDuration,
                         effectAmplifier,
                         false,
                         true
                     ));
                     
-                    // Add visual feedback particles around the player
+                    // Add visual feedback particles around the entity
                     level.sendParticles(ParticleTypes.LARGE_SMOKE,
-                        affectedPlayer.getX(), affectedPlayer.getY() + 1, affectedPlayer.getZ(),
+                        affectedEntity.getX(), affectedEntity.getY() + 1, affectedEntity.getZ(),
                         3, 0.3, 0.5, 0.3, 0.02);
                     
                     // Add additional ominous particles for high quirk factor
                     if (quirkFactor > 0.5) {
                         level.sendParticles(ParticleTypes.ASH,
-                            affectedPlayer.getX(), affectedPlayer.getY() + 0.8, affectedPlayer.getZ(),
+                            affectedEntity.getX(), affectedEntity.getY() + 0.8, affectedEntity.getZ(),
                             2, 0.2, 0.3, 0.2, 0.01);
                     }
                 }
@@ -641,7 +647,7 @@ public class EnvironmentDecayAbility extends Ability {
                 "4=iron pickaxe materials, 5=diamond pickaxe materials. " +
                 "Quirk factor increases intensity, block count, and spread speed for more devastating wave effects. " +
                 "The wave spreads outward one layer at a time, only affecting blocks connected to previously destroyed blocks. " +
-                "Players standing above decaying blocks receive wither effects, with amplifier scaling based on quirk factor.";
+                "Living entities standing above decaying blocks receive decay effect, with amplifier scaling based on quirk factor.";
     }
 
     static {
