@@ -9,6 +9,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
@@ -17,6 +18,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.AABB;
 
 import net.threetag.palladium.power.IPowerHolder;
 import net.threetag.palladium.power.ability.AbilityInstance;
@@ -179,6 +181,7 @@ public class EnvironmentDecayAbility extends Ability {
         if (currentWaveBlocks.isEmpty() || blocksDecayed >= maxBlocks) return;
 
         Set<BlockPos> nextWaveBlocks = new HashSet<>();
+        Set<BlockPos> destroyedBlocks = new HashSet<>(); // Track destroyed blocks for decay effects
         int blocksProcessedThisWave = 0;
 
         // Process current wave blocks
@@ -188,6 +191,9 @@ public class EnvironmentDecayAbility extends Ability {
             // Destroy the block if it's decayable
             if (isDecayable(level.getBlockState(pos), intensity)) {
                 level.destroyBlock(pos, false);
+
+                // Track this block for player decay effects
+                destroyedBlocks.add(pos);
 
                 // Only add particles 40% of the time to reduce lag
                 if (level.random.nextFloat() < 0.2f) {
@@ -211,10 +217,63 @@ public class EnvironmentDecayAbility extends Ability {
             nextWaveBlocks.addAll(connectedBlocks);
         }
 
+        // Apply decay effects to players above destroyed blocks
+        if (!destroyedBlocks.isEmpty()) {
+            double quirkFactor = QuirkFactorHelper.getQuirkFactor(player);
+            applyDecayToPlayersAboveBlocks(level, destroyedBlocks, quirkFactor);
+        }
+
         // Update properties
         entry.setUniqueProperty(BLOCKS_DECAYED, blocksDecayed + blocksProcessedThisWave);
         entry.setUniqueProperty(PROCESSED_BLOCKS, serializeBlockPositions(processedBlocks));
         entry.setUniqueProperty(CURRENT_WAVE_BLOCKS, serializeBlockPositions(nextWaveBlocks));
+    }
+
+    private void applyDecayToPlayersAboveBlocks(ServerLevel level, Set<BlockPos> destroyedBlocks, double quirkFactor) {
+        for (BlockPos blockPos : destroyedBlocks) {
+            // Check for players above this block (within a reasonable height range)
+            for (int yOffset = 0; yOffset <= 4; yOffset++) {
+                BlockPos checkPos = blockPos.above(yOffset);
+                
+                // Create a small search area around this position to catch players
+                AABB searchArea = new AABB(
+                    checkPos.getX() - 0.5, checkPos.getY() - 0.5, checkPos.getZ() - 0.5,
+                    checkPos.getX() + 1.5, checkPos.getY() + 2.5, checkPos.getZ() + 1.5
+                );
+                
+                List<ServerPlayer> players = level.getEntitiesOfClass(ServerPlayer.class, searchArea);
+                
+                for (ServerPlayer affectedPlayer : players) {
+                    // Apply decay effect scaled by quirk factor only
+                    int baseAmplifier = 0; // Base level 1 (amplifier 0)
+                    int quirkBonus = (int) Math.floor(quirkFactor * QUIRK_INTENSITY_MULTIPLIER * 2); // Use intensity multiplier for consistency
+                    int effectAmplifier = Math.min(baseAmplifier + quirkBonus, 6); // Cap at level 6 to prevent excessive damage
+                    
+                    int effectDuration = 100; // 5 seconds base duration
+                    
+                    // Apply wither effect as decay
+                    affectedPlayer.addEffect(new MobEffectInstance(
+                        net.minecraft.world.effect.MobEffects.WITHER,
+                        effectDuration,
+                        effectAmplifier,
+                        false,
+                        true
+                    ));
+                    
+                    // Add visual feedback particles around the player
+                    level.sendParticles(ParticleTypes.LARGE_SMOKE,
+                        affectedPlayer.getX(), affectedPlayer.getY() + 1, affectedPlayer.getZ(),
+                        3, 0.3, 0.5, 0.3, 0.02);
+                    
+                    // Add additional ominous particles for high quirk factor
+                    if (quirkFactor > 0.5) {
+                        level.sendParticles(ParticleTypes.ASH,
+                            affectedPlayer.getX(), affectedPlayer.getY() + 0.8, affectedPlayer.getZ(),
+                            2, 0.2, 0.3, 0.2, 0.01);
+                    }
+                }
+            }
+        }
     }
 
     private Set<BlockPos> findConnectedBlocks(ServerLevel level, BlockPos center, String decayType,
@@ -581,7 +640,8 @@ public class EnvironmentDecayAbility extends Ability {
                 "Intensity determines tool requirements: 1=instant break, 2=shovel materials, 3=wood pickaxe materials, " +
                 "4=iron pickaxe materials, 5=diamond pickaxe materials. " +
                 "Quirk factor increases intensity, block count, and spread speed for more devastating wave effects. " +
-                "The wave spreads outward one layer at a time, only affecting blocks connected to previously destroyed blocks.";
+                "The wave spreads outward one layer at a time, only affecting blocks connected to previously destroyed blocks. " +
+                "Players standing above decaying blocks receive wither effects, with amplifier scaling based on quirk factor.";
     }
 
     static {
