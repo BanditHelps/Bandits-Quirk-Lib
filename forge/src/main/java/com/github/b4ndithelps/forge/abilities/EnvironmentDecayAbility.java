@@ -127,17 +127,7 @@ public class EnvironmentDecayAbility extends Ability {
 
     @Override
     public void lastTick(LivingEntity entity, AbilityInstance entry, IPowerHolder holder, boolean enabled) {
-        if (entity instanceof ServerPlayer player && entity.level() instanceof ServerLevel serverLevel) {
-            BlockPos targetPos = new BlockPos(
-                    entry.getProperty(TARGET_X),
-                    entry.getProperty(TARGET_Y),
-                    entry.getProperty(TARGET_Z)
-            );
 
-            serverLevel.sendParticles(ParticleTypes.LARGE_SMOKE,
-                    targetPos.getX() + 0.5, targetPos.getY() + 1.0, targetPos.getZ() + 0.5,
-                    20, 1.0, 1.0, 1.0, 0.1);
-        }
     }
 
     private void executeWaveDecay(ServerPlayer player, ServerLevel level, AbilityInstance entry) {
@@ -165,9 +155,6 @@ public class EnvironmentDecayAbility extends Ability {
             entry.setUniqueProperty(WAVE_TIMER, 0.0F);
             entry.setUniqueProperty(CURRENT_WAVE, currentWave + 1);
         }
-
-        // Add preview particles for current wave front
-        addWavePreviewParticles(level, entry);
     }
 
     private void processCurrentWave(ServerLevel level, AbilityInstance entry, int intensity, int maxBlocks) {
@@ -188,7 +175,12 @@ public class EnvironmentDecayAbility extends Ability {
             // Destroy the block if it's decayable
             if (isDecayable(level.getBlockState(pos), intensity)) {
                 level.destroyBlock(pos, false);
-                addDecayParticles(level, pos, intensity);
+
+                // Only add particles 40% of the time to reduce lag
+                if (level.random.nextFloat() < 0.2f) {
+                    addDecayParticles(level, pos, intensity);
+                }
+
                 blocksProcessedThisWave++;
 
                 // Play sound for each destroyed block
@@ -311,19 +303,6 @@ public class EnvironmentDecayAbility extends Ability {
         }
 
         return blocks;
-    }
-
-    private void addWavePreviewParticles(ServerLevel level, AbilityInstance entry) {
-        Set<BlockPos> currentWaveBlocks = parseBlockPositions(entry.getProperty(CURRENT_WAVE_BLOCKS));
-
-        // Only show preview particles occasionally to avoid spam
-        if (ThreadLocalRandom.current().nextInt(4) != 0) return;
-
-        for (BlockPos pos : currentWaveBlocks) {
-            level.sendParticles(ParticleTypes.WITCH,
-                    pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
-                    1, 0.1, 0.1, 0.1, 0.01);
-        }
     }
 
     private boolean isDecayable(BlockState blockState, int intensity) {
