@@ -45,9 +45,25 @@ public class BodyStatusHelper {
         return new HashMap<>(registeredStatuses);
     }
 
+    /**
+     * Safely checks if the body status capability is available for the given player.
+     * 
+     * @param player The player to check
+     * @return true if the capability is available, false otherwise
+     */
+    public static boolean isBodyStatusAvailable(Player player) {
+        return player.getCapability(BodyStatusCapabilityProvider.BODY_STATUS_CAPABILITY).isPresent();
+    }
+
+    /**
+     * Gets the body status capability for the given player.
+     * Returns null if the capability is not available (e.g., during player death/respawn).
+     * 
+     * @param player The player to get the capability for
+     * @return The IBodyStatusCapability instance, or null if not available
+     */
     public static IBodyStatusCapability getBodyStatus(Player player) {
-        return player.getCapability(BodyStatusCapabilityProvider.BODY_STATUS_CAPABILITY)
-                .orElseThrow(() -> new RuntimeException("Body status capability not found"));
+        return player.getCapability(BodyStatusCapabilityProvider.BODY_STATUS_CAPABILITY).orElse(null);
     }
 
     /**
@@ -78,9 +94,14 @@ public class BodyStatusHelper {
     // Convenience methods for KubeJS
     public static float getDamage(Player player, String bodyPartName) {
         try {
+            IBodyStatusCapability bodyStatus = getBodyStatus(player);
+            if (bodyStatus == null) {
+                return 0.0f; // Return default value if capability not available
+            }
+            
             String resolvedName = resolveBodyPartName(player, bodyPartName);
             BodyPart part = BodyPart.valueOf(resolvedName.toUpperCase());
-            return getBodyStatus(player).getDamage(part);
+            return bodyStatus.getDamage(part);
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("Invalid body part: " + bodyPartName + " (resolved to: " + resolveBodyPartName(player, bodyPartName) + ")");
         }
@@ -88,9 +109,14 @@ public class BodyStatusHelper {
 
     public static void setDamage(Player player, String bodyPartName, float damage) {
         try {
+            IBodyStatusCapability bodyStatus = getBodyStatus(player);
+            if (bodyStatus == null) {
+                return; // Silently fail if capability not available
+            }
+            
             String resolvedName = resolveBodyPartName(player, bodyPartName);
             BodyPart part = BodyPart.valueOf(resolvedName.toUpperCase());
-            getBodyStatus(player).setDamage(part, damage);
+            bodyStatus.setDamage(part, damage);
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("Invalid body part: " + bodyPartName + " (resolved to: " + resolveBodyPartName(player, bodyPartName) + ")");
         }
@@ -98,9 +124,14 @@ public class BodyStatusHelper {
 
     public static void addDamage(Player player, String bodyPartName, float amount) {
         try {
+            IBodyStatusCapability bodyStatus = getBodyStatus(player);
+            if (bodyStatus == null) {
+                return; // Silently fail if capability not available
+            }
+            
             String resolvedName = resolveBodyPartName(player, bodyPartName);
             BodyPart part = BodyPart.valueOf(resolvedName.toUpperCase());
-            getBodyStatus(player).addDamage(part, amount);
+            bodyStatus.addDamage(part, amount);
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("Invalid body part: " + bodyPartName + " (resolved to: " + resolveBodyPartName(player, bodyPartName) + ")");
         }
@@ -108,7 +139,12 @@ public class BodyStatusHelper {
 
     public static void damageAll(Player player, float amount) {
         try {
-            getBodyStatus(player).damageAll(amount);
+            IBodyStatusCapability bodyStatus = getBodyStatus(player);
+            if (bodyStatus == null) {
+                return; // Silently fail if capability not available
+            }
+            
+            bodyStatus.damageAll(amount);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -116,9 +152,14 @@ public class BodyStatusHelper {
 
     public static String getDamageStage(Player player, String bodyPartName) {
         try {
+            IBodyStatusCapability bodyStatus = getBodyStatus(player);
+            if (bodyStatus == null) {
+                return "healthy"; // Return default stage if capability not available
+            }
+            
             String resolvedName = resolveBodyPartName(player, bodyPartName);
             BodyPart part = BodyPart.valueOf(resolvedName.toUpperCase());
-            return getBodyStatus(player).getDamageStage(part).getName();
+            return bodyStatus.getDamageStage(part).getName();
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("Invalid body part: " + bodyPartName + " (resolved to: " + resolveBodyPartName(player, bodyPartName) + ")");
         }
@@ -126,9 +167,14 @@ public class BodyStatusHelper {
 
     public static int getCustomStatus(Player player, String bodyPartName, String statusName) {
         try {
+            IBodyStatusCapability bodyStatus = getBodyStatus(player);
+            if (bodyStatus == null) {
+                return 0; // Return default value if capability not available
+            }
+            
             String resolvedName = resolveBodyPartName(player, bodyPartName);
             BodyPart part = BodyPart.valueOf(resolvedName.toUpperCase());
-            return getBodyStatus(player).getCustomStatus(part, statusName);
+            return bodyStatus.getCustomStatus(part, statusName);
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("Invalid body part: " + bodyPartName + " (resolved to: " + resolveBodyPartName(player, bodyPartName) + ")");
         }
@@ -136,6 +182,11 @@ public class BodyStatusHelper {
 
     public static void setCustomStatus(Player player, String bodyPartName, String statusName, int level) {
         try {
+            IBodyStatusCapability bodyStatus = getBodyStatus(player);
+            if (bodyStatus == null) {
+                return; // Silently fail if capability not available
+            }
+            
             String resolvedName = resolveBodyPartName(player, bodyPartName);
             BodyPart part = BodyPart.valueOf(resolvedName.toUpperCase());
             CustomStatus status = getCustomStatus(statusName);
@@ -150,7 +201,7 @@ public class BodyStatusHelper {
                 throw new RuntimeException("Level cannot be negative for status " + statusName);
             }
             
-            getBodyStatus(player).setCustomStatus(part, statusName, level);
+            bodyStatus.setCustomStatus(part, statusName, level);
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("Invalid body part: " + bodyPartName + " (resolved to: " + resolveBodyPartName(player, bodyPartName) + ")");
         }
@@ -164,13 +215,17 @@ public class BodyStatusHelper {
      * @param bodyPartName The name of the body part (case insensitive, supports main_arm/off_arm)
      * @param statusName The name of the custom status
      * @param defaultLevel The default level to set (only if status doesn't exist)
-     * @return true if the status was initialized, false if it already existed
+     * @return true if the status was initialized, false if it already existed or capability not available
      */
     public static boolean initializeNewStatus(Player player, String bodyPartName, String statusName, int defaultLevel) {
         try {
+            IBodyStatusCapability bodyStatus = getBodyStatus(player);
+            if (bodyStatus == null) {
+                return false; // Return false if capability not available
+            }
+            
             String resolvedName = resolveBodyPartName(player, bodyPartName);
             BodyPart part = BodyPart.valueOf(resolvedName.toUpperCase());
-            IBodyStatusCapability bodyStatus = getBodyStatus(player);
             
             // Check if the status already exists (level > 0)
             if (bodyStatus.hasCustomStatus(part, statusName)) {
@@ -219,9 +274,14 @@ public class BodyStatusHelper {
 
     public static boolean isPartBroken(Player player, String bodyPartName) {
         try {
+            IBodyStatusCapability bodyStatus = getBodyStatus(player);
+            if (bodyStatus == null) {
+                return false; // Return false if capability not available
+            }
+            
             String resolvedName = resolveBodyPartName(player, bodyPartName);
             BodyPart part = BodyPart.valueOf(resolvedName.toUpperCase());
-            return getBodyStatus(player).isPartBroken(part);
+            return bodyStatus.isPartBroken(part);
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("Invalid body part: " + bodyPartName + " (resolved to: " + resolveBodyPartName(player, bodyPartName) + ")");
         }
@@ -229,9 +289,14 @@ public class BodyStatusHelper {
 
     public static boolean isPartDestroyed(Player player, String bodyPartName) {
         try {
+            IBodyStatusCapability bodyStatus = getBodyStatus(player);
+            if (bodyStatus == null) {
+                return false; // Return false if capability not available
+            }
+            
             String resolvedName = resolveBodyPartName(player, bodyPartName);
             BodyPart part = BodyPart.valueOf(resolvedName.toUpperCase());
-            return getBodyStatus(player).isPartDestroyed(part);
+            return bodyStatus.isPartDestroyed(part);
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("Invalid body part: " + bodyPartName + " (resolved to: " + resolveBodyPartName(player, bodyPartName) + ")");
         }
@@ -239,9 +304,14 @@ public class BodyStatusHelper {
 
     public static boolean isPartSprained(Player player, String bodyPartName) {
         try {
+            IBodyStatusCapability bodyStatus = getBodyStatus(player);
+            if (bodyStatus == null) {
+                return false; // Return false if capability not available
+            }
+            
             String resolvedName = resolveBodyPartName(player, bodyPartName);
             BodyPart part = BodyPart.valueOf(resolvedName.toUpperCase());
-            return getBodyStatus(player).isPartSprained(part);
+            return bodyStatus.isPartSprained(part);
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("Invalid body part: " + bodyPartName + " (resolved to: " + resolveBodyPartName(player, bodyPartName) + ")");
         }
@@ -250,9 +320,14 @@ public class BodyStatusHelper {
     // Enhanced custom data methods for KubeJS
     public static float getCustomFloat(Player player, String bodyPartName, String key) {
         try {
+            IBodyStatusCapability bodyStatus = getBodyStatus(player);
+            if (bodyStatus == null) {
+                return 0.0f; // Return default value if capability not available
+            }
+            
             String resolvedName = resolveBodyPartName(player, bodyPartName);
             BodyPart part = BodyPart.valueOf(resolvedName.toUpperCase());
-            return getBodyStatus(player).getCustomFloat(part, key);
+            return bodyStatus.getCustomFloat(part, key);
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("Invalid body part: " + bodyPartName + " (resolved to: " + resolveBodyPartName(player, bodyPartName) + ")");
         }
@@ -260,9 +335,14 @@ public class BodyStatusHelper {
 
     public static void setCustomFloat(Player player, String bodyPartName, String key, float value) {
         try {
+            IBodyStatusCapability bodyStatus = getBodyStatus(player);
+            if (bodyStatus == null) {
+                return; // Silently fail if capability not available
+            }
+            
             String resolvedName = resolveBodyPartName(player, bodyPartName);
             BodyPart part = BodyPart.valueOf(resolvedName.toUpperCase());
-            getBodyStatus(player).setCustomFloat(part, key, value);
+            bodyStatus.setCustomFloat(part, key, value);
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("Invalid body part: " + bodyPartName + " (resolved to: " + resolveBodyPartName(player, bodyPartName) + ")");
         }
@@ -270,9 +350,14 @@ public class BodyStatusHelper {
 
     public static String getCustomString(Player player, String bodyPartName, String key) {
         try {
+            IBodyStatusCapability bodyStatus = getBodyStatus(player);
+            if (bodyStatus == null) {
+                return ""; // Return empty string if capability not available
+            }
+            
             String resolvedName = resolveBodyPartName(player, bodyPartName);
             BodyPart part = BodyPart.valueOf(resolvedName.toUpperCase());
-            return getBodyStatus(player).getCustomString(part, key);
+            return bodyStatus.getCustomString(part, key);
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("Invalid body part: " + bodyPartName + " (resolved to: " + resolveBodyPartName(player, bodyPartName) + ")");
         }
@@ -280,9 +365,14 @@ public class BodyStatusHelper {
 
     public static void setCustomString(Player player, String bodyPartName, String key, String value) {
         try {
+            IBodyStatusCapability bodyStatus = getBodyStatus(player);
+            if (bodyStatus == null) {
+                return; // Silently fail if capability not available
+            }
+            
             String resolvedName = resolveBodyPartName(player, bodyPartName);
             BodyPart part = BodyPart.valueOf(resolvedName.toUpperCase());
-            getBodyStatus(player).setCustomString(part, key, value);
+            bodyStatus.setCustomString(part, key, value);
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("Invalid body part: " + bodyPartName + " (resolved to: " + resolveBodyPartName(player, bodyPartName) + ")");
         }
@@ -290,9 +380,14 @@ public class BodyStatusHelper {
 
     public static boolean hasCustomFloat(Player player, String bodyPartName, String key) {
         try {
+            IBodyStatusCapability bodyStatus = getBodyStatus(player);
+            if (bodyStatus == null) {
+                return false; // Return false if capability not available
+            }
+            
             String resolvedName = resolveBodyPartName(player, bodyPartName);
             BodyPart part = BodyPart.valueOf(resolvedName.toUpperCase());
-            return getBodyStatus(player).hasCustomFloat(part, key);
+            return bodyStatus.hasCustomFloat(part, key);
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("Invalid body part: " + bodyPartName + " (resolved to: " + resolveBodyPartName(player, bodyPartName) + ")");
         }
@@ -300,9 +395,14 @@ public class BodyStatusHelper {
 
     public static boolean hasCustomString(Player player, String bodyPartName, String key) {
         try {
+            IBodyStatusCapability bodyStatus = getBodyStatus(player);
+            if (bodyStatus == null) {
+                return false; // Return false if capability not available
+            }
+            
             String resolvedName = resolveBodyPartName(player, bodyPartName);
             BodyPart part = BodyPart.valueOf(resolvedName.toUpperCase());
-            return getBodyStatus(player).hasCustomString(part, key);
+            return bodyStatus.hasCustomString(part, key);
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("Invalid body part: " + bodyPartName + " (resolved to: " + resolveBodyPartName(player, bodyPartName) + ")");
         }
