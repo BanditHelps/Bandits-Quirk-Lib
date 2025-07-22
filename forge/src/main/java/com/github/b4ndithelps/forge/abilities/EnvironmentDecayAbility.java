@@ -191,7 +191,13 @@ public class EnvironmentDecayAbility extends Ability {
 
             // Destroy the block if it's decayable
             if (isDecayable(level.getBlockState(pos), intensity)) {
-                level.destroyBlock(pos, false);
+                boolean shouldDropItems = false;
+                // If doing a connected decay, drop items if they have the upgrade that gives that to them
+                if (decayType.equals("connected")) {
+                    shouldDropItems = player.getTags().contains("Bql.AdvancedDecay");
+                }
+
+                level.destroyBlock(pos, shouldDropItems);
 
                 // Track this block for player decay effects
                 destroyedBlocks.add(pos);
