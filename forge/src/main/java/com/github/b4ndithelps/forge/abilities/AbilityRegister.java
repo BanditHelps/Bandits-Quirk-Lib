@@ -11,6 +11,7 @@ public class AbilityRegister {
     public static final RegistrySupplier<Ability> HAPPEN_ONCE;
     public static final RegistrySupplier<Ability> ROT_ABILITY;
     public static final RegistrySupplier<Ability> ENVIRONMENT_DECAY;
+    public static final RegistrySupplier<Ability> GRAB_ABILITY;
 
     public AbilityRegister() {
 
@@ -25,5 +26,6 @@ public class AbilityRegister {
         HAPPEN_ONCE = ABILITIES.register("happen_once", HappenOnceAbility::new);
         ROT_ABILITY = ABILITIES.register("rot_ability", RotAbility::new);
         ENVIRONMENT_DECAY = ABILITIES.register("environment_decay", EnvironmentDecayAbility::new);
+        GRAB_ABILITY = ABILITIES.register("grab_ability", GrabAbility::new);
     }
 }

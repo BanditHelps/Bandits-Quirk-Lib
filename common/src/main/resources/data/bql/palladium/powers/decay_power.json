@@ -206,6 +206,66 @@
           }
         ]
       }
+    },
+    "grab_hold": {
+      "type": "bandits_quirk_lib:grab_ability",
+      "icon": "minecraft:chain",
+      "title": "Immobilizing Grasp",
+      "description": "Grab and immobilize a nearby living entity. Both you and the target will be locked in place for the duration.",
+      "range": 2.0,
+      "mode": "hold",
+      "potion_effect": "bandits_quirk_lib:decay_effect",
+      "effect_amplifier": 2,
+      "carry_height": 1.5,
+      "carry_distance": 3.0,
+      "hidden_in_bar": false,
+      "gui_position": [1, -1],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:held",
+            "key_type": "key_bind",
+            "needs_empty_hand": false
+          }
+        ],
+        "unlocking": [
+          {
+            "type": "palladium:ability_unlocked",
+            "power": "null",
+            "ability": "info_block"
+          }
+        ]
+      }
+    },
+    "grab_carry": {
+      "type": "bandits_quirk_lib:grab_ability",
+      "icon": "minecraft:lead",
+      "title": "Telekinetic Control",
+      "description": "Grab and carry a living entity with your mind. The target will follow your crosshair and can be moved freely through the air.",
+      "range": 6.0,
+      "mode": "hold_and_carry",
+      "potion_effect": "",
+      "effect_amplifier": 0,
+      "carry_height": 2.0,
+      "carry_distance": 4.0,
+      "hidden_in_bar": false,
+      "gui_position": [1, -2],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:held",
+            "key_type": "key_bind",
+            "needs_empty_hand": false
+          }
+        ],
+        "unlocking": [
+          {
+            "type": "palladium:ability_unlocked",
+            "power": "null",
+            "ability": "grab_hold"
+          }
+        ]
+      }
     }
   }
 } 
