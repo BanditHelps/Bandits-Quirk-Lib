@@ -24,11 +24,8 @@ public class QuirkFactorHelper {
                 // If no objective exists, return 0 (no quirk factor)
                 return 0.0;
             }
-            
-            int quirkScore = scoreboard.getOrCreatePlayerScore(player.getGameProfile().getName(), quirkFactorObj).getScore();
-            
-            // Convert score to decimal multiplier (e.g., score of 1 = 0.1 multiplier)
-            return quirkScore * 0.1;
+
+            return scoreboard.getOrCreatePlayerScore(player.getGameProfile().getName(), quirkFactorObj).getScore();
             
         } catch (Exception e) {
             // If anything goes wrong, return 0
@@ -56,7 +53,7 @@ public class QuirkFactorHelper {
             }
             
             // Convert decimal to score (e.g., 0.1 multiplier = score of 1)
-            int score = (int) Math.round(quirkFactor / 0.1);
+            int score = (int) quirkFactor;
             scoreboard.getOrCreatePlayerScore(player.getGameProfile().getName(), quirkFactorObj).setScore(score);
             
         } catch (Exception e) {

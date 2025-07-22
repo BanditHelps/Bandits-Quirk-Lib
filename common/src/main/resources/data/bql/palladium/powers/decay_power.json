@@ -89,9 +89,62 @@
       "description": "null",
       "damage": 15,
       "max_blocks": 100,
-      "base_intensity": 2,
+      "base_intensity": 1,
       "decay_type": "circular",
       "range": 5,
+      "spread_speed": 1,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:held",
+            "key_type": "key_bind",
+            "needs_empty_hand": false
+          }
+        ]
+      }
+    },
+    "environment_deca_verti": {
+      "type": "bandits_quirk_lib:environment_decay",
+      "icon": "minecraft:blaze_rod",
+      "title": "who cares",
+      "bar_color": "light_gray",
+      "hidden": false,
+      "hidden_in_bar": false,
+      "list_index": -1,
+      "gui_position": "null",
+      "description": "null",
+      "damage": 15,
+      "max_blocks": 100,
+      "base_intensity": 1,
+      "decay_type": "vertical",
+      "range": 5,
+      "spread_speed": 1,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:held",
+            "key_type": "key_bind",
+            "needs_empty_hand": false
+          }
+        ]
+      }
+    },
+    "environment_deca_hor": {
+      "type": "bandits_quirk_lib:environment_decay",
+      "icon": "minecraft:blaze_rod",
+      "title": "who cares",
+      "bar_color": "light_gray",
+      "hidden": false,
+      "hidden_in_bar": false,
+      "list_index": -1,
+      "gui_position": "null",
+      "description": "null",
+      "damage": 15,
+      "max_blocks": 100,
+      "base_intensity": 1,
+      "decay_type": "horizontal",
+      "range": 5,
+      "spread_speed": 1,
       "conditions": {
         "enabling": [
           {

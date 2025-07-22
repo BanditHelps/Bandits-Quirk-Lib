@@ -8,6 +8,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
@@ -57,48 +58,6 @@ public class EnvironmentDecayAbility extends Ability {
     public static final PalladiumProperty<String> PROCESSED_BLOCKS; // All processed blocks
     public static final PalladiumProperty<Float> WAVE_TIMER; // Timer for wave progression
 
-    // Decayable blocks by intensity level
-    private static final Set<Block> INTENSITY_1_BLOCKS = Set.of(
-            // Organic materials
-            Blocks.OAK_LEAVES, Blocks.SPRUCE_LEAVES, Blocks.BIRCH_LEAVES,
-            Blocks.JUNGLE_LEAVES, Blocks.ACACIA_LEAVES, Blocks.DARK_OAK_LEAVES,
-            Blocks.AZALEA_LEAVES, Blocks.FLOWERING_AZALEA_LEAVES,
-            Blocks.OAK_LOG, Blocks.SPRUCE_LOG, Blocks.BIRCH_LOG,
-            Blocks.JUNGLE_LOG, Blocks.ACACIA_LOG, Blocks.DARK_OAK_LOG,
-            Blocks.CRIMSON_STEM, Blocks.WARPED_STEM,
-            Blocks.OAK_WOOD, Blocks.SPRUCE_WOOD, Blocks.BIRCH_WOOD,
-            Blocks.JUNGLE_WOOD, Blocks.ACACIA_WOOD, Blocks.DARK_OAK_WOOD,
-            Blocks.GRASS, Blocks.TALL_GRASS, Blocks.FERN, Blocks.LARGE_FERN,
-            Blocks.DEAD_BUSH, Blocks.WHEAT, Blocks.CARROTS, Blocks.POTATOES,
-            Blocks.BEETROOTS, Blocks.SUGAR_CANE, Blocks.BAMBOO
-    );
-
-    private static final Set<Block> INTENSITY_2_BLOCKS = Set.of(
-            // Natural terrain
-            Blocks.GRASS_BLOCK, Blocks.DIRT, Blocks.COARSE_DIRT,
-            Blocks.PODZOL, Blocks.MYCELIUM, Blocks.SAND, Blocks.RED_SAND,
-            Blocks.GRAVEL, Blocks.CLAY, Blocks.MOSS_BLOCK, Blocks.MOSS_CARPET,
-            Blocks.FARMLAND, Blocks.DIRT_PATH, Blocks.ROOTED_DIRT
-    );
-
-    private static final Set<Block> INTENSITY_3_BLOCKS = Set.of(
-            // Common stone types
-            Blocks.STONE, Blocks.COBBLESTONE, Blocks.MOSSY_COBBLESTONE,
-            Blocks.STONE_BRICKS, Blocks.MOSSY_STONE_BRICKS,
-            Blocks.ANDESITE, Blocks.DIORITE, Blocks.GRANITE,
-            Blocks.POLISHED_ANDESITE, Blocks.POLISHED_DIORITE, Blocks.POLISHED_GRANITE,
-            Blocks.SANDSTONE, Blocks.RED_SANDSTONE, Blocks.SMOOTH_SANDSTONE
-    );
-
-    private static final Set<Block> INTENSITY_4_BLOCKS = Set.of(
-            // Harder materials
-            Blocks.DEEPSLATE, Blocks.COBBLED_DEEPSLATE, Blocks.POLISHED_DEEPSLATE,
-            Blocks.DEEPSLATE_BRICKS, Blocks.TUFF, Blocks.BLACKSTONE,
-            Blocks.POLISHED_BLACKSTONE, Blocks.POLISHED_BLACKSTONE_BRICKS,
-            Blocks.BASALT, Blocks.SMOOTH_BASALT, Blocks.OBSIDIAN,
-            Blocks.IRON_ORE, Blocks.DEEPSLATE_IRON_ORE
-    );
-
     public EnvironmentDecayAbility() {
         this.withProperty(DAMAGE, 15)
                 .withProperty(MAX_BLOCKS, 50)
@@ -147,11 +106,6 @@ public class EnvironmentDecayAbility extends Ability {
                 if (entity.level() instanceof ServerLevel serverLevel) {
                     // Play initial sound and effect
                     serverLevel.playSound(null, targetPos, SoundEvents.WITHER_SPAWN, SoundSource.PLAYERS, 0.5f, 0.8f);
-
-                    // Add initial targeting effect
-                    serverLevel.sendParticles(ParticleTypes.DRAGON_BREATH,
-                            targetPos.getX() + 0.5, targetPos.getY() + 0.5, targetPos.getZ() + 0.5,
-                            10, 0.3, 0.3, 0.3, 0.1);
                 }
             }
         }
@@ -180,8 +134,6 @@ public class EnvironmentDecayAbility extends Ability {
                     entry.getProperty(TARGET_Z)
             );
 
-            // Final effect
-            serverLevel.playSound(null, targetPos, SoundEvents.WITHER_DEATH, SoundSource.PLAYERS, 0.8f, 0.6f);
             serverLevel.sendParticles(ParticleTypes.LARGE_SMOKE,
                     targetPos.getX() + 0.5, targetPos.getY() + 1.0, targetPos.getZ() + 0.5,
                     20, 1.0, 1.0, 1.0, 0.1);
@@ -197,7 +149,7 @@ public class EnvironmentDecayAbility extends Ability {
         // Apply quirk factor scaling
         double quirkFactor = QuirkFactorHelper.getQuirkFactor(player);
         int effectiveMaxBlocks = entry.getProperty(MAX_BLOCKS) + (int)(quirkFactor * QUIRK_BLOCKS_MULTIPLIER * entry.getProperty(MAX_BLOCKS));
-        int effectiveIntensity = Math.min(4, entry.getProperty(BASE_INTENSITY) + (int)(quirkFactor * QUIRK_INTENSITY_MULTIPLIER));
+        int effectiveIntensity = Math.min(5, entry.getProperty(BASE_INTENSITY) + (int)(quirkFactor * QUIRK_INTENSITY_MULTIPLIER));
         float effectiveSpreadSpeed = entry.getProperty(SPREAD_SPEED) * (1.0f - (float)(quirkFactor * QUIRK_SPEED_MULTIPLIER));
 
         // Stop if we've hit the block limit
@@ -378,15 +330,72 @@ public class EnvironmentDecayAbility extends Ability {
         Block block = blockState.getBlock();
 
         // Always skip air
-        if (block == Blocks.AIR) return false;
+        if (block == Blocks.AIR || block == Blocks.BEDROCK) return false;
 
-        // Check intensity levels
-        if (intensity >= 1 && INTENSITY_1_BLOCKS.contains(block)) return true;
-        if (intensity >= 2 && INTENSITY_2_BLOCKS.contains(block)) return true;
-        if (intensity >= 3 && INTENSITY_3_BLOCKS.contains(block)) return true;
-        if (intensity >= 4 && INTENSITY_4_BLOCKS.contains(block)) return true;
+        // Get the block's destroy time with different tools
+        float destroyTime = blockState.getDestroySpeed(null, null);
 
-        return false;
+        // Level 0: Instant break blocks and shovel blocks
+        if (destroyTime < 0.1f || isIntensityZero(blockState)) {
+            return intensity >= 1;
+        }
+
+        // Level 1: Axe Materials
+        if (isIntensityOne(blockState)) {
+            return intensity >= 2;
+        }
+
+        // Level 2: Stone Pickaxe Materials
+        if (isIntensityTwo(blockState)) {
+            return intensity >= 3;
+        }
+
+        // Level 3: Iron Pickaxe Materials
+        if (isIntensityThree(blockState)) {
+            return intensity >= 4;
+        }
+
+        // Level 4: Diamond Pickaxe Materials
+        if (isIntensityFour(blockState)) {
+            return intensity >= 5;
+        }
+
+        // Default
+        return intensity >= 3 && destroyTime > 0 && destroyTime < 50.0f;
+    }
+
+    // The first intensity is used for basic blocks, and wooden shovel blocks
+    private boolean isIntensityZero(BlockState blockState) {
+        return blockState.is(net.minecraft.tags.BlockTags.MINEABLE_WITH_SHOVEL);
+    }
+
+    // This intensity is used for axe related blocks. Pretty much all wood
+    private boolean isIntensityOne(BlockState blockState) {
+        return blockState.is(BlockTags.MINEABLE_WITH_AXE);
+    }
+
+    // Intensity for stone pickaxes and below
+    private boolean isIntensityTwo(BlockState blockState) {
+        return blockState.is(net.minecraft.tags.BlockTags.MINEABLE_WITH_PICKAXE) &&
+                blockState.is(net.minecraft.tags.BlockTags.NEEDS_STONE_TOOL) &&
+                !blockState.is(net.minecraft.tags.BlockTags.NEEDS_IRON_TOOL) &&
+                !blockState.is(net.minecraft.tags.BlockTags.NEEDS_DIAMOND_TOOL);
+    }
+
+    // Intensity for iron pickaxes and below
+    private boolean isIntensityThree(BlockState blockState) {
+        return blockState.is(net.minecraft.tags.BlockTags.MINEABLE_WITH_PICKAXE) &&
+                (blockState.is(net.minecraft.tags.BlockTags.NEEDS_STONE_TOOL) ||
+                blockState.is(net.minecraft.tags.BlockTags.NEEDS_IRON_TOOL)) &&
+                !blockState.is(net.minecraft.tags.BlockTags.NEEDS_DIAMOND_TOOL);
+    }
+
+    // Intensity for diamond pickaxes and below
+    private boolean isIntensityFour(BlockState blockState) {
+        return blockState.is(net.minecraft.tags.BlockTags.MINEABLE_WITH_PICKAXE) &&
+                (blockState.is(net.minecraft.tags.BlockTags.NEEDS_STONE_TOOL) ||
+                        blockState.is(net.minecraft.tags.BlockTags.NEEDS_IRON_TOOL) ||
+                blockState.is(net.minecraft.tags.BlockTags.NEEDS_DIAMOND_TOOL));
     }
 
     private BlockPos findTargetBlock(ServerPlayer player, float range) {
@@ -475,7 +484,8 @@ public class EnvironmentDecayAbility extends Ability {
     public String getDocumentationDescription() {
         return "Creates a wave of destruction that spreads from a target block to connected blocks. " +
                 "Supports horizontal (4-directional), vertical (6-directional), and circular (8-directional) spread patterns. " +
-                "Intensity determines which blocks can be decayed (1=organic, 2=terrain, 3=stone, 4=hard materials). " +
+                "Intensity determines tool requirements: 1=instant break, 2=shovel materials, 3=wood pickaxe materials, " +
+                "4=iron pickaxe materials, 5=diamond pickaxe materials. " +
                 "Quirk factor increases intensity, block count, and spread speed for more devastating wave effects. " +
                 "The wave spreads outward one layer at a time, only affecting blocks connected to previously destroyed blocks.";
     }
