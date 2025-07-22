@@ -40,6 +40,23 @@ public class DecayMobEffect extends MobEffect {
         if (!mainHandItem.isEmpty() && mainHandItem.isDamageableItem()) {
             int damageAmount = 15 * (amplifier + 1);
             mainHandItem.hurt(damageAmount, entity.getRandom(), null);
+            
+            // Check if main hand item should break
+            if (mainHandItem.getDamageValue() >= mainHandItem.getMaxDamage()) {
+                entity.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
+            }
+        }
+
+        // Damage held item in off hand
+        ItemStack offHandItem = entity.getOffhandItem();
+        if (!offHandItem.isEmpty() && offHandItem.isDamageableItem()) {
+            int damageAmount = 15 * (amplifier + 1);
+            offHandItem.hurt(damageAmount, entity.getRandom(), null);
+            
+            // Check if off hand item should break
+            if (offHandItem.getDamageValue() >= offHandItem.getMaxDamage()) {
+                entity.setItemSlot(EquipmentSlot.OFFHAND, ItemStack.EMPTY);
+            }
         }
 
         // Check and damage armor
