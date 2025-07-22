@@ -29,7 +29,6 @@ import net.threetag.palladium.util.property.StringProperty;
 import net.threetag.palladium.util.property.SyncType;
 
 import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 public class EnvironmentDecayAbility extends Ability {
@@ -38,13 +37,14 @@ public class EnvironmentDecayAbility extends Ability {
     private static final float QUIRK_INTENSITY_MULTIPLIER = 1.0f;
     private static final float QUIRK_BLOCKS_MULTIPLIER = 1.5f;
     private static final float QUIRK_RANGE_MULTIPLIER = 1.2f;
-    private static final float QUIRK_SPEED_MULTIPLIER = 0.008f; // Lower = faster spread
+    private static final float QUIRK_SPEED_MULTIPLIER = 2.0f; // How much quirk factor affects speed
+    private static final float MAX_EFFECTIVE_SPEED = 10.0f; // Maximum speed cap to prevent crashes
 
     // Configurable properties
     public static final PalladiumProperty<Integer> DAMAGE = new IntegerProperty("damage").configurable("Base damage value for held items");
     public static final PalladiumProperty<Integer> MAX_BLOCKS = new IntegerProperty("max_blocks").configurable("Maximum number of blocks to decay");
     public static final PalladiumProperty<Integer> BASE_INTENSITY = new IntegerProperty("base_intensity").configurable("Base intensity level (1-4) determining which blocks can be decayed");
-    public static final PalladiumProperty<String> DECAY_TYPE = new StringProperty("decay_type").configurable("Type of decay pattern: horizontal, vertical, circular");
+    public static final PalladiumProperty<String> DECAY_TYPE = new StringProperty("decay_type").configurable("Type of decay pattern: layer, all, quarry");
     public static final PalladiumProperty<Float> RANGE = new FloatProperty("range").configurable("Range for targeting blocks");
     public static final PalladiumProperty<Float> SPREAD_SPEED = new FloatProperty("spread_speed").configurable("How fast the decay spreads (ticks between waves)");
 
@@ -56,13 +56,13 @@ public class EnvironmentDecayAbility extends Ability {
     public static final PalladiumProperty<Integer> TARGET_Z;
     public static final PalladiumProperty<String> CURRENT_WAVE_BLOCKS; // Blocks in current wave front
     public static final PalladiumProperty<String> PROCESSED_BLOCKS; // All processed blocks
-    public static final PalladiumProperty<Float> WAVE_TIMER; // Timer for wave progression
+    public static final PalladiumProperty<Integer> TICKS_SINCE_START; // Timer for wave progression
 
     public EnvironmentDecayAbility() {
         this.withProperty(DAMAGE, 15)
                 .withProperty(MAX_BLOCKS, 50)
                 .withProperty(BASE_INTENSITY, 2)
-                .withProperty(DECAY_TYPE, "circular")
+                .withProperty(DECAY_TYPE, "quarry")
                 .withProperty(RANGE, 8.0F)
                 .withProperty(SPREAD_SPEED, 1.0F); // Ticks between waves
     }
@@ -75,7 +75,7 @@ public class EnvironmentDecayAbility extends Ability {
         manager.register(TARGET_Z, 0);
         manager.register(CURRENT_WAVE_BLOCKS, "");
         manager.register(PROCESSED_BLOCKS, "");
-        manager.register(WAVE_TIMER, 0.0F);
+        manager.register(TICKS_SINCE_START, 0);
     }
 
     @Override
@@ -86,7 +86,7 @@ public class EnvironmentDecayAbility extends Ability {
             entry.setUniqueProperty(BLOCKS_DECAYED, 0);
             entry.setUniqueProperty(CURRENT_WAVE_BLOCKS, "");
             entry.setUniqueProperty(PROCESSED_BLOCKS, "");
-            entry.setUniqueProperty(WAVE_TIMER, 0.0F);
+            entry.setUniqueProperty(TICKS_SINCE_START, 0);
 
             // Damage held item
             damageHeldItem(player, entry.getProperty(DAMAGE));
@@ -132,7 +132,7 @@ public class EnvironmentDecayAbility extends Ability {
 
     private void executeWaveDecay(ServerPlayer player, ServerLevel level, AbilityInstance entry) {
         // Get current state
-        float waveTimer = entry.getProperty(WAVE_TIMER);
+        int ticksSinceStart = entry.getProperty(TICKS_SINCE_START);
         int blocksDecayed = entry.getProperty(BLOCKS_DECAYED);
         int currentWave = entry.getProperty(CURRENT_WAVE);
 
@@ -141,26 +141,28 @@ public class EnvironmentDecayAbility extends Ability {
         int effectiveMaxBlocks = entry.getProperty(MAX_BLOCKS) + (int)(quirkFactor * QUIRK_BLOCKS_MULTIPLIER * entry.getProperty(MAX_BLOCKS));
         int effectiveIntensity = Math.min(5, entry.getProperty(BASE_INTENSITY) + (int)(quirkFactor * QUIRK_INTENSITY_MULTIPLIER));
 
-
-        // float effectiveSpreadSpeed = entry.getProperty(SPREAD_SPEED) * ((float)(quirkFactor * QUIRK_SPEED_MULTIPLIER));
-        // Calculate effective spread speed with proper scaling and cap
+        // Calculate effective spread speed with proper scaling and cap (like RotAbility)
         float baseSpreadSpeed = entry.getProperty(SPREAD_SPEED);
-        double cappedQuirkFactor = Math.min(quirkFactor, 50.0); // Cap quirk factor at 50 for speed calculations
-        float speedReduction = (float)(cappedQuirkFactor * QUIRK_SPEED_MULTIPLIER); // 0 to 0.8 reduction max
-        float effectiveSpreadSpeed = baseSpreadSpeed * (1.0f - speedReduction);
+        float speedMultiplier = 1.0f + ((float)quirkFactor * QUIRK_SPEED_MULTIPLIER);
+        float effectiveSpeed = Math.min(baseSpreadSpeed * speedMultiplier, MAX_EFFECTIVE_SPEED);
 
         // Stop if we've hit the block limit
         if (blocksDecayed >= effectiveMaxBlocks) return;
 
-        // Update wave timer
-        waveTimer += 1.0F;
-        entry.setUniqueProperty(WAVE_TIMER, waveTimer);
+        // Update timer (never reset like in RotAbility)
+        ticksSinceStart += 1;
+        entry.setUniqueProperty(TICKS_SINCE_START, ticksSinceStart);
 
-        // Check if it's time for the next wave
-        if (waveTimer >= effectiveSpreadSpeed) {
+        // Calculate how many ticks should pass before each wave expansion (like RotAbility's ticksPerExpansion)
+        int ticksPerWave = Math.max(1, (int)(20 / effectiveSpeed)); // Base of 20 ticks per wave, scaled by speed
+        
+        // Calculate expected wave based on time elapsed (like RotAbility's expectedRadius)
+        int expectedWave = Math.min(ticksSinceStart / ticksPerWave, 50); // Cap at reasonable max waves
+        
+        // Process wave if we've reached the expected wave number
+        if (expectedWave > currentWave) {
             processCurrentWave(level, entry, effectiveIntensity, effectiveMaxBlocks);
-            entry.setUniqueProperty(WAVE_TIMER, 0.0F);
-            entry.setUniqueProperty(CURRENT_WAVE, currentWave + 1);
+            entry.setUniqueProperty(CURRENT_WAVE, expectedWave);
         }
     }
 
@@ -216,15 +218,15 @@ public class EnvironmentDecayAbility extends Ability {
         Set<BlockPos> connectedBlocks = new HashSet<>();
 
         switch (decayType.toLowerCase()) {
-            case "horizontal":
+            case "layer":
                 connectedBlocks.addAll(getHorizontalConnectedBlocks(level, center, intensity, alreadyProcessed));
                 break;
-            case "vertical":
-                connectedBlocks.addAll(getVerticalConnectedBlocks(level, center, intensity, alreadyProcessed));
+            case "all":
+                connectedBlocks.addAll(getAllConnectedBlocks(level, center, intensity, alreadyProcessed));
                 break;
-            case "circular":
+            case "quarry":
             default:
-                connectedBlocks.addAll(getCircularConnectedBlocks(level, center, intensity, alreadyProcessed));
+                connectedBlocks.addAll(getQuarryConnectedBlocks(level, center, intensity, alreadyProcessed));
                 break;
         }
 
@@ -252,11 +254,11 @@ public class EnvironmentDecayAbility extends Ability {
         return blocks;
     }
 
-    private Set<BlockPos> getVerticalConnectedBlocks(ServerLevel level, BlockPos center,
-                                                     int intensity, Set<BlockPos> alreadyProcessed) {
+    private Set<BlockPos> getAllConnectedBlocks(ServerLevel level, BlockPos center,
+                                                int intensity, Set<BlockPos> alreadyProcessed) {
         Set<BlockPos> blocks = new HashSet<>();
 
-        // Check vertical directions (Up, Down) and horizontal at same level
+        // Check vertical directions (Up, Down) first, then the others
         BlockPos[] directions = {
                 center.above(),
                 center.below(),
@@ -275,8 +277,8 @@ public class EnvironmentDecayAbility extends Ability {
         return blocks;
     }
 
-    private Set<BlockPos> getCircularConnectedBlocks(ServerLevel level, BlockPos center,
-                                                     int intensity, Set<BlockPos> alreadyProcessed) {
+    private Set<BlockPos> getQuarryConnectedBlocks(ServerLevel level, BlockPos center,
+                                                   int intensity, Set<BlockPos> alreadyProcessed) {
         Set<BlockPos> blocks = new HashSet<>();
 
         // Check all 6 directions (including up/down) for true 3D spread
@@ -469,7 +471,7 @@ public class EnvironmentDecayAbility extends Ability {
     @Override
     public String getDocumentationDescription() {
         return "Creates a wave of destruction that spreads from a target block to connected blocks. " +
-                "Supports horizontal (4-directional), vertical (6-directional), and circular (8-directional) spread patterns. " +
+                "Supports layered (4-directional), all (6-directional), and quarry (8-directional) spread patterns. " +
                 "Intensity determines tool requirements: 1=instant break, 2=shovel materials, 3=wood pickaxe materials, " +
                 "4=iron pickaxe materials, 5=diamond pickaxe materials. " +
                 "Quirk factor increases intensity, block count, and spread speed for more devastating wave effects. " +
@@ -484,6 +486,6 @@ public class EnvironmentDecayAbility extends Ability {
         TARGET_Z = (new IntegerProperty("target_z")).sync(SyncType.NONE).disablePersistence();
         CURRENT_WAVE_BLOCKS = (new StringProperty("current_wave_blocks")).sync(SyncType.NONE).disablePersistence();
         PROCESSED_BLOCKS = (new StringProperty("processed_blocks")).sync(SyncType.NONE).disablePersistence();
-        WAVE_TIMER = (new FloatProperty("wave_timer")).sync(SyncType.NONE).disablePersistence();
+        TICKS_SINCE_START = (new IntegerProperty("ticks_since_start")).sync(SyncType.NONE).disablePersistence();
     }
 } 
