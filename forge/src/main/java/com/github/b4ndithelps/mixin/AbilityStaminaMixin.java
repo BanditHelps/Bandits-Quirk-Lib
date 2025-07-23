@@ -43,7 +43,7 @@ public class AbilityStaminaMixin {
         // Check if the ability requires stamina with null checking
         Integer staminaCostValue = this.propertyManager.get(StaminaProperties.STAMINA_COST);
         Integer drainIntervalValue = this.propertyManager.get(StaminaProperties.STAMINA_DRAIN_INTERVAL);
-        
+
         int staminaCost = staminaCostValue != null ? staminaCostValue : 0;
         int drainInterval = drainIntervalValue != null ? drainIntervalValue : 0;
 
@@ -72,7 +72,7 @@ public class AbilityStaminaMixin {
     @Inject(method = "firstTick", at = @At("HEAD"), cancellable = true)
     private void onFirstTick(LivingEntity entity, AbilityInstance entry, IPowerHolder holder, boolean enabled, CallbackInfo ci) {
 
-        BanditsQuirkLibForge.LOGGER.info("pressed");
+        System.out.println("Please work you evil thing!");
 
         if (!enabled || !(entity instanceof Player player)) {
             return;
@@ -86,7 +86,7 @@ public class AbilityStaminaMixin {
         // Check if the ability requires stamina with null checking
         Integer staminaCostValue = this.propertyManager.get(StaminaProperties.STAMINA_COST);
         Integer drainIntervalValue = this.propertyManager.get(StaminaProperties.STAMINA_DRAIN_INTERVAL);
-        
+
         int staminaCost = staminaCostValue != null ? staminaCostValue : 0;
         int drainInterval = drainIntervalValue != null ? drainIntervalValue : 0;
 

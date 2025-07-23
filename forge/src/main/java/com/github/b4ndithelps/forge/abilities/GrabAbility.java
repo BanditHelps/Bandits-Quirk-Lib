@@ -49,6 +49,7 @@ public class GrabAbility extends Ability {
     public static final PalladiumProperty<Integer> GRAB_TICKS;
 
     public GrabAbility() {
+        super();
         this.withProperty(RANGE, 5.0F)
                 .withProperty(MODE, "hold")
                 .withProperty(POTION_EFFECT, "")
@@ -66,9 +67,9 @@ public class GrabAbility extends Ability {
         manager.register(GRAB_TICKS, 0);
     }
 
-    @Override
     public void firstTick(LivingEntity entity, AbilityInstance entry, IPowerHolder holder, boolean enabled) {
         if (enabled && entity instanceof ServerPlayer player) {
+
             // Reset grab state
             entry.setUniqueProperty(IS_GRABBING, false);
             entry.setUniqueProperty(TARGET_UUID, "");

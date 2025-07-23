@@ -248,6 +248,8 @@
       "effect_amplifier": 0,
       "carry_height": 2.0,
       "carry_distance": 4.0,
+      "stamina_cost": 10,
+      "stamina_drain_interval": 0,
       "hidden_in_bar": false,
       "gui_position": [1, -2],
       "conditions": {
