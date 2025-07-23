@@ -6,7 +6,8 @@
   "client": [
   ],
   "mixins": [
-    "ElementMixin"
+    "ElementMixin",
+    "AbilityStaminaMixin"
   ],
   "injectors": {
     "defaultRequire": 1
