@@ -3,6 +3,7 @@ package com.github.b4ndithelps.forge.abilities;
 import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
 import com.github.b4ndithelps.forge.effects.ModEffects;
 import com.github.b4ndithelps.forge.systems.QuirkFactorHelper;
+import com.github.b4ndithelps.forge.systems.StaminaHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
@@ -50,6 +51,7 @@ public class EnvironmentDecayAbility extends Ability {
     public static final PalladiumProperty<String> DECAY_TYPE = new StringProperty("decay_type").configurable("Type of decay pattern: layer, all, quarry, connected, fissure");
     public static final PalladiumProperty<Float> RANGE = new FloatProperty("range").configurable("Range for targeting blocks");
     public static final PalladiumProperty<Float> SPREAD_SPEED = new FloatProperty("spread_speed").configurable("How fast the decay spreads (ticks between waves)");
+    public static final PalladiumProperty<Integer> STAMINA_PER_TICK = new IntegerProperty("stamina_per_tick").configurable("Amount of stamina consumed per tick while ability is active");
 
     // Wave tracking properties
     public static final PalladiumProperty<Integer> CURRENT_WAVE;
@@ -68,7 +70,8 @@ public class EnvironmentDecayAbility extends Ability {
                 .withProperty(BASE_INTENSITY, 2)
                 .withProperty(DECAY_TYPE, "quarry")
                 .withProperty(RANGE, 8.0F)
-                .withProperty(SPREAD_SPEED, 1.0F); // Ticks between waves
+                .withProperty(SPREAD_SPEED, 1.0F) // Ticks between waves
+                .withProperty(STAMINA_PER_TICK, 3); // Stamina consumed per tick
     }
 
     public void registerUniqueProperties(PropertyManager manager) {
@@ -124,6 +127,10 @@ public class EnvironmentDecayAbility extends Ability {
         if (!(entity.level() instanceof ServerLevel serverLevel)) return;
 
         if (enabled) {
+            // Consume stamina per tick
+            int staminaPerTick = entry.getProperty(STAMINA_PER_TICK);
+            StaminaHelper.useStamina(player, staminaPerTick);
+            
             try {
                 executeWaveDecay(player, serverLevel, entry);
             } catch (Exception e) {
@@ -653,7 +660,8 @@ public class EnvironmentDecayAbility extends Ability {
                 "4=iron pickaxe materials, 5=diamond pickaxe materials. " +
                 "Quirk factor increases intensity, block count, and spread speed for more devastating wave effects. " +
                 "The wave spreads outward one layer at a time, only affecting blocks connected to previously destroyed blocks. " +
-                "Living entities standing above decaying blocks receive decay effect, with amplifier scaling based on quirk factor.";
+                "Living entities standing above decaying blocks receive decay effect, with amplifier scaling based on quirk factor. " +
+                "Consumes stamina per tick while active, making sustained use demanding on the player's stamina reserves.";
     }
 
     static {
