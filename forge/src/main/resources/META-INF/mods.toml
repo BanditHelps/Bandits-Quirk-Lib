@@ -33,3 +33,10 @@ mandatory = true
 versionRange = "[9.2.14,)"
 ordering = "AFTER"
 side = "BOTH"
+
+[[dependencies.bandits_quirk_lib]]
+modId = "palladium"
+mandatory = true
+versionRange = ">=4.2.1"
+ordering = "BEFORE"
+side = "BOTH"
