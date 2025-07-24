@@ -81,7 +81,6 @@ public abstract class AbilityInstanceMixin {
 
     @Unique
     private void bandits_quirk_lib$lastTick(LivingEntity entity, IPowerHolder powerHolder) {
-        System.out.println("Custom lastTick called!");
         // Reset the tick counter when the ability stops
         this.bandits_quirk_lib$tickCounter = 0;
     }
@@ -111,7 +110,6 @@ public abstract class AbilityInstanceMixin {
 
             // Check if enough ticks have passed to drain stamina
             if (this.bandits_quirk_lib$tickCounter >= staminaDrainInterval) {
-                System.out.println("Tick: Using Stamina");
                 // Use the appropriate stamina value
                 StaminaHelper.useStamina(player, staminaCost);
                 
