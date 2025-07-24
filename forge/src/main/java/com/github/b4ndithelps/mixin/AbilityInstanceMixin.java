@@ -15,8 +15,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.util.Map;
-
 import static com.github.b4ndithelps.forge.systems.StaminaProperties.STAMINA_COST;
 import static com.github.b4ndithelps.forge.systems.StaminaProperties.STAMINA_DRAIN_INTERVAL;
 
@@ -26,34 +24,50 @@ public abstract class AbilityInstanceMixin {
     @Shadow
     private AbilityConfiguration abilityConfiguration;
 
-    @Shadow public abstract Object getPropertyByName(String key);
+    // Tick counter to track intervals for stamina draining
+    @Unique
+    private int bandits_quirk_lib$tickCounter = 0;
 
-    @Shadow public abstract <T> T getProperty(PalladiumProperty<T> property);
+    @Inject(method = "tick(Lnet/minecraft/world/entity/LivingEntity;Lnet/threetag/palladium/power/IPowerHolder;)V",
+            at = @At(value = "INVOKE",
+                    target = "Lnet/threetag/palladium/power/ability/AbilityConfiguration;getAbility()Lnet/threetag/palladium/power/ability/Ability;",
+                    ordinal = 0))
+    private void injectBeforeFirstTick(LivingEntity entity, IPowerHolder powerHolder, CallbackInfo ci) {
+        this.bandits_quirk_lib$customFirstTick(entity, powerHolder);
+    }
 
     @Inject(method = "tick(Lnet/minecraft/world/entity/LivingEntity;Lnet/threetag/palladium/power/IPowerHolder;)V",
             at = @At(value = "INVOKE",
                     target = "Lnet/threetag/palladium/power/ability/AbilityConfiguration;getAbility()Lnet/threetag/palladium/power/ability/Ability;",
                     ordinal = 1))
-    private void injectBeforeFirstTick(LivingEntity entity, IPowerHolder powerHolder, CallbackInfo ci) {
-        this.bandits_quirk_lib$customFirstTick(entity, powerHolder);
+    private void injectLastTick(LivingEntity entity, IPowerHolder powerHolder, CallbackInfo ci) {
+        this.bandits_quirk_lib$lastTick(entity, powerHolder);
+    }
+
+    @Inject(method = "tick(Lnet/minecraft/world/entity/LivingEntity;Lnet/threetag/palladium/power/IPowerHolder;)V",
+            at = @At(value = "INVOKE",
+                    target = "Lnet/threetag/palladium/power/ability/AbilityConfiguration;getAbility()Lnet/threetag/palladium/power/ability/Ability;",
+                    ordinal = 2))
+    private void injectCustomTick(LivingEntity entity, IPowerHolder powerHolder, CallbackInfo ci) {
+        this.bandits_quirk_lib$customTick(entity, powerHolder);
     }
 
     @Unique
     private void bandits_quirk_lib$customFirstTick(LivingEntity entity, IPowerHolder powerHolder) {
         PropertyManager manager = abilityConfiguration.getPropertyManager();
 
-        // Do the stamina logic. If stamina_drain_type = 0, then we sub the stamina once from the player
+        // Do the stamina logic. If stamina_drain_interval = 0, then we sub the stamina once from the player
         try {
             if (manager == null || !(entity instanceof ServerPlayer player)) {
                 System.out.println("AbilityInstance: null");
                 return;
             }
 
-            Integer staminaDrain = (Integer) manager.get(STAMINA_DRAIN_INTERVAL);
+            Integer staminaDrain = manager.get(STAMINA_DRAIN_INTERVAL);
 
             if (staminaDrain == null || staminaDrain != 0) return;
 
-            Integer staminaCost = (Integer) manager.get(STAMINA_COST);
+            Integer staminaCost = manager.get(STAMINA_COST);
 
             // Use the appropriate stamina value
             if (staminaCost != null) {
@@ -66,34 +80,46 @@ public abstract class AbilityInstanceMixin {
         }
     }
 
-    private void lastTick() {
+    @Unique
+    private void bandits_quirk_lib$lastTick(LivingEntity entity, IPowerHolder powerHolder) {
         System.out.println("Custom lastTick called!");
+        // Reset the tick counter when the ability stops
+        this.bandits_quirk_lib$tickCounter = 0;
     }
 
+    @Unique
     private void bandits_quirk_lib$customTick(LivingEntity entity, IPowerHolder powerHolder) {
         PropertyManager manager = abilityConfiguration.getPropertyManager();
 
-        // Do the stamina logic. If stamina_drain_type != 0, then count the stamina every tick
+        // Do the stamina logic. If stamina_drain_interval > 0, then drain stamina every N ticks
         try {
             if (manager == null || !(entity instanceof ServerPlayer player)) {
-                System.out.println("AbilityInstance: null");
                 return;
             }
 
-            Integer staminaDrain = (Integer) manager.get(STAMINA_DRAIN_INTERVAL);
+            Integer staminaDrainInterval = manager.get(STAMINA_DRAIN_INTERVAL);
+            Integer staminaCost = manager.get(STAMINA_COST);
 
-            if (staminaDrain == null || staminaDrain != 0) return;
-
-            Integer staminaCost = (Integer) manager.get(STAMINA_COST);
-
-            // Use the appropriate stamina value
-            if (staminaCost != null) {
-                StaminaHelper.useStamina(player, staminaCost);
-            } else {
-                System.out.println("Stamina Cost is null fr");
+            // Only proceed if interval > 0 (interval-based draining)
+            if (staminaDrainInterval == null || staminaDrainInterval <= 0 || staminaCost == null) {
+                return;
             }
+
+            // Increment the tick counter
+            this.bandits_quirk_lib$tickCounter++;
+
+            // Check if enough ticks have passed to drain stamina
+            if (this.bandits_quirk_lib$tickCounter >= staminaDrainInterval) {
+                System.out.println("Tick: Using Stamina");
+                // Use the appropriate stamina value
+                StaminaHelper.useStamina(player, staminaCost);
+                
+                // Reset the counter for the next interval
+                this.bandits_quirk_lib$tickCounter = 0;
+            }
+
         } catch (Exception e) {
-            System.out.println("Could not access STAMINA_COST in firstTick: " + e.getMessage());
+            System.out.println("Could not access STAMINA_COST in customTick: " + e.getMessage());
         }
     }
 
