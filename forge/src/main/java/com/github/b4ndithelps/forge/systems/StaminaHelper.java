@@ -193,9 +193,8 @@ public class StaminaHelper {
             int newMax = getMaxStamina(player) + maxIncrease;
 
             IStaminaData staminaData = getStaminaDataSafe(player);
-            if (staminaData != null) {
-                staminaData.setMaxStamina(newMax);
-            }
+            staminaData.setMaxStamina(newMax);
+            staminaData.setUsageTotal(0);
         }
     }
 
