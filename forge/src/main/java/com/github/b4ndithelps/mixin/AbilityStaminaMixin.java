@@ -1,6 +1,8 @@
 package com.github.b4ndithelps.mixin;
 
 import com.github.b4ndithelps.forge.systems.StaminaProperties;
+import net.threetag.palladium.util.property.IntegerProperty;
+import net.threetag.palladium.util.property.PalladiumProperty;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -13,23 +15,55 @@ import net.threetag.palladium.power.ability.Ability;
 import net.threetag.palladium.power.ability.AbilityInstance;
 import net.threetag.palladium.util.property.PropertyManager;
 
+import static com.github.b4ndithelps.forge.systems.StaminaProperties.STAMINA_COST;
+
 @Mixin(value = Ability.class, remap = false)
-public class AbilityStaminaMixin {
+public abstract class AbilityStaminaMixin {
 
     // Shadow the property manager to access it (don't assign null!)
     @Shadow
     private PropertyManager propertyManager;
 
+    @Shadow public abstract <T> Ability withProperty(PalladiumProperty<T> data, T value);
+
+    @Shadow public abstract void registerUniqueProperties(PropertyManager manager);
+
+//    @Unique
+//    private static final PalladiumProperty<Integer> STAMINA_COST = (new IntegerProperty("stamina_cost")).configurable("Determines the stamina cost for using this ability");
+
     // Add a field to track stamina drain timing per ability instance
     @Unique
     private int bandits_quirk_lib$staminaDrainCounter = 0;
+
+//    // Inject into the constructor to add the properties
+//    @Inject(method = "<init>", at = @At("TAIL"))
+//    private void addStaminaProperties(CallbackInfo ci) {
+//        // Add default values for stamina properties using withProperty
+////        ((Ability)(Object)this).withProperty(StaminaProperties.STAMINA_COST, 0); // 0 means no stamina
+////        ((Ability)(Object)this).withProperty(StaminaProperties.STAMINA_DRAIN_INTERVAL, 0); // 0 means first tick only
+//        this.withProperty(STAMINA_COST, 0);
+//
+//    }
 
     // Inject into the constructor to add the properties
     @Inject(method = "<init>", at = @At("TAIL"))
     private void addStaminaProperties(CallbackInfo ci) {
         // Add default values for stamina properties using withProperty
-        ((Ability)(Object)this).withProperty(StaminaProperties.STAMINA_COST, 0); // 0 means no stamina
-        ((Ability)(Object)this).withProperty(StaminaProperties.STAMINA_DRAIN_INTERVAL, 0); // 0 means first tick only
+//        ((Ability)(Object)this).withProperty(StaminaProperties.STAMINA_COST, 0); // 0 means no stamina
+//        ((Ability)(Object)this).withProperty(StaminaProperties.STAMINA_DRAIN_INTERVAL, 0); // 0 means first tick only
+        registerUniqueProperties(propertyManager);
+
+    }
+
+    // Inject into the constructor to add the properties
+    @Inject(method = "registerUniqueProperties", at = @At("HEAD"))
+    private void addUniqueProperty(PropertyManager manager, CallbackInfo ci) {
+        // Add default values for stamina properties using withProperty
+//        ((Ability)(Object)this).withProperty(StaminaProperties.STAMINA_COST, 0); // 0 means no stamina
+//        ((Ability)(Object)this).withProperty(StaminaProperties.STAMINA_DRAIN_INTERVAL, 0); // 0 means first tick only
+        System.out.println("Registering STAMINA COST");
+        manager.register(STAMINA_COST, 0);
+
     }
 
 //    @Inject(method = "tick", at = @At("HEAD"), cancellable = true)

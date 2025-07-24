@@ -196,6 +196,7 @@
       "base_intensity": 1,
       "decay_type": "layer",
       "range": 5,
+      "stamina_cost": 15,
       "spread_speed": 1,
       "conditions": {
         "enabling": [
