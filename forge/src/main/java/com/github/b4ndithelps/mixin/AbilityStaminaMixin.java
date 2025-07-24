@@ -8,8 +8,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import net.threetag.palladium.power.ability.Ability;
 
-import static com.github.b4ndithelps.forge.systems.StaminaProperties.STAMINA_COST;
-import static com.github.b4ndithelps.forge.systems.StaminaProperties.STAMINA_DRAIN_INTERVAL;
+import static com.github.b4ndithelps.forge.systems.StaminaProperties.*;
 
 @Mixin(value = Ability.class, remap = false)
 public abstract class AbilityStaminaMixin {
@@ -19,7 +18,8 @@ public abstract class AbilityStaminaMixin {
     // Inject into the constructor to add the properties
     @Inject(method = "<init>", at = @At("TAIL"))
     private void addStaminaProperties(CallbackInfo ci) {
-        withProperty(STAMINA_COST, 0);
-        withProperty(STAMINA_DRAIN_INTERVAL, 0);
+        withProperty(STAMINA_FIRST_TICK_COST, 0);
+        withProperty(STAMINA_INTERVAL_COST, 0);
+        withProperty(STAMINA_TICK_INTERVAL, 20);
     }
 }

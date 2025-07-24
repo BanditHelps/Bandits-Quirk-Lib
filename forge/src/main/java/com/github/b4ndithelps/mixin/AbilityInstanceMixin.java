@@ -6,7 +6,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.threetag.palladium.power.IPowerHolder;
 import net.threetag.palladium.power.ability.AbilityConfiguration;
 import net.threetag.palladium.power.ability.AbilityInstance;
-import net.threetag.palladium.util.property.PalladiumProperty;
 import net.threetag.palladium.util.property.PropertyManager;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -15,14 +14,16 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import static com.github.b4ndithelps.forge.systems.StaminaProperties.STAMINA_COST;
-import static com.github.b4ndithelps.forge.systems.StaminaProperties.STAMINA_DRAIN_INTERVAL;
+import static com.github.b4ndithelps.forge.systems.StaminaProperties.*;
 
 @Mixin(value = AbilityInstance.class, remap = false)
 public abstract class AbilityInstanceMixin {
 
     @Shadow
     private AbilityConfiguration abilityConfiguration;
+
+    @Shadow
+    private boolean enabled;
 
     // Tick counter to track intervals for stamina draining
     @Unique
@@ -54,20 +55,18 @@ public abstract class AbilityInstanceMixin {
 
     @Unique
     private void bandits_quirk_lib$customFirstTick(LivingEntity entity, IPowerHolder powerHolder) {
+        if (!enabled || !(entity instanceof ServerPlayer player)) return;
+
         PropertyManager manager = abilityConfiguration.getPropertyManager();
 
         // Do the stamina logic. If stamina_drain_interval = 0, then we sub the stamina once from the player
         try {
-            if (manager == null || !(entity instanceof ServerPlayer player)) {
+            if (manager == null) {
                 System.out.println("AbilityInstance: null");
                 return;
             }
 
-            Integer staminaDrain = manager.get(STAMINA_DRAIN_INTERVAL);
-
-            if (staminaDrain == null || staminaDrain != 0) return;
-
-            Integer staminaCost = manager.get(STAMINA_COST);
+            Integer staminaCost = manager.get(STAMINA_FIRST_TICK_COST);
 
             // Use the appropriate stamina value
             if (staminaCost != null) {
@@ -89,19 +88,21 @@ public abstract class AbilityInstanceMixin {
 
     @Unique
     private void bandits_quirk_lib$customTick(LivingEntity entity, IPowerHolder powerHolder) {
+        if (!enabled || !(entity instanceof ServerPlayer player)) return;
+
         PropertyManager manager = abilityConfiguration.getPropertyManager();
 
         // Do the stamina logic. If stamina_drain_interval > 0, then drain stamina every N ticks
         try {
-            if (manager == null || !(entity instanceof ServerPlayer player)) {
+            if (manager == null ) {
                 return;
             }
 
-            Integer staminaDrainInterval = manager.get(STAMINA_DRAIN_INTERVAL);
-            Integer staminaCost = manager.get(STAMINA_COST);
+            Integer staminaDrainInterval = manager.get(STAMINA_TICK_INTERVAL);
+            Integer staminaCost = manager.get(STAMINA_INTERVAL_COST);
 
             // Only proceed if interval > 0 (interval-based draining)
-            if (staminaDrainInterval == null || staminaDrainInterval <= 0 || staminaCost == null) {
+            if (staminaDrainInterval == null || staminaDrainInterval <= 0 || staminaCost == null || staminaCost == 0) {
                 return;
             }
 

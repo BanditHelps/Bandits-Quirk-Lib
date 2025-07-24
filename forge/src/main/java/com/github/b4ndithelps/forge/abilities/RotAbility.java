@@ -47,8 +47,6 @@ public class RotAbility extends Ability {
     public static final PalladiumProperty<Integer> PREV_DISTANCE;
     public static final PalladiumProperty<Integer> TICKS_SINCE_START;
 
-
-    
     // Plant blocks that can be affected by rot
     private static final Set<Block> PLANT_BLOCKS = Set.of(
         Blocks.GRASS, Blocks.TALL_GRASS, Blocks.FERN, Blocks.LARGE_FERN,

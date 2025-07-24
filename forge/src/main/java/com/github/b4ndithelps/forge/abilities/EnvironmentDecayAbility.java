@@ -51,7 +51,6 @@ public class EnvironmentDecayAbility extends Ability {
     public static final PalladiumProperty<String> DECAY_TYPE = new StringProperty("decay_type").configurable("Type of decay pattern: layer, all, quarry, connected, fissure");
     public static final PalladiumProperty<Float> RANGE = new FloatProperty("range").configurable("Range for targeting blocks");
     public static final PalladiumProperty<Float> SPREAD_SPEED = new FloatProperty("spread_speed").configurable("How fast the decay spreads (ticks between waves)");
-    public static final PalladiumProperty<Integer> STAMINA_PER_TICK = new IntegerProperty("stamina_per_tick").configurable("Amount of stamina consumed per tick while ability is active");
 
     // Wave tracking properties
     public static final PalladiumProperty<Integer> CURRENT_WAVE;
@@ -70,8 +69,7 @@ public class EnvironmentDecayAbility extends Ability {
                 .withProperty(BASE_INTENSITY, 2)
                 .withProperty(DECAY_TYPE, "quarry")
                 .withProperty(RANGE, 8.0F)
-                .withProperty(SPREAD_SPEED, 1.0F) // Ticks between waves
-                .withProperty(STAMINA_PER_TICK, 3); // Stamina consumed per tick
+                .withProperty(SPREAD_SPEED, 1.0F); // Ticks between waves
     }
 
     public void registerUniqueProperties(PropertyManager manager) {
@@ -127,10 +125,6 @@ public class EnvironmentDecayAbility extends Ability {
         if (!(entity.level() instanceof ServerLevel serverLevel)) return;
 
         if (enabled) {
-            // Consume stamina per tick
-            int staminaPerTick = entry.getProperty(STAMINA_PER_TICK);
-            StaminaHelper.useStamina(player, staminaPerTick);
-            
             try {
                 executeWaveDecay(player, serverLevel, entry);
             } catch (Exception e) {
