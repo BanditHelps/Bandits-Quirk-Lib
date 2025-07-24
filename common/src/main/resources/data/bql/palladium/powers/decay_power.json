@@ -49,6 +49,9 @@
             "type": "palladium:ability_unlocked",
             "power": "null",
             "ability": "info_block"
+          },
+          {
+            "type": "bandits_quirk_lib:powers_enabled"
           }
         ]
       }
@@ -76,6 +79,9 @@
             "type": "palladium:ability_unlocked",
             "power": "null",
             "ability": "rot_ability"
+          },
+          {
+            "type": "bandits_quirk_lib:powers_enabled"
           }
         ]
       }
@@ -106,6 +112,11 @@
             "key_type": "key_bind",
             "needs_empty_hand": false
           }
+        ],
+        "unlocking": [
+          {
+            "type": "bandits_quirk_lib:powers_enabled"
+          }
         ]
       }
     },
@@ -134,6 +145,11 @@
             "type": "palladium:held",
             "key_type": "key_bind",
             "needs_empty_hand": false
+          }
+        ],
+        "unlocking": [
+          {
+            "type": "bandits_quirk_lib:powers_enabled"
           }
         ]
       }
@@ -164,6 +180,11 @@
             "key_type": "key_bind",
             "needs_empty_hand": false
           }
+        ],
+        "unlocking": [
+          {
+            "type": "bandits_quirk_lib:powers_enabled"
+          }
         ]
       }
     },
@@ -192,6 +213,11 @@
             "type": "palladium:held",
             "key_type": "key_bind",
             "needs_empty_hand": false
+          }
+        ],
+        "unlocking": [
+          {
+            "type": "bandits_quirk_lib:powers_enabled"
           }
         ]
       }
@@ -222,6 +248,11 @@
             "key_type": "key_bind",
             "needs_empty_hand": false
           }
+        ],
+        "unlocking": [
+          {
+            "type": "bandits_quirk_lib:powers_enabled"
+          }
         ]
       }
     },
@@ -251,6 +282,9 @@
             "type": "palladium:ability_unlocked",
             "power": "null",
             "ability": "info_block"
+          },
+          {
+            "type": "bandits_quirk_lib:powers_enabled"
           }
         ]
       }
@@ -284,6 +318,9 @@
             "type": "palladium:ability_unlocked",
             "power": "null",
             "ability": "grab_hold"
+          },
+          {
+            "type": "bandits_quirk_lib:powers_enabled"
           }
         ]
       }
