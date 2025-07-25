@@ -2,6 +2,7 @@ package com.github.b4ndithelps.forge.abilities;
 
 import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -39,12 +40,17 @@ public class GrabAbility extends Ability {
     public static final PalladiumProperty<Integer> EFFECT_AMPLIFIER = new IntegerProperty("effect_amplifier").configurable("Amplifier for the potion effect (0-255)");
     public static final PalladiumProperty<Float> CARRY_HEIGHT = new FloatProperty("carry_height").configurable("Height offset for carried entities");
     public static final PalladiumProperty<Float> CARRY_DISTANCE = new FloatProperty("carry_distance").configurable("Distance in front of player for carried entities");
+    public static final PalladiumProperty<Float> DAMAGE_THRESHOLD = new FloatProperty("damage_threshold").configurable("Amount of damage needed to break the grab (0 = disabled)");
 
     // Unique properties for tracking grab state
     public static final PalladiumProperty<String> TARGET_UUID;
     public static final PalladiumProperty<Float> ORIGINAL_X;
     public static final PalladiumProperty<Float> ORIGINAL_Y;
     public static final PalladiumProperty<Float> ORIGINAL_Z;
+    public static final PalladiumProperty<Float> PLAYER_ORIGINAL_X;
+    public static final PalladiumProperty<Float> PLAYER_ORIGINAL_Y;
+    public static final PalladiumProperty<Float> PLAYER_ORIGINAL_Z;
+    public static final PalladiumProperty<Float> PLAYER_START_HEALTH;
     public static final PalladiumProperty<Boolean> IS_GRABBING;
     public static final PalladiumProperty<Integer> GRAB_TICKS;
 
@@ -55,7 +61,8 @@ public class GrabAbility extends Ability {
                 .withProperty(POTION_EFFECT, "")
                 .withProperty(EFFECT_AMPLIFIER, 0)
                 .withProperty(CARRY_HEIGHT, 1.5F)
-                .withProperty(CARRY_DISTANCE, 3.0F);
+                .withProperty(CARRY_DISTANCE, 3.0F)
+                .withProperty(DAMAGE_THRESHOLD, 3.0F);
     }
 
     public void registerUniqueProperties(PropertyManager manager) {
@@ -63,6 +70,10 @@ public class GrabAbility extends Ability {
         manager.register(ORIGINAL_X, 0.0F);
         manager.register(ORIGINAL_Y, 0.0F);
         manager.register(ORIGINAL_Z, 0.0F);
+        manager.register(PLAYER_ORIGINAL_X, 0.0F);
+        manager.register(PLAYER_ORIGINAL_Y, 0.0F);
+        manager.register(PLAYER_ORIGINAL_Z, 0.0F);
+        manager.register(PLAYER_START_HEALTH, 0.0F);
         manager.register(IS_GRABBING, false);
         manager.register(GRAB_TICKS, 0);
     }
@@ -79,12 +90,22 @@ public class GrabAbility extends Ability {
             LivingEntity target = findTargetEntity(player, entry.getProperty(RANGE));
             
             if (target != null && target != player) {
+                // Check if target has grab immunity
+                if (target.getTags().contains("MineHa.GrabProof")) {
+                    player.sendSystemMessage(Component.literal("§cThe target resists your grasp!"));
+                    return;
+                }
+                
                 // Start grab
                 entry.setUniqueProperty(IS_GRABBING, true);
                 entry.setUniqueProperty(TARGET_UUID, target.getUUID().toString());
                 entry.setUniqueProperty(ORIGINAL_X, (float) target.getX());
                 entry.setUniqueProperty(ORIGINAL_Y, (float) target.getY());
                 entry.setUniqueProperty(ORIGINAL_Z, (float) target.getZ());
+                entry.setUniqueProperty(PLAYER_ORIGINAL_X, (float) player.getX());
+                entry.setUniqueProperty(PLAYER_ORIGINAL_Y, (float) player.getY());
+                entry.setUniqueProperty(PLAYER_ORIGINAL_Z, (float) player.getZ());
+                entry.setUniqueProperty(PLAYER_START_HEALTH, (float) player.getHealth());
                 
                 // Play grab sound
                 if (entity.level() instanceof ServerLevel serverLevel) {
@@ -96,8 +117,6 @@ public class GrabAbility extends Ability {
                 if ("hold".equals(entry.getProperty(MODE))) {
                     applyHoldEffects(player, target, entry);
                 }
-                
-                BanditsQuirkLibForge.LOGGER.info("Grab ability activated on entity: " + target.getName().getString());
             } else {
                 // No valid target found, ability fails
                 BanditsQuirkLibForge.LOGGER.info("No valid target found for grab ability");
@@ -127,11 +146,44 @@ public class GrabAbility extends Ability {
                 return;
             }
 
+            // Check if target gained grab immunity during the grab
+            if (target.getTags().contains("MineHa.GrabProof")) {
+                player.sendSystemMessage(Component.literal("§cThe target breaks free of your grasp!"));
+                endGrab(entry);
+                
+                // Play immunity sound
+                if (entity.level() instanceof ServerLevel serverLevel) {
+                    serverLevel.playSound(null, target.blockPosition(),
+                            SoundEvents.TOTEM_USE, SoundSource.PLAYERS, 0.8f, 1.2f);
+                }
+                return;
+            }
+
             // Check if target is still in range
             double distance = player.distanceTo(target);
             if (distance > entry.getProperty(RANGE) * 2) { // Allow some extra range during grab
                 endGrab(entry);
                 return;
+            }
+
+            // Check if player has taken enough damage to break the grab
+            float damageThreshold = entry.getProperty(DAMAGE_THRESHOLD);
+            if (damageThreshold > 0) {
+                float startHealth = entry.getProperty(PLAYER_START_HEALTH);
+                float currentHealth = player.getHealth();
+                float damageTaken = startHealth - currentHealth;
+                
+                if (damageTaken >= damageThreshold) {
+                    // Player took enough damage, break the grab
+                    endGrab(entry);
+                    
+                    // Play break sound
+                    if (entity.level() instanceof ServerLevel serverLevel) {
+                        serverLevel.playSound(null, player.blockPosition(),
+                                SoundEvents.SHIELD_BREAK, SoundSource.PLAYERS, 1.0f, 1.0f);
+                    }
+                    return;
+                }
             }
 
             String mode = entry.getProperty(MODE);
@@ -149,7 +201,7 @@ public class GrabAbility extends Ability {
                     double offsetX = (Math.random() - 0.5) * 2.0;
                     double offsetY = Math.random() * 2.0;
                     double offsetZ = (Math.random() - 0.5) * 2.0;
-                    serverLevel.sendParticles(ParticleTypes.WITCH,
+                    serverLevel.sendParticles(ParticleTypes.ASH,
                             targetPos.x + offsetX, targetPos.y + offsetY, targetPos.z + offsetZ,
                             1, 0, 0, 0, 0);
                 }
@@ -243,21 +295,21 @@ public class GrabAbility extends Ability {
     }
 
     private void executeHoldMode(ServerPlayer player, LivingEntity target, AbilityInstance entry) {
-        // Lock both entities in place
-        Vec3 playerOriginal = new Vec3(entry.getProperty(ORIGINAL_X), 
-                                      entry.getProperty(ORIGINAL_Y), 
-                                      entry.getProperty(ORIGINAL_Z));
-        Vec3 targetOriginal = new Vec3(entry.getProperty(ORIGINAL_X), 
-                                      entry.getProperty(ORIGINAL_Y), 
-                                      entry.getProperty(ORIGINAL_Z));
-
         // Keep target locked in original position
         target.teleportTo(entry.getProperty(ORIGINAL_X), 
                          entry.getProperty(ORIGINAL_Y), 
                          entry.getProperty(ORIGINAL_Z));
         
-        // Prevent movement
+        // Prevent target movement
         target.setDeltaMovement(Vec3.ZERO);
+
+        // Keep player locked in original position as well
+        player.teleportTo(entry.getProperty(PLAYER_ORIGINAL_X), 
+                         entry.getProperty(PLAYER_ORIGINAL_Y), 
+                         entry.getProperty(PLAYER_ORIGINAL_Z));
+        
+        // Prevent player movement
+        player.setDeltaMovement(Vec3.ZERO);
         
         // Apply potion effect if specified
         String effectName = entry.getProperty(POTION_EFFECT);
@@ -334,7 +386,7 @@ public class GrabAbility extends Ability {
 
     @Override
     public String getDocumentationDescription() {
-        return "Allows grabbing and manipulating nearby living entities with two modes: 'hold' (locks both entities) and 'hold_and_carry' (allows moving the target).";
+        return "Allows grabbing and manipulating nearby living entities with two modes: 'hold' (locks both entities) and 'hold_and_carry' (allows moving the target). The grab can be broken if the player takes enough damage. Entities with the 'MineHa.GrabProof' tag cannot be grabbed and will be freed if they gain this tag during a grab.";
     }
 
     static {
@@ -342,6 +394,10 @@ public class GrabAbility extends Ability {
         ORIGINAL_X = new FloatProperty("original_x");
         ORIGINAL_Y = new FloatProperty("original_y");
         ORIGINAL_Z = new FloatProperty("original_z");
+        PLAYER_ORIGINAL_X = new FloatProperty("player_original_x");
+        PLAYER_ORIGINAL_Y = new FloatProperty("player_original_y");
+        PLAYER_ORIGINAL_Z = new FloatProperty("player_original_z");
+        PLAYER_START_HEALTH = new FloatProperty("player_start_health");
         IS_GRABBING = new net.threetag.palladium.util.property.BooleanProperty("is_grabbing");
         GRAB_TICKS = new IntegerProperty("grab_ticks");
     }
