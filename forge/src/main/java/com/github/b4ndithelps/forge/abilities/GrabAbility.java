@@ -1,6 +1,7 @@
 package com.github.b4ndithelps.forge.abilities;
 
 import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
+import com.github.b4ndithelps.forge.effects.ModEffects;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -150,6 +151,7 @@ public class GrabAbility extends Ability {
             if (target.getTags().contains("MineHa.GrabProof")) {
                 player.sendSystemMessage(Component.literal("§cThe target breaks free of your grasp!"));
                 endGrab(entry);
+                player.addEffect(new MobEffectInstance(ModEffects.STUN_EFFECT.get(), 60, 1, false, false));
                 
                 // Play immunity sound
                 if (entity.level() instanceof ServerLevel serverLevel) {
@@ -232,7 +234,6 @@ public class GrabAbility extends Ability {
             }
             
             endGrab(entry);
-            BanditsQuirkLibForge.LOGGER.info("Grab ability ended");
         }
     }
 
@@ -354,7 +355,7 @@ public class GrabAbility extends Ability {
             MobEffect effect = BuiltInRegistries.MOB_EFFECT.get(effectId);
             
             if (effect != null) {
-                MobEffectInstance effectInstance = new MobEffectInstance(effect, 60, amplifier); // 3 second duration
+                MobEffectInstance effectInstance = new MobEffectInstance(effect, 40, amplifier); // 3 second duration
                 target.addEffect(effectInstance);
             }
         } catch (Exception e) {
