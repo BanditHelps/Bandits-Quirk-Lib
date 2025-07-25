@@ -13,5 +13,6 @@
   "death.attack.exhaustion": "%1$s collapsed from exhaustion",
   "death.attach.exhaustion.player": "%1$s collapsed from exhaustion while fighting %2$s",
 
-  "effect.bandits_quirk_lib.decay_effect": "Decay"
+  "effect.bandits_quirk_lib.decay_effect": "Decay",
+  "effect.bandits_quirk_lib.stun_effect": "Stunned"
 }

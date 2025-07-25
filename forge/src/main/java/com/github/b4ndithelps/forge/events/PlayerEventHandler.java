@@ -57,26 +57,43 @@ public class PlayerEventHandler {
         
         // Check if player has the movement restriction tag
         if (player.getTags().contains("Bql.RestrictMove")) {
-            // Store current position and rotation (only once when tag is first detected)
+            // Check if player still has any stun effect active
+            boolean hasStunEffect = false;
+            for (var effect : player.getActiveEffects()) {
+                if (effect.getEffect().getClass().getSimpleName().equals("StunMobEffect")) {
+                    hasStunEffect = true;
+                    break;
+                }
+            }
+            
+            // If no stun effect, remove movement restriction and cleanup
+            if (!hasStunEffect) {
+                player.removeTag("Bql.RestrictMove");
+                player.removeTag("Bql.RestrictMove.HasStoredPos");
+                player.getPersistentData().remove("Bql.StoredX");
+                player.getPersistentData().remove("Bql.StoredZ");
+                player.getPersistentData().remove("Bql.StoredYaw");
+                player.getPersistentData().remove("Bql.StoredPitch");
+                return;
+            }
+            
+            // Store current horizontal position and rotation (only once when tag is first detected)
             if (!player.getTags().contains("Bql.RestrictMove.HasStoredPos")) {
                 player.getPersistentData().putDouble("Bql.StoredX", player.getX());
-                player.getPersistentData().putDouble("Bql.StoredY", player.getY());
                 player.getPersistentData().putDouble("Bql.StoredZ", player.getZ());
                 player.getPersistentData().putFloat("Bql.StoredYaw", player.getYRot());
                 player.getPersistentData().putFloat("Bql.StoredPitch", player.getXRot());
                 player.addTag("Bql.RestrictMove.HasStoredPos");
             }
             
-            // Get stored position and rotation
+            // Get stored horizontal position and rotation
             double storedX = player.getPersistentData().getDouble("Bql.StoredX");
-            double storedY = player.getPersistentData().getDouble("Bql.StoredY");
             double storedZ = player.getPersistentData().getDouble("Bql.StoredZ");
             float storedYaw = player.getPersistentData().getFloat("Bql.StoredYaw");
             float storedPitch = player.getPersistentData().getFloat("Bql.StoredPitch");
             
-            // Check if player has moved from stored position
+            // Check if player has moved horizontally from stored position
             double deltaX = Math.abs(player.getX() - storedX);
-            double deltaY = Math.abs(player.getY() - storedY);
             double deltaZ = Math.abs(player.getZ() - storedZ);
             double deltaYaw = Math.abs(player.getYRot() - storedYaw);
             double deltaPitch = Math.abs(player.getXRot() - storedPitch);
@@ -85,27 +102,19 @@ public class PlayerEventHandler {
             double movementThreshold = 0.01;
             double rotationThreshold = 0.5;
             
-            // If player has moved beyond threshold, reset their position
-            if (deltaX > movementThreshold || deltaY > movementThreshold || deltaZ > movementThreshold ||
+            // If player has moved horizontally beyond threshold or rotated, reset their position
+            if (deltaX > movementThreshold || deltaZ > movementThreshold ||
                 deltaYaw > rotationThreshold || deltaPitch > rotationThreshold) {
                 
-                // Reset player position and rotation to stored values
-                player.teleportTo(storedX, storedY, storedZ);
+                // Reset player horizontal position and rotation to stored values, keep current Y
+                player.teleportTo(storedX, player.getY(), storedZ);
                 player.setYRot(storedYaw);
                 player.setXRot(storedPitch);
                 
-                // Set velocity to zero to prevent continued movement
-                player.setDeltaMovement(Vec3.ZERO);
-            }
-        } else {
-            // Remove stored position data when tag is removed
-            if (player.getTags().contains("Bql.RestrictMove.HasStoredPos")) {
-                player.removeTag("Bql.RestrictMove.HasStoredPos");
-                player.getPersistentData().remove("Bql.StoredX");
-                player.getPersistentData().remove("Bql.StoredY");
-                player.getPersistentData().remove("Bql.StoredZ");
-                player.getPersistentData().remove("Bql.StoredYaw");
-                player.getPersistentData().remove("Bql.StoredPitch");
+                // Set horizontal velocity to zero but preserve downward velocity for falling
+                Vec3 currentVelocity = player.getDeltaMovement();
+                double yVelocity = Math.min(currentVelocity.y, 0.0); // Only preserve downward movement
+                player.setDeltaMovement(0.0, yVelocity, 0.0);
             }
         }
     }
