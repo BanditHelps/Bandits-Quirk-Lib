@@ -123,8 +123,8 @@ public class StaminaHelper {
      */
     public static void useStamina(Player player, int amount) {
         IStaminaData staminaData = getStaminaDataSafe(player);
-        if (staminaData == null) {
-            return; // Silently return if capability not available
+        if (amount == 0) {
+            return; // using no stamina
         }
 
         // Check if the player is at death level, and if the last hurrah has been used

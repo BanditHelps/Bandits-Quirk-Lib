@@ -89,11 +89,11 @@ public class BQLConfig {
 
         this.staminaGainChance = builder
                 .comment("Chance for stamina maximum to increase when used")
-                .defineInRange("stamina_gain_chance", 0.05, 0.0, 1.0);
+                .defineInRange("stamina_gain_chance", 0.3, 0.0, 1.0);
 
         this.staminaGainExhaustedChance = builder
                 .comment("Chance for stamina maximum to increase when exhausted")
-                .defineInRange("stamina_gain_exhausted_chance", 0.1, 0.0, 1.0);
+                .defineInRange("stamina_gain_exhausted_chance", 0.45, 0.0, 1.0);
 
         this.staminaEnablePercent = builder
                 .comment("Percentage stamina required to re-enable powers after exhaustion")
