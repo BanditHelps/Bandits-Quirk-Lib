@@ -6,6 +6,7 @@ import com.github.b4ndithelps.forge.systems.QuirkFactorHelper;
 import com.github.b4ndithelps.forge.systems.StaminaHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -95,12 +96,25 @@ public class EnvironmentDecayAbility extends Ability {
             entry.setUniqueProperty(ORIGINAL_BLOCK_TYPE, "");
             entry.setUniqueProperty(TICKS_SINCE_START, 0);
 
-            // Damage held item
-            damageHeldItem(player, entry.getProperty(DAMAGE));
-
             // Find target block
             BlockPos targetPos = findTargetBlock(player, entry.getProperty(RANGE));
             if (targetPos != null) {
+                // Calculate effective intensity with quirk factor (same as in executeWaveDecay)
+                double quirkFactor = QuirkFactorHelper.getQuirkFactor(player);
+                int effectiveIntensity = Math.min(5, entry.getProperty(BASE_INTENSITY) + (int)(quirkFactor * QUIRK_INTENSITY_MULTIPLIER));
+                
+                // Check if the target block can be decayed with current intensity
+                BlockState targetBlockState = player.level().getBlockState(targetPos);
+                if (!isDecayable(targetBlockState, effectiveIntensity)) {
+                    // Send failure message to player
+                    player.sendSystemMessage(Component.literal("§cThe target block resists your decay!"));
+                    return; // Exit early without starting decay or damaging item
+                }
+
+                // Target block is valid, proceed with decay setup
+                // Damage held item
+                damageHeldItem(player, entry.getProperty(DAMAGE));
+
                 entry.setUniqueProperty(TARGET_X, targetPos.getX());
                 entry.setUniqueProperty(TARGET_Y, targetPos.getY());
                 entry.setUniqueProperty(TARGET_Z, targetPos.getZ());
@@ -109,7 +123,7 @@ public class EnvironmentDecayAbility extends Ability {
                 Set<BlockPos> firstWave = new HashSet<>();
                 firstWave.add(targetPos);
                 entry.setUniqueProperty(CURRENT_WAVE_BLOCKS, serializeBlockPositions(firstWave));
-                entry.setUniqueProperty(ORIGINAL_BLOCK_TYPE, player.level().getBlockState(targetPos).getBlock().toString());
+                entry.setUniqueProperty(ORIGINAL_BLOCK_TYPE, targetBlockState.getBlock().toString());
 
                 if (entity.level() instanceof ServerLevel serverLevel) {
                     // Play initial sound and effect
