@@ -2,6 +2,7 @@ package com.github.b4ndithelps.forge.abilities;
 
 import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
 import com.github.b4ndithelps.forge.effects.ModEffects;
+import com.github.b4ndithelps.forge.systems.QuirkFactorHelper;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -169,7 +170,7 @@ public class GrabAbility extends Ability {
             }
 
             // Check if player has taken enough damage to break the grab
-            float damageThreshold = entry.getProperty(DAMAGE_THRESHOLD);
+            float damageThreshold = entry.getProperty(DAMAGE_THRESHOLD) + (int)(QuirkFactorHelper.getQuirkFactor(player) * 2.0);
             if (damageThreshold > 0) {
                 float startHealth = entry.getProperty(PLAYER_START_HEALTH);
                 float currentHealth = player.getHealth();
@@ -344,8 +345,10 @@ public class GrabAbility extends Ability {
     private void applyHoldEffects(ServerPlayer player, LivingEntity target, AbilityInstance entry) {
         // Apply initial potion effect for hold mode
         String effectName = entry.getProperty(POTION_EFFECT);
+        int scaledPotionEffect = entry.getProperty(EFFECT_AMPLIFIER) + (int)(QuirkFactorHelper.getQuirkFactor(player) * 1);
+
         if (!effectName.isEmpty()) {
-            applyPotionEffect(target, effectName, entry.getProperty(EFFECT_AMPLIFIER));
+            applyPotionEffect(target, effectName, scaledPotionEffect);
         }
     }
 
