@@ -6,7 +6,9 @@
   "client": [
   ],
   "mixins": [
-    "ElementMixin"
+    "ElementMixin",
+    "AbilityInstanceMixin",
+    "AbilityStaminaMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -1,6 +1,7 @@
 package com.github.b4ndithelps.forge.kubejs;
 
 import com.github.b4ndithelps.forge.systems.BodyStatusHelper;
+import com.github.b4ndithelps.forge.systems.QuirkFactorHelper;
 import com.github.b4ndithelps.forge.systems.StaminaHelper;
 import com.github.b4ndithelps.forge.config.ConfigHelper;
 import com.github.b4ndithelps.util.FileManager;
@@ -16,6 +17,7 @@ public class KubeJSForgeBindings extends KubeJSPlugin {
         event.add("BodyStatus", new BodyStatusHelper());
         event.add("FileUtils", new FileUtilsJS());
         event.add("Config", new ConfigHelper());
+        event.add("QuirkFactor", new QuirkFactorHelper());
     }
 
     public static class FileUtilsJS {

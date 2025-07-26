@@ -1,0 +1,329 @@
+{
+  "name": "Decay Power",
+  "background": "minecraft:textures/block/wither_rose.png",
+  "icon": "minecraft:wither_rose",
+  "gui_display_type": "tree",
+  "abilities": {
+    "startup": {
+      "type": "palladium:command",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "first_tick_commands": [
+        "scoreboard players set @p MineHa.QuirkFactor 2",
+        "scoreboard objectives add MineHa.Decay.RotRadius dummy \"Rot Radius\""
+      ],
+      "commands": [],
+      "last_tick_commands": []
+    },
+    "info_block": {
+      "type": "palladium:dummy",
+      "icon": "minecraft:wither_rose",
+      "title": "Decay Quirk",
+      "description": "A dangerous quirk that allows you to rot and decay the environment around you. Use with caution!",
+      "hidden_in_bar": true,
+      "gui_position": [0, 0]
+    },
+    "rot_ability": {
+      "type": "bandits_quirk_lib:rot_ability",
+      "icon": "minecraft:bone_meal",
+      "title": "Rotting Wave",
+      "description": "Send out a cone-shaped wave of rot in front of you, destroying plant life and affecting enemies. Hold the activation key to charge up the ability.",
+      "damage": 8,
+      "max_radius": 12,
+      "speed": 1.0,
+      "hidden_in_bar": false,
+      "stamina_first_cost": 10,
+      "stamina_interval": 15,
+      "stamina_interval_cost": 10,
+      "gui_position": [0, -1],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:held",
+            "key_type": "key_bind",
+            "needs_empty_hand": false
+          }
+        ],
+        "unlocking": [
+          {
+            "type": "palladium:ability_unlocked",
+            "power": "null",
+            "ability": "info_block"
+          },
+          {
+            "type": "bandits_quirk_lib:powers_enabled"
+          }
+        ]
+      }
+    },
+    "enhanced_rot": {
+      "type": "bandits_quirk_lib:rot_ability", 
+      "icon": "minecraft:wither_skeleton_skull",
+      "title": "Enhanced Rot",
+      "description": "A more powerful version of the rot ability with increased damage, radius, and faster activation.",
+      "damage": 15,
+      "max_radius": 100,
+      "speed": 1.0,
+      "hidden_in_bar": false,
+      "gui_position": [0, -2],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:held",
+            "key_type": "key_bind",
+            "needs_empty_hand": false
+          }
+        ],
+        "unlocking": [
+          {
+            "type": "palladium:ability_unlocked",
+            "power": "null",
+            "ability": "rot_ability"
+          },
+          {
+            "type": "bandits_quirk_lib:powers_enabled"
+          }
+        ]
+      }
+    },
+    "environment_deca": {
+      "type": "bandits_quirk_lib:environment_decay",
+      "icon": "minecraft:blaze_rod",
+      "title": "Quarry",
+      "bar_color": "light_gray",
+      "hidden": false,
+      "hidden_in_bar": false,
+      "list_index": -1,
+      "gui_position": "null",
+      "description": "null",
+      "damage": 15,
+      "max_blocks": 100,
+      "base_intensity": 1,
+      "decay_type": "quarry",
+      "stamina_first_cost": 15,
+      "stamina_interval": 20,
+      "stamina_interval_cost": 10,
+      "range": 5,
+      "spread_speed": 10,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:held",
+            "key_type": "key_bind",
+            "needs_empty_hand": false
+          }
+        ],
+        "unlocking": [
+          {
+            "type": "bandits_quirk_lib:powers_enabled"
+          }
+        ]
+      }
+    },
+    "environment_deca_cone": {
+      "type": "bandits_quirk_lib:environment_decay",
+      "icon": "minecraft:blaze_rod",
+      "title": "fissure",
+      "bar_color": "light_gray",
+      "hidden": false,
+      "hidden_in_bar": false,
+      "list_index": -1,
+      "gui_position": "null",
+      "description": "null",
+      "damage": 15,
+      "max_blocks": 100,
+      "stamina_first_cost": 15,
+      "stamina_interval": 20,
+      "stamina_interval_cost": 10,
+      "base_intensity": 1,
+      "decay_type": "fissure",
+      "range": 5,
+      "spread_speed": 1,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:held",
+            "key_type": "key_bind",
+            "needs_empty_hand": false
+          }
+        ],
+        "unlocking": [
+          {
+            "type": "bandits_quirk_lib:powers_enabled"
+          }
+        ]
+      }
+    },
+    "environment_deca_vein": {
+      "type": "bandits_quirk_lib:environment_decay",
+      "icon": "minecraft:blaze_rod",
+      "title": "connected",
+      "bar_color": "light_gray",
+      "hidden": false,
+      "hidden_in_bar": false,
+      "list_index": -1,
+      "gui_position": "null",
+      "description": "null",
+      "stamina_first_cost": 20,
+      "stamina_interval": 20,
+      "stamina_interval_cost": 10,
+      "damage": 15,
+      "max_blocks": 100,
+      "base_intensity": 1,
+      "decay_type": "connected",
+      "range": 5,
+      "spread_speed": 1,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:held",
+            "key_type": "key_bind",
+            "needs_empty_hand": false
+          }
+        ],
+        "unlocking": [
+          {
+            "type": "bandits_quirk_lib:powers_enabled"
+          }
+        ]
+      }
+    },
+    "environment_deca_verti": {
+      "type": "bandits_quirk_lib:environment_decay",
+      "icon": "minecraft:blaze_rod",
+      "title": "all",
+      "bar_color": "light_gray",
+      "hidden": false,
+      "hidden_in_bar": false,
+      "list_index": -1,
+      "gui_position": "null",
+      "description": "null",
+      "stamina_first_cost": 20,
+      "stamina_interval": 20,
+      "stamina_interval_cost": 10,
+      "damage": 15,
+      "max_blocks": 100,
+      "base_intensity": 1,
+      "decay_type": "all",
+      "range": 5,
+      "spread_speed": 1,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:held",
+            "key_type": "key_bind",
+            "needs_empty_hand": false
+          }
+        ],
+        "unlocking": [
+          {
+            "type": "bandits_quirk_lib:powers_enabled"
+          }
+        ]
+      }
+    },
+    "environment_deca_hor": {
+      "type": "bandits_quirk_lib:environment_decay",
+      "icon": "minecraft:blaze_rod",
+      "title": "Layered",
+      "bar_color": "light_gray",
+      "hidden": false,
+      "hidden_in_bar": false,
+      "list_index": -1,
+      "gui_position": "null",
+      "description": "null",
+      "damage": 15,
+      "max_blocks": 100,
+      "base_intensity": 1,
+      "decay_type": "layer",
+      "range": 5,
+      "stamina_first_cost": 15,
+      "stamina_interval": 20,
+      "stamina_interval_cost": 10,
+      "spread_speed": 1,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:held",
+            "key_type": "key_bind",
+            "needs_empty_hand": false
+          }
+        ],
+        "unlocking": [
+          {
+            "type": "bandits_quirk_lib:powers_enabled"
+          }
+        ]
+      }
+    },
+    "grab_hold": {
+      "type": "bandits_quirk_lib:grab_ability",
+      "icon": "minecraft:chain",
+      "title": "Immobilizing Grasp",
+      "description": "Grab and immobilize a nearby living entity. Both you and the target will be locked in place for the duration.",
+      "range": 2.0,
+      "mode": "hold",
+      "potion_effect": "bandits_quirk_lib:decay_effect",
+      "effect_amplifier": 2,
+      "carry_height": 1.5,
+      "carry_distance": 3.0,
+      "hidden_in_bar": false,
+      "gui_position": [1, -1],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:held",
+            "key_type": "key_bind",
+            "needs_empty_hand": false
+          }
+        ],
+        "unlocking": [
+          {
+            "type": "palladium:ability_unlocked",
+            "power": "null",
+            "ability": "info_block"
+          },
+          {
+            "type": "bandits_quirk_lib:powers_enabled"
+          }
+        ]
+      }
+    },
+    "grab_carry": {
+      "type": "bandits_quirk_lib:grab_ability",
+      "icon": "minecraft:lead",
+      "title": "Telekinetic Control",
+      "description": "Grab and carry a living entity with your mind. The target will follow your crosshair and can be moved freely through the air.",
+      "range": 6.0,
+      "mode": "hold_and_carry",
+      "potion_effect": "",
+      "effect_amplifier": 0,
+      "carry_height": 2.0,
+      "carry_distance": 4.0,
+      "stamina_first_cost": 10,
+      "stamina_interval": 20,
+      "stamina_interval_cost": 10,
+      "hidden_in_bar": false,
+      "gui_position": [1, -2],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:held",
+            "key_type": "key_bind",
+            "needs_empty_hand": false
+          }
+        ],
+        "unlocking": [
+          {
+            "type": "palladium:ability_unlocked",
+            "power": "null",
+            "ability": "grab_hold"
+          },
+          {
+            "type": "bandits_quirk_lib:powers_enabled"
+          }
+        ]
+      }
+    }
+  }
+} 
