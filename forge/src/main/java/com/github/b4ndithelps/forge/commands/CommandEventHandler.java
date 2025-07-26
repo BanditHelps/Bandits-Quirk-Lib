@@ -16,6 +16,5 @@ public class CommandEventHandler {
         StaminaCommand.register(event.getDispatcher());
         BodyStatusCommand.register(event.getDispatcher());
         ConfigCommand.register(event.getDispatcher());
-        DecayCommand.register(event.getDispatcher());
     }
 }
