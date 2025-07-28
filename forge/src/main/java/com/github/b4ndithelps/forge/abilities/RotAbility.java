@@ -104,18 +104,18 @@ public class RotAbility extends Ability {
     @Override
     public void firstTick(LivingEntity entity, AbilityInstance entry, IPowerHolder holder, boolean enabled) {
         if (enabled && entity instanceof ServerPlayer player) {
-                // Reset timer when ability starts
-                entry.setUniqueProperty(TICKS_SINCE_START, 0);
-                entry.setUniqueProperty(DISTANCE, 0);
-                entry.setUniqueProperty(PREV_DISTANCE, 0);
-                
-                // Start the rot effect - damage held item and play initial sound
-                damageHeldItem(player, entry.getProperty(DAMAGE));
-                
-                if (entity.level() instanceof ServerLevel serverLevel) {
-                    serverLevel.playSound(null, player.blockPosition(),
-                            SoundEvents.WITHER_SPAWN, SoundSource.PLAYERS, 0.3f, 1.5f);
-                }
+            // Reset timer when ability starts
+            entry.setUniqueProperty(TICKS_SINCE_START, 0);
+            entry.setUniqueProperty(DISTANCE, 0);
+            entry.setUniqueProperty(PREV_DISTANCE, 0);
+
+            // Start the rot effect - damage held item and play initial sound
+            damageHeldItem(player, entry.getProperty(DAMAGE));
+
+            if (entity.level() instanceof ServerLevel serverLevel) {
+                serverLevel.playSound(null, player.blockPosition(),
+                        SoundEvents.WITHER_SPAWN, SoundSource.PLAYERS, 0.3f, 1.5f);
+            }
         }
     }
 
