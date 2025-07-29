@@ -12,6 +12,7 @@ public class AbilityRegister {
     public static final RegistrySupplier<Ability> ROT_ABILITY;
     public static final RegistrySupplier<Ability> ENVIRONMENT_DECAY;
     public static final RegistrySupplier<Ability> GRAB_ABILITY;
+    public static final RegistrySupplier<Ability> BODY_STATUS_MODIFIER;
 
     public AbilityRegister() {
 
@@ -27,5 +28,6 @@ public class AbilityRegister {
         ROT_ABILITY = ABILITIES.register("rot_ability", RotAbility::new);
         ENVIRONMENT_DECAY = ABILITIES.register("environment_decay", EnvironmentDecayAbility::new);
         GRAB_ABILITY = ABILITIES.register("grab_ability", GrabAbility::new);
+        BODY_STATUS_MODIFIER = ABILITIES.register("body_status_modifier", BodyStatusModifierAbility::new);
     }
 }
