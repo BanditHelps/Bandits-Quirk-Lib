@@ -125,7 +125,27 @@
       "operation": "add",
       "float_value": 1.0,
       "max_value": 40,
-      "send_message": true
+      "send_message": false
+    },
+    "test_action": {
+      "type": "palladium:command",
+      "title": "test_hold",
+      "list_index": 2,
+      "hidden": true,
+      "hidden_in_bar": false,
+      "commands": [
+        "say holding"
+      ],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "bandits_quirk_lib:held_with_cooldown",
+            "key_type": "key_bind",
+            "cooldown": 40
+          }
+        ]
+      }
+
     }
   }
 }
