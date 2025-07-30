@@ -348,6 +348,19 @@ public class BodyStatusHelper {
         }
     }
 
+    public static void addToCustomFloat(Player player, String bodyPartName, String key, float value) {
+        try {
+            IBodyStatusCapability bodyStatus = getBodyStatus(player);
+
+            String resolvedName = resolveBodyPartName(player, bodyPartName);
+            BodyPart part = BodyPart.valueOf(resolvedName.toUpperCase());
+            float previousValue = bodyStatus.getCustomFloat(part, key);
+            bodyStatus.setCustomFloat(part, key, previousValue + value);
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Invalid body part: " + bodyPartName + " (resolved to: " + resolveBodyPartName(player, bodyPartName) + ")");
+        }
+    }
+
     public static String getCustomString(Player player, String bodyPartName, String key) {
         try {
             IBodyStatusCapability bodyStatus = getBodyStatus(player);

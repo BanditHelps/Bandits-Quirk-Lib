@@ -73,6 +73,11 @@ public class BodyStatusCommand {
                                                 .then(Commands.argument("bodypart", StringArgumentType.string())
                                                         .then(Commands.argument("amount", FloatArgumentType.floatArg(0.0f))
                                                                 .executes(BodyStatusCommand::addDamage))))
+                                        .then(Commands.literal("float")
+                                                .then(Commands.argument("bodypart", StringArgumentType.string())
+                                                        .then(Commands.argument("key", StringArgumentType.string())
+                                                                .then(Commands.argument("value", FloatArgumentType.floatArg())
+                                                                        .executes(BodyStatusCommand::addToCustomFloat)))))
                                 )
                                 .then(Commands.literal("heal")
                                         .requires(source -> source.hasPermission(2))
@@ -318,6 +323,25 @@ public class BodyStatusCommand {
             context.getSource().sendSuccess(() -> Component.literal(
                     String.format("§6Set %s's %s %s to §e%.2f", 
                             player.getName().getString(), bodyPartName, key, value)), false);
+            return 1;
+        } catch (Exception e) {
+            context.getSource().sendFailure(Component.literal("Error: " + e.getMessage()));
+            return 0;
+        }
+    }
+
+    private static int addToCustomFloat(CommandContext<CommandSourceStack> context) {
+        try {
+            ServerPlayer player = EntityArgument.getPlayer(context, "player");
+            String bodyPartName = StringArgumentType.getString(context, "bodypart");
+            String key = StringArgumentType.getString(context, "key");
+            float value = FloatArgumentType.getFloat(context, "value");
+
+            BodyStatusHelper.addToCustomFloat(player, bodyPartName, key, value);
+
+            context.getSource().sendSuccess(() -> Component.literal(
+                    String.format("§6Added %.2f to %s's %s: %s",
+                            value, player.getName().getString(), bodyPartName, key)), false);
             return 1;
         } catch (Exception e) {
             context.getSource().sendFailure(Component.literal("Error: " + e.getMessage()));
