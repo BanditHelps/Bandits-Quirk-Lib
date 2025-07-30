@@ -25,7 +25,7 @@ public class StaminaData implements IStaminaData{
 
     @Override
     public void setCurrentStamina(int stamina) {
-        this.currentStamina = stamina;
+        this.currentStamina = Math.min(stamina, this.maxStamina);
     }
 
     @Override
@@ -35,6 +35,10 @@ public class StaminaData implements IStaminaData{
 
     @Override
     public void setMaxStamina(int stamina) {
+        // Reset the current stamina first to ensure current is never greater than max
+        if (this.currentStamina > stamina) {
+            this.currentStamina = stamina;
+        }
         this.maxStamina = stamina;
     }
 

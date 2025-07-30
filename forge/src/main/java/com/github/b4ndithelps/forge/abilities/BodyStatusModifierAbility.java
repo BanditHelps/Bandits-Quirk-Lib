@@ -76,7 +76,6 @@ public class BodyStatusModifierAbility extends Ability {
             
             // Apply immediately if apply_once is true
             if (entry.getProperty(APPLY_ONCE)) {
-                System.out.println("first tick");
                 applyModification(player, entry);
                 entry.setUniqueProperty(HAS_APPLIED_ONCE, true);
             }
@@ -98,7 +97,6 @@ public class BodyStatusModifierAbility extends Ability {
 
         // Apply modification at specified intervals
         if (currentTicks % tickInterval == 0) {
-            System.out.println("real tick");
             applyModification(player, entry);
         }
     }

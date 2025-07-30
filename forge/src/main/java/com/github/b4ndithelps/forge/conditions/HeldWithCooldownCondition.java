@@ -36,7 +36,7 @@ public class HeldWithCooldownCondition extends KeyCondition {
 
     public void onKeyReleased(LivingEntity entity, AbilityInstance entry, Power power, IPowerHolder holder) {
         entry.keyPressed = false;
-        if (entry.cooldown == 0 && this.cooldown != 0) {
+        if (entry.getEnabledTicks() > 0 && entry.cooldown == 0 && this.cooldown != 0) {
             entry.startCooldown(entity, this.cooldown);
         }
     }
