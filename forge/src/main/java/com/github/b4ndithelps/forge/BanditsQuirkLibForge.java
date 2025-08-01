@@ -7,6 +7,7 @@ import com.github.b4ndithelps.forge.effects.ModEffects;
 import com.github.b4ndithelps.forge.entities.ModEntities;
 import com.github.b4ndithelps.forge.fancymenu.ForgeFancyMenuIntegration;
 import com.github.b4ndithelps.forge.config.ConfigManager;
+import com.github.b4ndithelps.forge.config.ModGameRules;
 import dev.architectury.platform.forge.EventBuses;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
@@ -30,6 +31,9 @@ public final class BanditsQuirkLibForge {
 
         // Initialize config system
         ConfigManager.initialize();
+        
+        // Register gamerules
+        ModGameRules.register();
 
         // Run our common setup.
         BanditsQuirkLib.init();

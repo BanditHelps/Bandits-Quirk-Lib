@@ -2,12 +2,15 @@ package com.github.b4ndithelps.forge.systems;
 
 import com.github.b4ndithelps.forge.capabilities.IStaminaData;
 import com.github.b4ndithelps.forge.capabilities.StaminaDataProvider;
+import com.github.b4ndithelps.forge.config.ModGameRules;
 import com.github.b4ndithelps.forge.damage.ModDamageTypes;
 import com.github.b4ndithelps.forge.vfx.ParticleEffects;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.GameType;
 import net.minecraft.world.scores.Objective;
 import net.minecraft.world.scores.Scoreboard;
 import net.minecraftforge.common.util.LazyOptional;
@@ -126,6 +129,13 @@ public class StaminaHelper {
         if (amount == 0) {
             return; // using no stamina
         }
+        
+        // Check if creative mode players should bypass stamina usage
+        if (player.level().getGameRules().getBoolean(ModGameRules.CREATIVE_STAMINA_BYPASS) && 
+                player instanceof ServerPlayer serverPlayer &&
+                serverPlayer.gameMode.getGameModeForPlayer() == GameType.CREATIVE) {
+                return;
+            }
 
         // Check if the player is at death level, and if the last hurrah has been used
         if (staminaData.getExhaustionLevel() == 4 && staminaData.getLastHurrahUsed()) {
