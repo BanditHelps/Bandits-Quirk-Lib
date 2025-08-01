@@ -122,6 +122,24 @@
       "max_value": 40,
       "send_message": false
     },
+    "wind_wall": {
+      "type": "bandits_quirk_lib:wind_wall_smash",
+      "title": "Wind Wall Smash",
+      "hidden": true,
+      "hidden_in_bar": false,
+      "base_knockback": 2.0,
+      "max_radius": 15,
+      "speed": 2.0,
+      "max_charge_time": 40,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:held",
+            "key_type": "key_bind"
+          }
+        ]
+      }
+    },
     "test_action": {
       "type": "palladium:command",
       "title": "test_hold",
