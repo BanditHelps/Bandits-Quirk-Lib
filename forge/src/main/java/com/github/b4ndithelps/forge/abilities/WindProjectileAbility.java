@@ -3,6 +3,8 @@ package com.github.b4ndithelps.forge.abilities;
 import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
 import com.github.b4ndithelps.forge.entities.WindProjectileEntity;
 import com.github.b4ndithelps.forge.systems.BodyStatusHelper;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -29,9 +31,12 @@ public class WindProjectileAbility extends Ability {
     // These are used as denominators to the power ratio, to decrease the amount gained per 10,000 power
     private static final float DAMAGE_SCALER = 2.0f;
     private static final float KNOCKBACK_SCALER = 5.0f;
+    private static final float BOOST_SCALER = 2.0f;
 
     private static final float BASE_KNOCKBACK = 0.3f;
     private static final float BASE_RANGE = 1.0f;
+    private static final float BASE_BOOST = 1.0f;
+    private static final float MAX_BOOST_STRENGTH = 5.0f;
 
     public WindProjectileAbility() {
         super();
@@ -46,7 +51,12 @@ public class WindProjectileAbility extends Ability {
     @Override
     public void firstTick(LivingEntity entity, AbilityInstance entry, IPowerHolder holder, boolean enabled) {
         if (enabled && entity instanceof ServerPlayer player) {
-            executeAirForce(player, entry);
+
+            if (player.isFallFlying()) {
+                giveElytraBoost(player);
+            } else {
+                executeAirForce(player, entry);
+            }
         }
     }
 
@@ -104,6 +114,103 @@ public class WindProjectileAbility extends Ability {
         
         // Spawn the entity
         level.addFreshEntity(projectile);
+    }
+
+    private static void giveElytraBoost(ServerPlayer player) {
+        Vec3 lookDirection = player.getLookAngle();
+
+        // Get power stock from chest
+        float powerStock = BodyStatusHelper.getCustomFloat(player, "chest", "pstock_stored");
+
+        // Calculate power scaling - linear growth of speed every 10,000 power
+        float powerRatio = powerStock / 10000.0F;
+        // We have to hard cap boost strength, because the higher it gets, the more unstable the control becomes
+        float boostStrength = Math.min(MAX_BOOST_STRENGTH, BASE_BOOST + powerRatio / BOOST_SCALER);
+        Vec3 boostVelocity = lookDirection.scale(boostStrength);
+        player.setDeltaMovement(boostVelocity);
+
+        // Send velocity update to client
+        player.connection.send(new ClientboundSetEntityMotionPacket(player));
+
+        addBoostEffects(player);
+
+    }
+
+    private static void addBoostEffects(ServerPlayer player) {
+        player.level().playSound(null, player.blockPosition(),
+                SoundEvents.FIREWORK_ROCKET_LAUNCH, SoundSource.PLAYERS,
+                1.0f, 1.0f);
+
+        createBoostParticleRing((ServerLevel) player.level(), player);
+    }
+
+    private static void createBoostParticleRing(ServerLevel level, ServerPlayer player) {
+        // Get player position at feet level
+        Vec3 position = new Vec3(player.getX(), player.getY(), player.getZ());
+
+        // Get player's look direction for ring orientation
+        Vec3 direction = player.getLookAngle();
+
+        // Create two perpendicular vectors to the direction for ring orientation
+        Vec3 perpendicular1, perpendicular2;
+
+        // Find a vector that's not parallel to direction
+        if (Math.abs(direction.y) < 0.9) {
+            perpendicular1 = new Vec3(0, 1, 0).cross(direction).normalize();
+        } else {
+            perpendicular1 = new Vec3(1, 0, 0).cross(direction).normalize();
+        }
+
+        // Second perpendicular vector
+        perpendicular2 = direction.cross(perpendicular1).normalize();
+
+        // Ring parameters - adjust for boost visual effect
+        int particleCount = 16;
+        double ringRadius = 2.4;
+
+        // Create main boost ring at player's feet
+        for (int i = 0; i < particleCount; i++) {
+            double angle = (2 * Math.PI * i) / particleCount;
+
+            // Calculate position on ring using perpendicular vectors
+            Vec3 ringOffset = perpendicular1.scale(Math.cos(angle) * ringRadius)
+                    .add(perpendicular2.scale(Math.sin(angle) * ringRadius));
+
+            Vec3 particlePos = position.add(ringOffset);
+
+            // Main ring particles - using CLOUD for visible effect
+            level.sendParticles(ParticleTypes.CLOUD,
+                    particlePos.x, particlePos.y, particlePos.z,
+                    1, 0.05, 0.05, 0.05, 0.02);
+
+            // Add some FIREWORK particles for extra flair
+            level.sendParticles(ParticleTypes.FIREWORK,
+                    particlePos.x, particlePos.y + 0.1, particlePos.z,
+                    2, 0.1, 0.1, 0.1, 0.05);
+        }
+
+        // Create an inner ring with different particles for layered effect
+        double innerRadius = ringRadius * 0.6;
+        int innerParticles = particleCount / 2;
+
+        for (int i = 0; i < innerParticles; i++) {
+            double angle = (2 * Math.PI * i) / innerParticles;
+
+            Vec3 innerOffset = perpendicular1.scale(Math.cos(angle) * innerRadius)
+                    .add(perpendicular2.scale(Math.sin(angle) * innerRadius));
+
+            Vec3 innerPos = position.add(innerOffset);
+
+            // Inner ring with POOF particles
+            level.sendParticles(ParticleTypes.POOF,
+                    innerPos.x, innerPos.y + 0.05, innerPos.z,
+                    1, 0.02, 0.02, 0.02, 0.01);
+        }
+
+        // Add some upward particles at the center for extra effect
+        level.sendParticles(ParticleTypes.FIREWORK,
+                position.x, position.y, position.z,
+                5, 0.2, 0.1, 0.2, 0.1);
     }
 
     @Override
