@@ -1,0 +1,29 @@
+{
+  "name": "Air Force",
+  "background": "minecraft:textures/block/stone.png",
+  "icon": "minecraft:feather",
+  "gui_display_type": "tree",
+  "abilities": {
+    "airforce": {
+      "type": "bql:wind_projectile",
+      "title": "Air Force",
+      "hidden": false,
+      "hidden_in_bar": false,
+      "list_index": 0,
+      "max_range": 40.0,
+      "max_damage": 15.0,
+      "max_knockback": 5.0,
+      "damage_threshold": 2000000.0,
+      "projectile_speed": 3,
+      "projectile_width": 2.0,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:action",
+            "key_type": "key_bind"
+          }
+        ]
+      }
+    }
+  }
+}
