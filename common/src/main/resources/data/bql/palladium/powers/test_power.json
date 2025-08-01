@@ -97,7 +97,7 @@
       "max_range": 40.0,
       "max_damage": 15.0,
       "max_knockback": 5.0,
-      "damage_threshold": 2000000.0,
+      "damage_threshold": 10000.0,
       "projectile_speed": 3,
       "projectile_width": 2.0,
       "conditions": {

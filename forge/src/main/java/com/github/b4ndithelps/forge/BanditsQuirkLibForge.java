@@ -4,6 +4,7 @@ import com.github.b4ndithelps.forge.abilities.AbilityRegister;
 import com.github.b4ndithelps.forge.capabilities.CapabilityRegistration;
 import com.github.b4ndithelps.forge.conditions.CustomConditionSerializers;
 import com.github.b4ndithelps.forge.effects.ModEffects;
+import com.github.b4ndithelps.forge.entities.ModEntities;
 import com.github.b4ndithelps.forge.fancymenu.ForgeFancyMenuIntegration;
 import com.github.b4ndithelps.forge.config.ConfigManager;
 import dev.architectury.platform.forge.EventBuses;
@@ -38,6 +39,7 @@ public final class BanditsQuirkLibForge {
         CustomConditionSerializers.CUSTOM_SERIALIZERS.register();
         AbilityRegister.ABILITIES.register();
         ModEffects.register(modEventBus);
+        ModEntities.register(modEventBus);
 
     }
 
