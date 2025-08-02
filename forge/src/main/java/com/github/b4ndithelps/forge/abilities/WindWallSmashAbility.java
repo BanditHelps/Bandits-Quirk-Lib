@@ -164,17 +164,13 @@ public class WindWallSmashAbility extends Ability {
         int effectiveMaxRadius = maxRadius + (int)(quirkFactor * QUIRK_RANGE_MULTIPLIER * maxRadius);
         int maxEffectiveRadius = Math.max(1, (int)(effectiveMaxRadius * chargeFactor));
 
-        BlockPos centerPos = player.blockPosition();
+        Vec3 playerPos = player.position().add(0, player.getEyeHeight(), 0); // Start from eye level
         Vec3 lookDirection = player.getLookAngle();
         
-        // Normalize look direction to horizontal only
+        // Use full 3D look direction for proper directional movement
         double lookX = lookDirection.x;
+        double lookY = lookDirection.y;
         double lookZ = lookDirection.z;
-        double lookLength = Math.sqrt(lookX * lookX + lookZ * lookZ);
-        if (lookLength > 0) {
-            lookX /= lookLength;
-            lookZ /= lookLength;
-        }
 
         // Calculate how many ticks should pass before each radius expansion
         int ticksPerExpansion = Math.max(3, (int)(20 / effectiveSpeed));
@@ -189,7 +185,7 @@ public class WindWallSmashAbility extends Ability {
                 level.getServer().getTickCount() + delay,
                 () -> {
                     try {
-                        executeWindWaveRing(player, level, currentRadius, previousRadius, chargeFactor, quirkFactor, baseKnockback);
+                        executeWindWaveRing(player, level, playerPos, currentRadius, previousRadius, chargeFactor, quirkFactor, baseKnockback, lookX, lookY, lookZ);
                     } catch (Exception e) {
                         BanditsQuirkLibForge.LOGGER.error("Error executing wind wave ring at radius " + currentRadius + ": ", e);
                     }
@@ -200,104 +196,98 @@ public class WindWallSmashAbility extends Ability {
 
 
 
-    private void executeWindWaveRing(ServerPlayer player, ServerLevel level, int newRadius, int currentRadius, float chargeFactor, double quirkFactor, float baseKnockback) {
-        BlockPos centerPos = player.blockPosition();
-        Vec3 lookDirection = player.getLookAngle();
+    private void executeWindWaveRing(ServerPlayer player, ServerLevel level, Vec3 centerPos, int newRadius, int currentRadius, float chargeFactor, double quirkFactor, float baseKnockback, double lookX, double lookY, double lookZ) {
         
-        // Normalize look direction to horizontal only
-        double lookX = lookDirection.x;
-        double lookZ = lookDirection.z;
-        double lookLength = Math.sqrt(lookX * lookX + lookZ * lookZ);
-        if (lookLength > 0) {
-            lookX /= lookLength;
-            lookZ /= lookLength;
-        }
-
         int blocksProcessed = 0;
-        int maxBlocksPerTick = 100; // Limit to prevent lag
+        int maxBlocksPerTick = 150; // Increased limit since we're not doing surface scanning
         Set<BlockPos> processedPositions = new HashSet<>();
         
-        // Create a cone shape by checking all blocks in the new ring area
+        // Create a cone shape using the actual 3D look direction
         double coneHalfAngle = Math.toRadians(45); // 90 degree total cone (45 degrees each side)
         
-        // Process blocks in expanding area from current radius to new radius
-        int startRadius = Math.max(0, currentRadius);
+        // Process blocks only where particles actually travel (3D cone)
+        int particleSteps = Math.min(newRadius * 3, 50); // Number of particle positions to check
         
-        // Check all blocks in the new ring area
-        for (int x = centerPos.getX() - newRadius; x <= centerPos.getX() + newRadius && blocksProcessed < maxBlocksPerTick; x++) {
-            for (int z = centerPos.getZ() - newRadius; z <= centerPos.getZ() + newRadius && blocksProcessed < maxBlocksPerTick; z++) {
-                // Calculate distance from center
-                double deltaX = x - centerPos.getX();
-                double deltaZ = z - centerPos.getZ();
-                double distance = Math.sqrt(deltaX * deltaX + deltaZ * deltaZ);
+        for (int step = 0; step < particleSteps && blocksProcessed < maxBlocksPerTick; step++) {
+            double distance = (double)(step + 1) / particleSteps * newRadius;
+            
+            // Skip if this distance is in the previously processed area
+            if (distance <= currentRadius) continue;
+            
+            // Generate multiple rays across the cone width at this distance
+            int raysAtDistance = Math.min(Math.max(4, (int)(distance * 2)), 16);
+            
+            for (int ray = 0; ray < raysAtDistance; ray++) {
+                // Calculate angle across the cone
+                double angleStep = (2 * coneHalfAngle) / Math.max(1, raysAtDistance - 1);
+                double angle = -coneHalfAngle + (ray * angleStep);
                 
-                // Skip blocks that are too close (already processed) or too far
-                if (distance <= startRadius || distance > newRadius) continue;
+                // Create perpendicular vectors for the cone spread
+                Vec3 forward = new Vec3(lookX, lookY, lookZ);
+                Vec3 right = new Vec3(-lookZ, 0, lookX).normalize(); // Horizontal right vector
+                Vec3 up = forward.cross(right).normalize(); // Up vector
                 
-                // Check if this block is within the cone angle
-                if (distance > 0.5) { // Skip center to avoid division by zero
-                    // Calculate dot product to check if block is in front of player
-                    double dotProduct = (deltaX * lookX + deltaZ * lookZ) / distance;
-                    
-                    // Convert dot product to angle (dot product = cos(angle))
-                    double angleFromLookDirection = Math.acos(Math.max(-1.0, Math.min(1.0, dotProduct)));
-                    
-                    // Skip blocks outside the cone angle
-                    if (angleFromLookDirection > coneHalfAngle) continue;
-                }
+                // Calculate ray direction
+                Vec3 rayDir = forward.add(right.scale(Math.sin(angle))).normalize();
                 
-                // This block is within the cone and distance range - process it
-                BlockPos targetPos = new BlockPos(x, centerPos.getY(), z);
-                if (processWindBlockColumn(level, targetPos, processedPositions, chargeFactor)) {
-                    blocksProcessed++;
+                // Calculate position along this ray
+                Vec3 particlePos = centerPos.add(rayDir.scale(distance));
+                BlockPos blockPos = new BlockPos((int)Math.floor(particlePos.x), (int)Math.floor(particlePos.y), (int)Math.floor(particlePos.z));
+                
+                // Only process blocks where particles actually pass
+                if (!processedPositions.contains(blockPos)) {
+                    processedPositions.add(blockPos);
+                    if (processWindBlock(level, blockPos, chargeFactor)) {
+                        blocksProcessed++;
+                    }
                 }
             }
         }
 
         // Apply knockback effect to entities within the wind cone
-        applyKnockbackToEntities(player, level, centerPos, newRadius, currentRadius, lookX, lookZ, quirkFactor, baseKnockback, chargeFactor);
+        applyKnockbackToEntities(player, level, centerPos, newRadius, currentRadius, lookX, lookY, lookZ, quirkFactor, baseKnockback, chargeFactor);
 
         // Add visual effects
-        addWindWaveVisualization(level, centerPos, newRadius, lookX, lookZ, chargeFactor);
+        addWindWaveVisualization(level, centerPos, newRadius, lookX, lookY, lookZ, chargeFactor);
         
         // Play wave sound effects periodically
         if (newRadius % 3 == 0) {
-            level.playSound(null, centerPos, SoundEvents.BRUSH_GENERIC, SoundSource.PLAYERS, 0.15f, 1.2f + (newRadius * 0.05f));
+            BlockPos soundPos = new BlockPos((int)centerPos.x, (int)centerPos.y, (int)centerPos.z);
+            level.playSound(null, soundPos, SoundEvents.BRUSH_GENERIC, SoundSource.PLAYERS, 0.15f, 1.2f + (newRadius * 0.05f));
         }
     }
 
-    private void applyKnockbackToEntities(ServerPlayer caster, ServerLevel level, BlockPos centerPos, int newRadius, int currentRadius, double lookX, double lookZ, double quirkFactor, float baseKnockback, float chargeFactor) {
+    private void applyKnockbackToEntities(ServerPlayer caster, ServerLevel level, Vec3 centerPos, int newRadius, int currentRadius, double lookX, double lookY, double lookZ, double quirkFactor, float baseKnockback, float chargeFactor) {
         // Get entities in the expanding area
         AABB searchArea = new AABB(
-            centerPos.getX() - newRadius, centerPos.getY() - 4, centerPos.getZ() - newRadius,
-            centerPos.getX() + newRadius, centerPos.getY() + 8, centerPos.getZ() + newRadius
+            centerPos.x - newRadius, centerPos.y - 4, centerPos.z - newRadius,
+            centerPos.x + newRadius, centerPos.y + 8, centerPos.z + newRadius
         );
         
         List<LivingEntity> entities = level.getEntitiesOfClass(LivingEntity.class, searchArea);
         double coneHalfAngle = Math.toRadians(45); // 45 degrees each side
+        Vec3 lookDirection = new Vec3(lookX, lookY, lookZ);
         
         for (LivingEntity entity : entities) {
             // Skip the caster
             if (entity == caster) continue;
             
             // Calculate position relative to caster
-            double entityX = entity.getX() - centerPos.getX();
-            double entityZ = entity.getZ() - centerPos.getZ();
-            double distance = Math.sqrt(entityX * entityX + entityZ * entityZ);
+            Vec3 entityPos = entity.position();
+            Vec3 toEntity = entityPos.subtract(centerPos);
+            double distance = toEntity.length();
             
             // Only affect entities within the new ring (not already processed)
             if (distance <= currentRadius || distance > newRadius) continue;
             
-            // Check if entity is within the cone
-            if (distance > 1) {
-                double entityAngle = Math.atan2(entityZ, entityX);
-                double lookAngle = Math.atan2(lookZ, lookX);
-                double angleDiff = Math.abs(entityAngle - lookAngle);
+            // Check if entity is within the 3D cone
+            if (distance > 0.1) {
+                Vec3 toEntityNormalized = toEntity.normalize();
+                double dotProduct = lookDirection.dot(toEntityNormalized);
+                double angleFromLookDirection = Math.acos(Math.max(-1.0, Math.min(1.0, dotProduct)));
                 
-                // Normalize angle difference
-                if (angleDiff > Math.PI) angleDiff = 2 * Math.PI - angleDiff;
-                
-                if (angleDiff > coneHalfAngle) continue;
+                // Skip entities outside the cone angle
+                if (angleFromLookDirection > coneHalfAngle) continue;
             }
             
             // Calculate knockback strength based on proximity, charge, and quirk factor
@@ -307,14 +297,11 @@ public class WindWallSmashAbility extends Ability {
             // Scale knockback with quirk factor
             knockbackStrength *= (1.0 + quirkFactor * QUIRK_KNOCKBACK_MULTIPLIER);
             
-            // Calculate direction for knockback (away from player in cone direction)
-            double normalizedDistance = Math.max(distance, 0.1);
-            double pushX = (entityX / normalizedDistance) * knockbackStrength;
-            double pushZ = (entityZ / normalizedDistance) * knockbackStrength;
-            double pushY = Math.min(knockbackStrength * 0.4, 1.5); // Upward component for wind effect
+            // Calculate direction for knockback (away from caster in 3D direction)
+            Vec3 pushDirection = toEntity.normalize().scale(knockbackStrength);
             
             // Apply the knockback
-            entity.push(pushX, pushY, pushZ);
+            entity.push(pushDirection.x, Math.min(pushDirection.y + knockbackStrength * 0.3, 1.5), pushDirection.z);
             entity.hurtMarked = true;
             
             // Add wind effect particles around the entity
@@ -331,7 +318,7 @@ public class WindWallSmashAbility extends Ability {
         }
     }
 
-    private void addWindWaveVisualization(ServerLevel level, BlockPos centerPos, int radius, double lookX, double lookZ, float chargeFactor) {
+    private void addWindWaveVisualization(ServerLevel level, Vec3 centerPos, int radius, double lookX, double lookY, double lookZ, float chargeFactor) {
         if (radius <= 0) return;
         
         double coneHalfAngle = Math.toRadians(45);
@@ -345,18 +332,21 @@ public class WindWallSmashAbility extends Ability {
             double angleStep = (2 * coneHalfAngle) / (raysCount - 1);
             double angle = -coneHalfAngle + (ray * angleStep);
             
-            // Calculate ray direction
-            double rayX = lookX * Math.cos(angle) - lookZ * Math.sin(angle);
-            double rayZ = lookX * Math.sin(angle) + lookZ * Math.cos(angle);
+            // Create perpendicular vectors for the cone spread (3D)
+            Vec3 forward = new Vec3(lookX, lookY, lookZ);
+            Vec3 right = new Vec3(-lookZ, 0, lookX).normalize(); // Horizontal right vector
+            
+            // Calculate ray direction in 3D
+            Vec3 rayDirection = forward.add(right.scale(Math.sin(angle))).normalize();
             
             // Create particles along this ray at the current radius
-            double x = centerPos.getX() + rayX * radius;
-            double z = centerPos.getZ() + rayZ * radius;
-            double y = centerPos.getY() + ThreadLocalRandom.current().nextDouble() * 2;
+            double x = centerPos.x + rayDirection.x * radius;
+            double y = centerPos.y + rayDirection.y * radius + ThreadLocalRandom.current().nextDouble() * 2;
+            double z = centerPos.z + rayDirection.z * radius;
             
             // Main wall particles
             level.sendParticles(ParticleTypes.CLOUD, x, y, z, 2, 
-                rayX * 0.3, 0.2, rayZ * 0.3, 0.15);
+                rayDirection.x * 0.3, 0.2, rayDirection.z * 0.3, 0.15);
             
             // Additional detail particles for higher charge
             if (ThreadLocalRandom.current().nextDouble() < chargeFactor * 0.6) {
@@ -367,12 +357,12 @@ public class WindWallSmashAbility extends Ability {
             // Add depth to the wall by creating particles slightly behind the main radius
             if (radius > 2 && ThreadLocalRandom.current().nextDouble() < 0.4) {
                 double depthOffset = 0.3 + ThreadLocalRandom.current().nextDouble() * 0.4;
-                double backX = centerPos.getX() + rayX * (radius - depthOffset);
-                double backZ = centerPos.getZ() + rayZ * (radius - depthOffset);
-                double backY = centerPos.getY() + ThreadLocalRandom.current().nextDouble() * 1.8;
+                double backX = centerPos.x + rayDirection.x * (radius - depthOffset);
+                double backY = centerPos.y + rayDirection.y * (radius - depthOffset) + ThreadLocalRandom.current().nextDouble() * 1.8;
+                double backZ = centerPos.z + rayDirection.z * (radius - depthOffset);
                 
                 level.sendParticles(ParticleTypes.CLOUD, backX, backY, backZ, 1, 
-                    rayX * 0.2, 0.15, rayZ * 0.2, 0.1);
+                    rayDirection.x * 0.2, 0.15, rayDirection.z * 0.2, 0.1);
             }
         }
         
@@ -384,94 +374,83 @@ public class WindWallSmashAbility extends Ability {
             // Random distance within the radius
             double randomDistance = ThreadLocalRandom.current().nextDouble() * radius * 0.9;
             
-            double rayX = lookX * Math.cos(randomAngle) - lookZ * Math.sin(randomAngle);
-            double rayZ = lookX * Math.sin(randomAngle) + lookZ * Math.cos(randomAngle);
+            // Create perpendicular vectors for the cone spread (3D)
+            Vec3 forward = new Vec3(lookX, lookY, lookZ);
+            Vec3 right = new Vec3(-lookZ, 0, lookX).normalize();
             
-            double x = centerPos.getX() + rayX * randomDistance;
-            double z = centerPos.getZ() + rayZ * randomDistance;
-            double y = centerPos.getY() + ThreadLocalRandom.current().nextDouble() * 1.5;
+            Vec3 rayDirection = forward.add(right.scale(Math.sin(randomAngle))).normalize();
+            
+            double x = centerPos.x + rayDirection.x * randomDistance;
+            double y = centerPos.y + rayDirection.y * randomDistance + ThreadLocalRandom.current().nextDouble() * 1.5;
+            double z = centerPos.z + rayDirection.z * randomDistance;
             
             level.sendParticles(ParticleTypes.CLOUD, x, y, z, 1, 
-                rayX * 0.1, 0.05, rayZ * 0.1, 0.05);
+                rayDirection.x * 0.1, 0.05, rayDirection.z * 0.1, 0.05);
         }
         
         // Add edge definition particles for visual clarity
         for (int side = -1; side <= 1; side += 2) {
             double edgeAngle = side * coneHalfAngle;
-            double rayX = lookX * Math.cos(edgeAngle) - lookZ * Math.sin(edgeAngle);
-            double rayZ = lookX * Math.sin(edgeAngle) + lookZ * Math.cos(edgeAngle);
             
-            double x = centerPos.getX() + rayX * radius;
-            double z = centerPos.getZ() + rayZ * radius;
-            double y = centerPos.getY() + ThreadLocalRandom.current().nextDouble() * 2;
+            // Create perpendicular vectors for the cone spread (3D)
+            Vec3 forward = new Vec3(lookX, lookY, lookZ);
+            Vec3 right = new Vec3(-lookZ, 0, lookX).normalize();
+            
+            Vec3 rayDirection = forward.add(right.scale(Math.sin(edgeAngle))).normalize();
+            
+            double x = centerPos.x + rayDirection.x * radius;
+            double y = centerPos.y + rayDirection.y * radius + ThreadLocalRandom.current().nextDouble() * 2;
+            double z = centerPos.z + rayDirection.z * radius;
             
             // Slightly more intense particles on the edges for definition
             level.sendParticles(ParticleTypes.CLOUD, x, y, z, 3, 
-                rayX * 0.4, 0.25, rayZ * 0.4, 0.2);
+                rayDirection.x * 0.4, 0.25, rayDirection.z * 0.4, 0.2);
         }
     }
 
-    private boolean processWindBlockColumn(ServerLevel level, BlockPos centerPos, Set<BlockPos> processedPositions, float chargeFactor) {
-        boolean processedAny = false;
+    private boolean processWindBlock(ServerLevel level, BlockPos blockPos, float chargeFactor) {
+        BlockState blockState = level.getBlockState(blockPos);
+        Block block = blockState.getBlock();
         
-        // Find the terrain surface at this X,Z coordinate
-        int surfaceY = findTerrainSurface(level, centerPos.getX(), centerPos.getZ(), centerPos.getY());
+        // Skip air blocks
+        if (block == Blocks.AIR) return false;
         
-        // Process blocks around the surface level
-        // Go from a few blocks below surface to well above for trees
-        int minY = Math.max(level.getMinBuildHeight(), surfaceY - 3);
-        int maxY = Math.min(level.getMaxBuildHeight() - 1, surfaceY + 15);
-        
-        for (int checkY = minY; checkY <= maxY; checkY++) {
-            BlockPos checkPos = new BlockPos(centerPos.getX(), checkY, centerPos.getZ());
+        // Light wind effects - always active
+        if (LIGHT_BLOCKS.contains(block)) {
+            level.destroyBlock(blockPos, false);
             
-            // Skip if already processed
-            if (processedPositions.contains(checkPos)) continue;
-            processedPositions.add(checkPos);
-            
-            BlockState blockState = level.getBlockState(checkPos);
-            Block block = blockState.getBlock();
-            
-            // Skip air blocks
-            if (block == Blocks.AIR) continue;
-            
-            // Light wind effects - always active
-            if (LIGHT_BLOCKS.contains(block)) {
-                level.destroyBlock(checkPos, false);
-                
-                // Add wind particles
-                level.sendParticles(ParticleTypes.POOF, 
-                    checkPos.getX() + 0.5, checkPos.getY() + 0.5, checkPos.getZ() + 0.5, 
-                    3, 0.3, 0.3, 0.3, 0.1);
-                processedAny = true;
+            // Add wind particles
+            level.sendParticles(ParticleTypes.POOF, 
+                blockPos.getX() + 0.5, blockPos.getY() + 0.5, blockPos.getZ() + 0.5, 
+                3, 0.3, 0.3, 0.3, 0.1);
+            return true;
+        }
+        // Medium wind effects - require some charge
+        else if (chargeFactor >= 0.3f && LEAF_BLOCKS.contains(block)) {
+            // Scatter leaves - destroy chance based on charge
+            if (ThreadLocalRandom.current().nextFloat() < chargeFactor * 0.8f) {
+                scheduleBlockDestroy(level, blockPos, ThreadLocalRandom.current().nextInt(10) + 1);
             }
-            // Medium wind effects - require some charge
-            else if (chargeFactor >= 0.3f && LEAF_BLOCKS.contains(block)) {
-                // Scatter leaves - destroy chance based on charge
-                if (ThreadLocalRandom.current().nextFloat() < chargeFactor * 0.8f) {
-                    scheduleBlockDestroy(level, checkPos, ThreadLocalRandom.current().nextInt(10) + 1);
-                }
-                
-                // Add scattering particles
-                level.sendParticles(ParticleTypes.POOF, 
-                    checkPos.getX() + 0.5, checkPos.getY() + 0.5, checkPos.getZ() + 0.5, 
-                    2, 0.2, 0.2, 0.2, 0.05);
-                processedAny = true;
-            }
-            // Strong wind effects - require high charge
-            else if (chargeFactor >= 0.6f && ICE_SNOW_BLOCKS.contains(block)) {
-                // Shatter ice and blow away snow
-                scheduleBlockDestroy(level, checkPos, ThreadLocalRandom.current().nextInt(5) + 1);
-                
-                // Add shattering particles
-                level.sendParticles(ParticleTypes.CLOUD, 
-                    checkPos.getX() + 0.5, checkPos.getY() + 0.5, checkPos.getZ() + 0.5, 
-                    4, 0.3, 0.3, 0.3, 0.1);
-                processedAny = true;
-            }
+            
+            // Add scattering particles
+            level.sendParticles(ParticleTypes.POOF, 
+                blockPos.getX() + 0.5, blockPos.getY() + 0.5, blockPos.getZ() + 0.5, 
+                2, 0.2, 0.2, 0.2, 0.05);
+            return true;
+        }
+        // Strong wind effects - require high charge
+        else if (chargeFactor >= 0.6f && ICE_SNOW_BLOCKS.contains(block)) {
+            // Shatter ice and blow away snow
+            scheduleBlockDestroy(level, blockPos, ThreadLocalRandom.current().nextInt(5) + 1);
+            
+            // Add shattering particles
+            level.sendParticles(ParticleTypes.CLOUD, 
+                blockPos.getX() + 0.5, blockPos.getY() + 0.5, blockPos.getZ() + 0.5, 
+                4, 0.3, 0.3, 0.3, 0.1);
+            return true;
         }
         
-        return processedAny;
+        return false;
     }
 
     private void addReleaseEffects(ServerPlayer player, ServerLevel level, int chargeTicks) {
@@ -492,27 +471,7 @@ public class WindWallSmashAbility extends Ability {
         }
     }
 
-    private int findTerrainSurface(ServerLevel level, int x, int z, int startY) {
-        int scanStartY = Math.min(level.getMaxBuildHeight() - 1, startY + 20);
-        int scanEndY = Math.max(level.getMinBuildHeight(), startY - 40);
 
-        for (int y = scanStartY; y >= scanEndY; y--) {
-            BlockPos checkPos = new BlockPos(x, y, z);
-            BlockState blockState = level.getBlockState(checkPos);
-            Block block = blockState.getBlock();
-
-            if (block == Blocks.AIR ||
-                    LIGHT_BLOCKS.contains(block) ||
-                    LEAF_BLOCKS.contains(block) ||
-                    ICE_SNOW_BLOCKS.contains(block)) {
-                continue;
-            }
-
-            return y;
-        }
-
-        return startY;
-    }
 
     private void scheduleBlockDestroy(ServerLevel level, BlockPos pos, int delayTicks) {
         level.getServer().tell(new net.minecraft.server.TickTask(
