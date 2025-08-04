@@ -172,8 +172,8 @@ public class WindWallSmashAbility extends Ability {
         double lookY = lookDirection.y;
         double lookZ = lookDirection.z;
 
-        // Calculate how many ticks should pass before each radius expansion
-        int ticksPerExpansion = Math.max(3, (int)(20 / effectiveSpeed));
+        // Calculate how many ticks should pass before each radius expansion (slower progression)
+        int ticksPerExpansion = Math.max(8, (int)(40 / effectiveSpeed));
         
         // Schedule the expansion over time
         for (int radius = 1; radius <= maxEffectiveRadius; radius++) {
@@ -205,40 +205,81 @@ public class WindWallSmashAbility extends Ability {
         // Create a cone shape using the actual 3D look direction
         double coneHalfAngle = Math.toRadians(45); // 90 degree total cone (45 degrees each side)
         
-        // Process blocks only where particles actually travel (3D cone)
-        int particleSteps = Math.min(newRadius * 3, 50); // Number of particle positions to check
+        // Process blocks in a systematic cone pattern (simplified for better shape)
+        // Create perpendicular vectors for the cone spread
+        Vec3 forward = new Vec3(lookX, lookY, lookZ);
+        Vec3 right = new Vec3(-lookZ, 0, lookX).normalize();
+        Vec3 up = forward.cross(right).normalize();
         
-        for (int step = 0; step < particleSteps && blocksProcessed < maxBlocksPerTick; step++) {
-            double distance = (double)(step + 1) / particleSteps * newRadius;
+        // Check blocks in a grid pattern within the expanding cone ring
+        double ringWidth = Math.max(0.5, newRadius * 0.2); // Width of the ring to process
+        double minDistance = Math.max(0, currentRadius - ringWidth * 0.5);
+        double maxDistance = newRadius + ringWidth * 0.5;
+        
+        // Sample points more systematically
+        int samplesPerRadius = Math.min(12, Math.max(6, newRadius * 2));
+        
+        for (double distance = minDistance; distance <= maxDistance && blocksProcessed < maxBlocksPerTick; distance += 0.5) {
+            // Skip if too close to previous radius
+            if (distance <= currentRadius * 0.8) continue;
             
-            // Skip if this distance is in the previously processed area
-            if (distance <= currentRadius) continue;
+            double coneRadiusAtDistance = Math.sin(coneHalfAngle) * distance;
             
-            // Generate multiple rays across the cone width at this distance
-            int raysAtDistance = Math.min(Math.max(4, (int)(distance * 2)), 16);
-            
-            for (int ray = 0; ray < raysAtDistance; ray++) {
-                // Calculate angle across the cone
-                double angleStep = (2 * coneHalfAngle) / Math.max(1, raysAtDistance - 1);
-                double angle = -coneHalfAngle + (ray * angleStep);
+            // Sample around the cone perimeter
+            for (int sample = 0; sample < samplesPerRadius; sample++) {
+                double angle = (sample * 2.0 * Math.PI) / samplesPerRadius;
                 
-                // Create perpendicular vectors for the cone spread
-                Vec3 forward = new Vec3(lookX, lookY, lookZ);
-                Vec3 right = new Vec3(-lookZ, 0, lookX).normalize(); // Horizontal right vector
-                Vec3 up = forward.cross(right).normalize(); // Up vector
+                // Calculate position on cone surface
+                double rightComp = Math.cos(angle) * coneRadiusAtDistance;
+                double upComp = Math.sin(angle) * coneRadiusAtDistance;
                 
-                // Calculate ray direction
-                Vec3 rayDir = forward.add(right.scale(Math.sin(angle))).normalize();
+                Vec3 position = centerPos.add(
+                    forward.scale(distance).add(
+                        right.scale(rightComp).add(up.scale(upComp))
+                    )
+                );
                 
-                // Calculate position along this ray
-                Vec3 particlePos = centerPos.add(rayDir.scale(distance));
-                BlockPos blockPos = new BlockPos((int)Math.floor(particlePos.x), (int)Math.floor(particlePos.y), (int)Math.floor(particlePos.z));
+                BlockPos blockPos = new BlockPos(
+                    (int)Math.floor(position.x), 
+                    (int)Math.floor(position.y), 
+                    (int)Math.floor(position.z)
+                );
                 
-                // Only process blocks where particles actually pass
                 if (!processedPositions.contains(blockPos)) {
                     processedPositions.add(blockPos);
                     if (processWindBlock(level, blockPos, chargeFactor)) {
                         blocksProcessed++;
+                    }
+                }
+            }
+            
+            // Add some interior volume sampling (fewer samples)
+            if (distance > 1.0) {
+                int interiorSamples = Math.min(4, (int)(distance * 0.5));
+                for (int i = 0; i < interiorSamples; i++) {
+                    double interiorAngle = ThreadLocalRandom.current().nextDouble() * 2 * Math.PI;
+                    double interiorRadius = ThreadLocalRandom.current().nextDouble() * coneRadiusAtDistance * 0.7;
+                    
+                    double rightComp = Math.cos(interiorAngle) * interiorRadius;
+                    double upComp = Math.sin(interiorAngle) * interiorRadius;
+                    
+                    Vec3 position = centerPos.add(
+                        forward.scale(distance).add(
+                            right.scale(rightComp).add(up.scale(upComp))
+                        )
+                    );
+                    
+                    BlockPos blockPos = new BlockPos(
+                        (int)Math.floor(position.x), 
+                        (int)Math.floor(position.y), 
+                        (int)Math.floor(position.z)
+                    );
+                    
+                    if (!processedPositions.contains(blockPos)) {
+                        processedPositions.add(blockPos);
+                        if (processWindBlock(level, blockPos, chargeFactor)) {
+                            blocksProcessed++;
+                        }
                     }
                 }
             }
@@ -280,7 +321,7 @@ public class WindWallSmashAbility extends Ability {
             // Only affect entities within the new ring (not already processed)
             if (distance <= currentRadius || distance > newRadius) continue;
             
-            // Check if entity is within the 3D cone
+            // Check if entity is within the 3D cone using proper cone geometry
             if (distance > 0.1) {
                 Vec3 toEntityNormalized = toEntity.normalize();
                 double dotProduct = lookDirection.dot(toEntityNormalized);
@@ -288,6 +329,15 @@ public class WindWallSmashAbility extends Ability {
                 
                 // Skip entities outside the cone angle
                 if (angleFromLookDirection > coneHalfAngle) continue;
+                
+                // Additional check: ensure entity is within the actual cone volume
+                // Calculate the cross product to get the perpendicular distance
+                Vec3 crossProduct = lookDirection.cross(toEntityNormalized);
+                double perpendicularDistance = crossProduct.length() * distance;
+                double maxPerpendicularAtDistance = Math.sin(coneHalfAngle) * distance;
+                
+                // Skip if too far from the cone center line
+                if (perpendicularDistance > maxPerpendicularAtDistance) continue;
             }
             
             // Calculate knockback strength based on proximity, charge, and quirk factor
@@ -323,29 +373,37 @@ public class WindWallSmashAbility extends Ability {
         
         double coneHalfAngle = Math.toRadians(45);
         
-        // Create a proper wall of particles across the entire cone width
-        int raysCount = Math.min(Math.max(8, radius * 2), 24); // More rays for denser wall
+        // Create a proper 3D cone wall of particles (reduced density)
+        int raysCount = Math.min(Math.max(6, radius), 16); // Fewer rays for cleaner visual
         
-        // Create particles across the entire cone width at this radius
+        // Create perpendicular vectors for the cone spread (3D)
+        Vec3 forward = new Vec3(lookX, lookY, lookZ);
+        Vec3 right = new Vec3(-lookZ, 0, lookX).normalize(); // Horizontal right vector
+        Vec3 up = forward.cross(right).normalize(); // Up vector
+        
+        // Create particles in a circular pattern around the cone at this radius
         for (int ray = 0; ray < raysCount; ray++) {
-            // Calculate angle across the cone (from -45° to +45°)
-            double angleStep = (2 * coneHalfAngle) / (raysCount - 1);
-            double angle = -coneHalfAngle + (ray * angleStep);
+            // Create rays in a circular pattern around the cone edge
+            double circleAngle = (ray * 2 * Math.PI) / raysCount;
+            double coneRadius = Math.sin(coneHalfAngle) * radius;
             
-            // Create perpendicular vectors for the cone spread (3D)
-            Vec3 forward = new Vec3(lookX, lookY, lookZ);
-            Vec3 right = new Vec3(-lookZ, 0, lookX).normalize(); // Horizontal right vector
+            // Calculate position on the circle at this distance
+            double rightComponent = Math.cos(circleAngle) * coneRadius;
+            double upComponent = Math.sin(circleAngle) * coneRadius;
             
             // Calculate ray direction in 3D
-            Vec3 rayDirection = forward.add(right.scale(Math.sin(angle))).normalize();
+            Vec3 rayDirection = forward.scale(radius)
+                .add(right.scale(rightComponent))
+                .add(up.scale(upComponent))
+                .normalize();
             
             // Create particles along this ray at the current radius
             double x = centerPos.x + rayDirection.x * radius;
-            double y = centerPos.y + rayDirection.y * radius + ThreadLocalRandom.current().nextDouble() * 2;
+            double y = centerPos.y + rayDirection.y * radius + ThreadLocalRandom.current().nextDouble() * 1.5;
             double z = centerPos.z + rayDirection.z * radius;
             
-            // Main wall particles
-            level.sendParticles(ParticleTypes.CLOUD, x, y, z, 2, 
+            // Main wall particles (reduced count)
+            level.sendParticles(ParticleTypes.CLOUD, x, y, z, 1, 
                 rayDirection.x * 0.3, 0.2, rayDirection.z * 0.3, 0.15);
             
             // Additional detail particles for higher charge
@@ -354,57 +412,66 @@ public class WindWallSmashAbility extends Ability {
                     0.1, 0.2, 0.1, 0.02);
             }
             
-            // Add depth to the wall by creating particles slightly behind the main radius
-            if (radius > 2 && ThreadLocalRandom.current().nextDouble() < 0.4) {
+            // Add depth to the wall by creating particles slightly behind the main radius (reduced chance)
+            if (radius > 3 && ThreadLocalRandom.current().nextDouble() < 0.2) {
                 double depthOffset = 0.3 + ThreadLocalRandom.current().nextDouble() * 0.4;
-                double backX = centerPos.x + rayDirection.x * (radius - depthOffset);
-                double backY = centerPos.y + rayDirection.y * (radius - depthOffset) + ThreadLocalRandom.current().nextDouble() * 1.8;
-                double backZ = centerPos.z + rayDirection.z * (radius - depthOffset);
+                Vec3 backDirection = rayDirection.scale(radius - depthOffset);
+                double backX = centerPos.x + backDirection.x;
+                double backY = centerPos.y + backDirection.y + ThreadLocalRandom.current().nextDouble() * 1.8;
+                double backZ = centerPos.z + backDirection.z;
                 
                 level.sendParticles(ParticleTypes.CLOUD, backX, backY, backZ, 1, 
                     rayDirection.x * 0.2, 0.15, rayDirection.z * 0.2, 0.1);
             }
         }
         
-        // Add interior volume particles to fill the cone space
-        int volumeParticles = Math.min((int)(radius * chargeFactor * 1.2), 16); // More volume particles
+        // Add interior cross-section particles at different radii for 3D volume effect (reduced)
+        if (radius > 2) {
+            int crossSectionSamples = Math.min((int)(radius * 0.5), 6);
+            for (int i = 0; i < crossSectionSamples; i++) {
+                double interiorRadius = ThreadLocalRandom.current().nextDouble() * radius * 0.8;
+                double circleAngle = ThreadLocalRandom.current().nextDouble() * 2 * Math.PI;
+                double coneRadiusAtDistance = Math.sin(coneHalfAngle) * interiorRadius;
+                
+                double rightComponent = Math.cos(circleAngle) * coneRadiusAtDistance * ThreadLocalRandom.current().nextDouble();
+                double upComponent = Math.sin(circleAngle) * coneRadiusAtDistance * ThreadLocalRandom.current().nextDouble();
+                
+                Vec3 rayDirection = forward.scale(interiorRadius)
+                    .add(right.scale(rightComponent))
+                    .add(up.scale(upComponent))
+                    .normalize();
+                
+                double x = centerPos.x + rayDirection.x * interiorRadius;
+                double y = centerPos.y + rayDirection.y * interiorRadius + ThreadLocalRandom.current().nextDouble() * 1.0;
+                double z = centerPos.z + rayDirection.z * interiorRadius;
+                
+                level.sendParticles(ParticleTypes.CLOUD, x, y, z, 1, 
+                    rayDirection.x * 0.1, 0.05, rayDirection.z * 0.1, 0.05);
+            }
+        }
+        
+        // Add additional volume particles to fill the cone space (reduced density)
+        int volumeParticles = Math.min((int)(radius * chargeFactor * 0.5), 8); // Fewer volume particles
         for (int i = 0; i < volumeParticles; i++) {
-            // Random angle within the cone
-            double randomAngle = (ThreadLocalRandom.current().nextDouble() - 0.5) * Math.toRadians(90);
-            // Random distance within the radius
+            // Random position within the cone
             double randomDistance = ThreadLocalRandom.current().nextDouble() * radius * 0.9;
+            double randomCircleAngle = ThreadLocalRandom.current().nextDouble() * 2 * Math.PI;
+            double randomConeRadius = ThreadLocalRandom.current().nextDouble() * Math.sin(coneHalfAngle) * randomDistance;
             
-            // Create perpendicular vectors for the cone spread (3D)
-            Vec3 forward = new Vec3(lookX, lookY, lookZ);
-            Vec3 right = new Vec3(-lookZ, 0, lookX).normalize();
+            double rightComponent = Math.cos(randomCircleAngle) * randomConeRadius;
+            double upComponent = Math.sin(randomCircleAngle) * randomConeRadius;
             
-            Vec3 rayDirection = forward.add(right.scale(Math.sin(randomAngle))).normalize();
+            Vec3 rayDirection = forward.scale(randomDistance)
+                .add(right.scale(rightComponent))
+                .add(up.scale(upComponent))
+                .normalize();
             
             double x = centerPos.x + rayDirection.x * randomDistance;
-            double y = centerPos.y + rayDirection.y * randomDistance + ThreadLocalRandom.current().nextDouble() * 1.5;
+            double y = centerPos.y + rayDirection.y * randomDistance + ThreadLocalRandom.current().nextDouble() * 1.0;
             double z = centerPos.z + rayDirection.z * randomDistance;
             
             level.sendParticles(ParticleTypes.CLOUD, x, y, z, 1, 
                 rayDirection.x * 0.1, 0.05, rayDirection.z * 0.1, 0.05);
-        }
-        
-        // Add edge definition particles for visual clarity
-        for (int side = -1; side <= 1; side += 2) {
-            double edgeAngle = side * coneHalfAngle;
-            
-            // Create perpendicular vectors for the cone spread (3D)
-            Vec3 forward = new Vec3(lookX, lookY, lookZ);
-            Vec3 right = new Vec3(-lookZ, 0, lookX).normalize();
-            
-            Vec3 rayDirection = forward.add(right.scale(Math.sin(edgeAngle))).normalize();
-            
-            double x = centerPos.x + rayDirection.x * radius;
-            double y = centerPos.y + rayDirection.y * radius + ThreadLocalRandom.current().nextDouble() * 2;
-            double z = centerPos.z + rayDirection.z * radius;
-            
-            // Slightly more intense particles on the edges for definition
-            level.sendParticles(ParticleTypes.CLOUD, x, y, z, 3, 
-                rayDirection.x * 0.4, 0.25, rayDirection.z * 0.4, 0.2);
         }
     }
 
