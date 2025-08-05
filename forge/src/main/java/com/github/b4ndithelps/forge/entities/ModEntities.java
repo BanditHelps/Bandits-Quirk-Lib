@@ -19,6 +19,13 @@ public class ModEntities {
                     .updateInterval(1) // Update every tick for smooth movement
                     .build("wind_projectile"));
 
+    public static final RegistryObject<EntityType<WaveProjectileEntity>> WAVE_PROJECTILE =
+            ENTITY_TYPES.register("wave_entity", () -> EntityType.Builder.<WaveProjectileEntity>of(WaveProjectileEntity::new, MobCategory.MISC)
+                        .sized(3.0F, 3.0F) // Default size
+                        .clientTrackingRange(64)
+                        .updateInterval(1)
+                        .build("wave_entity"));
+
     public static void register(IEventBus eventBus) {
         ENTITY_TYPES.register(eventBus);
     }
