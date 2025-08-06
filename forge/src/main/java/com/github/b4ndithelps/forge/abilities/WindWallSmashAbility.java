@@ -1,12 +1,15 @@
 package com.github.b4ndithelps.forge.abilities;
 
 import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
-import com.github.b4ndithelps.forge.entities.ModEntities;
-import com.github.b4ndithelps.forge.entities.WaveProjectileEntity;
+import com.github.b4ndithelps.forge.capabilities.Body.BodyPart;
+import com.github.b4ndithelps.forge.capabilities.Body.IBodyStatusCapability;
+import com.github.b4ndithelps.forge.systems.BodyStatusHelper;
 import com.github.b4ndithelps.forge.systems.ProjectileSpawner;
-import com.github.b4ndithelps.forge.systems.QuirkFactorHelper;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -22,16 +25,20 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class WindWallSmashAbility extends Ability {
 
-    // Quirk Factor Scaling Constants
-    private static final float QUIRK_SPEED_MULTIPLIER = 2.5f; // How much quirk factor affects speed
-    private static final float QUIRK_RANGE_MULTIPLIER = 2.0f; // How much quirk factor affects range
-    private static final float QUIRK_KNOCKBACK_MULTIPLIER = 3.0f; // How much quirk factor affects knockback strength
-    private static final float MAX_EFFECTIVE_SPEED = 12.0f; // Maximum speed cap
+    // Power Stock Scaling Constants
+    private static final float POWER_SIZE_MULTIPLIER = 2.0f; // How much charge affects wall size
+    private static final float POWER_LIFETIME_MULTIPLIER = 3.0f; // How much charge affects lifetime
+    private static final float BASE_LIFETIME = 60; // Base lifetime in ticks (3 seconds)
+    private static final float MAX_LIFETIME = 300; // Max lifetime in ticks (15 seconds)
+    
+    // Safety threshold multipliers (can be made configurable later)
+    private static final float MINOR_DAMAGE_THRESHOLD = 1.2f; // 120% of safe threshold
+    private static final float MAJOR_DAMAGE_THRESHOLD = 1.5f; // 150% of safe threshold  
+    private static final float SEVERE_DAMAGE_THRESHOLD = 2.0f; // 200% of safe threshold
 
     // Configurable properties
-    public static final PalladiumProperty<Float> BASE_WAVE_WIDTH = new FloatProperty("base_wave_width").configurable("Base width of the wave projectile");
-    public static final PalladiumProperty<Float> BASE_WAVE_HEIGHT = new FloatProperty("base_wave_height").configurable("Base height of the wave projectile");
-    public static final PalladiumProperty<Float> BASE_WAVE_SPEED = new FloatProperty("base_wave_speed").configurable("Base speed of the wave projectile");
+    public static final PalladiumProperty<Float> BASE_WALL_WIDTH = new FloatProperty("base_wall_width").configurable("Base width of the wall projectile");
+    public static final PalladiumProperty<Float> BASE_WALL_HEIGHT = new FloatProperty("base_wall_height").configurable("Base height of the wall projectile");
     public static final PalladiumProperty<Integer> MAX_CHARGE_TIME = new IntegerProperty("max_charge_time").configurable("Maximum charge time in ticks (20 ticks = 1 second)");
 
     // Unique values for charging
@@ -40,14 +47,109 @@ public class WindWallSmashAbility extends Ability {
 
 
     public WindWallSmashAbility() {
-        this.withProperty(BASE_WAVE_WIDTH, 3.0F)
-                .withProperty(BASE_WAVE_HEIGHT, 3.0F)
-                .withProperty(BASE_WAVE_SPEED, 1.0F)
+        this.withProperty(BASE_WALL_WIDTH, 3.0F)
+                .withProperty(BASE_WALL_HEIGHT, 3.0F)
                 .withProperty(MAX_CHARGE_TIME, 60); // 3 seconds max charge
     }
 
     public void registerUniqueProperties(PropertyManager manager) {
         manager.register(CHARGE_TICKS, 0);
+    }
+    
+    // ======================================================
+    // POWER SAFETY HELPER METHODS
+    // ======================================================
+    
+    /**
+     * Get the current safe power threshold from the body system
+     * @param player The player entity
+     * @return The amount of power that can be used before it becomes unsafe
+     */
+    private float getSafePowerThreshold(ServerPlayer player) {
+        IBodyStatusCapability bodyStatus = BodyStatusHelper.getBodyStatus(player);
+        return bodyStatus != null ? bodyStatus.getCustomFloat(BodyPart.CHEST, "pstock_max_safe") : 0.0f;
+    }
+    
+    /**
+     * Get the current stored power from the body system
+     * @param player The player entity
+     * @return Current stored power
+     */
+    private float getStoredPower(ServerPlayer player) {
+        IBodyStatusCapability bodyStatus = BodyStatusHelper.getBodyStatus(player);
+        return bodyStatus != null ? bodyStatus.getCustomFloat(BodyPart.CHEST, "pstock_stored") : 0.0f;
+    }
+    
+    /**
+     * Get the current Full Cowling percentage from the body system
+     * @param player The player entity
+     * @return Current FC percentage (0-100)
+     */
+    private float getFCPercentage(ServerPlayer player) {
+        IBodyStatusCapability bodyStatus = BodyStatusHelper.getBodyStatus(player);
+        return bodyStatus != null ? bodyStatus.getCustomFloat(BodyPart.CHEST, "pstock_fc_percent") : 0.0f;
+    }
+    
+    /**
+     * Safety check results container
+     */
+    private static class SafetyCheckResult {
+        public final boolean isSafe;
+        public final String damageLevel;
+        public final String color;
+        
+        public SafetyCheckResult(boolean isSafe, String damageLevel, String color) {
+            this.isSafe = isSafe;
+            this.damageLevel = damageLevel;
+            this.color = color;
+        }
+    }
+    
+    /**
+     * Check if the player's current power usage is safe and determine damage level
+     * @param player The player entity
+     * @param powerUsed Amount of power used
+     * @return Safety check results
+     */
+    private SafetyCheckResult getOverUseDamageLevel(ServerPlayer player, float powerUsed) {
+        float safeThreshold = getSafePowerThreshold(player);
+        
+        if (powerUsed <= safeThreshold) {
+            return new SafetyCheckResult(true, "none", "green");
+        }
+        
+        float overagePercentage = powerUsed / safeThreshold;
+        
+        // Determine damage level based on how much over threshold
+        if (overagePercentage >= SEVERE_DAMAGE_THRESHOLD) {
+            return new SafetyCheckResult(false, "severe", "dark_red");
+        } else if (overagePercentage >= MAJOR_DAMAGE_THRESHOLD) {
+            return new SafetyCheckResult(false, "major", "red");
+        } else if (overagePercentage >= MINOR_DAMAGE_THRESHOLD) {
+            return new SafetyCheckResult(false, "minor", "gold");
+        }
+        
+        return new SafetyCheckResult(true, "none", "green");
+    }
+    
+    /**
+     * Send charging percentage message to player via actionbar
+     * @param player The player entity
+     * @param powerUsed Amount of power being used
+     * @param chargePercent Charge percentage (0-100)
+     */
+    private void sendPlayerPercentageMessage(ServerPlayer player, float powerUsed, float chargePercent) {
+        SafetyCheckResult safetyInfo = getOverUseDamageLevel(player, powerUsed);
+        
+        String statusText = safetyInfo.isSafe ? "Safe" : "Overuse";
+        String message = String.format("Charging Smash: %.1f%% (%s)", chargePercent, statusText);
+        
+        // Send title command to display actionbar message
+        Component actionBarComponent = Component.literal(message)
+                .withStyle(ChatFormatting.valueOf(safetyInfo.color.toUpperCase()));
+
+        ClientboundSetActionBarTextPacket packet = new ClientboundSetActionBarTextPacket(actionBarComponent);
+        (player).connection.send(packet);
     }
 
     @Override
@@ -80,10 +182,9 @@ public class WindWallSmashAbility extends Ability {
         if (entity instanceof ServerPlayer player) {
             int chargeTicks = entry.getProperty(CHARGE_TICKS);
             
-            // If user released the key and we have charge, spawn the wave projectile
+            // If user released the key and we have charge, spawn the wall projectile
             if (chargeTicks > 0) {
-//                spawnWaveProjectile(player, (ServerLevel) entity.level(), entry, chargeTicks);
-                ProjectileSpawner.spawnWallProjectile(entity.level(), player, 8.0f, 3.0f, 150);
+                spawnWallProjectile(player, (ServerLevel) entity.level(), entry, chargeTicks);
             }
             
             // Reset charge when ability ends
@@ -99,7 +200,21 @@ public class WindWallSmashAbility extends Ability {
         chargeTicks++;
         entry.setUniqueProperty(CHARGE_TICKS, Math.min(chargeTicks, maxChargeTime));
 
-        // Play charging sounds periodically (but no particles)
+        // Calculate charge percentage
+        float chargePercent = Math.min(chargeTicks / (float)maxChargeTime, 1.0f) * 100.0f;
+        
+        // Get current power stock
+        float powerStock = getStoredPower(player);
+        
+        // Calculate power that will be used at current charge level
+        float powerToUse = (chargePercent / 100.0f) * powerStock;
+        
+        // Show charge message every 5 ticks (quarter second for smoother updates)
+        if (chargeTicks % 5 == 0) {
+            sendPlayerPercentageMessage(player, powerToUse, chargePercent);
+        }
+
+        // Play charging sounds periodically
         if (chargeTicks % 15 == 0) {
             float pitch = 1.0f + (chargeTicks / (float)maxChargeTime) * 0.5f;
             level.playSound(null, player.blockPosition(),
@@ -107,47 +222,31 @@ public class WindWallSmashAbility extends Ability {
         }
     }
 
-    private void spawnWaveProjectile(ServerPlayer player, ServerLevel level, AbilityInstance entry, int chargeTicks) {
-        double quirkFactor = QuirkFactorHelper.getQuirkFactor(player);
+    private void spawnWallProjectile(ServerPlayer player, ServerLevel level, AbilityInstance entry, int chargeTicks) {
+        // Get power stock from chest
+        float powerStock = getStoredPower(player);
+        
         int maxChargeTime = entry.getProperty(MAX_CHARGE_TIME);
-        float baseWidth = entry.getProperty(BASE_WAVE_WIDTH);
-        float baseHeight = entry.getProperty(BASE_WAVE_HEIGHT);
-        float baseSpeed = entry.getProperty(BASE_WAVE_SPEED);
+        float baseWidth = entry.getProperty(BASE_WALL_WIDTH);
+        float baseHeight = entry.getProperty(BASE_WALL_HEIGHT);
 
         // Calculate charge factor (0.0 to 1.0)
         float chargeFactor = Math.min(chargeTicks / (float)maxChargeTime, 1.0f);
+        
+        // Calculate the actual amount of power being used for this attack
+        float powerBeingUsed = chargeFactor * powerStock;
+        
+        // Scale based on the power being used (scale down since power values can be large)
+        float powerScaling = Math.min(powerBeingUsed / 10000.0f, 5.0f); // Cap at 5x scaling for 50k+ power usage
 
-        // Apply quirk factor and charge factor to wave properties
-        float effectiveWidth = baseWidth * (1.0f + chargeFactor * 1.5f) * (1.0f + (float)quirkFactor * 0.5f);
-        float effectiveHeight = baseHeight * (1.0f + chargeFactor * 1.5f) * (1.0f + (float)quirkFactor * 0.5f);
-        float effectiveSpeed = Math.min(baseSpeed * (1.0f + chargeFactor * 2.0f) * (1.0f + (float)quirkFactor * QUIRK_SPEED_MULTIPLIER), MAX_EFFECTIVE_SPEED);
+        // Apply charge factor and power usage to wall properties
+        float effectiveWidth = baseWidth * (1.0f + chargeFactor * POWER_SIZE_MULTIPLIER) * (1.0f + powerScaling * 0.5f);
+        float effectiveHeight = baseHeight * (1.0f + chargeFactor * POWER_SIZE_MULTIPLIER) * (1.0f + powerScaling * 0.5f);
+        int effectiveLifetime = (int)(BASE_LIFETIME * (1.0f + chargeFactor * POWER_LIFETIME_MULTIPLIER) * (1.0f + powerScaling * 0.5f));
+        effectiveLifetime = Math.min(effectiveLifetime, (int)MAX_LIFETIME);
 
-        // Get player's look direction
-        Vec3 lookDirection = player.getLookAngle();
-        float playerYaw = player.getYRot();
-        float playerPitch = player.getXRot();
-
-        // Create the wave projectile entity - use player's yaw directly for movement direction
-        WaveProjectileEntity wave = new WaveProjectileEntity(ModEntities.WAVE_PROJECTILE.get(), level, player);
-
-        // Position the wave slightly in front of the player
-        Vec3 playerPos = player.position().add(0, player.getEyeHeight(), 0);
-        Vec3 spawnPos = playerPos.add(lookDirection.scale(1.5)); // Spawn 1.5 blocks in front
-
-        wave.setPos(spawnPos.x, spawnPos.y, spawnPos.z);
-        wave.setWaveWidth(effectiveWidth);
-        wave.setWaveHeight(effectiveHeight);
-        wave.setWaveSpeed(effectiveSpeed);
-
-        // Set the wave's movement direction and ensure proper rotation alignment
-        wave.setMovementAndRotation(lookDirection.scale(effectiveSpeed));
-
-        // If your wave entity needs to know its "wall orientation" (perpendicular to movement),
-        // you can store that as a separate property in the entity
-        // wave.setWallOrientation(playerYaw + 90.0F); // If you have this method
-
-        // Spawn the entity into the world
-        level.addFreshEntity(wave);
+        // Spawn the wall projectile using the new system
+        ProjectileSpawner.spawnWallProjectile(level, player, effectiveWidth, effectiveHeight, effectiveLifetime);
 
         // Play release sound and effects
         BlockPos centerPos = player.blockPosition();
@@ -157,6 +256,8 @@ public class WindWallSmashAbility extends Ability {
 
         // Add burst particles at release point
         addReleaseEffects(player, level, chargeTicks);
+        
+        // No chat feedback - only actionbar during charging
     }
 
 
@@ -195,7 +296,7 @@ public class WindWallSmashAbility extends Ability {
 
     @Override
     public String getDocumentationDescription() {
-        return "A charge-based wind ability that spawns a destructive wave projectile. Hold to charge for increased power, then release to launch a wave that automatically destroys blocks in its path. Charge time and quirk factor increase the wave's width, height, and speed.";
+        return "A charge-based wind ability that spawns a destructive wall projectile. Hold to charge from 0-100%, then release to launch a wall that destroys blocks in its path. The charge percentage determines what percentage of your stored power (pstock_stored from chest) is consumed for the attack. Higher charge levels and more power consumption result in larger, longer-lasting walls.";
     }
 
     static {

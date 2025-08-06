@@ -185,22 +185,22 @@ public class BetterWallProjectileEntity extends Projectile {
         if (this.level().isClientSide) return;
 
         this.particleTimer++;
-        if (this.particleTimer % 2 != 0) return; // Spawn particles every 2 ticks
+        if (this.particleTimer % 4 != 0) return; // Spawn particles every 4 ticks
 
         if (this.level() instanceof ServerLevel serverLevel) {
             AABB boundingBox = this.getBoundingBox();
 
             // Spawn particles along the edges of the wall to show its dimensions
-            double particleSpacing = 0.3;
+            double particleSpacing = 0.5;
 
             // Front and back faces
             for (double x = boundingBox.minX; x <= boundingBox.maxX; x += particleSpacing) {
                 for (double y = boundingBox.minY; y <= boundingBox.maxY; y += particleSpacing) {
                     // Front face
-                    serverLevel.sendParticles(ParticleTypes.ELECTRIC_SPARK,
+                    serverLevel.sendParticles(ParticleTypes.CLOUD,
                             x, y, boundingBox.minZ, 1, 0.05, 0.05, 0.05, 0.01);
                     // Back face
-                    serverLevel.sendParticles(ParticleTypes.ELECTRIC_SPARK,
+                    serverLevel.sendParticles(ParticleTypes.CLOUD,
                             x, y, boundingBox.maxZ, 1, 0.05, 0.05, 0.05, 0.01);
                 }
             }
@@ -209,10 +209,10 @@ public class BetterWallProjectileEntity extends Projectile {
             for (double z = boundingBox.minZ; z <= boundingBox.maxZ; z += particleSpacing) {
                 for (double y = boundingBox.minY; y <= boundingBox.maxY; y += particleSpacing) {
                     // Left face
-                    serverLevel.sendParticles(ParticleTypes.ELECTRIC_SPARK,
+                    serverLevel.sendParticles(ParticleTypes.CLOUD,
                             boundingBox.minX, y, z, 1, 0.05, 0.05, 0.05, 0.01);
                     // Right face
-                    serverLevel.sendParticles(ParticleTypes.ELECTRIC_SPARK,
+                    serverLevel.sendParticles(ParticleTypes.CLOUD,
                             boundingBox.maxX, y, z, 1, 0.05, 0.05, 0.05, 0.01);
                 }
             }
@@ -221,10 +221,10 @@ public class BetterWallProjectileEntity extends Projectile {
             for (double x = boundingBox.minX; x <= boundingBox.maxX; x += particleSpacing) {
                 for (double z = boundingBox.minZ; z <= boundingBox.maxZ; z += particleSpacing) {
                     // Top face
-                    serverLevel.sendParticles(ParticleTypes.ELECTRIC_SPARK,
+                    serverLevel.sendParticles(ParticleTypes.CLOUD,
                             x, boundingBox.maxY, z, 1, 0.05, 0.05, 0.05, 0.01);
                     // Bottom face
-                    serverLevel.sendParticles(ParticleTypes.ELECTRIC_SPARK,
+                    serverLevel.sendParticles(ParticleTypes.CLOUD,
                             x, boundingBox.minY, z, 1, 0.05, 0.05, 0.05, 0.01);
                 }
             }

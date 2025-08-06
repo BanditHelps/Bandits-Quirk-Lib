@@ -130,7 +130,7 @@
       "base_knockback": 2.0,
       "max_radius": 15,
       "speed": 2.0,
-      "max_charge_time": 10,
+      "max_charge_time": 100,
       "conditions": {
         "enabling": [
           {

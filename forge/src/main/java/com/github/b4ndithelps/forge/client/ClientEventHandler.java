@@ -1,9 +1,10 @@
 package com.github.b4ndithelps.forge.client;
 
 import com.github.b4ndithelps.BanditsQuirkLib;
-import com.github.b4ndithelps.forge.client.renderer.entity.WaveEntityRenderer;
+import com.github.b4ndithelps.forge.client.renderer.entity.BetterWallProjectileRenderer;
 import com.github.b4ndithelps.forge.entities.ModEntities;
 import com.github.b4ndithelps.forge.entities.WindProjectileEntity;
+import net.minecraft.client.renderer.entity.ArrowRenderer;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.resources.ResourceLocation;
@@ -19,7 +20,7 @@ public class ClientEventHandler {
     public static void registerEntityRenderers(EntityRenderersEvent.RegisterRenderers event) {
         // Register the wind projectile renderer - invisible renderer since particles handle visuals
         event.registerEntityRenderer(ModEntities.WIND_PROJECTILE.get(), WindProjectileRenderer::new);
-        event.registerEntityRenderer(ModEntities.WAVE_PROJECTILE.get(), WaveEntityRenderer::new);
+        event.registerEntityRenderer(ModEntities.BETTER_WALL_PROJECTILE.get(), BetterWallProjectileRenderer::new);
     }
 
     // Custom renderer that doesn't render anything visible (particles handle the visuals)
