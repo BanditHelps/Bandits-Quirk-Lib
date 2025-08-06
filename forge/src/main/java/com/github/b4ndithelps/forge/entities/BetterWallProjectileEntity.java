@@ -60,7 +60,7 @@ public class BetterWallProjectileEntity extends Projectile {
 
         // Set the rotation to match direction
         this.setYRot((float) (Mth.atan2(lookDir.x, lookDir.z) * 180.0 / Math.PI));
-        this.setXRot((float) (Mth.atan2(-lookDir.y, Math.sqrt(lookDir.x * lookDir.x + lookDir.z * lookDir.z)) * 190.0 / Math.PI));
+        this.setXRot((float) (Mth.atan2(-lookDir.y, Math.sqrt(lookDir.x * lookDir.x + lookDir.z * lookDir.z)) * 180.0 / Math.PI));
 
         // Update the hitbox
         this.refreshDimensions();
@@ -248,15 +248,85 @@ public class BetterWallProjectileEntity extends Projectile {
         float height = this.getWallHeight();
         float depth = 0.5f; // Thin wall depth
 
-        // Create bounding box centered on the entity
+        // Get current position
         double x = this.getX();
         double y = this.getY();
         double z = this.getZ();
 
-        return new AABB(
-                x - width / 2, y - height / 2, z - depth / 2,
-                x + width / 2, y + height / 2, z + depth / 2
-        );
+        // If we don't have a direction yet, use default orientation
+        if (this.direction == null || this.direction.equals(Vec3.ZERO)) {
+            return new AABB(
+                    x - width / 2, y - height / 2, z - depth / 2,
+                    x + width / 2, y + height / 2, z + depth / 2
+            );
+        }
+
+        // Calculate the wall orientation based on direction
+        Vec3 dir = this.direction.normalize();
+        
+        // The wall should be thin in the direction of travel
+        // We need to create a bounding box that's oriented properly
+        
+        // Calculate the horizontal angle (yaw) from direction
+        double horizontalLength = Math.sqrt(dir.x * dir.x + dir.z * dir.z);
+        
+        if (horizontalLength < 0.001) {
+            // Nearly vertical movement - wall should be horizontal
+            return new AABB(
+                    x - width / 2, y - depth / 2, z - height / 2,
+                    x + width / 2, y + depth / 2, z + height / 2
+            );
+        } else {
+            // Calculate perpendicular vectors for wall orientation
+            // For a wall facing the direction of travel, we want:
+            // - The wall to be thin in the direction of movement
+            // - The wall to extend width/height perpendicular to movement
+            
+            // Perpendicular vector in horizontal plane (for width)
+            Vec3 perpHorizontal = new Vec3(-dir.z, 0, dir.x).normalize();
+            // Up vector (for height) 
+            Vec3 up = new Vec3(0, 1, 0);
+            // Direction vector (for depth - thin dimension)
+            
+            // Calculate half extents
+            double halfWidth = width / 2.0;
+            double halfHeight = height / 2.0;
+            double halfDepth = depth / 2.0;
+            
+            // Calculate corner offsets
+            Vec3 widthOffset = perpHorizontal.scale(halfWidth);
+            Vec3 heightOffset = up.scale(halfHeight);
+            Vec3 depthOffset = dir.scale(halfDepth);
+            
+            // Calculate all corners of the oriented box
+            Vec3 center = new Vec3(x, y, z);
+            
+            // Find min/max extents by checking all corners
+            double minX = x, maxX = x, minY = y, maxY = y, minZ = z, maxZ = z;
+            
+            // Check all 8 corners of the oriented box
+            for (int i = 0; i < 8; i++) {
+                Vec3 corner = center;
+                corner = corner.add(((i & 1) != 0 ? 1 : -1) * widthOffset.x,
+                                  ((i & 1) != 0 ? 1 : -1) * widthOffset.y,
+                                  ((i & 1) != 0 ? 1 : -1) * widthOffset.z);
+                corner = corner.add(((i & 2) != 0 ? 1 : -1) * heightOffset.x,
+                                  ((i & 2) != 0 ? 1 : -1) * heightOffset.y,
+                                  ((i & 2) != 0 ? 1 : -1) * heightOffset.z);
+                corner = corner.add(((i & 4) != 0 ? 1 : -1) * depthOffset.x,
+                                  ((i & 4) != 0 ? 1 : -1) * depthOffset.y,
+                                  ((i & 4) != 0 ? 1 : -1) * depthOffset.z);
+                
+                minX = Math.min(minX, corner.x);
+                maxX = Math.max(maxX, corner.x);
+                minY = Math.min(minY, corner.y);
+                maxY = Math.max(maxY, corner.y);
+                minZ = Math.min(minZ, corner.z);
+                maxZ = Math.max(maxZ, corner.z);
+            }
+            
+            return new AABB(minX, minY, minZ, maxX, maxY, maxZ);
+        }
     }
 
     @Override
