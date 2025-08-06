@@ -26,6 +26,14 @@ public class ModEntities {
                         .updateInterval(1)
                         .build("wave_entity"));
 
+    public static final RegistryObject<EntityType<BetterWallProjectileEntity>> BETTER_WALL_PROJECTILE =
+            ENTITY_TYPES.register("better_wall_projectile", () ->
+                    EntityType.Builder.<BetterWallProjectileEntity>of(BetterWallProjectileEntity::new, MobCategory.MISC)
+                    .sized(1.0F, 1.0F) // Default size
+                    .clientTrackingRange(64)
+                    .updateInterval(1)
+                    .build("better_wall_projectile"));
+
     public static void register(IEventBus eventBus) {
         ENTITY_TYPES.register(eventBus);
     }

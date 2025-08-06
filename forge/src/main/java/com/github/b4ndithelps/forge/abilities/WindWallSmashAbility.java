@@ -3,6 +3,7 @@ package com.github.b4ndithelps.forge.abilities;
 import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
 import com.github.b4ndithelps.forge.entities.ModEntities;
 import com.github.b4ndithelps.forge.entities.WaveProjectileEntity;
+import com.github.b4ndithelps.forge.systems.ProjectileSpawner;
 import com.github.b4ndithelps.forge.systems.QuirkFactorHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
@@ -81,7 +82,8 @@ public class WindWallSmashAbility extends Ability {
             
             // If user released the key and we have charge, spawn the wave projectile
             if (chargeTicks > 0) {
-                spawnWaveProjectile(player, (ServerLevel) entity.level(), entry, chargeTicks);
+//                spawnWaveProjectile(player, (ServerLevel) entity.level(), entry, chargeTicks);
+                ProjectileSpawner.spawnWallProjectile(entity.level(), player, 8.0f, 3.0f, 150);
             }
             
             // Reset charge when ability ends
