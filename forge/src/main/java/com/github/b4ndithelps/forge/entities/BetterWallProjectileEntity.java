@@ -50,8 +50,8 @@ public class BetterWallProjectileEntity extends Projectile {
     public BetterWallProjectileEntity(EntityType<? extends BetterWallProjectileEntity> entityType, Level level, Player shooter, float width, float height) {
         super(entityType, level);
         this.setOwner(shooter);
-        this.setWidth(1.0f);
-        this.setHeight(1.0f);
+        this.setWidth(width);
+        this.setHeight(height);
         this.setPos(shooter.getX(), shooter.getY() - 0.1, shooter.getZ());
 
         // Calculate the direction based on the player's look direction
@@ -128,16 +128,16 @@ public class BetterWallProjectileEntity extends Projectile {
             double speed = 0.8; // May need to adjust this, or make it a variable
             Vec3 motion = this.direction.scale(speed);
             this.setDeltaMovement(motion);
-            this.move(MoverType.SELF, motion);
+            
+            // Move directly without collision detection to ensure it phases through blocks
+            this.setPos(this.getX() + motion.x, this.getY() + motion.y, this.getZ() + motion.z);
+            
+            // Update bounding box after position change
+            this.setBoundingBox(this.makeBoundingBox());
         }
 
         this.destroyBlocks();
         this.spawnParticles();
-
-        // Update the position
-        this.setPos(this.getX() + this.getDeltaMovement().x,
-                this.getY() + this.getDeltaMovement().y,
-                this.getZ() + this.getDeltaMovement().z);
     }
 
     private void destroyBlocks() {
@@ -151,7 +151,7 @@ public class BetterWallProjectileEntity extends Projectile {
         int minZ = Mth.floor(boundingBox.minZ);
         int maxX = Mth.floor(boundingBox.maxX);
         int maxY = Mth.floor(boundingBox.maxY);
-        int maxZ = Mth.floor(boundingBox.maxX);
+        int maxZ = Mth.floor(boundingBox.maxZ);
 
         for (int x = minX; x <= maxX; x++) {
             for (int y = minY; y <= maxY; y++) {
@@ -173,6 +173,11 @@ public class BetterWallProjectileEntity extends Projectile {
                 block == Blocks.PACKED_ICE ||
                 block == Blocks.BLUE_ICE ||
                 block == Blocks.FROSTED_ICE ||
+                block == Blocks.SNOW_BLOCK ||
+                block == Blocks.SNOW ||
+                block == Blocks.FIRE ||
+                block == Blocks.SOUL_FIRE ||
+                block == Blocks.TORCH ||
                 block.defaultBlockState().is(BlockTags.LEAVES);
     }
 
@@ -228,12 +233,7 @@ public class BetterWallProjectileEntity extends Projectile {
 
     @Override
     public void refreshDimensions() {
-        float width = this.getWallWidth();
-        float height = this.getWallHeight();
-
-        // Set entity dimensions - depth is always small (like a wall)
-        EntityDimensions dimensions = EntityDimensions.fixed(width, height);
-        super.refreshDimensions();
+        // Update the bounding box with our custom dimensions
         this.setBoundingBox(this.makeBoundingBox());
     }
 
