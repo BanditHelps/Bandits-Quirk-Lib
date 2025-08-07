@@ -221,10 +221,6 @@ public class BetterWallProjectileEntity extends Projectile {
             
             // Apply the knockback to the entity
             entity.setDeltaMovement(entity.getDeltaMovement().add(knockbackVelocity));
-            entity.hurtMarked = true; // Mark for velocity update on client
-            
-            // Optional: Play a sound effect or spawn particles when hitting entities
-            // You can add sound/particle effects here if desired
         }
     }
 

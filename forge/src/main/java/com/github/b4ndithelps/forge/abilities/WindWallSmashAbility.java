@@ -245,9 +245,27 @@ public class WindWallSmashAbility extends Ability {
 
         // Add burst particles at release point
         addReleaseEffects(player, level, chargeTicks);
+
+        applyDamageToLimbs(player, powerBeingUsed);
         
         // No chat feedback - only actionbar during charging
-        player.sendSystemMessage(Component.literal("Width: " + effectiveWidth + " | Height: " + effectiveHeight + " | lifetime: " + effectiveLifetime));
+//        player.sendSystemMessage(Component.literal("Width: " + effectiveWidth + " | Height: " + effectiveHeight + " | lifetime: " + effectiveLifetime));
+    }
+
+    private void applyDamageToLimbs(ServerPlayer player, float powerUsed) {
+        SafetyCheckResult safetyInfo = getOverUseDamageLevel(player, powerUsed);
+
+        int legDamage = 0;
+
+        if (!safetyInfo.isSafe) {
+            if (safetyInfo.damageLevel == "minor") legDamage += 25;
+            if (safetyInfo.damageLevel == "major") legDamage += 50;
+            if (safetyInfo.damageLevel == "severe") legDamage += 100;
+        }
+
+        if (legDamage > 0) {
+            BodyStatusHelper.addDamage(player, "leg", legDamage);
+        }
     }
 
     private void addReleaseEffects(ServerPlayer player, ServerLevel level, int chargeTicks) {
