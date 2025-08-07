@@ -26,10 +26,8 @@ import java.util.concurrent.ThreadLocalRandom;
 public class WindWallSmashAbility extends Ability {
 
     // Power Stock Scaling Constants
-    private static final float POWER_SIZE_MULTIPLIER = 2.0f; // How much charge affects wall size
-    private static final float POWER_LIFETIME_MULTIPLIER = 3.0f; // How much charge affects lifetime
-    private static final float BASE_LIFETIME = 60; // Base lifetime in ticks (3 seconds)
-    private static final float MAX_LIFETIME = 300; // Max lifetime in ticks (15 seconds)
+    private static final float BASE_LIFETIME = 20; // Base lifetime in ticks (2 seconds)
+    private static final float MAX_LIFETIME = 150; // Max lifetime in ticks (7 seconds)
     
     // Safety threshold multipliers (can be made configurable later)
     private static final float MINOR_DAMAGE_THRESHOLD = 1.2f; // 120% of safe threshold
@@ -39,6 +37,7 @@ public class WindWallSmashAbility extends Ability {
     // Configurable properties
     public static final PalladiumProperty<Float> BASE_WALL_WIDTH = new FloatProperty("base_wall_width").configurable("Base width of the wall projectile");
     public static final PalladiumProperty<Float> BASE_WALL_HEIGHT = new FloatProperty("base_wall_height").configurable("Base height of the wall projectile");
+    public static final PalladiumProperty<Float> BASE_KNOCKBACK = new FloatProperty("base_knockback").configurable("Base knockback the projectile does to entities");
     public static final PalladiumProperty<Integer> MAX_CHARGE_TIME = new IntegerProperty("max_charge_time").configurable("Maximum charge time in ticks (20 ticks = 1 second)");
 
     // Unique values for charging
@@ -49,17 +48,14 @@ public class WindWallSmashAbility extends Ability {
     public WindWallSmashAbility() {
         this.withProperty(BASE_WALL_WIDTH, 3.0F)
                 .withProperty(BASE_WALL_HEIGHT, 3.0F)
-                .withProperty(MAX_CHARGE_TIME, 60); // 3 seconds max charge
+                .withProperty(MAX_CHARGE_TIME, 60)
+                .withProperty(BASE_KNOCKBACK, 1.0F); // 3 seconds max charge
     }
 
     public void registerUniqueProperties(PropertyManager manager) {
         manager.register(CHARGE_TICKS, 0);
     }
-    
-    // ======================================================
-    // POWER SAFETY HELPER METHODS
-    // ======================================================
-    
+
     /**
      * Get the current safe power threshold from the body system
      * @param player The player entity
@@ -78,16 +74,6 @@ public class WindWallSmashAbility extends Ability {
     private float getStoredPower(ServerPlayer player) {
         IBodyStatusCapability bodyStatus = BodyStatusHelper.getBodyStatus(player);
         return bodyStatus != null ? bodyStatus.getCustomFloat(BodyPart.CHEST, "pstock_stored") : 0.0f;
-    }
-    
-    /**
-     * Get the current Full Cowling percentage from the body system
-     * @param player The player entity
-     * @return Current FC percentage (0-100)
-     */
-    private float getFCPercentage(ServerPlayer player) {
-        IBodyStatusCapability bodyStatus = BodyStatusHelper.getBodyStatus(player);
-        return bodyStatus != null ? bodyStatus.getCustomFloat(BodyPart.CHEST, "pstock_fc_percent") : 0.0f;
     }
     
     /**
@@ -112,7 +98,8 @@ public class WindWallSmashAbility extends Ability {
      * @return Safety check results
      */
     private SafetyCheckResult getOverUseDamageLevel(ServerPlayer player, float powerUsed) {
-        float safeThreshold = getSafePowerThreshold(player);
+        IBodyStatusCapability bodyStatus = BodyStatusHelper.getBodyStatus(player);
+        float safeThreshold =  bodyStatus != null ? bodyStatus.getCustomFloat(BodyPart.CHEST, "pstock_max_safe") : 0.0f;
         
         if (powerUsed <= safeThreshold) {
             return new SafetyCheckResult(true, "none", "green");
@@ -182,7 +169,7 @@ public class WindWallSmashAbility extends Ability {
         if (entity instanceof ServerPlayer player) {
             int chargeTicks = entry.getProperty(CHARGE_TICKS);
             
-            // If user released the key and we have charge, spawn the wall projectile
+            // If user released the key, and we have charge, spawn the wall projectile
             if (chargeTicks > 0) {
                 spawnWallProjectile(player, (ServerLevel) entity.level(), entry, chargeTicks);
             }
@@ -229,6 +216,7 @@ public class WindWallSmashAbility extends Ability {
         int maxChargeTime = entry.getProperty(MAX_CHARGE_TIME);
         float baseWidth = entry.getProperty(BASE_WALL_WIDTH);
         float baseHeight = entry.getProperty(BASE_WALL_HEIGHT);
+        float baseKnockback = entry.getProperty(BASE_KNOCKBACK);
 
         // Calculate charge factor (0.0 to 1.0)
         float chargeFactor = Math.min(chargeTicks / (float)maxChargeTime, 1.0f);
@@ -237,16 +225,17 @@ public class WindWallSmashAbility extends Ability {
         float powerBeingUsed = chargeFactor * powerStock;
         
         // Scale based on the power being used (scale down since power values can be large)
-        float powerScaling = Math.min(powerBeingUsed / 10000.0f, 5.0f); // Cap at 5x scaling for 50k+ power usage
+        float powerScaling = Math.min(powerBeingUsed / 10000.0f, 50.0f); // Cap at 5x scaling for 50k+ power usage
 
         // Apply charge factor and power usage to wall properties
-        float effectiveWidth = baseWidth * (1.0f + chargeFactor * POWER_SIZE_MULTIPLIER) * (1.0f + powerScaling * 0.5f);
-        float effectiveHeight = baseHeight * (1.0f + chargeFactor * POWER_SIZE_MULTIPLIER) * (1.0f + powerScaling * 0.5f);
-        int effectiveLifetime = (int)(BASE_LIFETIME * (1.0f + chargeFactor * POWER_LIFETIME_MULTIPLIER) * (1.0f + powerScaling * 0.5f));
+        float effectiveWidth = baseWidth * (1.0f + powerScaling * 0.2f);
+        float effectiveHeight = baseHeight * (1.0f + powerScaling * 0.2f);
+        int effectiveLifetime = (int)(BASE_LIFETIME * (1.0f + powerScaling * 0.3f));
+        float effectiveKnockback = baseKnockback * (1.0f + powerScaling * 0.2f);
         effectiveLifetime = Math.min(effectiveLifetime, (int)MAX_LIFETIME);
 
         // Spawn the wall projectile using the new system
-        ProjectileSpawner.spawnWallProjectile(level, player, effectiveWidth, effectiveHeight, effectiveLifetime);
+        ProjectileSpawner.spawnWallProjectile(level, player, effectiveWidth, effectiveHeight, effectiveLifetime, effectiveKnockback);
 
         // Play release sound and effects
         BlockPos centerPos = player.blockPosition();
@@ -258,19 +247,8 @@ public class WindWallSmashAbility extends Ability {
         addReleaseEffects(player, level, chargeTicks);
         
         // No chat feedback - only actionbar during charging
+        player.sendSystemMessage(Component.literal("Width: " + effectiveWidth + " | Height: " + effectiveHeight + " | lifetime: " + effectiveLifetime));
     }
-
-
-
-
-
-
-
-
-
-
-
-
 
     private void addReleaseEffects(ServerPlayer player, ServerLevel level, int chargeTicks) {
         float chargeStrength = Math.min(chargeTicks / 60.0f, 1.0f);
@@ -289,11 +267,7 @@ public class WindWallSmashAbility extends Ability {
                     lookDirection.x * 0.5, 0.1, lookDirection.z * 0.5, 0.2);
         }
     }
-
-
-
-
-
+    
     @Override
     public String getDocumentationDescription() {
         return "A charge-based wind ability that spawns a destructive wall projectile. Hold to charge from 0-100%, then release to launch a wall that destroys blocks in its path. The charge percentage determines what percentage of your stored power (pstock_stored from chest) is consumed for the attack. Higher charge levels and more power consumption result in larger, longer-lasting walls.";

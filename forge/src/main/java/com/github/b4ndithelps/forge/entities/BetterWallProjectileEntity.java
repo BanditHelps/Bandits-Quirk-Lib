@@ -12,6 +12,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.player.Player;
@@ -26,6 +27,8 @@ import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.network.PlayMessages;
 
+import java.util.List;
+
 /**
  * This entity is going to be used as a wall of air that flys out and interacts with certain blocks
  */
@@ -33,6 +36,7 @@ public class BetterWallProjectileEntity extends Projectile {
     private static final EntityDataAccessor<Float> DATA_WIDTH = SynchedEntityData.defineId(BetterWallProjectileEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Float> DATA_HEIGHT = SynchedEntityData.defineId(BetterWallProjectileEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Integer> DATA_LIFETIME = SynchedEntityData.defineId(BetterWallProjectileEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Float> DATA_KNOCKBACK = SynchedEntityData.defineId(BetterWallProjectileEntity.class, EntityDataSerializers.FLOAT);
 
     private Vec3 direction;
     private int maxLifetime = 100; // ticks
@@ -43,15 +47,17 @@ public class BetterWallProjectileEntity extends Projectile {
         this.direction = Vec3.ZERO;
         this.setWidth(1.0f);
         this.setHeight(1.0f);
+        this.setKnockback(1.0f);
         this.setLifetime(100);
         this.noPhysics = true;
     }
 
-    public BetterWallProjectileEntity(EntityType<? extends BetterWallProjectileEntity> entityType, Level level, Player shooter, float width, float height) {
+    public BetterWallProjectileEntity(EntityType<? extends BetterWallProjectileEntity> entityType, Level level, Player shooter, float width, float height, float knockback) {
         super(entityType, level);
         this.setOwner(shooter);
         this.setWidth(width);
         this.setHeight(height);
+        this.setKnockback(knockback);
         this.setPos(shooter.getX(), shooter.getY() - 0.1, shooter.getZ());
 
         // Calculate the direction based on the player's look direction
@@ -75,6 +81,7 @@ public class BetterWallProjectileEntity extends Projectile {
         this.entityData.define(DATA_WIDTH, 1.0f);
         this.entityData.define(DATA_HEIGHT, 1.0f);
         this.entityData.define(DATA_LIFETIME, 100);
+        this.entityData.define(DATA_KNOCKBACK, 1.0f);
     }
 
     public void setWidth(float width) {
@@ -85,6 +92,10 @@ public class BetterWallProjectileEntity extends Projectile {
     public void setHeight(float height) {
         this.entityData.set(DATA_HEIGHT, Math.max(0.1f, height));
         this.refreshDimensions();
+    }
+
+    public void setKnockback(float knockback) {
+        this.entityData.set(DATA_KNOCKBACK, Math.max(0.0f, knockback));
     }
 
     public void setLifetime(int lifetime) {
@@ -98,6 +109,10 @@ public class BetterWallProjectileEntity extends Projectile {
 
     public float getWallHeight() {
         return this.entityData.get(DATA_HEIGHT);
+    }
+
+    public float getKnockback() {
+        return this.entityData.get(DATA_KNOCKBACK);
     }
 
     public int getLifetime() {
@@ -137,6 +152,7 @@ public class BetterWallProjectileEntity extends Projectile {
         }
 
         this.destroyBlocks();
+        this.knockbackEntities();
         this.spawnParticles();
     }
 
@@ -179,6 +195,37 @@ public class BetterWallProjectileEntity extends Projectile {
                 block == Blocks.SOUL_FIRE ||
                 block == Blocks.TORCH ||
                 block.defaultBlockState().is(BlockTags.LEAVES);
+    }
+
+    private void knockbackEntities() {
+        if (this.level().isClientSide) return;
+
+        AABB boundingBox = this.getBoundingBox();
+        
+        // Find all living entities within the wall's bounding box
+        List<LivingEntity> entities = this.level().getEntitiesOfClass(LivingEntity.class, boundingBox);
+        
+        for (LivingEntity entity : entities) {
+            // Don't knockback the owner
+            if (entity == this.getOwner()) continue;
+            
+            // Calculate knockback direction based on wall's movement direction
+            Vec3 knockbackDirection = this.direction.normalize();
+            
+            // Add some upward component for more realistic knockback
+            knockbackDirection = new Vec3(knockbackDirection.x, Math.max(0.2, knockbackDirection.y + 0.3), knockbackDirection.z);
+            
+            // Apply knockback with the configured strength
+            float knockbackStrength = this.getKnockback();
+            Vec3 knockbackVelocity = knockbackDirection.scale(knockbackStrength);
+            
+            // Apply the knockback to the entity
+            entity.setDeltaMovement(entity.getDeltaMovement().add(knockbackVelocity));
+            entity.hurtMarked = true; // Mark for velocity update on client
+            
+            // Optional: Play a sound effect or spawn particles when hitting entities
+            // You can add sound/particle effects here if desired
+        }
     }
 
     private void spawnParticles() {
@@ -334,6 +381,7 @@ public class BetterWallProjectileEntity extends Projectile {
         super.addAdditionalSaveData(compound);
         compound.putFloat("WallWidth", this.getWallWidth());
         compound.putFloat("WallHeight", this.getWallHeight());
+        compound.putFloat("Knockback", this.getKnockback());
         compound.putInt("Lifetime", this.getLifetime());
         compound.putDouble("DirectionX", this.direction.x);
         compound.putDouble("DirectionY", this.direction.y);
@@ -345,6 +393,7 @@ public class BetterWallProjectileEntity extends Projectile {
         super.readAdditionalSaveData(compound);
         this.setWidth(compound.getFloat("WallWidth"));
         this.setHeight(compound.getFloat("WallHeight"));
+        this.setKnockback(compound.getFloat("Knockback"));
         this.setLifetime(compound.getInt("Lifetime"));
         this.direction = new Vec3(
                 compound.getDouble("DirectionX"),
