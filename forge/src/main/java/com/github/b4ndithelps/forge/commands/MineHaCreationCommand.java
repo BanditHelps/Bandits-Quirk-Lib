@@ -153,6 +153,12 @@ public class MineHaCreationCommand {
         } else if (BIT_MAP_3_TABLE.containsKey(itemId)) {
             valueTable = BIT_MAP_3_TABLE;
             foundBitMap = 3;
+        } else if (BIT_MAP_4_TABLE.containsKey(itemId)) {
+            valueTable = BIT_MAP_4_TABLE;
+            foundBitMap = 4;
+        } else if (BIT_MAP_5_TABLE.containsKey(itemId)) {
+            valueTable = BIT_MAP_5_TABLE;
+            foundBitMap = 5;
         } else {
             player.sendSystemMessage(Component.literal("Something is wrong with that item, please check the config"));
             return 0;

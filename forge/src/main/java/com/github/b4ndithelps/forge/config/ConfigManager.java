@@ -20,6 +20,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.Arrays;
 
+@SuppressWarnings("removal")
 public class ConfigManager {
     private static final Logger LOGGER = LoggerFactory.getLogger("BQL-Config");
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();

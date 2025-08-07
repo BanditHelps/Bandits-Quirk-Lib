@@ -485,7 +485,6 @@ public class ConfigHelper {
         allConfigs.put("stamina.exhaustion_levels", Arrays.toString(StaminaConstants.EXHAUSTION_LEVELS));
         allConfigs.put("stamina.exhaustion_multipliers", Arrays.toString(StaminaConstants.EXHAUSTION_MULTIPLIERS));
         allConfigs.put("stamina.stamina_gain_chance", StaminaConstants.STAMINA_GAIN_CHANCE);
-        // ... add more as needed
         
         // Add dynamic configs
         for (String key : ConfigManager.getDynamicConfigKeys()) {

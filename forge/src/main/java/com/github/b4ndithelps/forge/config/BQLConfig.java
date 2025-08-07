@@ -8,6 +8,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 
+/**
+ * This is the file that builds the BQL specific config located in the root of the /config folder.
+ */
 public class BQLConfig {
 
     public static final ForgeConfigSpec.Builder BUILDER = new ForgeConfigSpec.Builder();

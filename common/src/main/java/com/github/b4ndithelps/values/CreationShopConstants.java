@@ -47,6 +47,8 @@ public class CreationShopConstants {
         put("minecraft:tuff", 67108864);
         put("minecraft:stone_bricks", 134217728);
         put("minecraft:calcite", 268435456);
+        put("minecraft:amethyst_shard", 536870912);
+        put("palladium:lead_ingot", 1073741824);
     }};
 
     // Stores the bit values for the Creation Shop - Map 2 (Static - not configurable)
@@ -76,6 +78,12 @@ public class CreationShopConstants {
         put("minecraft:arrow", 4194304);
         put("minecraft:crossbow", 8388608);
         put("minecraft:firework_rocket", 16777216);
+        put("palladium:raw_titanium", 33554432);
+        put("minecraft:flint", 67108864);
+        put("minecraft:string", 134217728);
+        put("minecraft:stick", 268435456);
+        put("minecraft:slime_ball", 536870912);
+        put("minecraft:leather", 1073741824);
     }};
 
     // Stores the bit values for the Creation Shop - Map 3 (Static - not configurable)
@@ -100,6 +108,17 @@ public class CreationShopConstants {
         put("minecraft:diamond_chestplate", 131072);
         put("minecraft:diamond_leggings", 262144);
         put("minecraft:diamond_boots", 524288);
+        put("minecraft:blaze_rod", 1048576);
+        put("minecraft:book", 2097152);
+        put("minecraft:paper", 4194304);
+        put("minecraft:glowstone_dust", 8388608);
+        put("minecraft:gunpowder", 16777216);
+        put("minecraft:nautilus_shell", 33554432);
+        put("minecraft:clay_ball", 67108864);
+        put("minecraft:brick", 134217728);
+        put("minecraft:prismarine_shard", 268435456);
+        put("minecraft:prismarine_crystals", 536870912);
+        put("minecraft:torch", 1073741824);
     }};
 
     // Stores the bit values for the Creation Shop - Map 4 (Static - not configurable)
@@ -133,7 +152,8 @@ public class CreationShopConstants {
         put("minecraft:frost_walker", 67108864);
         put("minecraft:multishot", 134217728);
         put("minecraft:quick_charge", 268435456);
-        put("minecraft:swift_sneak", 536870812);
+        put("minecraft:swift_sneak", 536870912);
+        put("minecraft:oak_log", 1073741824);
     }};
 
     // Stores the bit values for the Creation Shop - Map 5 (Static - not configurable)
@@ -144,6 +164,29 @@ public class CreationShopConstants {
         put("minecraft:soul_speed", 8);
         put("minecraft:channeling", 16);
         put("minecraft:impaling", 32);
+        put("minecraft:spruce_log", 64);
+        put("minecraft:birch_log", 128);
+        put("minecraft:jungle_log", 256);
+        put("minecraft:acacia_log", 512);
+        put("minecraft:dark_oak_log", 1024);
+        put("minecraft:mangrove_log", 2048);
+        put("minecraft:cherry_log", 4096);
+        put("minecraft:glass", 8192);
+        put("minecraft:smooth_stone", 16384);
+        put("minecraft:chiseled_stone_bricks", 32768);
+        put("minecraft:mossy_stone_bricks", 65536);
+        put("minecraft:sandstone", 131072);
+        put("minecraft:red_sandstone", 262144);
+        put("minecraft:bricks", 524288);
+        put("minecraft:crimson_stem", 1048576);
+        put("minecraft:warped_stem", 2097152);
+        put("minecraft:end_stone", 4194304);
+        put("minecraft:prismarine", 8388608);
+        put("minecraft:basalt", 16777216);
+        put("minecraft:sea_lantern", 33554432);
+        put("minecraft:dark_prismarine", 67108864);
+        put("minecraft:totem_of_undying", 134217728);
+        put("minecraft:bone", 268435456);
     }};
 
     // ===== BUY COSTS (Configurable) =====
@@ -225,6 +268,49 @@ public class CreationShopConstants {
         put("minecraft:diamond_chestplate", 5);
         put("minecraft:diamond_leggings", 5);
         put("minecraft:diamond_boots", 5);
+        put("minecraft:amethyst_shard", 50);
+        put("palladium:lead_ingot", 100);
+        put("palladium:raw_titanium", 150);
+        put("minecraft:flint", 5);
+        put("minecraft:string", 5);
+        put("minecraft:stick", 5);
+        put("minecraft:slime_ball", 10);
+        put("minecraft:leather", 10);
+        put("minecraft:bone", 5);
+        put("minecraft:blaze_rod", 100);
+        put("minecraft:book", 20);
+        put("minecraft:paper", 5);
+        put("minecraft:glowstone_dust", 30);
+        put("minecraft:gunpowder", 20);
+        put("minecraft:nautilus_shell", 200);
+        put("minecraft:clay_ball", 5);
+        put("minecraft:brick", 5);
+        put("minecraft:prismarine_shard", 25);
+        put("minecraft:prismarine_crystals", 35);
+        put("minecraft:torch", 5);
+        put("minecraft:totem_of_undying", 2000);
+        put("minecraft:oak_log", 5);
+        put("minecraft:spruce_log", 5);
+        put("minecraft:birch_log", 5);
+        put("minecraft:jungle_log", 5);
+        put("minecraft:acacia_log", 5);
+        put("minecraft:dark_oak_log", 5);
+        put("minecraft:mangrove_log", 5);
+        put("minecraft:cherry_log", 5);
+        put("minecraft:glass", 5);
+        put("minecraft:smooth_stone", 5);
+        put("minecraft:chiseled_stone_bricks", 10);
+        put("minecraft:mossy_stone_bricks", 10);
+        put("minecraft:sandstone", 5);
+        put("minecraft:red_sandstone", 5);
+        put("minecraft:bricks", 10);
+        put("minecraft:crimson_stem", 15);
+        put("minecraft:warped_stem", 15);
+        put("minecraft:end_stone", 50);
+        put("minecraft:prismarine", 30);
+        put("minecraft:basalt", 10);
+        put("minecraft:sea_lantern", 40);
+        put("minecraft:dark_prismarine", 35);
     }};
 
     // Buy costs for enchantments (Configurable)
@@ -346,6 +432,49 @@ public class CreationShopConstants {
         put("minecraft:diamond_chestplate", 4);
         put("minecraft:diamond_leggings", 4);
         put("minecraft:diamond_boots", 4);
+        put("minecraft:amethyst_shard", 16);
+        put("palladium:lead_ingot", 64);
+        put("palladium:raw_titanium", 32);
+        put("minecraft:flint", 16);
+        put("minecraft:string", 16);
+        put("minecraft:stick", 8);
+        put("minecraft:slime_ball", 24);
+        put("minecraft:leather", 24);
+        put("minecraft:bone", 16);
+        put("minecraft:blaze_rod", 16);
+        put("minecraft:book", 32);
+        put("minecraft:paper", 16);
+        put("minecraft:glowstone_dust", 64);
+        put("minecraft:gunpowder", 48);
+        put("minecraft:nautilus_shell", 3);
+        put("minecraft:clay_ball", 16);
+        put("minecraft:brick", 16);
+        put("minecraft:prismarine_shard", 48);
+        put("minecraft:prismarine_crystals", 64);
+        put("minecraft:torch", 8);
+        put("minecraft:totem_of_undying", 5);
+        put("minecraft:oak_log", 16);
+        put("minecraft:spruce_log", 16);
+        put("minecraft:birch_log", 16);
+        put("minecraft:jungle_log", 16);
+        put("minecraft:acacia_log", 16);
+        put("minecraft:dark_oak_log", 16);
+        put("minecraft:mangrove_log", 16);
+        put("minecraft:cherry_log", 16);
+        put("minecraft:glass", 16);
+        put("minecraft:smooth_stone", 24);
+        put("minecraft:chiseled_stone_bricks", 32);
+        put("minecraft:mossy_stone_bricks", 32);
+        put("minecraft:sandstone", 24);
+        put("minecraft:red_sandstone", 24);
+        put("minecraft:bricks", 32);
+        put("minecraft:crimson_stem", 48);
+        put("minecraft:warped_stem", 48);
+        put("minecraft:end_stone", 128);
+        put("minecraft:prismarine", 64);
+        put("minecraft:basalt", 32);
+        put("minecraft:sea_lantern", 24);
+        put("minecraft:dark_prismarine", 64);
     }};
 
     // Learn costs for enchantments (Configurable)
