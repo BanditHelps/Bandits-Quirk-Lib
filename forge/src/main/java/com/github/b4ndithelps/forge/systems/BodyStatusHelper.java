@@ -68,6 +68,7 @@ public class BodyStatusHelper {
 
     /**
      * Resolves special body part names (main_arm, off_arm) to actual body parts based on player's main hand setting.
+     * Also resolves "arm" and "leg" do damage first the right, then the left arm.
      * If the body part name is not special, returns the original name.
      * 
      * @param player The player to check main hand setting for
@@ -85,6 +86,12 @@ public class BodyStatusHelper {
             // Get the opposite of the player's main hand setting
             HumanoidArm mainArm = player.getMainArm();
             return mainArm == HumanoidArm.RIGHT ? "left_arm" : "right_arm";
+        } else if ("leg".equals(lowerName)) {
+            // First try the right leg, then the left
+            return isPartDestroyed(player, "right_leg") ? "left_leg" : "right_leg";
+        } else if ("arm".equals(lowerName)) {
+            // First try the right arm, then the left
+            return isPartDestroyed(player, "right_arm") ? "left_arm" : "right_arm";
         }
         
         // Return original name if not a special case
@@ -131,7 +138,11 @@ public class BodyStatusHelper {
             
             String resolvedName = resolveBodyPartName(player, bodyPartName);
             BodyPart part = BodyPart.valueOf(resolvedName.toUpperCase());
-            bodyStatus.addDamage(part, amount);
+
+            if (!bodyStatus.isPartDestroyed(part)) {
+                bodyStatus.addDamage(part, amount);
+            }
+
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("Invalid body part: " + bodyPartName + " (resolved to: " + resolveBodyPartName(player, bodyPartName) + ")");
         }
