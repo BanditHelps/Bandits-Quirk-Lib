@@ -23,6 +23,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.level.GameType;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.scores.Objective;
 import net.minecraft.world.scores.Score;
@@ -133,6 +134,11 @@ public class MineHaCreationCommand {
     private static int executeLearnMode(CommandContext<CommandSourceStack> context, ServerPlayer player) {
         String itemId = StringArgumentType.getString(context, "item");
         int cost = IntegerArgumentType.getInteger(context, "cost");
+
+        // If the player is in creative mode, make the cost 0 so they can insta-learn it
+        if (player.gameMode.getGameModeForPlayer() == GameType.CREATIVE) {
+            cost = 0;
+        }
 
         // Determine which bitmap table contains the item
         Map<String, Integer> valueTable = null;
