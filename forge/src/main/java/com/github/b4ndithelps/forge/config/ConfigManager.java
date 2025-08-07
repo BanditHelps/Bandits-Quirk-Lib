@@ -16,7 +16,6 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.Arrays;
@@ -157,10 +156,10 @@ public class ConfigManager {
     private static CreationShopData createDefaultCreationShopDataObject() {
         CreationShopData data = new CreationShopData();
         // Initialize all configurable cost tables
-        data.itemBuyCostTable = new HashMap<>(CreationShopConstants.ITEM_BUY_COST_TABLE);
-        data.enchantBuyCostTable = new HashMap<>(CreationShopConstants.ENCHANT_BUY_COST_TABLE);
-        data.itemLearnCostTable = new HashMap<>(CreationShopConstants.ITEM_LEARN_COST_TABLE);
-        data.enchantLearnCostTable = new HashMap<>(CreationShopConstants.ENCHANT_LEARN_COST_TABLE);
+        data.creationPriceTable = new HashMap<>(CreationShopConstants.ITEM_BUY_COST_TABLE);
+        data.creationEnchantPriceTable = new HashMap<>(CreationShopConstants.ENCHANT_BUY_COST_TABLE);
+        data.creationItemLearnCostTable = new HashMap<>(CreationShopConstants.ITEM_LEARN_COST_TABLE);
+        data.creationEnchantLearnCostTable = new HashMap<>(CreationShopConstants.ENCHANT_LEARN_COST_TABLE);
         return data;
     }
     
@@ -171,25 +170,25 @@ public class ConfigManager {
         }
         
         // Update buy cost tables
-        if (creationShopData.itemBuyCostTable != null) {
+        if (creationShopData.creationPriceTable != null) {
             CreationShopConstants.ITEM_BUY_COST_TABLE.clear();
-            CreationShopConstants.ITEM_BUY_COST_TABLE.putAll(creationShopData.itemBuyCostTable);
+            CreationShopConstants.ITEM_BUY_COST_TABLE.putAll(creationShopData.creationPriceTable);
         }
         
-        if (creationShopData.enchantBuyCostTable != null) {
+        if (creationShopData.creationEnchantPriceTable != null) {
             CreationShopConstants.ENCHANT_BUY_COST_TABLE.clear();
-            CreationShopConstants.ENCHANT_BUY_COST_TABLE.putAll(creationShopData.enchantBuyCostTable);
+            CreationShopConstants.ENCHANT_BUY_COST_TABLE.putAll(creationShopData.creationEnchantPriceTable);
         }
         
         // Update learn cost tables
-        if (creationShopData.itemLearnCostTable != null) {
+        if (creationShopData.creationItemLearnCostTable != null) {
             CreationShopConstants.ITEM_LEARN_COST_TABLE.clear();
-            CreationShopConstants.ITEM_LEARN_COST_TABLE.putAll(creationShopData.itemLearnCostTable);
+            CreationShopConstants.ITEM_LEARN_COST_TABLE.putAll(creationShopData.creationItemLearnCostTable);
         }
         
-        if (creationShopData.enchantLearnCostTable != null) {
+        if (creationShopData.creationEnchantLearnCostTable != null) {
             CreationShopConstants.ENCHANT_LEARN_COST_TABLE.clear();
-            CreationShopConstants.ENCHANT_LEARN_COST_TABLE.putAll(creationShopData.enchantLearnCostTable);
+            CreationShopConstants.ENCHANT_LEARN_COST_TABLE.putAll(creationShopData.creationEnchantLearnCostTable);
         }
         
         LOGGER.info("Updated creation shop cost tables - Item Buy: {}, Enchant Buy: {}, Item Learn: {}, Enchant Learn: {}", 
@@ -308,9 +307,9 @@ public class ConfigManager {
     }
     
     public static class CreationShopData {
-        public Map<String, Integer> itemBuyCostTable = new HashMap<>();
-        public Map<String, Integer> enchantBuyCostTable = new HashMap<>();
-        public Map<String, Integer> itemLearnCostTable = new HashMap<>();
-        public Map<String, Integer> enchantLearnCostTable = new HashMap<>();
+        public Map<String, Integer> creationPriceTable = new HashMap<>();
+        public Map<String, Integer> creationEnchantPriceTable = new HashMap<>();
+        public Map<String, Integer> creationItemLearnCostTable = new HashMap<>();
+        public Map<String, Integer> creationEnchantLearnCostTable = new HashMap<>();
     }
 } 
