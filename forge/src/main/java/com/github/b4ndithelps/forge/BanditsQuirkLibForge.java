@@ -4,8 +4,10 @@ import com.github.b4ndithelps.forge.abilities.AbilityRegister;
 import com.github.b4ndithelps.forge.capabilities.CapabilityRegistration;
 import com.github.b4ndithelps.forge.conditions.CustomConditionSerializers;
 import com.github.b4ndithelps.forge.effects.ModEffects;
+import com.github.b4ndithelps.forge.entities.ModEntities;
 import com.github.b4ndithelps.forge.fancymenu.ForgeFancyMenuIntegration;
 import com.github.b4ndithelps.forge.config.ConfigManager;
+import com.github.b4ndithelps.forge.config.ModGameRules;
 import dev.architectury.platform.forge.EventBuses;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
@@ -29,6 +31,9 @@ public final class BanditsQuirkLibForge {
 
         // Initialize config system
         ConfigManager.initialize();
+        
+        // Register gamerules
+        ModGameRules.register();
 
         // Run our common setup.
         BanditsQuirkLib.init();
@@ -38,6 +43,7 @@ public final class BanditsQuirkLibForge {
         CustomConditionSerializers.CUSTOM_SERIALIZERS.register();
         AbilityRegister.ABILITIES.register();
         ModEffects.register(modEventBus);
+        ModEntities.register(modEventBus);
 
     }
 

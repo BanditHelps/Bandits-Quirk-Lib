@@ -88,31 +88,77 @@
         ]
       }
     },
-    "beam": {
-      "type": "palladium:energy_beam",
-      "icon": "minecraft:blaze_rod",
-      "title": "test lazer",
-      "bar_color": "light_gray",
+    "airforce": {
+      "type": "bandits_quirk_lib:wind_projectile",
+      "title": "Air Force",
       "hidden": false,
       "hidden_in_bar": false,
-      "list_index": -1,
-      "gui_position": "null",
-      "description": "null",
-      "distance": [
-        1,
-        1,
-        1
+      "list_index": 0,
+      "max_range": 40.0,
+      "max_damage": 15.0,
+      "max_knockback": 5.0,
+      "damage_threshold": 10000.0,
+      "projectile_speed": 3,
+      "projectile_width": 2.0,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:action",
+            "key_type": "key_bind"
+          }
+        ]
+      }
+    },
+    "grow_status": {
+      "type": "bandits_quirk_lib:body_status_modifier",
+      "title": "Grow",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "value_type": "float",
+      "body_part": "chest",
+      "key": "test_val",
+      "operation": "add",
+      "float_value": 1.0,
+      "max_value": 40,
+      "send_message": false
+    },
+    "wind_wall": {
+      "type": "bandits_quirk_lib:wind_wall_smash",
+      "title": "Wind Wall Smash",
+      "hidden": true,
+      "hidden_in_bar": false,
+      "base_knockback": 2.0,
+      "max_radius": 15,
+      "speed": 2.0,
+      "max_charge_time": 100,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:held",
+            "key_type": "key_bind"
+          }
+        ]
+      }
+    },
+    "test_action": {
+      "type": "palladium:command",
+      "title": "test_hold",
+      "list_index": 2,
+      "hidden": true,
+      "hidden_in_bar": false,
+      "commands": [
+        "say holding"
       ],
-      "value": 0,
-      "prev_value": 0,
-      "energy_beam": "example:energy_beam",
-      "damage_type": "null",
-      "damage": 5,
-      "max_distance": 30,
-      "speed": 0.5,
-      "set_on_fire_seconds": 0,
-      "cause_fire": false,
-      "smelt_blocks": false
+      "conditions": {
+        "enabling": [
+          {
+            "type": "bandits_quirk_lib:held_with_cooldown",
+            "key_type": "key_bind",
+            "cooldown": 40
+          }
+        ]
+      }
+
     }
   }
 }

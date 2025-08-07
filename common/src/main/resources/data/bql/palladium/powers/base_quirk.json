@@ -26,7 +26,7 @@
     },
     "health_1_attr": {
       "type": "palladium:attribute_modifier",
-      "icon": "minecraft:cookie",
+      "icon": "bql:textures/icons/base_quirk/health.png",
       "title": "Health - I",
       "description": "Increase your health by a small amount.",
       "attribute": "minecraft:generic.max_health",
@@ -51,7 +51,7 @@
     },
     "health_2_attr": {
       "type": "palladium:attribute_modifier",
-      "icon": "minecraft:potato",
+      "icon": "bql:textures/icons/base_quirk/health2.png",
       "title": "Health - II",
       "description": "Further increase your health, still by a small amount.",
       "attribute": "minecraft:generic.max_health",
@@ -76,7 +76,7 @@
     },
     "health_3_attr": {
       "type": "palladium:attribute_modifier",
-      "icon": "minecraft:beetroot",
+      "icon": "bql:textures/icons/base_quirk/health3.png",
       "title": "Health - III",
       "description": "More health, still a small amount.",
       "attribute": "minecraft:generic.max_health",
@@ -101,7 +101,7 @@
     },
     "health_4_attr": {
       "type": "palladium:attribute_modifier",
-      "icon": "minecraft:carrot",
+      "icon": "bql:textures/icons/base_quirk/max_health.png",
       "title": "Health - IV",
       "description": "Final increase in health.",
       "attribute": "minecraft:generic.max_health",
@@ -126,7 +126,7 @@
     },
     "strength_1_attr": {
       "type": "palladium:attribute_modifier",
-      "icon": "minecraft:wooden_sword",
+      "icon": "bql:textures/icons/base_quirk/strength.png",
       "title": "Strength - I",
       "description": "Increase your strength by a small amount.",
       "attribute": "minecraft:generic.attack_damage",
@@ -151,7 +151,7 @@
     },
     "strength_2_attr": {
       "type": "palladium:attribute_modifier",
-      "icon": "minecraft:stone_sword",
+      "icon": "bql:textures/icons/base_quirk/strength2.png",
       "title": "Strength - II",
       "description": "More training, more strength.",
       "attribute": "minecraft:generic.attack_damage",
@@ -176,7 +176,7 @@
     },
     "strength_3_attr": {
       "type": "palladium:attribute_modifier",
-      "icon": "minecraft:iron_sword",
+      "icon": "bql:textures/icons/base_quirk/max_strength.png",
       "title": "Strength - III",
       "description": "Again, still a small amount, but you're getting there!",
       "attribute": "minecraft:generic.attack_damage",
@@ -201,7 +201,7 @@
     },
     "armor_1_attr": {
       "type": "palladium:attribute_modifier",
-      "icon": "minecraft:leather_chestplate",
+      "icon": "bql:textures/icons/base_quirk/armor.png",
       "title": "Armor - I",
       "description": "Increase your natural armor by a small amount.",
       "attribute": "minecraft:generic.armor",
@@ -226,7 +226,7 @@
     },
     "armor_2_attr": {
       "type": "palladium:attribute_modifier",
-      "icon": "minecraft:chainmail_chestplate",
+      "icon": "bql:textures/icons/base_quirk/max_armor.png",
       "title": "Armor - II",
       "description": "A little more armor, but still not much.",
       "attribute": "minecraft:generic.armor",
@@ -251,7 +251,7 @@
     },
     "speed_1_attr": {
       "type": "palladium:attribute_modifier",
-      "icon": "minecraft:leather_boots",
+      "icon": "bql:textures/icons/base_quirk/speed.png",
       "title": "Speed - I",
       "description": "Practice makes you ever so slightly faster.",
       "attribute": "minecraft:generic.movement_speed",
@@ -276,7 +276,7 @@
     },
     "speed_2_attr": {
       "type": "palladium:attribute_modifier",
-      "icon": "minecraft:chainmail_boots",
+      "icon": "bql:textures/icons/base_quirk/speed2.png",
       "title": "Speed - II",
       "description": "A small speed boost, but not a race car yet.",
       "attribute": "minecraft:generic.movement_speed",
@@ -301,7 +301,7 @@
     },
     "speed_3_attr": {
       "type": "palladium:attribute_modifier",
-      "icon": "minecraft:iron_boots",
+      "icon": "bql:textures/icons/base_quirk/max_speed.png",
       "title": "Speed - III",
       "description": "Your gym teacher would be proud.",
       "attribute": "minecraft:generic.movement_speed",
@@ -331,7 +331,7 @@
         "tellraw @s {\"text\":\"Training Session complete! +50 stamina capacity\",\"color\":\"gold\"}"
       ],
       "key": "base_stamina_1",
-      "icon": "minecraft:feather",
+      "icon": "bql:textures/icons/base_quirk/stamina.png",
       "title": "Stamina Training - I",
       "description": "Your rigorous training increases your stamina capacity by 50 points.",
       "hidden_in_bar": true,
@@ -357,7 +357,7 @@
         "tellraw @s {\"text\":\"Training Session complete! +50 stamina capacity\",\"color\":\"gold\"}"
       ],
       "key": "base_stamina_2",
-      "icon": "minecraft:feather",
+      "icon": "bql:textures/icons/base_quirk/stamina2.png",
       "title": "Stamina Training - II",
       "description": "Further training increases your stamina capacity by another 50 points.",
       "hidden_in_bar": true,
@@ -383,7 +383,7 @@
         "tellraw @s {\"text\":\"Training Session complete! +50 stamina capacity\",\"color\":\"gold\"}"
       ],
       "key": "base_stamina_3",
-      "icon": "minecraft:feather",
+      "icon": "bql:textures/icons/base_quirk/stamina3.png",
       "title": "Stamina Training - III",
       "description": "Advanced training increases your stamina capacity by 50 points.",
       "hidden_in_bar": true,
@@ -409,7 +409,7 @@
         "tellraw @s {\"text\":\"Training Session complete! +50 stamina capacity\",\"color\":\"gold\"}"
       ],
       "key": "base_stamina_4",
-      "icon": "minecraft:feather",
+      "icon": "bql:textures/icons/base_quirk/max_stamina.png",
       "title": "Stamina Training - IV",
       "description": "Master-level training increases your stamina capacity by 50 points.",
       "hidden_in_bar": true,

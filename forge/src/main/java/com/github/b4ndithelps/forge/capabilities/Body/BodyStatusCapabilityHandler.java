@@ -23,27 +23,25 @@ public class BodyStatusCapabilityHandler {
 
     @SubscribeEvent
     public static void onPlayerClone(PlayerEvent.Clone event) {
-        if (event.isWasDeath()) {
-            event.getOriginal().reviveCaps();
-            event.getOriginal().getCapability(BodyStatusCapabilityProvider.BODY_STATUS_CAPABILITY)
-                    .ifPresent(oldBodyStatus -> {
-                        event.getEntity().getCapability(BodyStatusCapabilityProvider.BODY_STATUS_CAPABILITY)
-                                .ifPresent(newBodyStatus -> {
-                                    newBodyStatus.deserializeNBT(oldBodyStatus.serializeNBT());
-                                    newBodyStatus.setDamage(BodyPart.HEAD, 0);
-                                    newBodyStatus.setDamage(BodyPart.CHEST, 0);
-                                    newBodyStatus.setDamage(BodyPart.LEFT_ARM, 0);
-                                    newBodyStatus.setDamage(BodyPart.RIGHT_ARM, 0);
-                                    newBodyStatus.setDamage(BodyPart.LEFT_LEG, 0);
-                                    newBodyStatus.setDamage(BodyPart.RIGHT_LEG, 0);
-                                    newBodyStatus.setDamage(BodyPart.LEFT_FOOT, 0);
-                                    newBodyStatus.setDamage(BodyPart.RIGHT_FOOT, 0);
-                                    newBodyStatus.setDamage(BodyPart.RIGHT_HAND, 0);
-                                    newBodyStatus.setDamage(BodyPart.LEFT_HAND, 0);
-                                });
-                    });
-            event.getOriginal().invalidateCaps();
-        }
+        event.getOriginal().reviveCaps();
+        event.getOriginal().getCapability(BodyStatusCapabilityProvider.BODY_STATUS_CAPABILITY)
+                .ifPresent(oldBodyStatus -> {
+                    event.getEntity().getCapability(BodyStatusCapabilityProvider.BODY_STATUS_CAPABILITY)
+                            .ifPresent(newBodyStatus -> {
+                                newBodyStatus.deserializeNBT(oldBodyStatus.serializeNBT());
+                                newBodyStatus.setDamage(BodyPart.HEAD, 0);
+                                newBodyStatus.setDamage(BodyPart.CHEST, 0);
+                                newBodyStatus.setDamage(BodyPart.LEFT_ARM, 0);
+                                newBodyStatus.setDamage(BodyPart.RIGHT_ARM, 0);
+                                newBodyStatus.setDamage(BodyPart.LEFT_LEG, 0);
+                                newBodyStatus.setDamage(BodyPart.RIGHT_LEG, 0);
+                                newBodyStatus.setDamage(BodyPart.LEFT_FOOT, 0);
+                                newBodyStatus.setDamage(BodyPart.RIGHT_FOOT, 0);
+                                newBodyStatus.setDamage(BodyPart.RIGHT_HAND, 0);
+                                newBodyStatus.setDamage(BodyPart.LEFT_HAND, 0);
+                            });
+                });
+        event.getOriginal().invalidateCaps();
     }
 
     @SubscribeEvent

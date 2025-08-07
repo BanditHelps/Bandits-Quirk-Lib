@@ -8,7 +8,8 @@
   "mixins": [
     "ElementMixin",
     "AbilityInstanceMixin",
-    "AbilityStaminaMixin"
+    "AbilityStaminaMixin",
+    "ExecuteCommandMixin"
   ],
   "injectors": {
     "defaultRequire": 1

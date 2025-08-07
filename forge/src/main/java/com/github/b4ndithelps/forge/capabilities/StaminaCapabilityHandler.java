@@ -1,6 +1,7 @@
 package com.github.b4ndithelps.forge.capabilities;
 
 import com.github.b4ndithelps.BanditsQuirkLib;
+import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
 import com.github.b4ndithelps.values.StaminaConstants;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
@@ -23,8 +24,8 @@ public class StaminaCapabilityHandler {
 
     @SubscribeEvent
     public static void onPlayerCloned(PlayerEvent.Clone event) {
+        event.getOriginal().reviveCaps();
         if (event.isWasDeath()) {
-            event.getOriginal().reviveCaps();
             // Get the old player's capability data
             event.getOriginal().getCapability(StaminaDataProvider.STAMINA_DATA).ifPresent(oldStore -> {
                 // Get the new player's capability
@@ -42,11 +43,29 @@ public class StaminaCapabilityHandler {
                     newStore.setExhaustionLevel(0);
                     newStore.setLastHurrahUsed(false);
                     newStore.setRegenCooldown(StaminaConstants.STAMINA_REGEN_COOLDOWNS[0]);
-
                 });
             });
-            event.getOriginal().invalidateCaps();
+
+        } else {
+            event.getOriginal().getCapability(StaminaDataProvider.STAMINA_DATA).ifPresent(oldStore -> {
+                // Get the new player's capability
+                event.getEntity().getCapability(StaminaDataProvider.STAMINA_DATA).ifPresent(newStore -> {
+                    // Copy all the data from old to new
+                    newStore.setMaxStamina(oldStore.getMaxStamina());
+                    newStore.setUsageTotal(oldStore.getUsageTotal());
+                    newStore.setPowersDisabled(oldStore.isPowersDisabled());
+                    newStore.setInitialized(oldStore.isInitialized());
+                    newStore.setUpgradePoints(oldStore.getUpgradePoints());
+                    newStore.setPointsProgress(oldStore.getPointsProgress());
+                    newStore.setCurrentStamina(oldStore.getCurrentStamina());
+                    newStore.setExhaustionLevel(oldStore.getExhaustionLevel());
+                    newStore.setLastHurrahUsed(oldStore.getLastHurrahUsed());
+                    newStore.setRegenCooldown(oldStore.getRegenCooldown());
+                });
+            });
         }
+
+        event.getOriginal().invalidateCaps();
     }
 
     // Optional: Add this event to handle player logout/login persistence
