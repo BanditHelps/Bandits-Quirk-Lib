@@ -91,6 +91,12 @@ public class MineHaSlotCommand {
                 } else if (CreationShopConstants.BIT_MAP_3_TABLE.containsKey(item)) {
                     objective = scoreboard.getObjective("MineHa.Creation.BitMap3");
                     selected = 3;
+                } else if (CreationShopConstants.BIT_MAP_4_TABLE.containsKey(item)) {
+                    objective = scoreboard.getObjective("MineHa.Creation.BitMap4");
+                    selected = 4;
+                } else if (CreationShopConstants.BIT_MAP_5_TABLE.containsKey(item)) {
+                    objective = scoreboard.getObjective("MineHa.Creation.BitMap5");
+                    selected = 5;
                 }
 
                 if (objective != null) {
@@ -109,6 +115,12 @@ public class MineHaSlotCommand {
                             break;
                         case 3:
                             bitMask = CreationShopConstants.BIT_MAP_3_TABLE.get(item);
+                            break;
+                        case 4:
+                            bitMask = CreationShopConstants.BIT_MAP_4_TABLE.get(item);
+                            break;
+                        case 5:
+                            bitMask = CreationShopConstants.BIT_MAP_5_TABLE.get(item);
                             break;
                         default:
                             context.getSource().sendFailure(Component.literal("Error: Key not found"));
