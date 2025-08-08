@@ -22,6 +22,7 @@ public class ForgeFancyMenuIntegration {
     public static final EnchantmentDataPlaceholder ENCHANTMENT_DATA_PLACEHOLDER = new EnchantmentDataPlaceholder();
     public static final DynamicConfigPlaceholder DYNAMIC_CONFIG_PLACEHOLDER = new DynamicConfigPlaceholder();
     public static final ShopConstantPlaceholder SHOP_CONSTANT_PLACEHOLDER = new ShopConstantPlaceholder();
+    public static final BodyStatusFloatPlaceholder BODY_STATUS_FLOAT_PLACEHOLDER = new BodyStatusFloatPlaceholder();
 
 
     @SuppressWarnings("removal")
@@ -40,6 +41,7 @@ public class ForgeFancyMenuIntegration {
                     PlaceholderRegistry.register(PERSISTENT_DATA_PLACEHOLDER);
                     PlaceholderRegistry.register(DYNAMIC_CONFIG_PLACEHOLDER);
                     PlaceholderRegistry.register(SHOP_CONSTANT_PLACEHOLDER);
+                    PlaceholderRegistry.register(BODY_STATUS_FLOAT_PLACEHOLDER);
 
                     BanditsQuirkLibForge.LOGGER.info("Fancy Menu Integration loaded successfully!");
                 } catch (Exception e) {
