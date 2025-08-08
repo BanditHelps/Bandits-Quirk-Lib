@@ -42,6 +42,9 @@ public class BQLConfig {
     public final ForgeConfigSpec.IntValue startingStaminaMin;
     public final ForgeConfigSpec.IntValue startingStaminaMax;
 
+    // Creation Constants
+    public final ForgeConfigSpec.DoubleValue creationStaminaCost;
+
     // Creation Shop Constants - We'll handle the maps dynamically
     public final ForgeConfigSpec.ConfigValue<String> creationShopDataPath;
 
@@ -131,6 +134,10 @@ public class BQLConfig {
         // Creation Shop Section
         builder.comment("Creation Shop Configuration")
                 .push("creation_shop");
+
+        this.creationStaminaCost = builder
+                .comment("Stamina use multiplier. (cost = creationStaminaCost * lipidsUsed)")
+                .defineInRange("creation_stamina_cost", 0.8, 0.0, 10.0);
 
         this.creationShopDataPath = builder
                 .comment("Path to creation shop data file (relative to config directory)")

@@ -3,6 +3,7 @@ package com.github.b4ndithelps.forge.commands;
 import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
 import com.github.b4ndithelps.forge.config.ConfigHelper;
 import com.github.b4ndithelps.forge.systems.BodyStatusHelper;
+import com.github.b4ndithelps.forge.systems.StaminaHelper;
 import com.google.gson.JsonParser;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -272,6 +273,9 @@ public class MineHaEnchantCommand {
         }
         BodyStatusHelper.setCustomFloat(player, "head", "creation_lipids", lipids - totalCost);
 
+        // Use stamina equal to the totalCost * (cost multiplier)
+        StaminaHelper.useStamina(player, (int)(ConfigHelper.getCreationStaminaCost() * totalCost));
+
         // Create item stack and apply name/enchantments
         ItemStack itemStack = new ItemStack(item);
         if (customName != null && !customName.isEmpty() && !customName.equals("0")) {
@@ -314,19 +318,6 @@ public class MineHaEnchantCommand {
 
         Score score = scoreboard.getOrCreatePlayerScore(player.getScoreboardName(), objective);
         return score.getScore();
-    }
-
-    // Mirror of the helper in MineHaCreationCommand
-    private static void setPlayerScore(ServerPlayer player, String objectiveName, int value) {
-        Scoreboard scoreboard = player.getServer().getScoreboard();
-        Objective objective = scoreboard.getObjective(objectiveName);
-        if (objective == null) {
-            objective = scoreboard.addObjective(objectiveName, net.minecraft.world.scores.criteria.ObjectiveCriteria.DUMMY,
-                    Component.literal(objectiveName), net.minecraft.world.scores.criteria.ObjectiveCriteria.RenderType.INTEGER);
-        }
-
-        Score score = scoreboard.getOrCreatePlayerScore(player.getScoreboardName(), objective);
-        score.setScore(value);
     }
 
     @SuppressWarnings("removal")

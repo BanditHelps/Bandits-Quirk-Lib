@@ -191,6 +191,8 @@ public class ConfigManager {
             CreationShopConstants.ENCHANT_LEARN_COST_TABLE.clear();
             CreationShopConstants.ENCHANT_LEARN_COST_TABLE.putAll(creationShopData.creationEnchantLearnCostTable);
         }
+
+        CreationShopConstants.CREATION_STAMINA_COST = BQLConfig.INSTANCE.creationStaminaCost.get();
         
         LOGGER.info("Updated creation shop cost tables - Item Buy: {}, Enchant Buy: {}, Item Learn: {}, Enchant Learn: {}", 
                    CreationShopConstants.ITEM_BUY_COST_TABLE.size(), 

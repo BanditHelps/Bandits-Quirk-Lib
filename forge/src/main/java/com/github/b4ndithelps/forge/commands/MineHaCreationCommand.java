@@ -1,6 +1,8 @@
 package com.github.b4ndithelps.forge.commands;
 
+import com.github.b4ndithelps.forge.config.ConfigHelper;
 import com.github.b4ndithelps.forge.systems.BodyStatusHelper;
+import com.github.b4ndithelps.forge.systems.StaminaHelper;
 import com.github.b4ndithelps.values.CreationShopConstants;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
@@ -117,6 +119,9 @@ public class MineHaCreationCommand {
 
         // Deduct lipids
         BodyStatusHelper.setCustomFloat(player, "head", "creation_lipids", lipids - cost);
+
+        // Use stamina equal to the cost * (cost multiplier)
+        StaminaHelper.useStamina(player, (int)(ConfigHelper.getCreationStaminaCost() * cost));
 
         // Create and spawn item
         spawnCreatedItem(player, itemId);

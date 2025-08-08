@@ -324,7 +324,12 @@ public class ConfigHelper {
     }
     
     // ===== Creation Shop Constants Retrieval =====
-    
+
+    /**
+     * Gets the multiplier of stamina that creating an item will use
+     */
+    public static double getCreationStaminaCost() { return CreationShopConstants.CREATION_STAMINA_COST; }
+
     /**
      * Gets a copy of the Bit Map 1 Table
      * @return Map of item -> bit value

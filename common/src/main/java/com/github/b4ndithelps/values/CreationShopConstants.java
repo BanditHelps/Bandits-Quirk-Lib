@@ -517,6 +517,8 @@ public class CreationShopConstants {
         put("minecraft:impaling",10);
     }};
 
+    public static double CREATION_STAMINA_COST = 0.8;
+
     // Private constructor to prevent instantiation
     private CreationShopConstants() {
         throw new AssertionError("This class should not be instantiated");
