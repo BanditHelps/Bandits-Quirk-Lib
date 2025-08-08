@@ -1,5 +1,6 @@
 package com.github.b4ndithelps.forge.commands;
 
+import com.github.b4ndithelps.forge.systems.BodyStatusHelper;
 import com.github.b4ndithelps.values.CreationShopConstants;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
@@ -29,9 +30,9 @@ import net.minecraft.world.scores.Objective;
 import net.minecraft.world.scores.Score;
 import net.minecraft.world.scores.Scoreboard;
 import net.minecraftforge.registries.ForgeRegistries;
+import net.threetag.palladium.power.SuperpowerUtil;
 
 import java.util.Map;
-import java.util.Objects;
 import java.util.Random;
 
 import static com.github.b4ndithelps.values.CreationShopConstants.*;
@@ -107,7 +108,7 @@ public class MineHaCreationCommand {
         }
 
         // Check lipids
-        int lipids = getPlayerScore(player, "MineHa.Creation.Lipids");
+        int lipids = (int) BodyStatusHelper.getCustomFloat(player, "head", "creation_lipids");
         if (lipids < cost) {
             player.sendSystemMessage(Component.literal(
                     String.format("You don't have enough lipids! You need %d but you only have %d", cost, lipids)));
@@ -115,7 +116,7 @@ public class MineHaCreationCommand {
         }
 
         // Deduct lipids
-        setPlayerScore(player, "MineHa.Creation.Lipids", lipids - cost);
+        BodyStatusHelper.setCustomFloat(player, "head", "creation_lipids", lipids - cost);
 
         // Create and spawn item
         spawnCreatedItem(player, itemId);
@@ -213,6 +214,11 @@ public class MineHaCreationCommand {
     private static int executeEnchantMode(CommandContext<CommandSourceStack> context, ServerPlayer player) {
         String enchantmentId = StringArgumentType.getString(context, "item");
         int cost = IntegerArgumentType.getInteger(context, "cost");
+
+        // If the player is in creative mode, make the cost 0 so they can insta-learn it
+        if (player.gameMode.getGameModeForPlayer() == GameType.CREATIVE) {
+            cost = 0;
+        }
 
         // Determine which bitmap table contains the item
         Map<String, Integer> valueTable = null;
@@ -365,7 +371,7 @@ public class MineHaCreationCommand {
     }
 
     private static boolean hasCreationSuperpower(ServerPlayer player) {
-        return true; // Replace with actual superpower check
+        return SuperpowerUtil.hasSuperpower(player, ResourceLocation.parse("mineha:creation")); // Replace with actual superpower check
     }
 
     private static int getPlayerScore(ServerPlayer player, String objectiveName) {
