@@ -324,7 +324,12 @@ public class ConfigHelper {
     }
     
     // ===== Creation Shop Constants Retrieval =====
-    
+
+    /**
+     * Gets the multiplier of stamina that creating an item will use
+     */
+    public static double getCreationStaminaCost() { return CreationShopConstants.CREATION_STAMINA_COST; }
+
     /**
      * Gets a copy of the Bit Map 1 Table
      * @return Map of item -> bit value
@@ -485,7 +490,6 @@ public class ConfigHelper {
         allConfigs.put("stamina.exhaustion_levels", Arrays.toString(StaminaConstants.EXHAUSTION_LEVELS));
         allConfigs.put("stamina.exhaustion_multipliers", Arrays.toString(StaminaConstants.EXHAUSTION_MULTIPLIERS));
         allConfigs.put("stamina.stamina_gain_chance", StaminaConstants.STAMINA_GAIN_CHANCE);
-        // ... add more as needed
         
         // Add dynamic configs
         for (String key : ConfigManager.getDynamicConfigKeys()) {

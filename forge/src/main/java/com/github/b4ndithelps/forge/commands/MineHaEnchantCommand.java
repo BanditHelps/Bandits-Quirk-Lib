@@ -1,6 +1,9 @@
 package com.github.b4ndithelps.forge.commands;
 
 import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
+import com.github.b4ndithelps.forge.config.ConfigHelper;
+import com.github.b4ndithelps.forge.systems.BodyStatusHelper;
+import com.github.b4ndithelps.forge.systems.StaminaHelper;
 import com.google.gson.JsonParser;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -11,13 +14,18 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.ResourceLocationArgument;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.particles.DustParticleOptions;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.Enchantments;
+import net.minecraft.world.phys.Vec3;
 
 import com.google.gson.JsonObject;
 import net.minecraft.world.scores.Objective;
@@ -26,6 +34,7 @@ import net.minecraft.world.scores.Scoreboard;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 import static com.github.b4ndithelps.values.CreationShopConstants.*;
 import static com.github.b4ndithelps.values.CreationShopConstants.BIT_MAP_3_TABLE;
@@ -235,22 +244,48 @@ public class MineHaEnchantCommand {
             throw INVALID_JSON.create();
         }
 
-        ItemStack itemStack = new ItemStack(item);
+        // Calculate total cost: base item cost + sum of selected enchant costs
+        int totalCost = 0;
+        String itemKeyForCost = itemId.toString();
+        totalCost += ConfigHelper.getItemBuyCost(itemKeyForCost);
 
-        // Apply custom name if provided
+        Map<String, Enchantment> typeEnchantments = ENCHANTMENT_MAPPINGS.get(type);
+        for (String key : enchantValues.keySet()) {
+            if (typeEnchantments.containsKey(key)) {
+                int level = enchantValues.get(key).getAsInt();
+                if (level > 0) {
+                    Enchantment enchantment = typeEnchantments.get(key);
+                    ResourceLocation enchantmentId = BuiltInRegistries.ENCHANTMENT.getKey(enchantment);
+                    if (enchantmentId != null) {
+                        int perLevelCost = ConfigHelper.getEnchantBuyCost(enchantmentId.toString());
+                        totalCost += perLevelCost * level;
+                    }
+                }
+            }
+        }
+
+        // Check lipids balance and deduct if sufficient
+        int lipids = (int) BodyStatusHelper.getCustomFloat(player, "head", "creation_lipids");
+        if (lipids < totalCost) {
+            player.sendSystemMessage(Component.literal(
+                    String.format("You don't have enough lipids! You need %d but you only have %d", totalCost, lipids)));
+            return 0;
+        }
+        BodyStatusHelper.setCustomFloat(player, "head", "creation_lipids", lipids - totalCost);
+
+        // Use stamina equal to the totalCost * (cost multiplier)
+        StaminaHelper.useStamina(player, (int)(ConfigHelper.getCreationStaminaCost() * totalCost));
+
+        // Create item stack and apply name/enchantments
+        ItemStack itemStack = new ItemStack(item);
         if (customName != null && !customName.isEmpty() && !customName.equals("0")) {
             itemStack.setHoverName(Component.literal(customName));
         }
-
-        // Apply enchantments
-        Map<String, Enchantment> typeEnchantments = ENCHANTMENT_MAPPINGS.get(type);
         int appliedEnchants = 0;
-
         for (String key : enchantValues.keySet()) {
             if (typeEnchantments.containsKey(key)) {
                 Enchantment enchantment = typeEnchantments.get(key);
                 int level = enchantValues.get(key).getAsInt();
-
                 if (level > 0) {
                     itemStack.enchant(enchantment, level);
                     appliedEnchants++;
@@ -258,17 +293,16 @@ public class MineHaEnchantCommand {
             }
         }
 
-        // Give it to the player
-        if (!player.getInventory().add(itemStack)) {
-            player.drop(itemStack, false);
-        }
+        // Spawn the created item entity with some visual flair
+        spawnCreatedItem(player, itemStack);
 
         // Send success message
         String itemName = ((customName != null) && !customName.equals("0")) ? customName : item.getDescription().getString();
         int finalAppliedEnchants = appliedEnchants;
+        int finalTotalCost = totalCost;
         source.sendSuccess(() -> Component.literal(
-                String.format("Gave %s a custom %s with %d enchantments!",
-                        player.getName().getString(), itemName, finalAppliedEnchants)), true);
+                String.format("Created a %s with %d enchantments for %d lipids!",
+                        itemName, finalAppliedEnchants, finalTotalCost)), true);
 
         return 1;
     }
@@ -284,5 +318,38 @@ public class MineHaEnchantCommand {
 
         Score score = scoreboard.getOrCreatePlayerScore(player.getScoreboardName(), objective);
         return score.getScore();
+    }
+
+    @SuppressWarnings("removal")
+    private static void spawnCreatedItem(ServerPlayer player, ItemStack itemStack) {
+        try {
+            ServerLevel level = player.serverLevel();
+
+            Vec3 playerPos = player.position();
+            double spawnX = playerPos.x + (Math.random() - 0.5) * 1.0;
+            double spawnY = playerPos.y + 1.0 + (Math.random() - 0.5) * 0.5;
+            double spawnZ = playerPos.z + (Math.random() - 0.5) * 1.0;
+
+            ItemEntity itemEntity = new ItemEntity(level, spawnX, spawnY, spawnZ, itemStack);
+
+            Random random = new Random();
+            double motionX = (random.nextDouble() - 0.5) * 0.3;
+            double motionY = 0.2 + random.nextDouble() * 0.1;
+            double motionZ = (random.nextDouble() - 0.5) * 0.3;
+            itemEntity.setDeltaMovement(motionX, motionY, motionZ);
+
+            itemEntity.setPickUpDelay(20);
+
+            level.addFreshEntity(itemEntity);
+
+            level.sendParticles(new DustParticleOptions(new org.joml.Vector3f(1.0f, 0.8f, 0.0f), 1.0f),
+                    spawnX, spawnY, spawnZ, 15, 0.3, 0.3, 0.3, 0.1);
+            level.sendParticles(ParticleTypes.ENCHANT,
+                    spawnX, spawnY, spawnZ, 10, 0.2, 0.2, 0.2, 0.05);
+
+        } catch (Exception e) {
+            System.err.println("Error spawning created enchanted item: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }
