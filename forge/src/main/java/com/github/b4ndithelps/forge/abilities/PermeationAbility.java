@@ -61,7 +61,8 @@ public class PermeationAbility extends Ability {
         float speed = entry.getProperty(DESCENT_SPEED);
         Vec3 current = player.getDeltaMovement();
         double nudge = Math.max(0.08, 0.08 * 0.5 * speed);
-        player.setDeltaMovement(current.x * 0.6, Math.min(current.y, -nudge), current.z * 0.6);
+        // Preserve horizontal momentum on activation; only adjust vertical
+        player.setDeltaMovement(current.x, Math.min(current.y, -nudge), current.z);
         player.connection.send(new ClientboundSetEntityMotionPacket(player));
 
         // Sound feedback
@@ -91,23 +92,19 @@ public class PermeationAbility extends Ability {
         }
 
         // Apply manual gravity similar to vanilla when noPhysics is enabled
-        Vec3 motion = player.getDeltaMovement();
+        Vec3 prev = player.getDeltaMovement();
         double gravity = 0.08D * Math.max(0.05F, entry.getProperty(DESCENT_SPEED));
-        double newY = motion.y - gravity;
-        // Apply air drag
-        double drag = 0.98D;
-        double horDrag = 0.99D;
-        motion = new Vec3(motion.x * horDrag, newY * drag, motion.z * horDrag);
+        double newY = (prev.y - gravity) * 0.98D; // vertical drag only
         // Clamp terminal velocity roughly around vanilla
         double terminal = -3.92D * entry.getProperty(DESCENT_SPEED);
-        if (motion.y < terminal) motion = new Vec3(motion.x, terminal, motion.z);
-        // Drive movement using motion like vanilla no-clip instead of teleport
-        player.setDeltaMovement(motion.x, motion.y, motion.z);
+        if (newY < terminal) newY = terminal;
+        // Preserve horizontal movement; only adjust vertical motion
+        player.setDeltaMovement(prev.x, newY, prev.z);
         player.connection.send(new ClientboundSetEntityMotionPacket(player));
         BanditsQuirkLibForge.LOGGER.info("[PERMEATION] {}, {}, {}",
-                String.format("%.2f", motion.x),
-                String.format("%.2f", motion.y),
-                String.format("%.2f", motion.z));
+                String.format("%.2f", prev.x),
+                String.format("%.2f", newY),
+                String.format("%.2f", prev.z));
 
         // Do not apply any upward bias while active; rising occurs only after deactivation in lastTick
 
