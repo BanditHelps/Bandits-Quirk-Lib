@@ -28,10 +28,12 @@ import net.threetag.palladium.util.property.PalladiumProperty;
 public class PermeationRiseAbility extends Ability {
 
     public static final PalladiumProperty<Float> MAX_UPWARD_VELOCITY = new FloatProperty("max_upward_velocity").configurable("Max vertical speed while rising");
+    public static final PalladiumProperty<Float> HORIZONTAL_DRAG = new FloatProperty("horizontal_drag").configurable("Horizontal drag while rising (1.0 = no slow)");
 
     public PermeationRiseAbility() {
         super();
-        this.withProperty(MAX_UPWARD_VELOCITY, 0.35F);
+        this.withProperty(MAX_UPWARD_VELOCITY, 0.35F)
+            .withProperty(HORIZONTAL_DRAG, 1.0F);
     }
 
     @Override
@@ -86,7 +88,9 @@ public class PermeationRiseAbility extends Ability {
                 remaining, desiredUp, maxVy, vy);
 
         Vec3 prev = player.getDeltaMovement();
-        Vec3 next = new Vec3(prev.x * 2, vy*2, prev.z * 2);
+        float horDrag = Math.max(0.0F, Math.min(1.0F, entry.getProperty(HORIZONTAL_DRAG)));
+        // Preserve horizontal momentum; optionally damp using configurable drag
+        Vec3 next = new Vec3(prev.x * horDrag, vy * 2, prev.z * horDrag);
         player.setDeltaMovement(next.x, next.y, next.z);
         player.connection.send(new ClientboundSetEntityMotionPacket(player));
 

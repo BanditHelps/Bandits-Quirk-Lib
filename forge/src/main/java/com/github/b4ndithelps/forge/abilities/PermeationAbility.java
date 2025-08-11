@@ -29,13 +29,15 @@ public class PermeationAbility extends Ability {
     public static final PalladiumProperty<Float> POP_STRENGTH = new FloatProperty("pop_strength").configurable("Upward velocity applied when exiting permeation");
     public static final PalladiumProperty<Boolean> APPLY_BLINDNESS = new BooleanProperty("apply_blindness").configurable("Apply blindness while permeating");
     public static final PalladiumProperty<Boolean> APPLY_WATER_BREATHING = new BooleanProperty("apply_water_breathing").configurable("Apply water breathing while permeating");
+    public static final PalladiumProperty<Float> HORIZONTAL_DRAG = new FloatProperty("horizontal_drag").configurable("Horizontal drag while permeating (1.0 = no slow)");
 
     public PermeationAbility() {
         super();
         this.withProperty(DESCENT_SPEED, 1.0F)
             .withProperty(POP_STRENGTH, 1.0F)
             .withProperty(APPLY_BLINDNESS, true)
-            .withProperty(APPLY_WATER_BREATHING, true);
+            .withProperty(APPLY_WATER_BREATHING, true)
+            .withProperty(HORIZONTAL_DRAG, 1.0F);
     }
 
     @Override
@@ -93,13 +95,14 @@ public class PermeationAbility extends Ability {
 
         // Apply manual gravity similar to vanilla when noPhysics is enabled
         Vec3 prev = player.getDeltaMovement();
+        float horDrag = Math.max(0.0F, Math.min(1.0F, entry.getProperty(HORIZONTAL_DRAG)));
         double gravity = 0.08D * Math.max(0.05F, entry.getProperty(DESCENT_SPEED));
         double newY = (prev.y - gravity) * 0.98D; // vertical drag only
         // Clamp terminal velocity roughly around vanilla
         double terminal = -3.92D * entry.getProperty(DESCENT_SPEED);
         if (newY < terminal) newY = terminal;
         // Preserve horizontal movement; only adjust vertical motion
-        player.setDeltaMovement(prev.x, newY, prev.z);
+        player.setDeltaMovement(prev.x * horDrag, newY, prev.z * horDrag);
         player.connection.send(new ClientboundSetEntityMotionPacket(player));
         BanditsQuirkLibForge.LOGGER.info("[PERMEATION] {}, {}, {}",
                 String.format("%.2f", prev.x),
