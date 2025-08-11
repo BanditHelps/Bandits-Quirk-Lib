@@ -8,6 +8,8 @@ import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
@@ -50,83 +52,36 @@ public class PlayerEventHandler {
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
 
-        // Client mirror: if permeation is active or rising, force spectator-like no-clip locally
-        if (event.player.level().isClientSide) {
-            boolean active = event.player.getTags().contains("Bql.PermeateActive");
-            boolean rising = event.player.getTags().contains("Bql.PermeateRise");
-
-            if (active || rising) {
-                event.player.noPhysics = true;
-                event.player.fallDistance = 0.0F;
-            } else {
-                event.player.noPhysics = false;
-            }
-            return;
-        }
+//        // Client mirror: if permeation is active or rising, force spectator-like no-clip locally
+//        if (event.player.level().isClientSide) {
+//            boolean active = event.player.getTags().contains("Bql.PermeateActive");
+//            boolean rising = event.player.getTags().contains("Bql.PermeateRise");
+//            // Effects are synced; use as fallback signal in case tags aren't synced to client
+//            boolean hasPermeationEffects = event.player.hasEffect(MobEffects.BLINDNESS) || event.player.hasEffect(MobEffects.WATER_BREATHING);
+//
+//            if (active || rising || hasPermeationEffects) {
+//                event.player.noPhysics = true;
+//                event.player.fallDistance = 0.0F;
+//                // Periodic client debug to validate no-clip state
+//                int dbg = event.player.getPersistentData().getInt("Bql.ClientPermeateDbg");
+//                dbg++;
+//                if (dbg >= 10) {
+//                    dbg = 0;
+//                    com.github.b4ndithelps.forge.BanditsQuirkLibForge.LOGGER.info("[Permeation][Client] mirror noPhysics={} rising={} active={}", event.player.noPhysics, rising, active);
+//                    event.player.displayClientMessage(net.minecraft.network.chat.Component.literal(
+//                            "Permeation[client]: noClip=" + event.player.noPhysics + " rising=" + rising + " active=" + active
+//                    ), true);
+//                }
+//                event.player.getPersistentData().putInt("Bql.ClientPermeateDbg", dbg);
+//            } else {
+//                event.player.noPhysics = false;
+//            }
+//            return;
+//        }
 
         if (!(event.player instanceof ServerPlayer player)) return;
         
-        // Handle permeation rise: push player upward until target Y or free space is reached
-        if (player.getTags().contains("Bql.PermeateRise")) {
-            double desiredUp = player.getPersistentData().getDouble("Bql.PermeateRiseSpeed");
-            if (desiredUp <= 0.0D) desiredUp = 0.6D;
-            double targetY = player.getPersistentData().getDouble("Bql.PermeateTargetY");
-
-            // Keep phasing while rising
-            player.noPhysics = true;
-            player.fallDistance = 0.0F;
-
-            // Move upward deterministically to avoid collision resolution fighting: teleport small step each tick
-            double currentY = player.getY();
-            double step = Math.max(0.05D, Math.min(desiredUp, Math.max(0.0D, targetY - currentY)));
-            double nextY = currentY + step;
-            player.teleportTo(player.getX(), nextY, player.getZ());
-            // Keep a slight upward velocity for client smoothing
-            var motion = player.getDeltaMovement();
-            player.setDeltaMovement(motion.x * 0.8, Math.max(motion.y, 0.1D), motion.z * 0.8);
-            player.connection.send(new net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket(player));
-
-            // Consider reached if player's feet are at/above target Y, or if player is in free space for a couple ticks
-            boolean reachedTargetY = player.getY() >= targetY - 0.001;
-            boolean free = player.level().noCollision(player, player.getBoundingBox().inflate(-0.02));
-            int freeTicks = player.getPersistentData().getInt("Bql.PermeateFreeTicks");
-            if (free) {
-                freeTicks++;
-                player.getPersistentData().putInt("Bql.PermeateFreeTicks", freeTicks);
-            } else {
-                player.getPersistentData().putInt("Bql.PermeateFreeTicks", 0);
-            }
-
-            // Debug tracing each tick of rise
-            com.github.b4ndithelps.forge.BanditsQuirkLibForge.LOGGER.info(
-                    "[Permeation] Rising tick for {}: y={}/target={} step={} free={} freeTicks={}",
-                    player.getGameProfile().getName(),
-                    String.format("%.2f", player.getY()),
-                    String.format("%.2f", targetY),
-                    String.format("%.2f", step),
-                    free, freeTicks);
-
-            // Stop when reached target Y or stable free space
-            if (reachedTargetY || freeTicks >= 2) {
-                // Stop rising and restore normal physics
-                player.noPhysics = false;
-                player.removeTag("Bql.PermeateActive");
-                player.removeTag("Bql.PermeateRise");
-                player.getPersistentData().remove("Bql.PermeateRiseSpeed");
-                player.getPersistentData().remove("Bql.PermeateTargetY");
-                player.getPersistentData().remove("Bql.PermeateFreeTicks");
-                
-                // Damp velocity to avoid overshoot bounce
-                var endMotion = player.getDeltaMovement();
-                player.setDeltaMovement(endMotion.x * 0.5, 0.0, endMotion.z * 0.5);
-                player.connection.send(new net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket(player));
-
-                // Debug stop
-                com.github.b4ndithelps.forge.BanditsQuirkLibForge.LOGGER.info(
-                        "[Permeation] Rising end for {} at y={}: reachedTargetY={} freeTicks={}",
-                        player.getGameProfile().getName(), String.format("%.2f", player.getY()), reachedTargetY, freeTicks);
-            }
-        }
+        // Rising handled by PermeationRiseAbility now
         
         // Auto-switch handedness based on destroyed arms for better visuals
         // Store the player's original handedness once, then flip when one arm is destroyed

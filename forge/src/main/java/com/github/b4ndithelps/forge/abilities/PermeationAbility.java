@@ -104,6 +104,10 @@ public class PermeationAbility extends Ability {
         // Drive movement using motion like vanilla no-clip instead of teleport
         player.setDeltaMovement(motion.x, motion.y, motion.z);
         player.connection.send(new ClientboundSetEntityMotionPacket(player));
+        BanditsQuirkLibForge.LOGGER.info("[PERMEATION] {}, {}, {}",
+                String.format("%.2f", motion.x),
+                String.format("%.2f", motion.y),
+                String.format("%.2f", motion.z));
 
         // Do not apply any upward bias while active; rising occurs only after deactivation in lastTick
 
@@ -141,8 +145,10 @@ public class PermeationAbility extends Ability {
                         " targetY=" + String.format("%.2f", targetY)
         ), true);
 
-        // No longer actively descending; remove active tag to allow client to treat rise separately
-        player.removeTag("Bql.PermeateActive");
+        // Keep active tag during rise so both client and server confidently mirror no-clip
+        if (!player.getTags().contains("Bql.PermeateActive")) {
+            player.addTag("Bql.PermeateActive");
+        }
 
         if (entity.level() instanceof ServerLevel level) {
             level.playSound(null, player.blockPosition(), SoundEvents.SLIME_BLOCK_BREAK, SoundSource.PLAYERS, 0.5f, 1.3f);

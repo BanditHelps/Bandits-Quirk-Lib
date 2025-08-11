@@ -16,6 +16,7 @@ public class AbilityRegister {
     public static final RegistrySupplier<Ability> WIND_PROJECTILE;
     public static final RegistrySupplier<Ability> WIND_WALL_SMASH;
     public static final RegistrySupplier<Ability> PERMEATION;
+    public static final RegistrySupplier<Ability> PERMEATION_RISE;
 
     public AbilityRegister() {
 
@@ -35,5 +36,6 @@ public class AbilityRegister {
         WIND_PROJECTILE = ABILITIES.register("wind_projectile", WindProjectileAbility::new);
         WIND_WALL_SMASH = ABILITIES.register("wind_wall_smash", WindWallSmashAbility::new);
         PERMEATION = ABILITIES.register("permeation", PermeationAbility::new);
+        PERMEATION_RISE = ABILITIES.register("permeation_rise", PermeationRiseAbility::new);
     }
 }
