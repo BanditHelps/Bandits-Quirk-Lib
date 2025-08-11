@@ -14,6 +14,7 @@ import net.minecraft.world.phys.Vec3;
 import net.threetag.palladium.power.IPowerHolder;
 import net.threetag.palladium.power.ability.Ability;
 import net.threetag.palladium.power.ability.AbilityInstance;
+import net.threetag.palladium.util.property.BooleanProperty;
 import net.threetag.palladium.util.property.FloatProperty;
 import net.threetag.palladium.util.property.PalladiumProperty;
 
@@ -29,11 +30,14 @@ public class PermeationRiseAbility extends Ability {
 
     public static final PalladiumProperty<Float> MAX_UPWARD_VELOCITY = new FloatProperty("max_upward_velocity").configurable("Max vertical speed while rising");
     public static final PalladiumProperty<Float> HORIZONTAL_DRAG = new FloatProperty("horizontal_drag").configurable("Horizontal drag while rising (1.0 = no slow)");
+    public static final PalladiumProperty<Boolean> APPLY_BLINDNESS = new BooleanProperty("apply_blindness").configurable("Apply blindness while permeating");
+
 
     public PermeationRiseAbility() {
         super();
         this.withProperty(MAX_UPWARD_VELOCITY, 0.35F)
-            .withProperty(HORIZONTAL_DRAG, 1.0F);
+            .withProperty(HORIZONTAL_DRAG, 1.0F)
+            .withProperty(APPLY_BLINDNESS, true);
     }
 
     @Override
@@ -45,6 +49,8 @@ public class PermeationRiseAbility extends Ability {
         player.noPhysics = true;
         player.fallDistance = 0.0F;
 
+        applyActiveEffects(player, entry);
+
         // Apply short effect so client mirrors no-clip
         if (!player.getTags().contains("Bql.PermeateActive")) {
             player.addTag("Bql.PermeateActive");
@@ -54,16 +60,14 @@ public class PermeationRiseAbility extends Ability {
         if (player.level() instanceof ServerLevel level) {
             level.playSound(null, player.blockPosition(), SoundEvents.SLIME_BLOCK_BREAK, SoundSource.PLAYERS, 0.5f, 1.3f);
         }
-        BanditsQuirkLibForge.LOGGER.info("[PermeationRise] Start for {}: y={} targetY={} speed={}",
-                player.getGameProfile().getName(), String.format("%.2f", player.getY()),
-                String.format("%.2f", player.getPersistentData().getDouble("Bql.PermeateTargetY")),
-                String.format("%.2f", player.getPersistentData().getDouble("Bql.PermeateRiseSpeed")));
     }
 
     @Override
     public void tick(LivingEntity entity, AbilityInstance entry, IPowerHolder holder, boolean enabled) {
         if (!enabled) return;
 
+        // Client and server conflict here, registering collisions that shouldn't happen
+        // So, we make the client have noPhysics to avoid conflicts
         if (entity.level().isClientSide) {
             entity.noPhysics = true;
             entity.fallDistance = 0.0F;
@@ -84,9 +88,6 @@ public class PermeationRiseAbility extends Ability {
         double remaining = Math.max(0.0D, targetY - player.getY());
         double vy = Math.min(maxVy, Math.max(desiredUp, Math.min(remaining, maxVy)));
 
-        BanditsQuirkLibForge.LOGGER.info("[PermeationRise] Velocity calc: remaining={} desiredUp={} maxVy={} final_vy={}",
-                remaining, desiredUp, maxVy, vy);
-
         Vec3 prev = player.getDeltaMovement();
         float horDrag = Math.max(0.0F, Math.min(1.0F, entry.getProperty(HORIZONTAL_DRAG)));
         // Preserve horizontal momentum; optionally damp using configurable drag
@@ -104,12 +105,17 @@ public class PermeationRiseAbility extends Ability {
             player.getPersistentData().putInt("Bql.PermeateFreeTicks", 0);
         }
 
-        BanditsQuirkLibForge.LOGGER.info("[PermeationRise] Tick {}: y={}/target={} vy={} free={} freeTicks={}",
-                player.getGameProfile().getName(),
-                String.format("%.2f", player.getY()),
-                String.format("%.2f", targetY),
-                String.format("%.2f", next.y),
-                free, freeTicks);
+        if (entry.getEnabledTicks() % 20 == 0) {
+            applyActiveEffects(player, entry);
+        }
+
+        // Oxygen handling while rising: drain if still inside blocks, restore when in free space
+        if (!free) {
+            int air = player.getAirSupply();
+            if (air > -100) {
+                player.setAirSupply(air - 8);
+            }
+        }
 
         if (reachedTargetY || freeTicks >= 2) {
             // Finish rise
@@ -130,8 +136,19 @@ public class PermeationRiseAbility extends Ability {
                 level.playSound(null, player.blockPosition(), SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 0.3f, 1.2f);
             }
 
-            BanditsQuirkLibForge.LOGGER.info("[PermeationRise] End for {} at y={} (reachedTargetY={} freeTicks={})",
-                    player.getGameProfile().getName(), String.format("%.2f", player.getY()), reachedTargetY, freeTicks);
+        }
+    }
+
+    @Override
+    public void lastTick(LivingEntity entity, AbilityInstance entry, IPowerHolder holder, boolean enabled) {
+        if (!(entity instanceof ServerPlayer player)) return;
+        player.removeEffect(MobEffects.BLINDNESS);
+    }
+
+
+    private void applyActiveEffects(ServerPlayer player, AbilityInstance entry) {
+        if (entry.getProperty(APPLY_BLINDNESS)) {
+            player.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 40, 10, true, false));
         }
     }
 

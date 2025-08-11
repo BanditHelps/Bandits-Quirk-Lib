@@ -28,7 +28,6 @@ public class PermeationAbility extends Ability {
     public static final PalladiumProperty<Float> DESCENT_SPEED = new FloatProperty("descent_speed").configurable("Gravity multiplier while permeating (1.0 = normal)");
     public static final PalladiumProperty<Float> POP_STRENGTH = new FloatProperty("pop_strength").configurable("Upward velocity applied when exiting permeation");
     public static final PalladiumProperty<Boolean> APPLY_BLINDNESS = new BooleanProperty("apply_blindness").configurable("Apply blindness while permeating");
-    public static final PalladiumProperty<Boolean> APPLY_WATER_BREATHING = new BooleanProperty("apply_water_breathing").configurable("Apply water breathing while permeating");
     public static final PalladiumProperty<Float> HORIZONTAL_DRAG = new FloatProperty("horizontal_drag").configurable("Horizontal drag while permeating (1.0 = no slow)");
 
     public PermeationAbility() {
@@ -36,7 +35,6 @@ public class PermeationAbility extends Ability {
         this.withProperty(DESCENT_SPEED, 1.0F)
             .withProperty(POP_STRENGTH, 1.0F)
             .withProperty(APPLY_BLINDNESS, true)
-            .withProperty(APPLY_WATER_BREATHING, true)
             .withProperty(HORIZONTAL_DRAG, 1.0F);
     }
 
@@ -57,8 +55,12 @@ public class PermeationAbility extends Ability {
         applyActiveEffects((ServerPlayer) entity, entry);
 
         player.noPhysics = true;
-        // Mark active so client can mirror spectator-like no-clip
+        // Reset all the upward movement stuff here, to early cancel it
         player.addTag("Bql.PermeateActive");
+        player.removeTag("Bql.PermeateRise");
+        player.getPersistentData().remove("Bql.PermeateRiseSpeed");
+        player.getPersistentData().remove("Bql.PermeateTargetY");
+        player.getPersistentData().remove("Bql.PermeateFreeTicks");
         // Small downward nudge for immediate feedback, then let gravity take over
         float speed = entry.getProperty(DESCENT_SPEED);
         Vec3 current = player.getDeltaMovement();
@@ -104,18 +106,25 @@ public class PermeationAbility extends Ability {
         // Preserve horizontal movement; only adjust vertical motion
         player.setDeltaMovement(prev.x * horDrag, newY, prev.z * horDrag);
         player.connection.send(new ClientboundSetEntityMotionPacket(player));
-        BanditsQuirkLibForge.LOGGER.info("[PERMEATION] {}, {}, {}",
-                String.format("%.2f", prev.x),
-                String.format("%.2f", newY),
-                String.format("%.2f", prev.z));
 
-        // Do not apply any upward bias while active; rising occurs only after deactivation in lastTick
 
         // Prevent fall damage accumulation
         player.fallDistance = 0.0F;
 
         // Maintain effects while active using short refresh durations
-        applyActiveEffects(player, entry);
+        if (entry.getEnabledTicks() % 20 == 0) {
+            applyActiveEffects(player, entry);
+        }
+
+
+        // Oxygen handling: while phasing inside blocks (not in free air pocket), drain air; otherwise restore
+        boolean inFreeSpace = player.level().noCollision(player, player.getBoundingBox().inflate(-0.02));
+        if (!inFreeSpace) {
+            int air = player.getAirSupply();
+            if (air > -100) {
+                player.setAirSupply(air - 8);
+            }
+        }
     }
 
     @Override
@@ -135,15 +144,6 @@ public class PermeationAbility extends Ability {
         // Compute the target Y to rise to: nearest safe air space with ground beneath, above current position
         double targetY = computeRiseTargetY(player);
         player.getPersistentData().putDouble("Bql.PermeateTargetY", targetY);
-        // Debug
-        BanditsQuirkLibForge.LOGGER.info("[Permeation] Rising start for {}: fromY={} speed={} targetY={} noPhysics={}",
-                player.getGameProfile().getName(), String.format("%.2f", player.getY()),
-                String.format("%.2f", (double) pop), String.format("%.2f", targetY), player.noPhysics);
-        player.displayClientMessage(Component.literal(
-                "Permeation: rising start -> fromY=" + String.format("%.2f", player.getY()) +
-                        " speed=" + String.format("%.2f", (double) pop) +
-                        " targetY=" + String.format("%.2f", targetY)
-        ), true);
 
         // Keep active tag during rise so both client and server confidently mirror no-clip
         if (!player.getTags().contains("Bql.PermeateActive")) {
@@ -153,20 +153,12 @@ public class PermeationAbility extends Ability {
         if (entity.level() instanceof ServerLevel level) {
             level.playSound(null, player.blockPosition(), SoundEvents.SLIME_BLOCK_BREAK, SoundSource.PLAYERS, 0.5f, 1.3f);
         }
-
-        // Cleanup immediate effects (durations are short, but ensure removal)
-        player.removeEffect(MobEffects.BLINDNESS);
-        player.removeEffect(MobEffects.WATER_BREATHING);
     }
 
 
     private void applyActiveEffects(ServerPlayer player, AbilityInstance entry) {
         if (entry.getProperty(APPLY_BLINDNESS)) {
-            // Very short duration and refreshed every tick; hidden particles
-            player.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 8, 0, true, false));
-        }
-        if (entry.getProperty(APPLY_WATER_BREATHING)) {
-            player.addEffect(new MobEffectInstance(MobEffects.WATER_BREATHING, 8, 0, true, false));
+            player.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 40, 10, true, false));
         }
     }
 
@@ -184,7 +176,6 @@ public class PermeationAbility extends Ability {
         int z = Mth.floor(player.getZ());
 
         // Scan upward from feet to world ceiling
-        int foundY = Integer.MIN_VALUE;
         for (int y = minY; y <= maxBuildY; y++) {
             BlockPos feetPos = new BlockPos(x, y, z);
             BlockPos headPos = feetPos.above();
@@ -208,15 +199,10 @@ public class PermeationAbility extends Ability {
                 continue;
             }
 
-            foundY = y;
-            // Return first valid pocket above current position
-            BanditsQuirkLibForge.LOGGER.info("[Permeation] Found target air pocket for {} at Y={} (fromY={})", player.getGameProfile().getName(), y, minY);
-            return desiredMinY;
+           return desiredMinY;
         }
 
         // Fallback: if no suitable ground found, move to just below build height keeping space clear
-        int fallbackY = Math.max(minY, maxBuildY);
-        BanditsQuirkLibForge.LOGGER.info("[Permeation] No target pocket found for {}. Fallback targetY={} (fromY={})", player.getGameProfile().getName(), fallbackY, minY);
-        return fallbackY;
+        return Math.max(minY, maxBuildY);
     }
 }
