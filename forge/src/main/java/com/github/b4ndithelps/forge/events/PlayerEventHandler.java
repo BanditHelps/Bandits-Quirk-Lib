@@ -46,26 +46,16 @@ public class PlayerEventHandler {
         }
     }
 
-//    @SubscribeEvent
-//    public static void onPlayerDeath(LivingDeathEvent event) {
-//        if (event.getEntity() instanceof ServerPlayer player) {
-//        }
-//    }
-
     @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
 
-        // Client mirror: if permeation is active, rising, or spectator_sink is set, force spectator-like no-clip locally
+        // Client mirror: if permeation is active or rising, force spectator-like no-clip locally
         if (event.player.level().isClientSide) {
             boolean active = event.player.getTags().contains("Bql.PermeateActive");
             boolean rising = event.player.getTags().contains("Bql.PermeateRise");
-            boolean spectatorSink = event.player.getTags().contains("Bql.SpectatorSink");
-            // Effects are synced to client; use them as a fallback signal
-            boolean hasPermeationEffects = event.player.hasEffect(net.minecraft.world.effect.MobEffects.BLINDNESS)
-                    || event.player.hasEffect(net.minecraft.world.effect.MobEffects.WATER_BREATHING);
 
-            if (active || rising || spectatorSink || hasPermeationEffects) {
+            if (active || rising) {
                 event.player.noPhysics = true;
                 event.player.fallDistance = 0.0F;
             } else {
@@ -76,22 +66,28 @@ public class PlayerEventHandler {
 
         if (!(event.player instanceof ServerPlayer player)) return;
         
-        // Handle permeation rise: push player upward until not colliding with blocks
+        // Handle permeation rise: push player upward until target Y or free space is reached
         if (player.getTags().contains("Bql.PermeateRise")) {
             double desiredUp = player.getPersistentData().getDouble("Bql.PermeateRiseSpeed");
             if (desiredUp <= 0.0D) desiredUp = 0.6D;
+            double targetY = player.getPersistentData().getDouble("Bql.PermeateTargetY");
 
             // Keep phasing while rising
             player.noPhysics = true;
             player.fallDistance = 0.0F;
 
-            // Apply upward velocity (preserve some horizontal control)
+            // Move upward deterministically to avoid collision resolution fighting: teleport small step each tick
+            double currentY = player.getY();
+            double step = Math.max(0.05D, Math.min(desiredUp, Math.max(0.0D, targetY - currentY)));
+            double nextY = currentY + step;
+            player.teleportTo(player.getX(), nextY, player.getZ());
+            // Keep a slight upward velocity for client smoothing
             var motion = player.getDeltaMovement();
-            double newY = Math.max(motion.y, desiredUp);
-            player.setDeltaMovement(motion.x * 0.9, newY, motion.z * 0.9);
+            player.setDeltaMovement(motion.x * 0.8, Math.max(motion.y, 0.1D), motion.z * 0.8);
             player.connection.send(new net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket(player));
 
-            // Check if player bounding box is free of collisions with blocks
+            // Consider reached if player's feet are at/above target Y, or if player is in free space for a couple ticks
+            boolean reachedTargetY = player.getY() >= targetY - 0.001;
             boolean free = player.level().noCollision(player, player.getBoundingBox().inflate(-0.02));
             int freeTicks = player.getPersistentData().getInt("Bql.PermeateFreeTicks");
             if (free) {
@@ -101,19 +97,34 @@ public class PlayerEventHandler {
                 player.getPersistentData().putInt("Bql.PermeateFreeTicks", 0);
             }
 
-            // Require a couple free ticks to settle
-            if (freeTicks >= 2) {
+            // Debug tracing each tick of rise
+            com.github.b4ndithelps.forge.BanditsQuirkLibForge.LOGGER.info(
+                    "[Permeation] Rising tick for {}: y={}/target={} step={} free={} freeTicks={}",
+                    player.getGameProfile().getName(),
+                    String.format("%.2f", player.getY()),
+                    String.format("%.2f", targetY),
+                    String.format("%.2f", step),
+                    free, freeTicks);
+
+            // Stop when reached target Y or stable free space
+            if (reachedTargetY || freeTicks >= 2) {
                 // Stop rising and restore normal physics
                 player.noPhysics = false;
                 player.removeTag("Bql.PermeateActive");
                 player.removeTag("Bql.PermeateRise");
                 player.getPersistentData().remove("Bql.PermeateRiseSpeed");
+                player.getPersistentData().remove("Bql.PermeateTargetY");
                 player.getPersistentData().remove("Bql.PermeateFreeTicks");
                 
                 // Damp velocity to avoid overshoot bounce
                 var endMotion = player.getDeltaMovement();
                 player.setDeltaMovement(endMotion.x * 0.5, 0.0, endMotion.z * 0.5);
                 player.connection.send(new net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket(player));
+
+                // Debug stop
+                com.github.b4ndithelps.forge.BanditsQuirkLibForge.LOGGER.info(
+                        "[Permeation] Rising end for {} at y={}: reachedTargetY={} freeTicks={}",
+                        player.getGameProfile().getName(), String.format("%.2f", player.getY()), reachedTargetY, freeTicks);
             }
         }
         
