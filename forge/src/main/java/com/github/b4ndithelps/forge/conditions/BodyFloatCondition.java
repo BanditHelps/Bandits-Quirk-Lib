@@ -20,11 +20,13 @@ public class BodyFloatCondition extends Condition {
     private final BodyPart part;
     private final String key;
     private final float value;
+    private final String mode;
 
-    public BodyFloatCondition(BodyPart part, String key, Float value) {
+    public BodyFloatCondition(BodyPart part, String key, Float value, String mode) {
         this.part = part;
         this.key = key;
         this.value = value;
+        this.mode = mode;
     }
 
     @Override
@@ -35,6 +37,21 @@ public class BodyFloatCondition extends Condition {
 
         float storedValue = BodyStatusHelper.getCustomFloat(player, part.getName(), key);
 
+        switch (mode) {
+            case "=":
+                return storedValue == value;
+            case ">":
+                return storedValue > value;
+            case ">=":
+                return storedValue >= value;
+            case "<":
+                return storedValue < value;
+            case "<=":
+                return storedValue <= value;
+            case "!":
+                return storedValue != value;
+        }
+        // Default to equals
         return storedValue == value;
     }
 
@@ -59,11 +76,14 @@ public class BodyFloatCondition extends Condition {
 
         public static final PalladiumProperty<String> KEY = (new StringProperty("key")).configurable("The key that corresponds to the value you want retrieved");
         public static final PalladiumProperty<Float> VALUE = (new FloatProperty("value")).configurable("The value you want to see the equivalence too.");
+        public static final PalladiumProperty<String> MODE = (new StringProperty("mode")).configurable("The comparison type. Allowed values: =, !, <, <=, >, >=");
+
 
         public Serializer() {
             this.withProperty(PART, BodyPart.HEAD);
             this.withProperty(KEY, "value_name");
             this.withProperty(VALUE, 0.0f);
+            this.withProperty(MODE, "=");
         }
 
         public ConditionEnvironment getContextEnvironment() {
@@ -73,11 +93,11 @@ public class BodyFloatCondition extends Condition {
 
         @Override
         public Condition make(JsonObject jsonObject) {
-            return new BodyFloatCondition(this.getProperty(jsonObject, PART), this.getProperty(jsonObject, KEY), this.getProperty(jsonObject, VALUE));
+            return new BodyFloatCondition(this.getProperty(jsonObject, PART), this.getProperty(jsonObject, KEY), this.getProperty(jsonObject, VALUE), this.getProperty(jsonObject, MODE));
         }
 
         public String getDocumentationDescription() {
-            return "A condition to check if a stored float for a value in the body system matches a certain value.";
+            return "A condition that performs a comparison against the passed in value and the value stored in the players BodyStatus.";
         }
     }
 }
