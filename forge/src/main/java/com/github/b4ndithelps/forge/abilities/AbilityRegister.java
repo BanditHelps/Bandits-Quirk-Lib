@@ -18,6 +18,8 @@ public class AbilityRegister {
     public static final RegistrySupplier<Ability> PERMEATION;
     public static final RegistrySupplier<Ability> PERMEATION_RISE;
     public static final RegistrySupplier<Ability> QUIRK_FACTOR_SCALING_ATTRIBUTE;
+    public static final RegistrySupplier<Ability> LIMITED_AIR_SUPPLY;
+
 
     public AbilityRegister() {
 
@@ -39,5 +41,6 @@ public class AbilityRegister {
         PERMEATION = ABILITIES.register("permeation", PermeationAbility::new);
         PERMEATION_RISE = ABILITIES.register("permeation_rise", PermeationRiseAbility::new);
         QUIRK_FACTOR_SCALING_ATTRIBUTE = ABILITIES.register("quirk_factor_scaling_attribute", QuirkFactorScalingAttributeAbility::new);
+        LIMITED_AIR_SUPPLY = ABILITIES.register("limited_air_supply", LimitedAirAbility::new);
     }
 }
