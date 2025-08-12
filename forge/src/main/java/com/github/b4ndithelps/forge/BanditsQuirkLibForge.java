@@ -6,6 +6,7 @@ import com.github.b4ndithelps.forge.conditions.CustomConditionSerializers;
 import com.github.b4ndithelps.forge.effects.ModEffects;
 import com.github.b4ndithelps.forge.entities.ModEntities;
 import com.github.b4ndithelps.forge.fancymenu.ForgeFancyMenuIntegration;
+import com.github.b4ndithelps.forge.network.BQLNetwork;
 import com.github.b4ndithelps.forge.config.ConfigManager;
 import com.github.b4ndithelps.forge.config.ModGameRules;
 import dev.architectury.platform.forge.EventBuses;
@@ -44,6 +45,8 @@ public final class BanditsQuirkLibForge {
         AbilityRegister.ABILITIES.register();
         ModEffects.register(modEventBus);
         ModEntities.register(modEventBus);
+
+        BQLNetwork.register();
 
     }
 

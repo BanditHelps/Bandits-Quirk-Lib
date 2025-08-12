@@ -15,6 +15,9 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.network.PacketDistributor;
+import com.github.b4ndithelps.forge.network.BQLNetwork;
+import com.github.b4ndithelps.forge.network.NoShadowTagPacket;
 import net.threetag.palladium.power.SuperpowerUtil;
 
 import java.util.UUID;
@@ -23,6 +26,7 @@ import static com.github.b4ndithelps.BanditsQuirkLib.MOD_ID;
 
 @Mod.EventBusSubscriber(modid = MOD_ID)
 public class PlayerEventHandler {
+    private static final java.util.Map<Integer, Boolean> LAST_NO_SHADOW_SENT = new java.util.concurrent.ConcurrentHashMap<>();
 
     @SubscribeEvent
     public static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
@@ -80,6 +84,12 @@ public class PlayerEventHandler {
 //        }
 
         if (!(event.player instanceof ServerPlayer player)) return;
+        // Keep no-shadow flag in sync for permeation-related tags; only send when changed
+        boolean wantNoShadow = player.getTags().contains("Bql.PermeateActive") || player.getTags().contains("Bql.PermeateRise") || player.getTags().contains("Bql.NoShadow");
+        Boolean prev = LAST_NO_SHADOW_SENT.put(player.getId(), wantNoShadow);
+        if (prev == null || prev != wantNoShadow) {
+            BQLNetwork.CHANNEL.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player), new NoShadowTagPacket(player.getId(), wantNoShadow));
+        }
         
         // Rising handled by PermeationRiseAbility now
         
