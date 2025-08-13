@@ -4,6 +4,8 @@ import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
 import com.github.b4ndithelps.forge.abilities.HappenOnceAbility;
 import com.github.b4ndithelps.forge.systems.StaminaHelper;
 import com.github.b4ndithelps.forge.systems.BodyStatusHelper;
+import dev.latvian.mods.kubejs.bindings.event.EntityEvents;
+import dev.latvian.mods.kubejs.event.EventExit;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -12,13 +14,24 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.living.LivingHurtEvent;
+import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.network.PacketDistributor;
 import com.github.b4ndithelps.forge.network.BQLNetwork;
 import com.github.b4ndithelps.forge.network.NoShadowTagPacket;
+import com.github.b4ndithelps.forge.damage.ModDamageTypes;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.tags.DamageTypeTags;
+import net.minecraft.world.damagesource.DamageTypes;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.threetag.palladium.power.SuperpowerUtil;
+import net.threetag.palladium.power.ability.AbilityUtil;
 
 import java.util.UUID;
 
@@ -36,6 +49,56 @@ public class PlayerEventHandler {
         HappenOnceAbility.cleanupPlayerData(playerUUID);
 
         BanditsQuirkLibForge.LOGGER.info("Cleaned up player data");
+    }
+
+    
+
+    @SubscribeEvent
+    public static void onLivingHurt(LivingHurtEvent event) {
+        LivingEntity target = event.getEntity();
+        if (target.level().isClientSide) return;
+
+        var source = event.getSource();
+        if (!(source.getEntity() instanceof Player player)) return;
+
+        // Only convert standard melee player attacks
+        if (!source.is(DamageTypes.PLAYER_ATTACK)) return;
+        // Avoid recursion or double-processing if the damage already bypasses armor
+        if (source.is(DamageTypeTags.BYPASSES_ARMOR)) return;
+
+        if (AbilityUtil.isEnabled(player, new ResourceLocation("mineha:permeation"), "permeation_punch")) {
+            float amount = event.getAmount();
+            event.setCanceled(true);
+            target.hurt(ModDamageTypes.permeationPunch(target.level(), player), amount);
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onLivingAttack(LivingAttackEvent event) {
+        LivingEntity target = event.getEntity();
+        if (target.level().isClientSide) return;
+
+        var source = event.getSource();
+        if (!(source.getEntity() instanceof Player player)) return;
+        if (!source.is(DamageTypes.PLAYER_ATTACK)) return;
+
+        if (!AbilityUtil.isEnabled(player, new ResourceLocation("mineha:permeation"), "permeation_punch")) return;
+
+        event.setCanceled(true);
+
+        double baseDamage = player.getAttribute(Attributes.ATTACK_DAMAGE) != null ? player.getAttribute(Attributes.ATTACK_DAMAGE).getValue() : 1.0;
+        float cooldown = player.getAttackStrengthScale(0.5F);
+        float attackDamage = (float)(baseDamage * (0.2F + cooldown * cooldown * 0.8F));
+
+        ItemStack mainHand = player.getMainHandItem();
+        float enchantBonus = EnchantmentHelper.getDamageBonus(mainHand, target.getMobType());
+        if (enchantBonus > 0.0F) {
+            attackDamage += enchantBonus * cooldown;
+        }
+
+        if (attackDamage <= 0.0F) return;
+
+        target.hurt(ModDamageTypes.permeationPunch(target.level(), player), attackDamage);
     }
 
     @SubscribeEvent
