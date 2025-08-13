@@ -30,6 +30,8 @@ import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.util.Mth;
+import com.github.b4ndithelps.forge.systems.QuirkFactorHelper;
 import net.threetag.palladium.power.SuperpowerUtil;
 import net.threetag.palladium.power.ability.AbilityUtil;
 
@@ -68,8 +70,24 @@ public class PlayerEventHandler {
 
         if (AbilityUtil.isEnabled(player, new ResourceLocation("mineha:permeation"), "permeation_punch")) {
             float amount = event.getAmount();
+
+            if (player instanceof ServerPlayer sp) {
+                double quirkFactor = QuirkFactorHelper.getQuirkFactor(sp);
+                amount += (float)Math.min(4.0, quirkFactor);
+            }
+
             event.setCanceled(true);
-            target.hurt(ModDamageTypes.permeationPunch(target.level(), player), amount);
+            boolean damaged = target.hurt(ModDamageTypes.permeationPunch(target.level(), player), amount);
+
+            if (damaged) {
+                double yawRad = player.getYRot() * ((float)Math.PI / 180F);
+                int kbLevel = EnchantmentHelper.getKnockbackBonus(player);
+                if (player.isSprinting()) kbLevel++;
+                double strength = 0.4D + (kbLevel * 0.5D);
+                if (strength > 0.0D) {
+                    target.knockback(strength, Mth.sin((float)yawRad), -Mth.cos((float)yawRad));
+                }
+            }
         }
     }
 
@@ -96,9 +114,23 @@ public class PlayerEventHandler {
             attackDamage += enchantBonus * cooldown;
         }
 
+        if (player instanceof ServerPlayer sp) {
+            double quirkFactor = QuirkFactorHelper.getQuirkFactor(sp);
+            attackDamage += (float)Math.min(4.0, quirkFactor);
+        }
+
         if (attackDamage <= 0.0F) return;
 
-        target.hurt(ModDamageTypes.permeationPunch(target.level(), player), attackDamage);
+        boolean damaged = target.hurt(ModDamageTypes.permeationPunch(target.level(), player), attackDamage);
+        if (damaged) {
+            double yawRad = player.getYRot() * ((float)Math.PI / 180F);
+            int kbLevel = EnchantmentHelper.getKnockbackBonus(player);
+            if (player.isSprinting()) kbLevel++;
+            double strength = 0.4D + (kbLevel * 0.5D);
+            if (strength > 0.0D) {
+                target.knockback(strength, Mth.sin((float)yawRad), -Mth.cos((float)yawRad));
+            }
+        }
     }
 
     @SubscribeEvent
