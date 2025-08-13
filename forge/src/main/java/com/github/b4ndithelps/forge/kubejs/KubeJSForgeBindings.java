@@ -8,6 +8,11 @@ import com.github.b4ndithelps.util.FileManager;
 import dev.latvian.mods.kubejs.KubeJSPlugin;
 import dev.latvian.mods.kubejs.script.BindingsEvent;
 import dev.latvian.mods.kubejs.util.ConsoleJS;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.players.PlayerList;
+import net.minecraftforge.server.ServerLifecycleHooks;
 
 public class KubeJSForgeBindings extends KubeJSPlugin {
 
@@ -18,6 +23,7 @@ public class KubeJSForgeBindings extends KubeJSPlugin {
         event.add("FileUtils", new FileUtilsJS());
         event.add("Config", new ConfigHelper());
         event.add("QuirkFactor", new QuirkFactorHelper());
+        event.add("BanditUtils", new BanditUtils());
     }
 
     public static class FileUtilsJS {
@@ -63,6 +69,18 @@ public class KubeJSForgeBindings extends KubeJSPlugin {
         public static boolean forceReloadFancyMenu() {
             ConsoleJS.STARTUP.info("Forcing FancyMenu reload by deleting marker file");
             return FileManager.deleteMarkerFile();
+        }
+    }
+
+    public static class BanditUtils {
+        public static ServerPlayer getServerPlayer(LocalPlayer player) {
+            MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+            if (server != null) {
+                PlayerList playerList = server.getPlayerList();
+                return playerList.getPlayer(player.getUUID());
+            }
+
+            return null;
         }
     }
 

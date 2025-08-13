@@ -118,6 +118,7 @@ public class MineHaEnchantCommand {
         chestplateEnchants.put("creation_e4", Enchantments.THORNS);
         chestplateEnchants.put("creation_e5", Enchantments.PROJECTILE_PROTECTION);
         chestplateEnchants.put("creation_e6", Enchantments.FIRE_PROTECTION);
+        chestplateEnchants.put("creation_e9", Enchantments.BLAST_PROTECTION);
         ENCHANTMENT_MAPPINGS.put("chestplate_type", chestplateEnchants);
 
         // Leggings type enchantments - Verified

@@ -159,6 +159,26 @@
         ]
       }
 
+    },
+    "permeation": {
+      "type": "bandits_quirk_lib:permeation",
+      "title": "Full Body Permeation",
+      "description": "does stuff",
+      "icon": "minecraft:bucket",
+      "hidden": false,
+      "hidden_in_bar": false,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:toggle"
+          }
+        ]
+      },
+      "mode": "full_body",
+      "descent_speed": 0.6,
+      "pop_strength": 1.0,
+      "apply_blindness": true,
+      "apply_water_breathing": true
     }
   }
 }

@@ -17,6 +17,9 @@ public class ModDamageTypes {
     public static final ResourceKey<DamageType> EXHAUSTION_KEY =
             ResourceKey.create(Registries.DAMAGE_TYPE, new ResourceLocation(MOD_ID, "exhaustion"));
 
+    public static final ResourceKey<DamageType> PERMEATION_PUNCH_KEY =
+            ResourceKey.create(Registries.DAMAGE_TYPE, new ResourceLocation(MOD_ID, "permeation_punch"));
+
     // A helper method to create the damage source
     public static DamageSource exhaustion(Level level) {
         try {
@@ -46,6 +49,15 @@ public class ModDamageTypes {
                     .getHolderOrThrow(EXHAUSTION_KEY), directEntity, indirectEntity);
         } catch (Exception e) {
             // Fallback to a vanilla damage source if custom one fails
+            return level.damageSources().generic();
+        }
+    }
+
+    public static DamageSource permeationPunch(Level level, Entity attacker) {
+        try {
+            return new DamageSource(level.registryAccess().registryOrThrow(Registries.DAMAGE_TYPE)
+                    .getHolderOrThrow(PERMEATION_PUNCH_KEY), attacker);
+        } catch (Exception e) {
             return level.damageSources().generic();
         }
     }

@@ -3,15 +3,33 @@ package com.github.b4ndithelps.forge.events;
 import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
 import com.github.b4ndithelps.forge.abilities.HappenOnceAbility;
 import com.github.b4ndithelps.forge.systems.StaminaHelper;
+import com.github.b4ndithelps.forge.systems.BodyStatusHelper;
+import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.living.LivingHurtEvent;
+import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.network.PacketDistributor;
+import com.github.b4ndithelps.forge.network.BQLNetwork;
+import com.github.b4ndithelps.forge.network.NoShadowTagPacket;
+import com.github.b4ndithelps.forge.damage.ModDamageTypes;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.tags.DamageTypeTags;
+import net.minecraft.world.damagesource.DamageTypes;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.util.Mth;
+import com.github.b4ndithelps.forge.systems.QuirkFactorHelper;
 import net.threetag.palladium.power.SuperpowerUtil;
+import net.threetag.palladium.power.ability.AbilityUtil;
 
 import java.util.UUID;
 
@@ -19,6 +37,7 @@ import static com.github.b4ndithelps.BanditsQuirkLib.MOD_ID;
 
 @Mod.EventBusSubscriber(modid = MOD_ID)
 public class PlayerEventHandler {
+    private static final java.util.Map<Integer, Boolean> LAST_NO_SHADOW_SENT = new java.util.concurrent.ConcurrentHashMap<>();
 
     @SubscribeEvent
     public static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
@@ -28,6 +47,86 @@ public class PlayerEventHandler {
         HappenOnceAbility.cleanupPlayerData(playerUUID);
 
         BanditsQuirkLibForge.LOGGER.info("Cleaned up player data");
+    }
+
+    
+
+    @SubscribeEvent
+    public static void onLivingHurt(LivingHurtEvent event) {
+        LivingEntity target = event.getEntity();
+        if (target.level().isClientSide) return;
+
+        var source = event.getSource();
+        if (!(source.getEntity() instanceof Player player)) return;
+
+        // Only convert standard melee player attacks
+        if (!source.is(DamageTypes.PLAYER_ATTACK)) return;
+        // Avoid recursion or double-processing if the damage already bypasses armor
+        if (source.is(DamageTypeTags.BYPASSES_ARMOR)) return;
+
+        if (AbilityUtil.isEnabled(player, new ResourceLocation("mineha:permeation"), "permeation_punch")) {
+            float amount = event.getAmount();
+
+            if (player instanceof ServerPlayer sp) {
+                double quirkFactor = QuirkFactorHelper.getQuirkFactor(sp);
+                amount += (float)Math.min(4.0, quirkFactor);
+            }
+
+            event.setCanceled(true);
+            boolean damaged = target.hurt(ModDamageTypes.permeationPunch(target.level(), player), amount);
+
+            if (damaged) {
+                double yawRad = player.getYRot() * ((float)Math.PI / 180F);
+                int kbLevel = EnchantmentHelper.getKnockbackBonus(player);
+                if (player.isSprinting()) kbLevel++;
+                double strength = 0.4D + (kbLevel * 0.5D);
+                if (strength > 0.0D) {
+                    target.knockback(strength, Mth.sin((float)yawRad), -Mth.cos((float)yawRad));
+                }
+            }
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onLivingAttack(LivingAttackEvent event) {
+        LivingEntity target = event.getEntity();
+        if (target.level().isClientSide) return;
+
+        var source = event.getSource();
+        if (!(source.getEntity() instanceof Player player)) return;
+        if (!source.is(DamageTypes.PLAYER_ATTACK)) return;
+
+        if (!AbilityUtil.isEnabled(player, new ResourceLocation("mineha:permeation"), "permeation_punch")) return;
+
+        event.setCanceled(true);
+
+        double baseDamage = player.getAttribute(Attributes.ATTACK_DAMAGE) != null ? player.getAttribute(Attributes.ATTACK_DAMAGE).getValue() : 1.0;
+        float cooldown = player.getAttackStrengthScale(0.5F);
+        float attackDamage = (float)(baseDamage * (0.2F + cooldown * cooldown * 0.8F));
+
+        ItemStack mainHand = player.getMainHandItem();
+        float enchantBonus = EnchantmentHelper.getDamageBonus(mainHand, target.getMobType());
+        if (enchantBonus > 0.0F) {
+            attackDamage += enchantBonus * cooldown;
+        }
+
+        if (player instanceof ServerPlayer sp) {
+            double quirkFactor = QuirkFactorHelper.getQuirkFactor(sp);
+            attackDamage += (float)Math.min(4.0, quirkFactor);
+        }
+
+        if (attackDamage <= 0.0F) return;
+
+        boolean damaged = target.hurt(ModDamageTypes.permeationPunch(target.level(), player), attackDamage);
+        if (damaged) {
+            double yawRad = player.getYRot() * ((float)Math.PI / 180F);
+            int kbLevel = EnchantmentHelper.getKnockbackBonus(player);
+            if (player.isSprinting()) kbLevel++;
+            double strength = 0.4D + (kbLevel * 0.5D);
+            if (strength > 0.0D) {
+                target.knockback(strength, Mth.sin((float)yawRad), -Mth.cos((float)yawRad));
+            }
+        }
     }
 
     @SubscribeEvent
@@ -44,17 +143,73 @@ public class PlayerEventHandler {
         }
     }
 
-//    @SubscribeEvent
-//    public static void onPlayerDeath(LivingDeathEvent event) {
-//        if (event.getEntity() instanceof ServerPlayer player) {
-//        }
-//    }
-
     @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
+
+//        // Client mirror: if permeation is active or rising, force spectator-like no-clip locally
+//        if (event.player.level().isClientSide) {
+//            boolean active = event.player.getTags().contains("Bql.PermeateActive");
+//            boolean rising = event.player.getTags().contains("Bql.PermeateRise");
+//            // Effects are synced; use as fallback signal in case tags aren't synced to client
+//            boolean hasPermeationEffects = event.player.hasEffect(MobEffects.BLINDNESS) || event.player.hasEffect(MobEffects.WATER_BREATHING);
+//
+//            if (active || rising || hasPermeationEffects) {
+//                event.player.noPhysics = true;
+//                event.player.fallDistance = 0.0F;
+//                // Periodic client debug to validate no-clip state
+//                int dbg = event.player.getPersistentData().getInt("Bql.ClientPermeateDbg");
+//                dbg++;
+//                if (dbg >= 10) {
+//                    dbg = 0;
+//                    com.github.b4ndithelps.forge.BanditsQuirkLibForge.LOGGER.info("[Permeation][Client] mirror noPhysics={} rising={} active={}", event.player.noPhysics, rising, active);
+//                    event.player.displayClientMessage(net.minecraft.network.chat.Component.literal(
+//                            "Permeation[client]: noClip=" + event.player.noPhysics + " rising=" + rising + " active=" + active
+//                    ), true);
+//                }
+//                event.player.getPersistentData().putInt("Bql.ClientPermeateDbg", dbg);
+//            } else {
+//                event.player.noPhysics = false;
+//            }
+//            return;
+//        }
+
         if (!(event.player instanceof ServerPlayer player)) return;
+        // Keep no-shadow flag in sync for permeation-related tags; only send when changed
+        boolean wantNoShadow = player.getTags().contains("Bql.PermeateActive") || player.getTags().contains("Bql.PermeateRise") || player.getTags().contains("Bql.NoShadow");
+        Boolean prev = LAST_NO_SHADOW_SENT.put(player.getId(), wantNoShadow);
+        if (prev == null || prev != wantNoShadow) {
+            BQLNetwork.CHANNEL.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player), new NoShadowTagPacket(player.getId(), wantNoShadow));
+        }
         
+        // Rising handled by PermeationRiseAbility now
+        
+        // Auto-switch handedness based on destroyed arms for better visuals
+        // Store the player's original handedness once, then flip when one arm is destroyed
+        boolean storedOriginal = player.getPersistentData().contains("Bql.OrigLeftHanded");
+        if (!storedOriginal) {
+            player.getPersistentData().putBoolean("Bql.OrigLeftHanded", player.getMainArm() == HumanoidArm.LEFT);
+        }
+
+        boolean rightArmDestroyed = BodyStatusHelper.isPartDestroyed(player, "right_arm");
+        boolean leftArmDestroyed = BodyStatusHelper.isPartDestroyed(player, "left_arm");
+
+        boolean desiredLeftHanded;
+        if (rightArmDestroyed && !leftArmDestroyed) {
+            // Use left as main if right arm is destroyed
+            desiredLeftHanded = true;
+        } else if (leftArmDestroyed && !rightArmDestroyed) {
+            // Use right as main if left arm is destroyed
+            desiredLeftHanded = false;
+        } else {
+            // Neither or both destroyed: restore original preference
+            desiredLeftHanded = player.getPersistentData().getBoolean("Bql.OrigLeftHanded");
+        }
+
+        if ((player.getMainArm() == HumanoidArm.LEFT) != desiredLeftHanded) {
+            player.setMainArm(desiredLeftHanded ? HumanoidArm.LEFT : HumanoidArm.RIGHT);
+        }
+
         // Check if player has the movement restriction tag
         if (player.getTags().contains("Bql.RestrictMove")) {
             // Check if player still has any stun effect active
