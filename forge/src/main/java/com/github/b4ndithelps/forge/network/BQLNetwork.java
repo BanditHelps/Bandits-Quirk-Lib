@@ -24,6 +24,7 @@ public final class BQLNetwork {
                 .decoder(NoShadowTagPacket::decode)
                 .consumerMainThread(NoShadowTagPacket::handle)
                 .add();
+
         
         CHANNEL.messageBuilder(BodyStatusSyncPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(BodyStatusSyncPacket::encode)
