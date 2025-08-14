@@ -5,10 +5,14 @@ import com.github.b4ndithelps.forge.capabilities.Body.BodyPart;
 import com.github.b4ndithelps.forge.capabilities.Body.BodyStatusCapabilityProvider;
 import com.github.b4ndithelps.forge.capabilities.Body.CustomStatus;
 import com.github.b4ndithelps.forge.capabilities.Body.IBodyStatusCapability;
+import com.github.b4ndithelps.forge.network.BQLNetwork;
+import com.github.b4ndithelps.forge.network.BodyStatusSyncPacket;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.player.Player;
+import net.minecraftforge.network.PacketDistributor;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -124,6 +128,11 @@ public class BodyStatusHelper {
             String resolvedName = resolveBodyPartName(player, bodyPartName);
             BodyPart part = BodyPart.valueOf(resolvedName.toUpperCase());
             bodyStatus.setDamage(part, damage);
+            
+            // Auto-sync to client if this is a server player
+            if (player instanceof ServerPlayer serverPlayer) {
+                syncToClient(serverPlayer);
+            }
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("Invalid body part: " + bodyPartName + " (resolved to: " + resolveBodyPartName(player, bodyPartName) + ")");
         }
@@ -141,6 +150,11 @@ public class BodyStatusHelper {
 
             if (!bodyStatus.isPartDestroyed(part)) {
                 bodyStatus.addDamage(part, amount);
+                
+                // Auto-sync to client if this is a server player
+                if (player instanceof ServerPlayer serverPlayer) {
+                    syncToClient(serverPlayer);
+                }
             }
 
         } catch (IllegalArgumentException e) {
@@ -156,6 +170,11 @@ public class BodyStatusHelper {
             }
             
             bodyStatus.damageAll(amount);
+            
+            // Auto-sync to client if this is a server player
+            if (player instanceof ServerPlayer serverPlayer) {
+                syncToClient(serverPlayer);
+            }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -213,6 +232,11 @@ public class BodyStatusHelper {
             }
             
             bodyStatus.setCustomStatus(part, statusName, level);
+            
+            // Auto-sync to client if this is a server player
+            if (player instanceof ServerPlayer serverPlayer) {
+                syncToClient(serverPlayer);
+            }
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("Invalid body part: " + bodyPartName + " (resolved to: " + resolveBodyPartName(player, bodyPartName) + ")");
         }
@@ -354,6 +378,11 @@ public class BodyStatusHelper {
             String resolvedName = resolveBodyPartName(player, bodyPartName);
             BodyPart part = BodyPart.valueOf(resolvedName.toUpperCase());
             bodyStatus.setCustomFloat(part, key, value);
+            
+            // Auto-sync to client if this is a server player
+            if (player instanceof ServerPlayer serverPlayer) {
+                syncToClient(serverPlayer);
+            }
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("Invalid body part: " + bodyPartName + " (resolved to: " + resolveBodyPartName(player, bodyPartName) + ")");
         }
@@ -362,11 +391,19 @@ public class BodyStatusHelper {
     public static void addToCustomFloat(Player player, String bodyPartName, String key, float value) {
         try {
             IBodyStatusCapability bodyStatus = getBodyStatus(player);
+            if (bodyStatus == null) {
+                return; // Silently fail if capability not available
+            }
 
             String resolvedName = resolveBodyPartName(player, bodyPartName);
             BodyPart part = BodyPart.valueOf(resolvedName.toUpperCase());
             float previousValue = bodyStatus.getCustomFloat(part, key);
             bodyStatus.setCustomFloat(part, key, previousValue + value);
+            
+            // Auto-sync to client if this is a server player
+            if (player instanceof ServerPlayer serverPlayer) {
+                syncToClient(serverPlayer);
+            }
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("Invalid body part: " + bodyPartName + " (resolved to: " + resolveBodyPartName(player, bodyPartName) + ")");
         }
@@ -397,6 +434,11 @@ public class BodyStatusHelper {
             String resolvedName = resolveBodyPartName(player, bodyPartName);
             BodyPart part = BodyPart.valueOf(resolvedName.toUpperCase());
             bodyStatus.setCustomString(part, key, value);
+            
+            // Auto-sync to client if this is a server player
+            if (player instanceof ServerPlayer serverPlayer) {
+                syncToClient(serverPlayer);
+            }
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("Invalid body part: " + bodyPartName + " (resolved to: " + resolveBodyPartName(player, bodyPartName) + ")");
         }
@@ -442,5 +484,217 @@ public class BodyStatusHelper {
      */
     public static String getResolvedBodyPartName(Player player, String bodyPartName) {
         return resolveBodyPartName(player, bodyPartName);
+    }
+
+    // === SYNCHRONIZATION METHODS ===
+
+    /**
+     * Synchronizes the BodyStatus capability data from server to a specific client.
+     * This should be called whenever the server-side data changes and needs to be
+     * reflected on the client.
+     * 
+     * @param serverPlayer The server player whose data should be synced
+     */
+    public static void syncToClient(ServerPlayer serverPlayer) {
+        serverPlayer.getCapability(BodyStatusCapabilityProvider.BODY_STATUS_CAPABILITY)
+                .ifPresent(bodyStatus -> {
+                    CompoundTag data = bodyStatus.serializeNBT();
+                    BodyStatusSyncPacket packet = new BodyStatusSyncPacket(serverPlayer.getUUID(), data);
+                    BQLNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> serverPlayer), packet);
+                });
+    }
+
+    /**
+     * Synchronizes the BodyStatus capability data from server to all tracking players.
+     * This is useful when the body status changes and should be visible to other players
+     * (e.g., for visual effects, render layers).
+     * 
+     * @param serverPlayer The server player whose data should be synced
+     */
+    public static void syncToTrackingPlayers(ServerPlayer serverPlayer) {
+        serverPlayer.getCapability(BodyStatusCapabilityProvider.BODY_STATUS_CAPABILITY)
+                .ifPresent(bodyStatus -> {
+                    CompoundTag data = bodyStatus.serializeNBT();
+                    BodyStatusSyncPacket packet = new BodyStatusSyncPacket(serverPlayer.getUUID(), data);
+                    BQLNetwork.CHANNEL.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> serverPlayer), packet);
+                });
+    }
+
+    /**
+     * Synchronizes the BodyStatus capability data to a specific target player.
+     * This is useful for sending one player's body status to another specific player.
+     * 
+     * @param sourcePlayer The server player whose data should be synced
+     * @param targetPlayer The server player who should receive the sync
+     */
+    public static void syncToPlayer(ServerPlayer sourcePlayer, ServerPlayer targetPlayer) {
+        sourcePlayer.getCapability(BodyStatusCapabilityProvider.BODY_STATUS_CAPABILITY)
+                .ifPresent(bodyStatus -> {
+                    CompoundTag data = bodyStatus.serializeNBT();
+                    BodyStatusSyncPacket packet = new BodyStatusSyncPacket(sourcePlayer.getUUID(), data);
+                    BQLNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> targetPlayer), packet);
+                });
+    }
+
+    // === BULK OPERATION METHODS (NO AUTO-SYNC) ===
+
+    /**
+     * Sets damage for a body part WITHOUT syncing to the client.
+     * Use this for bulk operations where you want to sync manually at the end.
+     * 
+     * @param player The player to modify
+     * @param bodyPartName The name of the body part
+     * @param damage The damage amount to set
+     */
+    public static void setDamageNoSync(Player player, String bodyPartName, float damage) {
+        try {
+            IBodyStatusCapability bodyStatus = getBodyStatus(player);
+            if (bodyStatus == null) {
+                return; // Silently fail if capability not available
+            }
+            
+            String resolvedName = resolveBodyPartName(player, bodyPartName);
+            BodyPart part = BodyPart.valueOf(resolvedName.toUpperCase());
+            bodyStatus.setDamage(part, damage);
+            // No sync - caller must handle sync manually
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Invalid body part: " + bodyPartName + " (resolved to: " + resolveBodyPartName(player, bodyPartName) + ")");
+        }
+    }
+
+    /**
+     * Adds damage to a body part WITHOUT syncing to the client.
+     * Use this for bulk operations where you want to sync manually at the end.
+     * 
+     * @param player The player to modify
+     * @param bodyPartName The name of the body part
+     * @param amount The damage amount to add
+     */
+    public static void addDamageNoSync(Player player, String bodyPartName, float amount) {
+        try {
+            IBodyStatusCapability bodyStatus = getBodyStatus(player);
+            if (bodyStatus == null) {
+                return; // Silently fail if capability not available
+            }
+            
+            String resolvedName = resolveBodyPartName(player, bodyPartName);
+            BodyPart part = BodyPart.valueOf(resolvedName.toUpperCase());
+
+            if (!bodyStatus.isPartDestroyed(part)) {
+                bodyStatus.addDamage(part, amount);
+                // No sync - caller must handle sync manually
+            }
+
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Invalid body part: " + bodyPartName + " (resolved to: " + resolveBodyPartName(player, bodyPartName) + ")");
+        }
+    }
+
+    /**
+     * Damages all body parts WITHOUT syncing to the client.
+     * Use this for bulk operations where you want to sync manually at the end.
+     * 
+     * @param player The player to modify
+     * @param amount The damage amount to add to all parts
+     */
+    public static void damageAllNoSync(Player player, float amount) {
+        try {
+            IBodyStatusCapability bodyStatus = getBodyStatus(player);
+            if (bodyStatus == null) {
+                return; // Silently fail if capability not available
+            }
+            
+            bodyStatus.damageAll(amount);
+            // No sync - caller must handle sync manually
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Sets a custom status WITHOUT syncing to the client.
+     * Use this for bulk operations where you want to sync manually at the end.
+     * 
+     * @param player The player to modify
+     * @param bodyPartName The name of the body part
+     * @param statusName The name of the custom status
+     * @param level The status level to set
+     */
+    public static void setCustomStatusNoSync(Player player, String bodyPartName, String statusName, int level) {
+        try {
+            IBodyStatusCapability bodyStatus = getBodyStatus(player);
+            if (bodyStatus == null) {
+                return; // Silently fail if capability not available
+            }
+            
+            String resolvedName = resolveBodyPartName(player, bodyPartName);
+            BodyPart part = BodyPart.valueOf(resolvedName.toUpperCase());
+            CustomStatus status = getCustomStatus(statusName);
+            
+            // If status is registered, validate the level. Otherwise, allow any positive level (backwards compatibility)
+            if (status != null) {
+                if (!status.isValidLevel(level)) {
+                    throw new RuntimeException("Invalid level " + level + " for status " + statusName + 
+                                             ". Valid range: 0-" + status.getMaxLevel());
+                }
+            } else if (level < 0) {
+                throw new RuntimeException("Level cannot be negative for status " + statusName);
+            }
+            
+            bodyStatus.setCustomStatus(part, statusName, level);
+            // No sync - caller must handle sync manually
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Invalid body part: " + bodyPartName + " (resolved to: " + resolveBodyPartName(player, bodyPartName) + ")");
+        }
+    }
+
+    /**
+     * Sets a custom float value WITHOUT syncing to the client.
+     * Use this for bulk operations where you want to sync manually at the end.
+     * 
+     * @param player The player to modify
+     * @param bodyPartName The name of the body part
+     * @param key The custom data key
+     * @param value The float value to set
+     */
+    public static void setCustomFloatNoSync(Player player, String bodyPartName, String key, float value) {
+        try {
+            IBodyStatusCapability bodyStatus = getBodyStatus(player);
+            if (bodyStatus == null) {
+                return; // Silently fail if capability not available
+            }
+            
+            String resolvedName = resolveBodyPartName(player, bodyPartName);
+            BodyPart part = BodyPart.valueOf(resolvedName.toUpperCase());
+            bodyStatus.setCustomFloat(part, key, value);
+            // No sync - caller must handle sync manually
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Invalid body part: " + bodyPartName + " (resolved to: " + resolveBodyPartName(player, bodyPartName) + ")");
+        }
+    }
+
+    /**
+     * Sets a custom string value WITHOUT syncing to the client.
+     * Use this for bulk operations where you want to sync manually at the end.
+     * 
+     * @param player The player to modify
+     * @param bodyPartName The name of the body part
+     * @param key The custom data key
+     * @param value The string value to set
+     */
+    public static void setCustomStringNoSync(Player player, String bodyPartName, String key, String value) {
+        try {
+            IBodyStatusCapability bodyStatus = getBodyStatus(player);
+            if (bodyStatus == null) {
+                return; // Silently fail if capability not available
+            }
+            
+            String resolvedName = resolveBodyPartName(player, bodyPartName);
+            BodyPart part = BodyPart.valueOf(resolvedName.toUpperCase());
+            bodyStatus.setCustomString(part, key, value);
+            // No sync - caller must handle sync manually
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Invalid body part: " + bodyPartName + " (resolved to: " + resolveBodyPartName(player, bodyPartName) + ")");
+        }
     }
 }

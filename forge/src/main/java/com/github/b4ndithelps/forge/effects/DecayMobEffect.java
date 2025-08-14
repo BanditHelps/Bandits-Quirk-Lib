@@ -120,7 +120,7 @@ public class DecayMobEffect extends MobEffect {
                 BodyStatusHelper.setDamage(entity, BodyPart.RIGHT_LEG.toString(), 80);
                 break;
             case 3: // left leg
-                BodyStatusHelper.setDamage(entity, BodyPart.RIGHT_LEG.toString(), 80);
+                BodyStatusHelper.setDamage(entity, BodyPart.LEFT_LEG.toString(), 80);
                 break;
         }
     }

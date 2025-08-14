@@ -564,6 +564,27 @@
           }
         ]
       }
+    },
+    "true_invisibility": {
+      "type": "palladium:command",
+      "description": "Used to prevent mobs from targeting players with the true invis effect",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "first_tick_commands": [
+        "scale set pehkui:visibility 0 @s"
+      ],
+      "commands": [],
+      "last_tick_commands": [
+        "scale set pehkui:visibility 1 @s"
+      ],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:has_effect",
+            "effect": "mineha:true_invisibility"
+          }
+        ]
+      }
     }
   }
 }
