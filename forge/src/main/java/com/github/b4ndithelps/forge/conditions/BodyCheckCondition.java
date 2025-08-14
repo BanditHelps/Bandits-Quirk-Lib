@@ -29,11 +29,13 @@ public class BodyCheckCondition extends Condition {
     public boolean active(DataContext dataContext) {
         LivingEntity entity = dataContext.getLivingEntity();
 
-        if (!(entity instanceof ServerPlayer player)) {
+        // Accept both ServerPlayer and LocalPlayer (client-side)
+        if (!(entity instanceof net.minecraft.world.entity.player.Player player)) {
             return false;
         }
 
         // Check if the body part matches the stage
+        // This now works on both client and server thanks to synchronization
         return Objects.equals(BodyStatusHelper.getDamageStage(player, part.getName()), stage.getName());
     }
 

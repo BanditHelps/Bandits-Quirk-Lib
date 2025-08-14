@@ -2,10 +2,13 @@ package com.github.b4ndithelps.forge.capabilities.Body;
 
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.common.capabilities.*;
 import net.minecraftforge.common.util.LazyOptional;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.function.Supplier;
 
 import static com.github.b4ndithelps.values.BodyConstants.MAX_DAMAGE;
 
@@ -19,10 +22,33 @@ public class BodyStatusCapabilityProvider implements ICapabilitySerializable<Com
 
     private IBodyStatusCapability capability = null;
     private final LazyOptional<IBodyStatusCapability> lazyCapability = LazyOptional.of(this::createCapability);
+    private final Supplier<Player> playerSupplier;
+    private final boolean enableAutoSync;
+
+    /**
+     * Creates a provider with auto-sync enabled for server players.
+     * @param playerSupplier Supplier to get the player for sync operations
+     */
+    public BodyStatusCapabilityProvider(Supplier<Player> playerSupplier) {
+        this.playerSupplier = playerSupplier;
+        this.enableAutoSync = true;
+    }
+
+    /**
+     * Creates a provider without auto-sync (legacy constructor).
+     */
+    public BodyStatusCapabilityProvider() {
+        this.playerSupplier = null;
+        this.enableAutoSync = false;
+    }
 
     private IBodyStatusCapability createCapability() {
         if (this.capability == null) {
-            this.capability = new BodyStatusCapability();
+            if (enableAutoSync && playerSupplier != null) {
+                this.capability = new SyncedBodyStatusCapability(playerSupplier);
+            } else {
+                this.capability = new BodyStatusCapability();
+            }
         }
         return this.capability;
     }

@@ -413,8 +413,10 @@ public class BodyStatusCommand {
             ServerPlayer player = EntityArgument.getPlayer(context, "player");
             
             for (BodyPart part : BodyPart.values()) {
-                BodyStatusHelper.setDamage(player, part.getName(), 0.0f);
+                BodyStatusHelper.setDamageNoSync(player, part.getName(), 0.0f);
             }
+            // Sync once after all changes
+            BodyStatusHelper.syncToClient(player);
             
             context.getSource().sendSuccess(() -> Component.literal(
                     String.format("§6Healed all body parts for %s", player.getName().getString())), false);
@@ -432,6 +434,7 @@ public class BodyStatusCommand {
             
             BodyPart part = BodyPart.valueOf(bodyPartName.toUpperCase());
             BodyStatusHelper.getBodyStatus(player).resetPart(part);
+            BodyStatusHelper.syncToClient(player);
             
             context.getSource().sendSuccess(() -> Component.literal(
                     String.format("§6Reset %s for %s", bodyPartName, player.getName().getString())), false);
@@ -447,6 +450,7 @@ public class BodyStatusCommand {
             ServerPlayer player = EntityArgument.getPlayer(context, "player");
             
             BodyStatusHelper.getBodyStatus(player).resetAll();
+            BodyStatusHelper.syncToClient(player);
             
             context.getSource().sendSuccess(() -> Component.literal(
                     String.format("§6Reset all body parts for %s", player.getName().getString())), false);
@@ -493,20 +497,23 @@ public class BodyStatusCommand {
             
             // Test 1: Basic damage tests
             context.getSource().sendSuccess(() -> Component.literal("§eTest 1: Basic Damage"), false);
-            BodyStatusHelper.setDamage(player, "head", 25.0f);
-            BodyStatusHelper.setDamage(player, "left_arm", 50.0f);
-            BodyStatusHelper.setDamage(player, "right_leg", 85.0f);
-            BodyStatusHelper.setDamage(player, "chest", 100.0f);
+            BodyStatusHelper.setDamageNoSync(player, "head", 25.0f);
+            BodyStatusHelper.setDamageNoSync(player, "left_arm", 50.0f);
+            BodyStatusHelper.setDamageNoSync(player, "right_leg", 85.0f);
+            BodyStatusHelper.setDamageNoSync(player, "chest", 100.0f);
             
             // Test 2: Custom status tests
             context.getSource().sendSuccess(() -> Component.literal("§eTest 2: Custom Status"), false);
-            BodyStatusHelper.setCustomStatus(player, "left_hand", "frostbite", 3);
-            BodyStatusHelper.setCustomStatus(player, "right_hand", "burn", 2);
+            BodyStatusHelper.setCustomStatusNoSync(player, "left_hand", "frostbite", 3);
+            BodyStatusHelper.setCustomStatusNoSync(player, "right_hand", "burn", 2);
             
             // Test 3: Custom data tests
             context.getSource().sendSuccess(() -> Component.literal("§eTest 3: Custom Data"), false);
-            BodyStatusHelper.setCustomFloat(player, "head", "temperature", 101.5f);
-            BodyStatusHelper.setCustomString(player, "chest", "condition", "bruised");
+            BodyStatusHelper.setCustomFloatNoSync(player, "head", "temperature", 101.5f);
+            BodyStatusHelper.setCustomStringNoSync(player, "chest", "condition", "bruised");
+            
+            // Sync all changes to client
+            BodyStatusHelper.syncToClient(player);
             
             // Show results
             context.getSource().sendSuccess(() -> Component.literal("§eResults:"), false);
