@@ -28,11 +28,6 @@ public class HappenOnceAbility extends CommandAbility {
 
     @Override
     public void firstTick(LivingEntity entity, AbilityInstance entry, IPowerHolder holder, boolean enabled) {
-        return;
-
-        //if (hasAlreadyRan(entity, entry)) return;
-
-        //super.firstTick(entity, entry, holder, enabled);
     }
 
     @Override
@@ -45,8 +40,6 @@ public class HappenOnceAbility extends CommandAbility {
 
     @Override
     public void lastTick(LivingEntity entity, AbilityInstance entry, IPowerHolder holder, boolean enabled) {
-        //if (hasAlreadyRan(entity, entry)) return;
-       // super.lastTick(entity, entry, holder, enabled);
     }
 
     private boolean hasAlreadyRan(LivingEntity entity, AbilityInstance entry) {
