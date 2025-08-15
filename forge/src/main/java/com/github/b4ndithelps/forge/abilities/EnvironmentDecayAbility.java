@@ -41,8 +41,7 @@ public class EnvironmentDecayAbility extends Ability {
     // Quirk Factor Scaling Constants
     private static final float QUIRK_INTENSITY_MULTIPLIER = 1.0f;
     private static final float QUIRK_BLOCKS_MULTIPLIER = 1.5f;
-    private static final float QUIRK_RANGE_MULTIPLIER = 1.2f;
-    private static final float QUIRK_SPEED_MULTIPLIER = 2.0f; // How much quirk factor affects speed
+    private static final float QUIRK_SPEED_MULTIPLIER = 1.0f; // How much quirk factor affects speed
     private static final float MAX_EFFECTIVE_SPEED = 10.0f; // Maximum speed cap to prevent crashes
 
     // Configurable properties
@@ -108,7 +107,7 @@ public class EnvironmentDecayAbility extends Ability {
                 if (!isDecayable(targetBlockState, effectiveIntensity)) {
                     // Send failure message to player
                     player.sendSystemMessage(Component.literal("§cThe target block resists your decay!"));
-                    return; // Exit early without starting decay or damaging item
+                    return;
                 }
 
                 // Target block is valid, proceed with decay setup
@@ -514,29 +513,24 @@ public class EnvironmentDecayAbility extends Ability {
         // Get the block's destroy time with different tools
         float destroyTime = blockState.getDestroySpeed(null, null);
 
-        // Level 0: Instant break blocks and shovel blocks
-        if (destroyTime < 0.1f || isIntensityZero(blockState)) {
+        // Level 0: Instant break blocks, shovel blocks, and Axe Blocks
+        if (destroyTime < 0.1f || isIntensityZero(blockState) || isIntensityOne(blockState)) {
             return intensity >= 1;
-        }
-
-        // Level 1: Axe Materials
-        if (isIntensityOne(blockState)) {
-            return intensity >= 2;
         }
 
         // Level 2: Stone Pickaxe Materials
         if (isIntensityTwo(blockState)) {
-            return intensity >= 3;
+            return intensity >= 2;
         }
 
         // Level 3: Iron Pickaxe Materials
         if (isIntensityThree(blockState)) {
-            return intensity >= 4;
+            return intensity >= 3;
         }
 
         // Level 4: Diamond Pickaxe Materials
         if (isIntensityFour(blockState)) {
-            return intensity >= 5;
+            return intensity >= 4;
         }
 
         // Default
@@ -545,7 +539,8 @@ public class EnvironmentDecayAbility extends Ability {
 
     // The first intensity is used for basic blocks, and wooden shovel blocks
     private boolean isIntensityZero(BlockState blockState) {
-        return blockState.is(net.minecraft.tags.BlockTags.MINEABLE_WITH_SHOVEL);
+        return blockState.is(net.minecraft.tags.BlockTags.MINEABLE_WITH_SHOVEL) ||
+                blockState.is(net.minecraft.tags.BlockTags.MINEABLE_WITH_HOE);
     }
 
     // This intensity is used for axe related blocks. Pretty much all wood
@@ -556,7 +551,6 @@ public class EnvironmentDecayAbility extends Ability {
     // Intensity for stone pickaxes and below
     private boolean isIntensityTwo(BlockState blockState) {
         return blockState.is(net.minecraft.tags.BlockTags.MINEABLE_WITH_PICKAXE) &&
-                blockState.is(net.minecraft.tags.BlockTags.NEEDS_STONE_TOOL) &&
                 !blockState.is(net.minecraft.tags.BlockTags.NEEDS_IRON_TOOL) &&
                 !blockState.is(net.minecraft.tags.BlockTags.NEEDS_DIAMOND_TOOL);
     }
