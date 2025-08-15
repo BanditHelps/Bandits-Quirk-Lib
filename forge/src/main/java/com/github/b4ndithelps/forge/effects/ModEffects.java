@@ -17,6 +17,9 @@ public class ModEffects {
     public static final RegistryObject<MobEffect> STUN_EFFECT =
             MOB_EFFECTS.register("stun_effect", StunMobEffect::new);
 
+    public static final RegistryObject<MobEffect> TRUE_INVISIBILITY =
+            MOB_EFFECTS.register("true_invisibility", TrueInvisibilityEffect::new);
+
     public static void register(IEventBus eventBus) {
         MOB_EFFECTS.register(eventBus);
     }
