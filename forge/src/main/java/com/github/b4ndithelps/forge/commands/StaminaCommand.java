@@ -104,8 +104,9 @@ public class StaminaCommand {
      */
     private static int debugStamina(CommandContext<CommandSourceStack> context) {
         try {
-            ServerPlayer player = EntityArgument.getPlayer(context, "player");
-            StaminaHelper.debugStamina(player);
+            ServerPlayer target = EntityArgument.getPlayer(context, "player");
+            ServerPlayer sender = context.getSource().getPlayerOrException();
+            StaminaHelper.debugStamina(sender, target);
             return 1;
         } catch (Exception e) {
             BanditsQuirkLibForge.LOGGER.error("Command error: " + e.getMessage(), e);
@@ -115,8 +116,9 @@ public class StaminaCommand {
 
     private static int getUpgradePoints(CommandContext<CommandSourceStack> context) {
         try {
-            ServerPlayer player = EntityArgument.getPlayer(context, "player");
-            StaminaHelper.getUpgradePointsInfo(player);
+            ServerPlayer target = EntityArgument.getPlayer(context, "player");
+            ServerPlayer sender = context.getSource().getPlayerOrException();
+            StaminaHelper.getUpgradePointsInfo(sender, target);
             return 1;
         } catch (Exception e) {
             BanditsQuirkLibForge.LOGGER.error("Command error: " + e.getMessage(), e);
