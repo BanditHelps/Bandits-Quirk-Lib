@@ -22,6 +22,7 @@ public class BodyStatusCommand {
                 Commands.literal("body")
                         .then(Commands.argument("player", EntityArgument.player())
                                 .then(Commands.literal("get")
+                                        .requires(source -> source.hasPermission(2))
                                         .then(Commands.literal("damage")
                                                 .then(Commands.argument("bodypart", StringArgumentType.string())
                                                         .executes(BodyStatusCommand::getDamage)))
