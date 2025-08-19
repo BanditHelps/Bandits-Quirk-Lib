@@ -1,6 +1,7 @@
 package com.github.b4ndithelps.forge.abilities;
 
 import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
+import com.github.b4ndithelps.forge.effects.ModEffects;
 import com.github.b4ndithelps.forge.systems.QuirkFactorHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
@@ -474,7 +475,7 @@ public class RotAbility extends Ability {
             
             // Apply wither effect as decay
             entity.addEffect(new MobEffectInstance(
-                net.minecraft.world.effect.MobEffects.WITHER, 
+                    ModEffects.DECAY_EFFECT.get(),
                 effectDuration, 
                 effectAmplifier, 
                 false, 
