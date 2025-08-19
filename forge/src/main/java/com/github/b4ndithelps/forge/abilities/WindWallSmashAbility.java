@@ -129,7 +129,7 @@ public class WindWallSmashAbility extends Ability {
         SafetyCheckResult safetyInfo = getOverUseDamageLevel(player, powerUsed);
         
         String statusText = safetyInfo.isSafe ? "Safe" : "Overuse";
-        String message = String.format("Charging Smash: %.1f%% (%s)", chargePercent, statusText);
+        String message = String.format("Charging Smash: %.0f%% (%s)", chargePercent, statusText);
         
         // Send title command to display actionbar message
         Component actionBarComponent = Component.literal(message)
