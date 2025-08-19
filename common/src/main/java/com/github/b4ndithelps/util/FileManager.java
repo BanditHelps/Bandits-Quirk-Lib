@@ -14,6 +14,9 @@ import java.util.List;
 import java.util.stream.Stream;
 
 public class FileManager {
+    
+    // Track if we've already shown the options replacement screen this session
+    private static boolean optionsReplacementScreenShown = false;
 
     public static boolean moveFileToConfig(String sourcePath, String fileName) {
         try {
@@ -319,6 +322,38 @@ public class FileManager {
 
         } catch (IOException e) {
             BanditsQuirkLib.LOGGER.error("Failed to copy options.txt from mod resources to FancyMenu config: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Checks if the options.txt file was recently placed by checking if options.txt exists 
+     * but the .delete_to_reload_fancymenu marker doesn't exist yet
+     * Only returns true once per session to avoid showing the screen multiple times
+     * @return true if the options.txt file was placed and FancyMenu setup hasn't completed
+     */
+    public static boolean wasOptionsFileReplaced() {
+        try {
+            // If we've already shown the screen this session, don't show it again
+            if (optionsReplacementScreenShown) {
+                return false;
+            }
+            
+            Path configDir = Platform.getConfigFolder();
+            Path markerFile = configDir.resolve(".delete_to_reload_fancymenu");
+            Path optionsFile = configDir.resolve("fancymenu").resolve("options.txt");
+            
+            // If options.txt exists but the marker file doesn't, then options.txt was just placed
+            boolean result = Files.exists(optionsFile) && !Files.exists(markerFile);
+            
+            if (result) {
+                BanditsQuirkLib.LOGGER.info("Options file was placed but FancyMenu setup not completed - showing info screen");
+                optionsReplacementScreenShown = true; // Mark that we've shown the screen
+            }
+            
+            return result;
+        } catch (Exception e) {
+            BanditsQuirkLib.LOGGER.error("Failed to check options replacement status: " + e.getMessage());
             return false;
         }
     }
