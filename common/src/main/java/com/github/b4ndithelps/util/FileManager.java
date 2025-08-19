@@ -2,9 +2,9 @@ package com.github.b4ndithelps.util;
 
 import com.github.b4ndithelps.BanditsQuirkLib;
 import dev.architectury.platform.Platform;
-import org.slf4j.Logger;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -278,6 +278,49 @@ public class FileManager {
                 StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 
         BanditsQuirkLib.LOGGER.info("Successfully merged variable files to: " + targetFile.toString());
+    }
+
+    /**
+     * Copies an options.txt file from mod resources to /config/fancymenu/options.txt
+     * Only copies the file if the marker file .delete_to_reload_fancymenu is not present
+     * @param resourcePath The path to the resource within the mod JAR (e.g., "options.txt")
+     * @return true if successful, false if failed or setup already completed
+     */
+    public static boolean copyOptionsFileFromResources(String resourcePath) {
+        try {
+            Path configDir = Platform.getConfigFolder();
+            Path fancyMenuDir = configDir.resolve("fancymenu");
+            Path targetFile = fancyMenuDir.resolve("options.txt");
+            Path markerFile = configDir.resolve(".delete_to_reload_fancymenu");
+
+            // Check if the marker file exists - if so, skip execution
+            if (Files.exists(markerFile)) {
+                BanditsQuirkLib.LOGGER.info("FancyMenu setup already completed, skipping options.txt copy from resources");
+                BanditsQuirkLib.LOGGER.info("Delete the marker file to re-run FancyMenu setup.");
+                return true; // Return true since this is expected behavior
+            }
+
+            // Get the resource from the mod JAR
+            InputStream resourceStream = FileManager.class.getClassLoader().getResourceAsStream(resourcePath);
+            if (resourceStream == null) {
+                BanditsQuirkLib.LOGGER.error("Could not find options.txt resource at: " + resourcePath);
+                return false;
+            }
+
+            // Ensure fancymenu directory exists
+            Files.createDirectories(fancyMenuDir);
+
+            // Copy the resource to the target location
+            Files.copy(resourceStream, targetFile, StandardCopyOption.REPLACE_EXISTING);
+            resourceStream.close();
+
+            BanditsQuirkLib.LOGGER.info("Successfully copied options.txt from mod resources to FancyMenu config: " + targetFile.toString());
+            return true;
+
+        } catch (IOException e) {
+            BanditsQuirkLib.LOGGER.error("Failed to copy options.txt from mod resources to FancyMenu config: " + e.getMessage());
+            return false;
+        }
     }
 
     /**

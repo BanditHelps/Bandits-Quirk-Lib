@@ -3,6 +3,7 @@ package com.github.b4ndithelps.forge.config;
 import com.github.b4ndithelps.values.BodyConstants;
 import com.github.b4ndithelps.values.CreationShopConstants;
 import com.github.b4ndithelps.values.StaminaConstants;
+import com.github.b4ndithelps.util.FileManager;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
@@ -37,6 +38,31 @@ public class ConfigManager {
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, BQLConfig.SPEC, "bql-common.toml");
         
         LOGGER.info("Config system initialized - waiting for config to load");
+    }
+    
+    /**
+     * Copies an options.txt file from mod resources to /config/fancymenu/options.txt if it doesn't already exist
+     * @param resourcePath The path to the resource within the mod JAR (e.g., "options.txt")
+     * @return true if successful or target already exists, false if failed
+     */
+    public static boolean setupFancyMenuOptionsFromResources(String resourcePath) {
+        LOGGER.info("Setting up FancyMenu options.txt from mod resources: {}", resourcePath);
+        boolean result = FileManager.copyOptionsFileFromResources(resourcePath);
+        if (result) {
+            LOGGER.info("FancyMenu options.txt setup from resources completed successfully");
+        } else {
+            LOGGER.warn("FancyMenu options.txt setup from resources failed");
+        }
+        return result;
+    }
+    
+    /**
+     * Copies the default options.txt file from mod resources to /config/fancymenu/options.txt if it doesn't already exist
+     * Uses the default resource path "options.txt"
+     * @return true if successful or target already exists, false if failed
+     */
+    public static boolean setupDefaultFancyMenuOptions() {
+        return setupFancyMenuOptionsFromResources("options.txt");
     }
     
     public static void updateConstants() {
