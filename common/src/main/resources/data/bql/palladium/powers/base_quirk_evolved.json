@@ -1048,7 +1048,7 @@
           },
           {
             "type": "bandits_quirk_lib:upgrade_point_buy",
-            "points": 3
+            "points": 100
           }
         ]
       }
