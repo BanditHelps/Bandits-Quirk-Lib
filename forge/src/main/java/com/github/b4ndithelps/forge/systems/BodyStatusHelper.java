@@ -697,4 +697,139 @@ public class BodyStatusHelper {
             throw new RuntimeException("Invalid body part: " + bodyPartName + " (resolved to: " + resolveBodyPartName(player, bodyPartName) + ")");
         }
     }
+
+    // === REGENERATION HELPER METHODS ===
+
+    /**
+     * Gets all body parts that are damaged (damage > 0) but not destroyed.
+     * This is useful for regeneration abilities that want to heal damaged parts.
+     * 
+     * @param player The player to check
+     * @return An array of BodyPart values that are damaged but not destroyed
+     */
+    public static BodyPart[] getDamagedParts(Player player) {
+        IBodyStatusCapability bodyStatus = getBodyStatus(player);
+        if (bodyStatus == null) {
+            return new BodyPart[0]; // Return empty array if capability not available
+        }
+        
+        return java.util.Arrays.stream(BodyPart.values())
+                .filter(part -> {
+                    float damage = bodyStatus.getDamage(part);
+                    boolean isDestroyed = bodyStatus.isPartDestroyed(part);
+                    return damage > 0.0f && !isDestroyed;
+                })
+                .toArray(BodyPart[]::new);
+    }
+
+    /**
+     * Gets all body part names that are damaged (damage > 0) but not destroyed.
+     * This is useful for KubeJS and other scripting systems.
+     * 
+     * @param player The player to check
+     * @return An array of body part names that are damaged but not destroyed
+     */
+    public static String[] getDamagedPartNames(Player player) {
+        BodyPart[] damagedParts = getDamagedParts(player);
+        return java.util.Arrays.stream(damagedParts)
+                .map(part -> part.getName())
+                .toArray(String[]::new);
+    }
+
+    /**
+     * Heals a random damaged body part by the specified amount.
+     * Only heals parts that are damaged (damage > 0) but not destroyed.
+     * 
+     * @param player The player to heal
+     * @param healAmount The amount to heal (reduces damage)
+     * @return The name of the body part that was healed, or null if no parts could be healed
+     */
+    public static String healRandomDamagedPart(Player player, float healAmount) {
+        BodyPart[] damagedParts = getDamagedParts(player);
+        if (damagedParts.length == 0) {
+            return null; // No damaged parts to heal
+        }
+
+        // Pick a random damaged part
+        BodyPart randomPart = damagedParts[new java.util.Random().nextInt(damagedParts.length)];
+        
+        // Get current damage and calculate new damage
+        IBodyStatusCapability bodyStatus = getBodyStatus(player);
+        if (bodyStatus == null) {
+            return null; // Capability not available
+        }
+        
+        float currentDamage = bodyStatus.getDamage(randomPart);
+        float newDamage = Math.max(0.0f, currentDamage - healAmount);
+        
+        // Apply the healing
+        bodyStatus.setDamage(randomPart, newDamage);
+        
+        // Auto-sync to client if this is a server player
+        if (player instanceof ServerPlayer serverPlayer) {
+            syncToClient(serverPlayer);
+        }
+        
+        return randomPart.getName();
+    }
+
+    /**
+     * Heals a random damaged body part by the specified amount WITHOUT syncing.
+     * Use this for bulk operations where you want to sync manually at the end.
+     * 
+     * @param player The player to heal
+     * @param healAmount The amount to heal (reduces damage)
+     * @return The name of the body part that was healed, or null if no parts could be healed
+     */
+    public static String healRandomDamagedPartNoSync(Player player, float healAmount) {
+        BodyPart[] damagedParts = getDamagedParts(player);
+        if (damagedParts.length == 0) {
+            return null; // No damaged parts to heal
+        }
+
+        // Pick a random damaged part
+        BodyPart randomPart = damagedParts[new java.util.Random().nextInt(damagedParts.length)];
+        
+        // Get current damage and calculate new damage
+        IBodyStatusCapability bodyStatus = getBodyStatus(player);
+        if (bodyStatus == null) {
+            return null; // Capability not available
+        }
+        
+        float currentDamage = bodyStatus.getDamage(randomPart);
+        float newDamage = Math.max(0.0f, currentDamage - healAmount);
+        
+        // Apply the healing without syncing
+        bodyStatus.setDamage(randomPart, newDamage);
+        
+        return randomPart.getName();
+    }
+
+    /**
+     * Checks if a player has any damaged body parts (excluding destroyed parts).
+     * 
+     * @param player The player to check
+     * @return true if the player has any damaged but not destroyed parts
+     */
+    public static boolean hasDamagedParts(Player player) {
+        return getDamagedParts(player).length > 0;
+    }
+
+    /**
+     * Gets the total damage across all body parts (excluding destroyed parts).
+     * 
+     * @param player The player to check
+     * @return The total damage amount
+     */
+    public static float getTotalDamage(Player player) {
+        IBodyStatusCapability bodyStatus = getBodyStatus(player);
+        if (bodyStatus == null) {
+            return 0.0f; // Return 0 if capability not available
+        }
+        
+        return java.util.Arrays.stream(BodyPart.values())
+                .filter(part -> !bodyStatus.isPartDestroyed(part))
+                .map(part -> bodyStatus.getDamage(part))
+                .reduce(0.0f, Float::sum);
+    }
 }

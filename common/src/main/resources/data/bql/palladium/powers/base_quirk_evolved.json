@@ -3,6 +3,7 @@
   "background": "minecraft:textures/block/sandstone.png",
   "icon": "minecraft:iron_sword",
   "gui_display_type": "tree",
+  "persistent_data": true,
   "abilities": {
     "startup": {
       "type": "palladium:command",
@@ -286,7 +287,7 @@
           {
             "type": "palladium:ability_unlocked",
             "power": "null",
-            "ability": "regen_1"
+            "ability": "regeneration_2"
           },
           {
             "type": "bandits_quirk_lib:upgrade_point_buy",
@@ -935,13 +936,25 @@
         ]
       }
     },
-    "regen_1": {
-      "type": "palladium:dummy",
-      "icon": "minecraft:glowstone_dust",
-      "title": "WIP - Regen I",
-      "description": "Increase your regeneration rate.",
+    "basic_regeneration": {
+      "type": "bandits_quirk_lib:regeneration",
+      "title": "Basic Regeneration",
+      "description": "Slowly heals damaged body parts over time.",
+      "icon": "minecraft:golden_apple",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "heal_amount": 0.5,
+      "tick_interval": 60
+    },
+    "regeneration_2": {
+      "type": "bandits_quirk_lib:regeneration",
+      "icon": "minecraft:golden_carrot",
+      "title": "Regen I",
+      "description": "Increase your bodies natural regeneration rate.",
       "hidden_in_bar": true,
       "gui_position": [3, 2],
+      "heal_amount": 0.25,
+      "tick_interval": 80,
       "conditions": {
         "unlocking": [
           {
@@ -951,18 +964,20 @@
           },
           {
             "type": "bandits_quirk_lib:upgrade_point_buy",
-            "points": 1
+            "points": 2
           }
         ]
       }
     },
-    "regen_2": {
-      "type": "palladium:dummy",
-      "icon": "minecraft:glowstone_dust",
-      "title": "WIP - Regen II",
-      "description": "Increase your regeneration rate.",
+    "regeneration_3": {
+      "type": "bandits_quirk_lib:regeneration",
+      "icon": "minecraft:enchanted_golden_apple",
+      "title": "Regen III",
+      "description": "Further improve your natural regeneration rate.",
       "hidden_in_bar": true,
       "gui_position": [-3, -2],
+      "heal_amount": 0.25,
+      "tick_interval": 80,
       "conditions": {
         "unlocking": [
           {
@@ -972,7 +987,7 @@
           },
           {
             "type": "bandits_quirk_lib:upgrade_point_buy",
-            "points": 1
+            "points": 3
           }
         ]
       }
@@ -1014,7 +1029,7 @@
           {
             "type": "palladium:ability_unlocked",
             "power": "null",
-            "ability": "regen_2"
+            "ability": "regeneration_2"
           },
           {
             "type": "palladium:ability_unlocked",

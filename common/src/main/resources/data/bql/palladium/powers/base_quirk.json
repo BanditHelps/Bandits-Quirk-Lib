@@ -3,6 +3,7 @@
   "background": "minecraft:textures/block/stone.png",
   "icon": "minecraft:wooden_sword",
   "gui_display_type": "tree",
+  "persistent_data": true,
   "abilities": {
     "startup": {
       "type": "palladium:command",
@@ -459,6 +460,16 @@
         2, 2, 2
       ],
       "alignment": "bottom_left"
+    },
+    "basic_regeneration": {
+      "type": "bandits_quirk_lib:regeneration",
+      "title": "Basic Regeneration",
+      "description": "Slowly heals damaged body parts over time.",
+      "icon": "minecraft:golden_apple",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "heal_amount": 0.5,
+      "tick_interval": 60
     },
     "quirk_evolve": {
       "type": "palladium:command",
