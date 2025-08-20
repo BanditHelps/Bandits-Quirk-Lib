@@ -1,15 +1,9 @@
 package com.github.b4ndithelps.forge.abilities;
 
-import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
-import com.github.b4ndithelps.forge.capabilities.Body.BodyPart;
-import com.github.b4ndithelps.forge.capabilities.Body.IBodyStatusCapability;
-import com.github.b4ndithelps.forge.systems.BodyStatusHelper;
+import com.github.b4ndithelps.forge.systems.PowerStockHelper;
 import com.github.b4ndithelps.forge.systems.ProjectileSpawner;
-import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -23,16 +17,13 @@ import net.threetag.palladium.util.property.*;
 
 import java.util.concurrent.ThreadLocalRandom;
 
+import static com.github.b4ndithelps.forge.systems.PowerStockHelper.sendPlayerPercentageMessage;
+
 public class WindWallSmashAbility extends Ability {
 
     // Power Stock Scaling Constants
     private static final float BASE_LIFETIME = 20; // Base lifetime in ticks (2 seconds)
     private static final float MAX_LIFETIME = 150; // Max lifetime in ticks (7 seconds)
-    
-    // Safety threshold multipliers (can be made configurable later)
-    private static final float MINOR_DAMAGE_THRESHOLD = 1.2f; // 120% of safe threshold
-    private static final float MAJOR_DAMAGE_THRESHOLD = 1.5f; // 150% of safe threshold  
-    private static final float SEVERE_DAMAGE_THRESHOLD = 2.0f; // 200% of safe threshold
 
     // Configurable properties
     public static final PalladiumProperty<Float> BASE_WALL_WIDTH = new FloatProperty("base_wall_width").configurable("Base width of the wall projectile");
@@ -43,8 +34,6 @@ public class WindWallSmashAbility extends Ability {
     // Unique values for charging
     public static final PalladiumProperty<Integer> CHARGE_TICKS;
 
-
-
     public WindWallSmashAbility() {
         this.withProperty(BASE_WALL_WIDTH, 3.0F)
                 .withProperty(BASE_WALL_HEIGHT, 3.0F)
@@ -54,89 +43,6 @@ public class WindWallSmashAbility extends Ability {
 
     public void registerUniqueProperties(PropertyManager manager) {
         manager.register(CHARGE_TICKS, 0);
-    }
-
-    /**
-     * Get the current safe power threshold from the body system
-     * @param player The player entity
-     * @return The amount of power that can be used before it becomes unsafe
-     */
-    private float getSafePowerThreshold(ServerPlayer player) {
-        IBodyStatusCapability bodyStatus = BodyStatusHelper.getBodyStatus(player);
-        return bodyStatus != null ? bodyStatus.getCustomFloat(BodyPart.CHEST, "pstock_max_safe") : 0.0f;
-    }
-    
-    /**
-     * Get the current stored power from the body system
-     * @param player The player entity
-     * @return Current stored power
-     */
-    private float getStoredPower(ServerPlayer player) {
-        IBodyStatusCapability bodyStatus = BodyStatusHelper.getBodyStatus(player);
-        return bodyStatus != null ? bodyStatus.getCustomFloat(BodyPart.CHEST, "pstock_stored") : 0.0f;
-    }
-    
-    /**
-     * Safety check results container
-     */
-    private static class SafetyCheckResult {
-        public final boolean isSafe;
-        public final String damageLevel;
-        public final String color;
-        
-        public SafetyCheckResult(boolean isSafe, String damageLevel, String color) {
-            this.isSafe = isSafe;
-            this.damageLevel = damageLevel;
-            this.color = color;
-        }
-    }
-    
-    /**
-     * Check if the player's current power usage is safe and determine damage level
-     * @param player The player entity
-     * @param powerUsed Amount of power used
-     * @return Safety check results
-     */
-    private SafetyCheckResult getOverUseDamageLevel(ServerPlayer player, float powerUsed) {
-        IBodyStatusCapability bodyStatus = BodyStatusHelper.getBodyStatus(player);
-        float safeThreshold =  bodyStatus != null ? bodyStatus.getCustomFloat(BodyPart.CHEST, "pstock_max_safe") : 0.0f;
-        
-        if (powerUsed <= safeThreshold) {
-            return new SafetyCheckResult(true, "none", "green");
-        }
-        
-        float overagePercentage = powerUsed / safeThreshold;
-        
-        // Determine damage level based on how much over threshold
-        if (overagePercentage >= SEVERE_DAMAGE_THRESHOLD) {
-            return new SafetyCheckResult(false, "severe", "dark_red");
-        } else if (overagePercentage >= MAJOR_DAMAGE_THRESHOLD) {
-            return new SafetyCheckResult(false, "major", "red");
-        } else if (overagePercentage >= MINOR_DAMAGE_THRESHOLD) {
-            return new SafetyCheckResult(false, "minor", "gold");
-        }
-        
-        return new SafetyCheckResult(true, "none", "green");
-    }
-    
-    /**
-     * Send charging percentage message to player via actionbar
-     * @param player The player entity
-     * @param powerUsed Amount of power being used
-     * @param chargePercent Charge percentage (0-100)
-     */
-    private void sendPlayerPercentageMessage(ServerPlayer player, float powerUsed, float chargePercent) {
-        SafetyCheckResult safetyInfo = getOverUseDamageLevel(player, powerUsed);
-        
-        String statusText = safetyInfo.isSafe ? "Safe" : "Overuse";
-        String message = String.format("Charging Smash: %.0f%% (%s)", chargePercent, statusText);
-        
-        // Send title command to display actionbar message
-        Component actionBarComponent = Component.literal(message)
-                .withStyle(ChatFormatting.valueOf(safetyInfo.color.toUpperCase()));
-
-        ClientboundSetActionBarTextPacket packet = new ClientboundSetActionBarTextPacket(actionBarComponent);
-        (player).connection.send(packet);
     }
 
     @Override
@@ -191,7 +97,7 @@ public class WindWallSmashAbility extends Ability {
         float chargePercent = Math.min(chargeTicks / (float)maxChargeTime, 1.0f) * 100.0f;
         
         // Get current power stock
-        float powerStock = getStoredPower(player);
+        float powerStock = PowerStockHelper.getStoredPower(player);
         
         // Calculate power that will be used at current charge level
         float powerToUse = (chargePercent / 100.0f) * powerStock;
@@ -211,7 +117,7 @@ public class WindWallSmashAbility extends Ability {
 
     private void spawnWallProjectile(ServerPlayer player, ServerLevel level, AbilityInstance entry, int chargeTicks) {
         // Get power stock from chest
-        float powerStock = getStoredPower(player);
+        float powerStock = PowerStockHelper.getStoredPower(player);
         
         int maxChargeTime = entry.getProperty(MAX_CHARGE_TIME);
         float baseWidth = entry.getProperty(BASE_WALL_WIDTH);
@@ -246,26 +152,10 @@ public class WindWallSmashAbility extends Ability {
         // Add burst particles at release point
         addReleaseEffects(player, level, chargeTicks);
 
-        applyDamageToLimbs(player, powerBeingUsed);
+        PowerStockHelper.applyLimbDamage(player, powerBeingUsed, "leg");
         
         // No chat feedback - only actionbar during charging
 //        player.sendSystemMessage(Component.literal("Width: " + effectiveWidth + " | Height: " + effectiveHeight + " | lifetime: " + effectiveLifetime));
-    }
-
-    private void applyDamageToLimbs(ServerPlayer player, float powerUsed) {
-        SafetyCheckResult safetyInfo = getOverUseDamageLevel(player, powerUsed);
-
-        int legDamage = 0;
-
-        if (!safetyInfo.isSafe) {
-            if (safetyInfo.damageLevel == "minor") legDamage += 25;
-            if (safetyInfo.damageLevel == "major") legDamage += 50;
-            if (safetyInfo.damageLevel == "severe") legDamage += 100;
-        }
-
-        if (legDamage > 0) {
-            BodyStatusHelper.addDamage(player, "leg", legDamage);
-        }
     }
 
     private void addReleaseEffects(ServerPlayer player, ServerLevel level, int chargeTicks) {

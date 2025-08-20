@@ -20,6 +20,9 @@ public class ModEffects {
     public static final RegistryObject<MobEffect> TRUE_INVISIBILITY =
             MOB_EFFECTS.register("true_invisibility", TrueInvisibilityEffect::new);
 
+    public static final RegistryObject<MobEffect> PSTOCK_OVERUSE =
+            MOB_EFFECTS.register("pstock_overuse", PstockOveruseEffect::new);
+
     public static void register(IEventBus eventBus) {
         MOB_EFFECTS.register(eventBus);
     }

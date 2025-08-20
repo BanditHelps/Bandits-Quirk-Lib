@@ -95,8 +95,8 @@ public class WindProjectileAbility extends Ability {
         // Create the real projectile entity
         createWindProjectileEntity(level, player, lookDirection, currentDamage, currentKnockback, visualRatio, projectileSpeed, currentRange);
         
-        BanditsQuirkLibForge.LOGGER.info("power: {}, damage: {}, knockback: {}, speed: {}, range: {}",
-                                       powerStock, currentDamage, currentKnockback, projectileSpeed, currentRange);
+//        BanditsQuirkLibForge.LOGGER.info("power: {}, damage: {}, knockback: {}, speed: {}, range: {}",
+//                                       powerStock, currentDamage, currentKnockback, projectileSpeed, currentRange);
     }
 
     private void createWindProjectileEntity(ServerLevel level, ServerPlayer shooter, Vec3 direction, 

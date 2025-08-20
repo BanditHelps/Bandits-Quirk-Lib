@@ -1,24 +1,20 @@
 package com.github.b4ndithelps.forge.abilities;
 
-import com.github.b4ndithelps.forge.capabilities.Body.BodyPart;
-import com.github.b4ndithelps.forge.capabilities.Body.IBodyStatusCapability;
+
 import com.github.b4ndithelps.forge.systems.BodyStatusHelper;
+import com.github.b4ndithelps.forge.systems.PowerStockHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.util.Mth;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.ClipContext;
-import net.minecraft.world.level.Explosion;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
@@ -35,15 +31,10 @@ import net.threetag.palladium.util.property.SyncType;
 import net.minecraft.ChatFormatting;
 
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
+
+import static com.github.b4ndithelps.forge.systems.PowerStockHelper.sendPlayerPercentageMessage;
 
 public class DetroitSmashAbility extends Ability {
-
-    // Safety threshold multipliers
-    private static final float MINOR_DAMAGE_THRESHOLD = 1.2f; // 120% of safe threshold
-    private static final float MAJOR_DAMAGE_THRESHOLD = 1.5f; // 150% of safe threshold  
-    private static final float SEVERE_DAMAGE_THRESHOLD = 2.0f; // 200% of safe threshold
-
     // Configurable properties
     public static final PalladiumProperty<Integer> MAX_CHARGE_TICKS = new IntegerProperty("max_charge_ticks").configurable("Maximum charge time in ticks");
     public static final PalladiumProperty<Float> DAMAGE_THRESHOLD = new FloatProperty("damage_threshold").configurable("Percentage threshold where player starts taking damage");
@@ -67,89 +58,6 @@ public class DetroitSmashAbility extends Ability {
 
     public void registerUniqueProperties(PropertyManager manager) {
         manager.register(CHARGE_TICKS, 0);
-    }
-
-    /**
-     * Get the current stored power from the body system
-     * @param player The player entity
-     * @return Current stored power
-     */
-    private float getStoredPower(ServerPlayer player) {
-        IBodyStatusCapability bodyStatus = BodyStatusHelper.getBodyStatus(player);
-        return bodyStatus != null ? bodyStatus.getCustomFloat(BodyPart.CHEST, "pstock_stored") : 0.0f;
-    }
-
-    /**
-     * Get the current safe power threshold from the body system
-     * @param player The player entity
-     * @return The amount of power that can be used before it becomes unsafe
-     */
-    private float getSafePowerThreshold(ServerPlayer player) {
-        IBodyStatusCapability bodyStatus = BodyStatusHelper.getBodyStatus(player);
-        return bodyStatus != null ? bodyStatus.getCustomFloat(BodyPart.CHEST, "pstock_max_safe") : 0.0f;
-    }
-
-    /**
-     * Safety check results container
-     */
-    private static class SafetyCheckResult {
-        public final boolean isSafe;
-        public final String damageLevel;
-        public final String color;
-        
-        public SafetyCheckResult(boolean isSafe, String damageLevel, String color) {
-            this.isSafe = isSafe;
-            this.damageLevel = damageLevel;
-            this.color = color;
-        }
-    }
-
-    /**
-     * Check if the player's current power usage is safe and determine damage level
-     * @param player The player entity
-     * @param powerUsed Amount of power used
-     * @return Safety check results
-     */
-    private SafetyCheckResult getOverUseDamageLevel(ServerPlayer player, float powerUsed) {
-        IBodyStatusCapability bodyStatus = BodyStatusHelper.getBodyStatus(player);
-        float safeThreshold = bodyStatus != null ? bodyStatus.getCustomFloat(BodyPart.CHEST, "pstock_max_safe") : 0.0f;
-        
-        if (powerUsed <= safeThreshold) {
-            return new SafetyCheckResult(true, "none", "green");
-        }
-        
-        float overagePercentage = powerUsed / safeThreshold;
-        
-        // Determine damage level based on how much over threshold
-        if (overagePercentage >= SEVERE_DAMAGE_THRESHOLD) {
-            return new SafetyCheckResult(false, "severe", "dark_red");
-        } else if (overagePercentage >= MAJOR_DAMAGE_THRESHOLD) {
-            return new SafetyCheckResult(false, "major", "red");
-        } else if (overagePercentage >= MINOR_DAMAGE_THRESHOLD) {
-            return new SafetyCheckResult(false, "minor", "gold");
-        }
-        
-        return new SafetyCheckResult(true, "none", "green");
-    }
-
-    /**
-     * Send charging percentage message to player via actionbar
-     * @param player The player entity
-     * @param powerUsed Amount of power being used
-     * @param chargePercent Charge percentage (0-100)
-     */
-    private void sendPlayerPercentageMessage(ServerPlayer player, float powerUsed, float chargePercent) {
-        SafetyCheckResult safetyInfo = getOverUseDamageLevel(player, powerUsed);
-        
-        String statusText = safetyInfo.isSafe ? "Safe" : "Overuse";
-        String message = String.format("Charging Detroit Smash: %.0f%% (%s)", chargePercent, statusText);
-        
-        // Send title command to display actionbar message
-        Component actionBarComponent = Component.literal(message)
-                .withStyle(ChatFormatting.valueOf(safetyInfo.color.toUpperCase()));
-
-        ClientboundSetActionBarTextPacket packet = new ClientboundSetActionBarTextPacket(actionBarComponent);
-        player.connection.send(packet);
     }
 
     @Override
@@ -184,7 +92,10 @@ public class DetroitSmashAbility extends Ability {
             
             // Prevent bug where it forces a smash on reload
             if (chargeTicks == 0) return;
-            
+
+            // Trigger arm swing animation
+            player.broadcastBreakEvent(net.minecraft.world.InteractionHand.MAIN_HAND);
+
             // Execute the Detroit Smash
             executeDetroitSmash(player, serverLevel, entry, chargeTicks);
             
@@ -207,7 +118,7 @@ public class DetroitSmashAbility extends Ability {
         
         // Calculate charge percentage
         float chargePercent = Math.min((currentChargeTicks / (float)maxChargeTicks) * 100.0f, 100.0f);
-        float storedPower = getStoredPower(player);
+        float storedPower = PowerStockHelper.getStoredPower(player);
         float powerUsed = storedPower * chargePercent / 100.0f;
 
         // Show charge message every 5 ticks
@@ -234,33 +145,78 @@ public class DetroitSmashAbility extends Ability {
 
     private void addChargingParticles(ServerPlayer player, ServerLevel level, float chargePercent) {
         Vec3 lookDirection = player.getLookAngle();
-        int particleCount = (int) Math.max(1, Math.floor(chargePercent / 10));
-        
-        double previewDistance = Math.min(10, 2 + (chargePercent / 10));
-        
+        float storedPower = PowerStockHelper.getStoredPower(player);
+         
+        // Scale particle effects based on both charge and stored power (for 500k max)
+        float powerFactor = storedPower > 0 ? Math.min(1.0f, (float)Math.sqrt(storedPower) / 707.0f) : 0.0f;
+         
+        // Much more aggressive particle scaling - very few particles at low power
+        int baseParticleCount = (int) Math.floor(chargePercent / 15); // Base particles from charge
+        int powerParticleCount = (int) Math.floor(powerFactor * powerFactor * 10); // Square scaling for power
+        int particleCount = Math.max(0, baseParticleCount + powerParticleCount);
+         
+        // Add minimal "dud" particles for very low power levels
+        if (particleCount == 0 && chargePercent > 30 && storedPower >= 0) {
+            particleCount = 1; // At least one tiny particle to show something happened
+        }
+         
+        // Preview distance also scales heavily with power
+        double baseDistance = 1 + (chargePercent / 30);
+        double previewDistance = Math.min(15, baseDistance * (0.1f + powerFactor * 0.9f));
+         
         // Show charging preview along look direction
         for (double i = 1; i < previewDistance; i += 0.8) {
             double px = player.getX() + (i * lookDirection.x);
             double py = player.getY() + (i * lookDirection.y) + player.getEyeHeight();
             double pz = player.getZ() + (i * lookDirection.z);
-            
-            if (chargePercent < 30) {
-                level.sendParticles(ParticleTypes.SMOKE, px, py, pz, Math.max(1, particleCount/2), 0.1, 0.1, 0.1, 0.01);
-            } else if (chargePercent < 60) {
-                level.sendParticles(ParticleTypes.SMOKE, px, py, pz, Math.max(1, particleCount/2), 0.15, 0.1, 0.15, 0.02);
-                level.sendParticles(ParticleTypes.CRIT, px, py, pz, Math.max(1, particleCount/3), 0.1, 0.1, 0.1, 0.01);
-            } else if (chargePercent < 80) {
-                level.sendParticles(ParticleTypes.SMOKE, px, py, pz, Math.max(1, particleCount/2), 0.2, 0.15, 0.2, 0.03);
-                level.sendParticles(ParticleTypes.CRIT, px, py, pz, Math.max(1, particleCount/3), 0.15, 0.1, 0.15, 0.02);
-                if ((int)chargePercent % 20 == 0) {
-                    level.sendParticles(ParticleTypes.EXPLOSION, px, py, pz, 1, 0.1, 0.1, 0.1, 0.01);
-                }
-            } else {
-                level.sendParticles(ParticleTypes.SMOKE, px, py, pz, Math.max(1, particleCount/2), 0.25, 0.2, 0.25, 0.04);
-                level.sendParticles(ParticleTypes.CRIT, px, py, pz, Math.max(1, particleCount/3), 0.2, 0.15, 0.2, 0.03);
-                if ((int)chargePercent % 15 == 0) {
-                    level.sendParticles(ParticleTypes.EXPLOSION, px, py, pz, 1, 0.15, 0.1, 0.15, 0.02);
-                    level.sendParticles(ParticleTypes.LARGE_SMOKE, px, py, pz, 1, 0.1, 0.1, 0.1, 0.01);
+             
+            // Only show particles if we actually have particles to show
+            if (particleCount > 0) {
+                // Scale particle intensity based on power - much more conservative
+                int smokeParticles = Math.max(0, particleCount/3);
+                int critParticles = Math.max(0, particleCount/5);
+                 
+                if (chargePercent < 30) {
+                    if (smokeParticles > 0) {
+                        // For very low power, show tiny "dud" particles
+                        if (powerFactor < 0.1f) {
+                            level.sendParticles(ParticleTypes.SMOKE, px, py, pz, 1, 0.02, 0.02, 0.02, 0.001);
+                        } else {
+                            level.sendParticles(ParticleTypes.SMOKE, px, py, pz, smokeParticles, 0.05, 0.05, 0.05, 0.005);
+                        }
+                    }
+                } else if (chargePercent < 60) {
+                    if (smokeParticles > 0) {
+                        level.sendParticles(ParticleTypes.SMOKE, px, py, pz, smokeParticles, 0.1, 0.05, 0.1, 0.01);
+                    }
+                    if (critParticles > 0 && powerFactor > 0.2f) {
+                        level.sendParticles(ParticleTypes.CRIT, px, py, pz, critParticles, 0.05, 0.05, 0.05, 0.005);
+                    }
+                } else if (chargePercent < 80) {
+                    if (smokeParticles > 0) {
+                        level.sendParticles(ParticleTypes.SMOKE, px, py, pz, smokeParticles, 0.15, 0.1, 0.15, 0.02);
+                    }
+                    if (critParticles > 0 && powerFactor > 0.2f) {
+                        level.sendParticles(ParticleTypes.CRIT, px, py, pz, critParticles, 0.1, 0.05, 0.1, 0.01);
+                    }
+                    // Only show explosion particles if we have significant power
+                    if ((int)chargePercent % 20 == 0 && powerFactor > 0.4f) {
+                        level.sendParticles(ParticleTypes.EXPLOSION, px, py, pz, 1, 0.05, 0.05, 0.05, 0.005);
+                    }
+                } else {
+                    if (smokeParticles > 0) {
+                        level.sendParticles(ParticleTypes.SMOKE, px, py, pz, smokeParticles, 0.2, 0.15, 0.2, 0.03);
+                    }
+                    if (critParticles > 0 && powerFactor > 0.2f) {
+                        level.sendParticles(ParticleTypes.CRIT, px, py, pz, critParticles, 0.15, 0.1, 0.15, 0.02);
+                    }
+                    // Enhanced effects only for higher power levels
+                    if ((int)chargePercent % 15 == 0 && powerFactor > 0.5f) {
+                        level.sendParticles(ParticleTypes.EXPLOSION, px, py, pz, 1, 0.1, 0.05, 0.1, 0.01);
+                        if (powerFactor > 0.7f) {
+                            level.sendParticles(ParticleTypes.LARGE_SMOKE, px, py, pz, 1, 0.05, 0.05, 0.05, 0.005);
+                        }
+                    }
                 }
             }
         }
@@ -274,30 +230,40 @@ public class DetroitSmashAbility extends Ability {
         float baseRadius = entry.getProperty(BASE_RADIUS);
         
         float chargePercent = Math.min((chargeTicks / (float)maxChargeTicks) * 100.0f, 100.0f);
-        float storedPower = getStoredPower(player);
+        float storedPower = PowerStockHelper.getStoredPower(player);
         float powerUsed = storedPower * chargePercent / 100.0f;
         
-        // Calculate scaled attack values using the power system
-        float scaledDamage = Math.min(400.0f, Math.max(baseDamage, (float)Math.sqrt(powerUsed) * 0.04f));
-        float scaledKnockback = Math.min(12.0f, baseKnockback + (float)Math.sqrt(powerUsed) * 0.01f);
-        float scaledRadius = Math.min(8.0f, baseRadius + (float)Math.sqrt(powerUsed) * 0.005f);
-        float scaledDistance = Math.min(maxDistance + (float)Math.sqrt(powerUsed) * 0.01f, 45.0f);
-        
-        // Charge percentage bonuses
-        float chargeDamageBonus = (chargePercent / 100.0f) * 8.0f;
-        float chargeKnockbackBonus = (chargePercent / 100.0f) * 1.5f;
-        float chargeRadiusBonus = (chargePercent / 100.0f) * 2.0f;
-        float chargeDistanceBonus = (chargePercent / 100.0f) * 5.0f;
-        
-        float finalDamage = Math.max(baseDamage, scaledDamage + chargeDamageBonus);
-        float finalKnockback = Math.max(baseKnockback, scaledKnockback + chargeKnockbackBonus);
-        float finalRadius = Math.max(baseRadius, scaledRadius + chargeRadiusBonus);
-        float finalDistance = Math.max(10, scaledDistance + chargeDistanceBonus);
+        // Power scaling factor - designed for 0 to 500,000 power range
+        float powerScalingFactor = powerUsed > 0 ? Math.min(1.0f, (float)Math.sqrt(powerUsed) / 707.0f) : 0.0f; // sqrt(500000) ≈ 707
+         
+        // Calculate scaled attack values - heavily dependent on stored power (designed for 500k max)
+        float scaledDamage = baseDamage * (0.05f + powerScalingFactor * 19.95f); // 5% base, up to 2000% at max power
+        float scaledKnockback = baseKnockback * (0.1f + powerScalingFactor * 14.9f); // 10% base, up to 1500% at max power
+        float scaledRadius = baseRadius * (0.2f + powerScalingFactor * 9.8f); // 20% base, up to 1000% at max power
+        float scaledDistance = maxDistance * (0.15f + powerScalingFactor * 4.85f); // 15% base, up to 500% at max power
 
-        // Execute the ray smash - sounds and initial particles
-        level.playSound(null, player.blockPosition(), SoundEvents.GENERIC_EXPLODE, SoundSource.PLAYERS, 2.5f, 0.6f);
-        level.playSound(null, player.blockPosition(), SoundEvents.LIGHTNING_BOLT_THUNDER, SoundSource.PLAYERS, 2.0f, 1.0f);
-        level.playSound(null, player.blockPosition(), SoundEvents.FIREWORK_ROCKET_BLAST, SoundSource.PLAYERS, 1.5f, 0.8f);
+        // Charge percentage multipliers (these are multiplicative, not additive)
+        float chargeMultiplier = 0.3f + (chargePercent / 100.0f) * 0.7f; // 30% to 100% based on charge
+         
+        // Apply charge multiplier to all scaled values (allow very small minimums for zero power)
+        float finalDamage = Math.max(0.1f, scaledDamage * chargeMultiplier);
+        float finalKnockback = Math.max(0.05f, scaledKnockback * chargeMultiplier);
+        float finalRadius = Math.max(0.2f, scaledRadius * chargeMultiplier);
+        float finalDistance = Math.max(1.0f, scaledDistance * chargeMultiplier);
+
+        // Execute the ray smash - sounds and initial particles (scale with power)
+        // Only play sounds if we have decent power, start very quiet
+        if (powerScalingFactor > 0.1f) {
+            float soundVolume = Math.max(0.1f, Math.min(3.0f, powerScalingFactor * 3.0f));
+            level.playSound(null, player.blockPosition(), SoundEvents.GENERIC_EXPLODE, SoundSource.PLAYERS, soundVolume, 0.6f);
+             
+            if (powerScalingFactor > 0.4f) {
+                level.playSound(null, player.blockPosition(), SoundEvents.LIGHTNING_BOLT_THUNDER, SoundSource.PLAYERS, soundVolume * 0.8f, 1.0f);
+            }
+            if (powerScalingFactor > 0.6f) {
+                level.playSound(null, player.blockPosition(), SoundEvents.FIREWORK_ROCKET_BLAST, SoundSource.PLAYERS, soundVolume * 0.6f, 0.8f);
+            }
+        }
 
         // Ray-based targeting system
         Vec3 eyePosition = player.getEyePosition();
@@ -306,7 +272,7 @@ public class DetroitSmashAbility extends Ability {
 
         // Perform ray trace
         BlockHitResult hitResult = level.clip(new ClipContext(eyePosition, endPosition, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
-        
+
         Vec3 impactPoint = hitResult.getType() == HitResult.Type.BLOCK ? hitResult.getLocation() : endPosition;
         double actualDistance = eyePosition.distanceTo(impactPoint);
 
@@ -316,20 +282,20 @@ public class DetroitSmashAbility extends Ability {
         // Show particle trail along the ray path
         addParticleTrail(level, eyePosition, impactPoint, chargePercent);
 
-        // Create TNT explosions for high power levels
-        boolean shouldCreateExplosions = storedPower >= 50000 && chargePercent >= 50;
+        // Create TNT explosions for mid to high power levels
+        boolean shouldCreateExplosions = storedPower >= 50000 && chargePercent >= 50 && powerScalingFactor > 0.3f;
         if (shouldCreateExplosions) {
             createExplosionChain(level, player, eyePosition, impactPoint, finalRadius, powerUsed, chargePercent);
         }
 
         // Enhanced visual effects at impact point
-        addImpactEffects(level, impactPoint, finalRadius, chargePercent);
+        addImpactEffects(level, impactPoint, finalRadius, chargePercent, powerScalingFactor);
 
         // Area of Effect Damage and Knockback
         applyAreaDamage(level, player, impactPoint, finalRadius, finalDamage, finalKnockback);
 
         // Apply overuse damage to arms
-        applyOveruseDamage(player, powerUsed);
+        PowerStockHelper.applyLimbDamage(player, powerUsed, "arm");
 
         // Show completion message
         player.sendSystemMessage(Component.literal(String.format("Detroit Smash executed! %.0f damage, %.0f radius, %.0f range", 
@@ -337,21 +303,47 @@ public class DetroitSmashAbility extends Ability {
     }
 
     private void addParticleTrail(ServerLevel level, Vec3 startPos, Vec3 endPos, float chargePercent) {
-        Vec3 direction = endPos.subtract(startPos).normalize();
-        double distance = startPos.distanceTo(endPos);
-        
-        int trailParticleCount = 3 + Math.round(chargePercent / 20.0f);
-        
-        for (double i = 1; i < distance; i += 0.3) {
-            Vec3 particlePos = startPos.add(direction.scale(i));
-            
-            level.sendParticles(ParticleTypes.CRIT, particlePos.x, particlePos.y, particlePos.z, 
-                trailParticleCount, 0.2, 0.2, 0.2, 0.1);
-            level.sendParticles(ParticleTypes.SMOKE, particlePos.x, particlePos.y, particlePos.z, 
-                trailParticleCount, 0.15, 0.15, 0.15, 0.05);
-            level.sendParticles(ParticleTypes.EXPLOSION, particlePos.x, particlePos.y, particlePos.z, 
-                Math.max(1, trailParticleCount/2), 0.1, 0.1, 0.1, 0.03);
-        }
+         Vec3 direction = endPos.subtract(startPos).normalize();
+         double distance = startPos.distanceTo(endPos);
+         
+         // Get power scaling for trail effects - estimate from distance
+         float powerFactor = Math.max(0.0f, Math.min(1.0f, (float)(distance - 1.0) / 50.0f)); // Estimate power from range
+         
+         // Much more conservative trail particles
+         int trailParticleCount = Math.max(0, Math.round((chargePercent / 30.0f) * powerFactor * powerFactor));
+         double stepSize = Math.max(0.5, 1.5 - powerFactor * 1.0); // Less dense particles for lower power
+         
+         // Add minimal "dud" trail particles for very low power but decent charge
+         if (trailParticleCount == 0 && chargePercent > 60 && distance > 3) {
+             trailParticleCount = 1; // At least show something traveled
+         }
+         
+         for (double i = 1; i < distance; i += stepSize) {
+             Vec3 particlePos = startPos.add(direction.scale(i));
+             
+             if (trailParticleCount > 0) {
+                 // Scale particle spread and intensity with power
+                 double spread = Math.max(0.02, 0.2 * powerFactor); // Even smaller spread for dud particles
+                 double speed = Math.max(0.005, 0.1 * powerFactor); // Even slower speed for dud particles
+                 
+                 // For very low power (dud particles), use minimal effects
+                 if (powerFactor < 0.1f) {
+                     level.sendParticles(ParticleTypes.SMOKE, particlePos.x, particlePos.y, particlePos.z, 
+                         1, 0.02, 0.02, 0.02, 0.005); // Tiny puff
+                 } else {
+                     level.sendParticles(ParticleTypes.CRIT, particlePos.x, particlePos.y, particlePos.z, 
+                         trailParticleCount, spread, spread, spread, speed);
+                     level.sendParticles(ParticleTypes.SMOKE, particlePos.x, particlePos.y, particlePos.z, 
+                         Math.max(1, trailParticleCount), spread * 0.75, spread * 0.75, spread * 0.75, speed * 0.5);
+                     
+                     // Only add explosion particles if we have significant power
+                     if (powerFactor > 0.5f && trailParticleCount > 1) {
+                         level.sendParticles(ParticleTypes.EXPLOSION, particlePos.x, particlePos.y, particlePos.z, 
+                             Math.max(0, trailParticleCount/3), spread * 0.5, spread * 0.5, spread * 0.5, speed * 0.3);
+                     }
+                 }
+             }
+         }
     }
 
     private void createExplosionChain(ServerLevel level, ServerPlayer player, Vec3 startPos, Vec3 endPos, 
@@ -359,7 +351,7 @@ public class DetroitSmashAbility extends Ability {
         Vec3 direction = endPos.subtract(startPos).normalize();
         double distance = startPos.distanceTo(endPos);
         
-        float powerRatio = Math.min(1.0f, powerUsed / 50000.0f);
+                 float powerRatio = Math.min(1.0f, powerUsed / 200000.0f); // Scale for higher power levels
         float explosionPower = Math.min(4.0f, 1.0f + (finalRadius * 0.2f * powerRatio));
         float explosionSpacing = Math.max(4.0f, 12.0f - (chargePercent / 10.0f));
         int maxExplosions = Math.min(15, Math.round(powerRatio * 25));
@@ -384,24 +376,60 @@ public class DetroitSmashAbility extends Ability {
                 .withStyle(ChatFormatting.RED));
     }
 
-    private void addImpactEffects(ServerLevel level, Vec3 impactPoint, float finalRadius, float chargePercent) {
-        // Enhanced visual effects on top of the explosions
-        level.sendParticles(ParticleTypes.EXPLOSION_EMITTER, 
-            impactPoint.x, impactPoint.y, impactPoint.z, 1, 0, 0, 0, 0);
-        level.sendParticles(ParticleTypes.CRIT, 
-            impactPoint.x, impactPoint.y, impactPoint.z, 
-            50 + Math.round(chargePercent), finalRadius, finalRadius, finalRadius, 0.15);
-        level.sendParticles(ParticleTypes.SMOKE, 
-            impactPoint.x, impactPoint.y, impactPoint.z, 
-            100 + Math.round(chargePercent), finalRadius * 1.5f, finalRadius * 1.5f, finalRadius * 1.5f, 0.2);
-        level.sendParticles(ParticleTypes.EXPLOSION, 
-            impactPoint.x, impactPoint.y, impactPoint.z, 
-            20 + Math.round(chargePercent/2), finalRadius * 0.8f, finalRadius * 0.8f, finalRadius * 0.8f, 0.1);
+    private void addImpactEffects(ServerLevel level, Vec3 impactPoint, float finalRadius, float chargePercent, float powerScalingFactor) {
+         // Scale impact effects based on power and charge - much more conservative
+         float effectIntensity = Math.max(0.0f, powerScalingFactor * powerScalingFactor * (chargePercent / 100.0f));
+         
+         // Only create major effects if we have very significant power
+         if (powerScalingFactor > 0.6f) {
+             level.sendParticles(ParticleTypes.EXPLOSION_EMITTER, 
+                 impactPoint.x, impactPoint.y, impactPoint.z, 1, 0, 0, 0, 0);
+         }
+         
+         // Much more conservative particle counts
+         int critCount = Math.max(0, Math.round((5 + chargePercent/2) * effectIntensity));
+         int smokeCount = Math.max(0, Math.round((10 + chargePercent/2) * effectIntensity));
+         int explosionCount = Math.max(0, Math.round((2 + chargePercent/8) * effectIntensity));
+         
+         // Add minimal "dud" impact particles for very low power levels
+         if (critCount == 0 && smokeCount == 0 && chargePercent > 20) {
+             smokeCount = 1; // At least a tiny puff of smoke for the impact
+             if (chargePercent > 50) {
+                 critCount = 1; // Maybe one crit particle if they charged a bit
+             }
+         }
+         
+         // Send particles - even minimal ones for dud effects
+         if (critCount > 0) {
+             // For dud effects, use very small radius and speed
+             float effectiveRadius = powerScalingFactor < 0.1f ? 0.1f : finalRadius;
+             level.sendParticles(ParticleTypes.CRIT, 
+                 impactPoint.x, impactPoint.y, impactPoint.z, 
+                 critCount, effectiveRadius, effectiveRadius, effectiveRadius, Math.max(0.005, 0.15 * powerScalingFactor));
+         }
+         if (smokeCount > 0) {
+             // For dud effects, use very small radius and speed
+             float effectiveRadius = powerScalingFactor < 0.1f ? 0.15f : finalRadius * 1.5f;
+             level.sendParticles(ParticleTypes.SMOKE, 
+                 impactPoint.x, impactPoint.y, impactPoint.z, 
+                 smokeCount, effectiveRadius, effectiveRadius, effectiveRadius, Math.max(0.01, 0.2 * powerScalingFactor));
+         }
+         if (explosionCount > 0) {
+             level.sendParticles(ParticleTypes.EXPLOSION, 
+                 impactPoint.x, impactPoint.y, impactPoint.z, 
+                 explosionCount, finalRadius * 0.8f, finalRadius * 0.8f, finalRadius * 0.8f, Math.max(0.005, 0.1 * powerScalingFactor));
+         }
 
-        // Enhanced explosion sound at impact point
-        level.playSound(null, BlockPos.containing(impactPoint), SoundEvents.GENERIC_EXPLODE, SoundSource.PLAYERS, 3.0f, 0.4f);
-        level.playSound(null, BlockPos.containing(impactPoint), SoundEvents.LIGHTNING_BOLT_IMPACT, SoundSource.PLAYERS, 2.0f, 0.8f);
-    }
+         // Scale sound effects with power - much quieter at low levels
+         if (powerScalingFactor > 0.1f) {
+             float impactSoundVolume = Math.max(0.1f, Math.min(4.0f, powerScalingFactor * 4.0f));
+             level.playSound(null, BlockPos.containing(impactPoint), SoundEvents.GENERIC_EXPLODE, SoundSource.PLAYERS, impactSoundVolume, 0.4f);
+             
+             if (powerScalingFactor > 0.5f) {
+                 level.playSound(null, BlockPos.containing(impactPoint), SoundEvents.LIGHTNING_BOLT_IMPACT, SoundSource.PLAYERS, impactSoundVolume * 0.7f, 0.8f);
+             }
+         }
+     }
 
     private void applyAreaDamage(ServerLevel level, ServerPlayer caster, Vec3 impactPoint, 
                                float finalRadius, float finalDamage, float finalKnockback) {
@@ -444,30 +472,6 @@ public class DetroitSmashAbility extends Ability {
                     entity.setDeltaMovement(entity.getDeltaMovement().add(knockbackVelocity));
                 }
             }
-        }
-    }
-
-    private void applyOveruseDamage(ServerPlayer player, float powerUsed) {
-        SafetyCheckResult safetyCheck = getOverUseDamageLevel(player, powerUsed);
-        
-        int armDamage = 0;
-        
-        if (!safetyCheck.isSafe) {
-            switch (safetyCheck.damageLevel) {
-                case "minor":
-                    armDamage += 70;
-                    break;
-                case "major":
-                    armDamage += 130;
-                    break;
-                case "severe":
-                    armDamage += 200;
-                    break;
-            }
-        }
-        
-        if (armDamage > 0) {
-            BodyStatusHelper.addDamage(player, "arm", armDamage);
         }
     }
 
