@@ -3,6 +3,7 @@ package com.github.b4ndithelps.forge.config;
 import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
 import com.github.b4ndithelps.values.BodyConstants;
 import com.github.b4ndithelps.values.CreationShopConstants;
+import com.github.b4ndithelps.values.QuirkConstants;
 import com.github.b4ndithelps.values.StaminaConstants;
 import dev.latvian.mods.kubejs.util.ConsoleJS;
 import net.minecraftforge.fml.loading.FMLPaths;
@@ -456,6 +457,20 @@ public class ConfigHelper {
     public static int getEnchantLearnCost(String enchantId) {
         return CreationShopConstants.ENCHANT_LEARN_COST_TABLE.getOrDefault(enchantId, 0);
     }
+
+    // ===== Powerstock Methods =====
+
+    public static double getMinorDamagePercentage() {
+        return QuirkConstants.PSTOCK_MINOR_DAMAGE_PERCENTAGE;
+    }
+
+    public static double getMajorDamagePercentage() {
+        return QuirkConstants.PSTOCK_MAJOR_DAMAGE_PERCENTAGE;
+    }
+    public static double getSevereDamagePercentage() {
+        return QuirkConstants.PSTOCK_SEVERE_DAMAGE_PERCENTAGE;
+    }
+
     
     // ===== Utility Methods =====
     

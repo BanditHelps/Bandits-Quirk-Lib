@@ -2,6 +2,7 @@ package com.github.b4ndithelps.forge.config;
 
 import com.github.b4ndithelps.values.BodyConstants;
 import com.github.b4ndithelps.values.CreationShopConstants;
+import com.github.b4ndithelps.values.QuirkConstants;
 import com.github.b4ndithelps.values.StaminaConstants;
 import com.github.b4ndithelps.util.FileManager;
 import com.google.gson.Gson;
@@ -117,9 +118,19 @@ public class ConfigManager {
         StaminaConstants.POINTS_TO_UPGRADE = BQLConfig.INSTANCE.pointsToUpgrade.get();
         StaminaConstants.STARTING_STAMINA_MIN = BQLConfig.INSTANCE.startingStaminaMin.get();
         StaminaConstants.STARTING_STAMINA_MAX = BQLConfig.INSTANCE.startingStaminaMax.get();
-        
-        LOGGER.info("Updated stamina constants - gain chance: {}, max damage: {}", 
-                   StaminaConstants.STAMINA_GAIN_CHANCE, BodyConstants.MAX_DAMAGE);
+
+        // Update the Quirk Related constants
+        QuirkConstants.PSTOCK_MINOR_DAMAGE_PERCENTAGE = BQLConfig.INSTANCE.minorDamagePercentage.get();
+        QuirkConstants.PSTOCK_MAJOR_DAMAGE_PERCENTAGE = BQLConfig.INSTANCE.majorDamagePercentage.get();
+        QuirkConstants.PSTOCK_SEVERE_DAMAGE_PERCENTAGE = BQLConfig.INSTANCE.severeDamagePercentage.get();
+        QuirkConstants.PSTOCK_STRENGTH_DIVISOR = BQLConfig.INSTANCE.strengthDivisor.get();
+        QuirkConstants.PSTOCK_ARMOR_DIVISOR = BQLConfig.INSTANCE.armorDivisor.get();
+        QuirkConstants.PSTOCK_HEALTH_DIVISOR = BQLConfig.INSTANCE.healthDivisor.get();
+        QuirkConstants.PSTOCK_SPEED_DIVISOR = BQLConfig.INSTANCE.speedDivisor.get();
+        QuirkConstants.PSTOCK_SWIM_DIVISOR = BQLConfig.INSTANCE.swimDivisor.get();
+        QuirkConstants.PSTOCK_MINOR_DAMAGE = BQLConfig.INSTANCE.minorDamage.get();
+        QuirkConstants.PSTOCK_MAJOR_DAMAGE = BQLConfig.INSTANCE.majorDamage.get();
+        QuirkConstants.PSTOCK_SEVERE_DAMAGE = BQLConfig.INSTANCE.severeDamage.get();
         
         LOGGER.info("Constants updated from config");
     }
