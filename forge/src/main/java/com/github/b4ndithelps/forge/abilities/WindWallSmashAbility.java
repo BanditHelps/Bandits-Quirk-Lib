@@ -104,7 +104,7 @@ public class WindWallSmashAbility extends Ability {
         
         // Show charge message every 5 ticks (quarter second for smoother updates)
         if (chargeTicks % 5 == 0) {
-            sendPlayerPercentageMessage(player, powerToUse, chargePercent);
+            sendPlayerPercentageMessage(player, powerToUse, chargePercent, "Charging Smash");
         }
 
         // Play charging sounds periodically

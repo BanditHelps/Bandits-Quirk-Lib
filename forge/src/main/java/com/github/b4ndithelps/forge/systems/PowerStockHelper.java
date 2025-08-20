@@ -55,9 +55,10 @@ public class PowerStockHelper {
     }
 
     // Returns the player's selected Full Cowling Level
+    // Converts to a percentage < 1 as the minecraft function sets it to an integer from 0-100
     public static float getFCPercentage(ServerPlayer player) {
         IBodyStatusCapability bodyStatus = BodyStatusHelper.getBodyStatus(player);
-        return bodyStatus.getCustomFloat(BodyPart.CHEST, FC_PERCENTAGE_KEY);
+        return bodyStatus.getCustomFloat(BodyPart.CHEST, FC_PERCENTAGE_KEY) / 100;
     }
 
     public static SafetyInfo getOverUseDamageLevel(ServerPlayer player, float powerUsed) {
@@ -118,15 +119,15 @@ public class PowerStockHelper {
         switch(scalingType) {
             case "strength":
                 // Linear growth: adding +1 strength every "PSTOCK_STRENGTH_ADDITION" energy
-                scaledValue += (((totalPower * percentUsed) / 100) / PSTOCK_STRENGTH_DIVISOR);
+                scaledValue += ((totalPower * percentUsed) / PSTOCK_STRENGTH_DIVISOR);
                 break;
             case "armor":
                 // Linear growth: adding 0.5 armor per "PSTOCK_ARMOR_ADDITION" energy.
-                scaledValue += (((totalPower * percentUsed) / 100) / PSTOCK_ARMOR_DIVISOR);
+                scaledValue += ((totalPower * percentUsed) / PSTOCK_ARMOR_DIVISOR);
                 break;
             case "health":
                 // Linear growth: adding 0.5 armor per "PSTOCK_HEALTH_ADDITION" energy.
-                scaledValue += (float) (((totalPower * percentUsed) / 100) / PSTOCK_HEALTH_DIVISOR);
+                scaledValue += (float) ((totalPower * percentUsed) / PSTOCK_HEALTH_DIVISOR);
                 break;
             case "speed":
                 // Not 100% sure what this one does anymore. I do know speed scaling is way different from health
@@ -138,11 +139,11 @@ public class PowerStockHelper {
                 break;
             case "logarithmic":
                 // Generic logarithmic
-                scaledValue += (float) ((Math.log10(totalPower) * percentUsed) / 10000);
+                scaledValue += (float) ((Math.log10(totalPower) * percentUsed) / 100);
                 break;
             default:
                 // Default: Don't expect this to be used.
-                scaledValue += (float) ((Math.sqrt(totalPower) * percentUsed) / 10000);
+                scaledValue += (float) ((Math.sqrt(totalPower) * percentUsed) / 100);
                 break;
         }
 
@@ -150,7 +151,7 @@ public class PowerStockHelper {
     }
 
     // This is used to send a consistent "Charging: X% / 100%" message to the player that is color coded to the damage level
-    public static void sendPlayerPercentageMessage(ServerPlayer player, float powerUsed, float chargePercent) {
+    public static void sendPlayerPercentageMessage(ServerPlayer player, float powerUsed, float chargePercent, String label) {
         SafetyInfo safetyInfo = getOverUseDamageLevel(player, powerUsed);
         String statusText = safetyInfo.isSafe() ? "Safe": "Overuse";
 
@@ -161,7 +162,7 @@ public class PowerStockHelper {
             default -> ChatFormatting.GREEN;
         };
 
-        ActionBarHelper.sendPercentageDisplay(player, "Charging Smash", chargePercent, color, color, statusText);
+        ActionBarHelper.sendPercentageDisplay(player, label, chargePercent, color, color, statusText);
     }
 
     // This function will damage a certain body part based on how much overcharge the ability is using.
@@ -175,6 +176,18 @@ public class PowerStockHelper {
             case 3 -> PSTOCK_SEVERE_DAMAGE;
             default -> 0;
         };
+
+        // If full cowling is activated, check to see
+        if (player.getTags().contains("MineHa.PowerStock.FullCowl")) {
+            float fcPercentage = getFCPercentage(player);
+            // Check if the full cowling percent is "safe". If so, give a decrease to the damage taken equal to
+            // 1 damage per percent used
+            if (getOverUseDamageLevel(player, (fcPercentage * getStoredPower(player))).isSafe()) {
+                damage = Math.max(damage - (fcPercentage * 100), 0);
+            }
+        }
+
+        // If the player is using full cowling,
 
         // Do some extra checks to make sure that damage does reach the final stage.
         float currentDamage = BodyStatusHelper.getDamage(player, bodyPart);

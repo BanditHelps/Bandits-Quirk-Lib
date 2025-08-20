@@ -123,7 +123,7 @@ public class DetroitSmashAbility extends Ability {
 
         // Show charge message every 5 ticks
         if (currentChargeTicks % 5 == 0) {
-            sendPlayerPercentageMessage(player, powerUsed, chargePercent);
+            sendPlayerPercentageMessage(player, powerUsed, chargePercent, "Charging Smash");
         }
 
         // Charge-based particle effects along player's look direction
