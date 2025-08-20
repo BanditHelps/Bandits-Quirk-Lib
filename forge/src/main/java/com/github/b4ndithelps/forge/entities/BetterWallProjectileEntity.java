@@ -3,10 +3,12 @@ package com.github.b4ndithelps.forge.entities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.util.Mth;
 import net.minecraft.world.damagesource.DamageSource;
@@ -220,7 +222,18 @@ public class BetterWallProjectileEntity extends Projectile {
             Vec3 knockbackVelocity = knockbackDirection.scale(knockbackStrength);
             
             // Apply the knockback to the entity
-            entity.setDeltaMovement(entity.getDeltaMovement().add(knockbackVelocity));
+            Vec3 newMotion = entity.getDeltaMovement().add(knockbackVelocity);
+            entity.setDeltaMovement(newMotion);
+            
+            // Special handling for players - send movement packet to sync client
+            if (entity instanceof ServerPlayer serverPlayer) {
+                // Send the updated velocity to the client to ensure proper synchronization
+                ClientboundSetEntityMotionPacket packet = new ClientboundSetEntityMotionPacket(entity);
+                serverPlayer.connection.send(packet);
+                
+                // Optional: Set the player as "falling" to ensure client respects the velocity
+                entity.hasImpulse = true;
+            }
         }
     }
 
