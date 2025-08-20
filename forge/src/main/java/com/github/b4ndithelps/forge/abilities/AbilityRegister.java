@@ -20,6 +20,7 @@ public class AbilityRegister {
     public static final RegistrySupplier<Ability> QUIRK_FACTOR_SCALING_ATTRIBUTE;
     public static final RegistrySupplier<Ability> LIMITED_AIR_SUPPLY;
     public static final RegistrySupplier<Ability> REGENERATION;
+    public static final RegistrySupplier<Ability> DETROIT_SMASH;
 
 
     public AbilityRegister() {
@@ -44,5 +45,6 @@ public class AbilityRegister {
         QUIRK_FACTOR_SCALING_ATTRIBUTE = ABILITIES.register("quirk_factor_scaling_attribute", QuirkFactorScalingAttributeAbility::new);
         LIMITED_AIR_SUPPLY = ABILITIES.register("limited_air_supply", LimitedAirAbility::new);
         REGENERATION = ABILITIES.register("regeneration", RegenerationAbility::new);
+        DETROIT_SMASH = ABILITIES.register("detroit_smash", DetroitSmashAbility::new);
     }
 }
