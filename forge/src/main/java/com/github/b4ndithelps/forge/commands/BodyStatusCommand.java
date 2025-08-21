@@ -324,6 +324,7 @@ public class BodyStatusCommand {
             context.getSource().sendSuccess(() -> Component.literal(
                     String.format("§6Set %s's %s %s to §e%.2f", 
                             player.getName().getString(), bodyPartName, key, value)), false);
+            BodyStatusHelper.syncToTrackingPlayers(player);
             return 1;
         } catch (Exception e) {
             context.getSource().sendFailure(Component.literal("Error: " + e.getMessage()));

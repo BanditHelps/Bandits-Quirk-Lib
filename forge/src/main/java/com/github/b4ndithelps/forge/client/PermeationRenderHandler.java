@@ -3,9 +3,12 @@ package com.github.b4ndithelps.forge.client;
 import com.github.b4ndithelps.BanditsQuirkLib;
 import com.github.b4ndithelps.forge.systems.BodyStatusHelper;
 import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderPlayerEvent;
+import net.minecraftforge.client.event.RenderNameTagEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.threetag.palladium.client.model.animation.AnimationUtil;
@@ -34,6 +37,21 @@ public class PermeationRenderHandler {
 
         PoseStack poseStack = event.getPoseStack();
         poseStack.translate(0.0, yOffsetBlocks, 0.0);
+    }
+
+    @SubscribeEvent
+    public static void onRenderNameTag(RenderNameTagEvent event) {
+        Entity entity = event.getEntity();
+        if (!(entity instanceof Player player)) {
+            return;
+        }
+
+        float depthPixels = BodyStatusHelper.getCustomFloat(player, "right_leg", "permeation_depth");
+        //int state = BodyStatusHelper.getCustomStatus(player, "chest", "permeation_state");
+        // -34 is the lowest the sink will go
+        if (depthPixels <= -34) {
+            event.setContent(Component.empty());
+        }
     }
 }
 
