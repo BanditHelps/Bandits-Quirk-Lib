@@ -1,5 +1,4 @@
 package com.github.b4ndithelps.forge.abilities;
-
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
@@ -73,6 +72,7 @@ public class PermeationAbility extends Ability {
         if (entity.level() instanceof ServerLevel level) {
             level.playSound(null, player.blockPosition(), SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 0.3f, 0.6f);
         }
+
     }
 
     @Override
@@ -125,6 +125,7 @@ public class PermeationAbility extends Ability {
                 player.setAirSupply(air - 8);
             }
         }
+
     }
 
     @Override
@@ -153,6 +154,7 @@ public class PermeationAbility extends Ability {
         if (entity.level() instanceof ServerLevel level) {
             level.playSound(null, player.blockPosition(), SoundEvents.SLIME_BLOCK_BREAK, SoundSource.PLAYERS, 0.5f, 1.3f);
         }
+
     }
 
 

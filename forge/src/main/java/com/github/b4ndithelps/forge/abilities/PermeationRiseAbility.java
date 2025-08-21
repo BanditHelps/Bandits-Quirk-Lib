@@ -1,5 +1,4 @@
 package com.github.b4ndithelps.forge.abilities;
-
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -58,6 +57,7 @@ public class PermeationRiseAbility extends Ability {
         if (player.level() instanceof ServerLevel level) {
             level.playSound(null, player.blockPosition(), SoundEvents.SLIME_BLOCK_BREAK, SoundSource.PLAYERS, 0.5f, 1.3f);
         }
+
     }
 
     @Override
