@@ -38,7 +38,6 @@ import static com.github.b4ndithelps.forge.systems.PowerStockHelper.sendPlayerPe
 public class DetroitSmashAbility extends Ability {
     // Configurable properties
     public static final PalladiumProperty<Integer> MAX_CHARGE_TICKS = new IntegerProperty("max_charge_ticks").configurable("Maximum charge time in ticks");
-    public static final PalladiumProperty<Float> DAMAGE_THRESHOLD = new FloatProperty("damage_threshold").configurable("Percentage threshold where player starts taking damage");
     public static final PalladiumProperty<Float> MAX_DISTANCE = new FloatProperty("max_distance").configurable("Maximum ray distance");
     public static final PalladiumProperty<Float> BASE_DAMAGE = new FloatProperty("base_damage").configurable("Base damage for the attack");
     public static final PalladiumProperty<Float> BASE_KNOCKBACK = new FloatProperty("base_knockback").configurable("Base knockback for the attack");
@@ -57,7 +56,6 @@ public class DetroitSmashAbility extends Ability {
     public DetroitSmashAbility() {
         super();
         this.withProperty(MAX_CHARGE_TICKS, 100)
-            .withProperty(DAMAGE_THRESHOLD, 60.0f)
             .withProperty(MAX_DISTANCE, 30.0f)
             .withProperty(BASE_DAMAGE, 5.0f)
             .withProperty(BASE_KNOCKBACK, 1.0f)
