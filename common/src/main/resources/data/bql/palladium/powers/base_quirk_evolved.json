@@ -1000,8 +1000,6 @@
       "hidden_in_bar": true,
       "gui_position": [0, -4],
       "first_tick_commands": [
-        "superpower add bql:base_quirk_awakened @p",
-        "superpower remove bql:base_quirk_evolved @p"
       ],
       "commands": [],
       "conditions": {
