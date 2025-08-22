@@ -182,11 +182,11 @@ public class BQLConfig {
 
         this.strengthDivisor = builder
                 .comment("The amount of power it takes to increase FC strength by +1 damage.")
-                .defineInRange("powerstock_strength_divisor", 20833, 1.0, 500000);
+                .defineInRange("powerstock_strength_divisor", 10833, 1.0, 500000);
 
         this.armorDivisor = builder
                 .comment("The amount of power it takes to increase FC armor by +0.5 points.")
-                .defineInRange("powerstock_armor_divisor", 10000, 1.0, 500000);
+                .defineInRange("powerstock_armor_divisor", 5000, 1.0, 500000);
 
         this.healthDivisor = builder
                 .comment("The amount of power it takes to increase FC health by +0.5 points.")
@@ -194,11 +194,11 @@ public class BQLConfig {
 
         this.speedDivisor = builder
                 .comment("The amount of power it takes to increase FC speed. (Large values required as speed scales strangely)")
-                .defineInRange("powerstock_speed_divisor", 5000, 1.0, 100000);
+                .defineInRange("powerstock_speed_divisor", 3000, 1.0, 100000);
 
         this.swimDivisor = builder
                 .comment("The amount of power it takes to increase FC swim speed. (Large values required as speed scales strangely)")
-                .defineInRange("powerstock_swim_divisor", 5000, 1.0, 100000);
+                .defineInRange("powerstock_swim_divisor", 3000, 1.0, 100000);
 
         this.minorDamage = builder
                 .comment("The amount of damage overusing in the 'minor' level does to a limb")

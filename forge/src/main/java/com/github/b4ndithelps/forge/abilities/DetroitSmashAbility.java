@@ -11,6 +11,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
@@ -94,7 +95,7 @@ public class DetroitSmashAbility extends Ability {
             if (chargeTicks == 0) return;
 
             // Trigger arm swing animation
-            player.broadcastBreakEvent(net.minecraft.world.InteractionHand.MAIN_HAND);
+            player.swing(InteractionHand.MAIN_HAND, true);
 
             // Execute the Detroit Smash
             executeDetroitSmash(player, serverLevel, entry, chargeTicks);
@@ -138,7 +139,7 @@ public class DetroitSmashAbility extends Ability {
             level.playSound(null, player.blockPosition(), SoundEvents.BEACON_POWER_SELECT, SoundSource.PLAYERS, 0.5f, 1.5f);
         } else if (currentChargeTicks == 80) {
             level.playSound(null, player.blockPosition(), SoundEvents.BEACON_POWER_SELECT, SoundSource.PLAYERS, 0.7f, 1.8f);
-        } else if (currentChargeTicks == maxChargeTicks) {
+        } else if (currentChargeTicks == 99) {
             level.playSound(null, player.blockPosition(), SoundEvents.BEACON_POWER_SELECT, SoundSource.PLAYERS, 1.0f, 2.0f);
         }
     }
@@ -150,9 +151,9 @@ public class DetroitSmashAbility extends Ability {
         // Scale particle effects based on both charge and stored power (for 500k max)
         float powerFactor = storedPower > 0 ? Math.min(1.0f, (float)Math.sqrt(storedPower) / 707.0f) : 0.0f;
          
-        // Much more aggressive particle scaling - very few particles at low power
-        int baseParticleCount = (int) Math.floor(chargePercent / 15); // Base particles from charge
-        int powerParticleCount = (int) Math.floor(powerFactor * powerFactor * 10); // Square scaling for power
+        // Stronger particle scaling for a flashy feel
+        int baseParticleCount = (int) Math.ceil(chargePercent / 6.0);
+        int powerParticleCount = (int) Math.ceil(powerFactor * powerFactor * 40);
         int particleCount = Math.max(0, baseParticleCount + powerParticleCount);
          
         // Add minimal "dud" particles for very low power levels
@@ -160,9 +161,9 @@ public class DetroitSmashAbility extends Ability {
             particleCount = 1; // At least one tiny particle to show something happened
         }
          
-        // Preview distance also scales heavily with power
-        double baseDistance = 1 + (chargePercent / 30);
-        double previewDistance = Math.min(15, baseDistance * (0.1f + powerFactor * 0.9f));
+        // Preview distance also scales with power
+        double baseDistance = 1 + (chargePercent / 20.0);
+        double previewDistance = Math.min(20, baseDistance * (0.2f + powerFactor * 1.2f));
          
         // Show charging preview along look direction
         for (double i = 1; i < previewDistance; i += 0.8) {
@@ -172,9 +173,9 @@ public class DetroitSmashAbility extends Ability {
              
             // Only show particles if we actually have particles to show
             if (particleCount > 0) {
-                // Scale particle intensity based on power - much more conservative
-                int smokeParticles = Math.max(0, particleCount/3);
-                int critParticles = Math.max(0, particleCount/5);
+                // Scale particle intensity based on power
+                int smokeParticles = Math.max(0, particleCount/2);
+                int critParticles = Math.max(0, particleCount/3);
                  
                 if (chargePercent < 30) {
                     if (smokeParticles > 0) {
@@ -182,40 +183,38 @@ public class DetroitSmashAbility extends Ability {
                         if (powerFactor < 0.1f) {
                             level.sendParticles(ParticleTypes.SMOKE, px, py, pz, 1, 0.02, 0.02, 0.02, 0.001);
                         } else {
-                            level.sendParticles(ParticleTypes.SMOKE, px, py, pz, smokeParticles, 0.05, 0.05, 0.05, 0.005);
+                            level.sendParticles(ParticleTypes.SMOKE, px, py, pz, smokeParticles, 0.08, 0.08, 0.08, 0.01);
                         }
                     }
                 } else if (chargePercent < 60) {
                     if (smokeParticles > 0) {
-                        level.sendParticles(ParticleTypes.SMOKE, px, py, pz, smokeParticles, 0.1, 0.05, 0.1, 0.01);
+                        level.sendParticles(ParticleTypes.SMOKE, px, py, pz, smokeParticles, 0.15, 0.08, 0.15, 0.02);
                     }
-                    if (critParticles > 0 && powerFactor > 0.2f) {
-                        level.sendParticles(ParticleTypes.CRIT, px, py, pz, critParticles, 0.05, 0.05, 0.05, 0.005);
+                    if (critParticles > 0 && powerFactor > 0.15f) {
+                        level.sendParticles(ParticleTypes.CRIT, px, py, pz, critParticles, 0.08, 0.08, 0.08, 0.008);
                     }
                 } else if (chargePercent < 80) {
                     if (smokeParticles > 0) {
-                        level.sendParticles(ParticleTypes.SMOKE, px, py, pz, smokeParticles, 0.15, 0.1, 0.15, 0.02);
+                        level.sendParticles(ParticleTypes.SMOKE, px, py, pz, smokeParticles, 0.2, 0.15, 0.2, 0.03);
                     }
-                    if (critParticles > 0 && powerFactor > 0.2f) {
-                        level.sendParticles(ParticleTypes.CRIT, px, py, pz, critParticles, 0.1, 0.05, 0.1, 0.01);
+                    if (critParticles > 0 && powerFactor > 0.15f) {
+                        level.sendParticles(ParticleTypes.CRIT, px, py, pz, critParticles, 0.12, 0.08, 0.12, 0.012);
                     }
                     // Only show explosion particles if we have significant power
-                    if ((int)chargePercent % 20 == 0 && powerFactor > 0.4f) {
-                        level.sendParticles(ParticleTypes.EXPLOSION, px, py, pz, 1, 0.05, 0.05, 0.05, 0.005);
+                    if ((int)chargePercent % 10 == 0 && powerFactor > 0.35f) {
+                        level.sendParticles(ParticleTypes.EXPLOSION, px, py, pz, 2, 0.08, 0.08, 0.08, 0.01);
                     }
                 } else {
                     if (smokeParticles > 0) {
-                        level.sendParticles(ParticleTypes.SMOKE, px, py, pz, smokeParticles, 0.2, 0.15, 0.2, 0.03);
+                        level.sendParticles(ParticleTypes.SMOKE, px, py, pz, smokeParticles, 0.25, 0.2, 0.25, 0.04);
                     }
-                    if (critParticles > 0 && powerFactor > 0.2f) {
-                        level.sendParticles(ParticleTypes.CRIT, px, py, pz, critParticles, 0.15, 0.1, 0.15, 0.02);
+                    if (critParticles > 0 && powerFactor > 0.15f) {
+                        level.sendParticles(ParticleTypes.CRIT, px, py, pz, critParticles, 0.18, 0.12, 0.18, 0.02);
                     }
                     // Enhanced effects only for higher power levels
-                    if ((int)chargePercent % 15 == 0 && powerFactor > 0.5f) {
-                        level.sendParticles(ParticleTypes.EXPLOSION, px, py, pz, 1, 0.1, 0.05, 0.1, 0.01);
-                        if (powerFactor > 0.7f) {
-                            level.sendParticles(ParticleTypes.LARGE_SMOKE, px, py, pz, 1, 0.05, 0.05, 0.05, 0.005);
-                        }
+                    if ((int)chargePercent % 10 == 0 && powerFactor > 0.45f) {
+                        level.sendParticles(ParticleTypes.EXPLOSION, px, py, pz, 2, 0.12, 0.08, 0.12, 0.02);
+                        if (powerFactor > 0.7f) level.sendParticles(ParticleTypes.LARGE_SMOKE, px, py, pz, 3, 0.08, 0.08, 0.08, 0.008);
                     }
                 }
             }
@@ -279,6 +278,26 @@ public class DetroitSmashAbility extends Ability {
         // Give the user temporary resistance to prevent self-death from explosions
         player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 200, 4, true, false));
 
+        // Spawn immediate swing visuals near the player
+        Vec3 handPos = eyePosition.add(lookDirection.scale(1.5));
+        level.sendParticles(ParticleTypes.SWEEP_ATTACK, handPos.x, handPos.y - 0.2, handPos.z, 6, 0.2, 0.2, 0.2, 0.0);
+        level.sendParticles(ParticleTypes.CRIT, handPos.x, handPos.y, handPos.z, 12, 0.25, 0.25, 0.25, 0.05);
+        level.sendParticles(ParticleTypes.CLOUD, handPos.x, handPos.y, handPos.z, 8, 0.25, 0.25, 0.25, 0.05);
+
+        // Direct entity hit check along the ray for a satisfying punch
+        LivingEntity directTarget = findTargetEntity(player, (float)finalDistance);
+        if (directTarget != null && directTarget != player && directTarget.isAlive()) {
+            impactPoint = directTarget.position();
+            // Perform vanilla attack for animations/damage hooks
+            player.attack(directTarget);
+            // Add heavy extra damage scaling with power
+            float bonus = finalDamage * 0.75f;
+            directTarget.hurt(player.damageSources().playerAttack(player), bonus);
+            // Strong knockback on direct hit
+            Vec3 kbDir = directTarget.position().subtract(player.position()).normalize().add(0, 0.2, 0);
+            directTarget.setDeltaMovement(directTarget.getDeltaMovement().add(kbDir.scale(finalKnockback * 0.6)));
+        }
+
         // Show particle trail along the ray path
         addParticleTrail(level, eyePosition, impactPoint, chargePercent);
 
@@ -306,12 +325,12 @@ public class DetroitSmashAbility extends Ability {
          Vec3 direction = endPos.subtract(startPos).normalize();
          double distance = startPos.distanceTo(endPos);
          
-         // Get power scaling for trail effects - estimate from distance
-         float powerFactor = Math.max(0.0f, Math.min(1.0f, (float)(distance - 1.0) / 50.0f)); // Estimate power from range
+         // Get power scaling for trail effects - denser at shorter ranges
+         float powerFactor = Math.max(0.0f, Math.min(1.0f, (float)(distance - 1.0) / 35.0f));
          
-         // Much more conservative trail particles
-         int trailParticleCount = Math.max(0, Math.round((chargePercent / 30.0f) * powerFactor * powerFactor));
-         double stepSize = Math.max(0.5, 1.5 - powerFactor * 1.0); // Less dense particles for lower power
+         // Stronger trail particles
+         int trailParticleCount = Math.max(0, Math.round((chargePercent / 15.0f) * (powerFactor * powerFactor * 2.0f + 0.5f)));
+         double stepSize = Math.max(0.35, 1.2 - powerFactor * 1.0);
          
          // Add minimal "dud" trail particles for very low power but decent charge
          if (trailParticleCount == 0 && chargePercent > 60 && distance > 3) {
@@ -323,23 +342,23 @@ public class DetroitSmashAbility extends Ability {
              
              if (trailParticleCount > 0) {
                  // Scale particle spread and intensity with power
-                 double spread = Math.max(0.02, 0.2 * powerFactor); // Even smaller spread for dud particles
-                 double speed = Math.max(0.005, 0.1 * powerFactor); // Even slower speed for dud particles
+                 double spread = Math.max(0.04, 0.25 * powerFactor);
+                 double speed = Math.max(0.01, 0.12 * powerFactor);
                  
                  // For very low power (dud particles), use minimal effects
                  if (powerFactor < 0.1f) {
                      level.sendParticles(ParticleTypes.SMOKE, particlePos.x, particlePos.y, particlePos.z, 
-                         1, 0.02, 0.02, 0.02, 0.005); // Tiny puff
+                         1, 0.03, 0.03, 0.03, 0.006); // Tiny puff
                  } else {
                      level.sendParticles(ParticleTypes.CRIT, particlePos.x, particlePos.y, particlePos.z, 
                          trailParticleCount, spread, spread, spread, speed);
                      level.sendParticles(ParticleTypes.SMOKE, particlePos.x, particlePos.y, particlePos.z, 
-                         Math.max(1, trailParticleCount), spread * 0.75, spread * 0.75, spread * 0.75, speed * 0.5);
+                         Math.max(1, trailParticleCount * 2), spread * 0.9, spread * 0.9, spread * 0.9, speed * 0.6);
                      
                      // Only add explosion particles if we have significant power
-                     if (powerFactor > 0.5f && trailParticleCount > 1) {
+                     if (powerFactor > 0.45f && trailParticleCount > 1) {
                          level.sendParticles(ParticleTypes.EXPLOSION, particlePos.x, particlePos.y, particlePos.z, 
-                             Math.max(0, trailParticleCount/3), spread * 0.5, spread * 0.5, spread * 0.5, speed * 0.3);
+                             Math.max(0, trailParticleCount/2), spread * 0.6, spread * 0.6, spread * 0.6, speed * 0.35);
                      }
                  }
              }
@@ -376,9 +395,35 @@ public class DetroitSmashAbility extends Ability {
                 .withStyle(ChatFormatting.RED));
     }
 
+    // Simple entity raycast to find the closest living entity along the player's look within range
+    private LivingEntity findTargetEntity(ServerPlayer player, float range) {
+        Vec3 eyePos = player.getEyePosition();
+        Vec3 lookVec = player.getLookAngle();
+        Vec3 endPos = eyePos.add(lookVec.scale(range));
+
+        LivingEntity best = null;
+        double closest = range;
+
+        List<LivingEntity> entities = player.level().getEntitiesOfClass(LivingEntity.class,
+                new AABB(eyePos, endPos).inflate(1.0),
+                e -> e != player && e.isAlive());
+
+        for (LivingEntity e : entities) {
+            if (e.getBoundingBox().inflate(0.3).clip(eyePos, endPos).isPresent()) {
+                double dist = eyePos.distanceTo(e.position());
+                if (dist < closest) {
+                    closest = dist;
+                    best = e;
+                }
+            }
+        }
+
+        return best;
+    }
+
     private void addImpactEffects(ServerLevel level, Vec3 impactPoint, float finalRadius, float chargePercent, float powerScalingFactor) {
-         // Scale impact effects based on power and charge - much more conservative
-         float effectIntensity = Math.max(0.0f, powerScalingFactor * powerScalingFactor * (chargePercent / 100.0f));
+         // Scale impact effects based on power and charge
+         float effectIntensity = Math.max(0.0f, powerScalingFactor * powerScalingFactor * (chargePercent / 90.0f));
          
          // Only create major effects if we have very significant power
          if (powerScalingFactor > 0.6f) {
@@ -386,10 +431,10 @@ public class DetroitSmashAbility extends Ability {
                  impactPoint.x, impactPoint.y, impactPoint.z, 1, 0, 0, 0, 0);
          }
          
-         // Much more conservative particle counts
-         int critCount = Math.max(0, Math.round((5 + chargePercent/2) * effectIntensity));
-         int smokeCount = Math.max(0, Math.round((10 + chargePercent/2) * effectIntensity));
-         int explosionCount = Math.max(0, Math.round((2 + chargePercent/8) * effectIntensity));
+         // Stronger particle counts
+         int critCount = Math.max(0, Math.round((10 + chargePercent) * effectIntensity));
+         int smokeCount = Math.max(0, Math.round((18 + chargePercent) * effectIntensity));
+         int explosionCount = Math.max(0, Math.round((4 + chargePercent/5) * effectIntensity));
          
          // Add minimal "dud" impact particles for very low power levels
          if (critCount == 0 && smokeCount == 0 && chargePercent > 20) {
@@ -418,6 +463,20 @@ public class DetroitSmashAbility extends Ability {
              level.sendParticles(ParticleTypes.EXPLOSION, 
                  impactPoint.x, impactPoint.y, impactPoint.z, 
                  explosionCount, finalRadius * 0.8f, finalRadius * 0.8f, finalRadius * 0.8f, Math.max(0.005, 0.1 * powerScalingFactor));
+         }
+
+         // Shockwave ring around impact for flair
+         if (powerScalingFactor > 0.3f) {
+             int rings = Math.max(1, (int)(powerScalingFactor * 3));
+             for (int r = 1; r <= rings; r++) {
+                 double ringRadius = finalRadius * (0.5 + 0.3 * r);
+                 for (int a = 0; a < 24; a++) {
+                     double theta = (Math.PI * 2 * a) / 24.0;
+                     double rx = impactPoint.x + ringRadius * Math.cos(theta);
+                     double rz = impactPoint.z + ringRadius * Math.sin(theta);
+                     level.sendParticles(ParticleTypes.CLOUD, rx, impactPoint.y + 0.2, rz, 1, 0.02, 0.02, 0.02, 0.02);
+                 }
+             }
          }
 
          // Scale sound effects with power - much quieter at low levels
