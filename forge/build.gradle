@@ -4,7 +4,7 @@ plugins {
 
 loom {
     forge {
-        mixinConfig "bandits_quirk_lib.mixins.json"
+        mixinConfig "bandits_quirk_lib.forge.mixins.json"
     }
 }
 

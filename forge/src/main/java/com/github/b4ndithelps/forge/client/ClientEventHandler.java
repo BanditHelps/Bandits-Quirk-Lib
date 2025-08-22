@@ -56,7 +56,6 @@ public class ClientEventHandler {
             // Return a dummy texture location - won't be used since we don't render anything
             return new ResourceLocation(BanditsQuirkLib.MOD_ID, "textures/entity/wind_projectile.png");
         }
-
         // Don't render anything - particles handle the visuals
     }
 }
