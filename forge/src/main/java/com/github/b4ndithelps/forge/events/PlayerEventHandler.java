@@ -155,33 +155,6 @@ public class PlayerEventHandler {
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
 
-//        // Client mirror: if permeation is active or rising, force spectator-like no-clip locally
-//        if (event.player.level().isClientSide) {
-//            boolean active = event.player.getTags().contains("Bql.PermeateActive");
-//            boolean rising = event.player.getTags().contains("Bql.PermeateRise");
-//            // Effects are synced; use as fallback signal in case tags aren't synced to client
-//            boolean hasPermeationEffects = event.player.hasEffect(MobEffects.BLINDNESS) || event.player.hasEffect(MobEffects.WATER_BREATHING);
-//
-//            if (active || rising || hasPermeationEffects) {
-//                event.player.noPhysics = true;
-//                event.player.fallDistance = 0.0F;
-//                // Periodic client debug to validate no-clip state
-//                int dbg = event.player.getPersistentData().getInt("Bql.ClientPermeateDbg");
-//                dbg++;
-//                if (dbg >= 10) {
-//                    dbg = 0;
-//                    com.github.b4ndithelps.forge.BanditsQuirkLibForge.LOGGER.info("[Permeation][Client] mirror noPhysics={} rising={} active={}", event.player.noPhysics, rising, active);
-//                    event.player.displayClientMessage(net.minecraft.network.chat.Component.literal(
-//                            "Permeation[client]: noClip=" + event.player.noPhysics + " rising=" + rising + " active=" + active
-//                    ), true);
-//                }
-//                event.player.getPersistentData().putInt("Bql.ClientPermeateDbg", dbg);
-//            } else {
-//                event.player.noPhysics = false;
-//            }
-//            return;
-//        }
-
         if (!(event.player instanceof ServerPlayer player)) return;
         // Keep no-shadow flag in sync for permeation-related tags; only send when changed
         boolean wantNoShadow = player.getTags().contains("Bql.PermeateActive") || player.getTags().contains("Bql.PermeateRise") || player.getTags().contains("Bql.NoShadow");
@@ -189,8 +162,6 @@ public class PlayerEventHandler {
         if (prev == null || prev != wantNoShadow) {
             BQLNetwork.CHANNEL.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player), new NoShadowTagPacket(player.getId(), wantNoShadow));
         }
-        
-        // Rising handled by PermeationRiseAbility now
         
         // Auto-switch handedness based on destroyed arms for better visuals
         // Store the player's original handedness once, then flip when one arm is destroyed

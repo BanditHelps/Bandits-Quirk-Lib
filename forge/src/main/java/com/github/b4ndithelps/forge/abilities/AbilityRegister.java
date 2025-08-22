@@ -21,6 +21,8 @@ public class AbilityRegister {
     public static final RegistrySupplier<Ability> LIMITED_AIR_SUPPLY;
     public static final RegistrySupplier<Ability> REGENERATION;
     public static final RegistrySupplier<Ability> DETROIT_SMASH;
+    public static final RegistrySupplier<Ability> ENHANCED_PUNCH;
+    public static final RegistrySupplier<Ability> ENHANCED_KICK;
 
 
     public AbilityRegister() {
@@ -46,5 +48,7 @@ public class AbilityRegister {
         LIMITED_AIR_SUPPLY = ABILITIES.register("limited_air_supply", LimitedAirAbility::new);
         REGENERATION = ABILITIES.register("regeneration", RegenerationAbility::new);
         DETROIT_SMASH = ABILITIES.register("detroit_smash", DetroitSmashAbility::new);
+        ENHANCED_PUNCH = ABILITIES.register("enhanced_punch", EnhancedPunchAbility::new);
+        ENHANCED_KICK = ABILITIES.register("enhanced_kick", EnhancedKickAbility::new);
     }
 }
