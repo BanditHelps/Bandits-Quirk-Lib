@@ -1,6 +1,8 @@
 package com.github.b4ndithelps.forge.abilities;
 
 import com.github.b4ndithelps.forge.effects.ModEffects;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -38,8 +40,12 @@ public class EnhancedPunchAbility extends Ability {
 		if (!(entity instanceof ServerPlayer player)) return;
 		if (!(player.level() instanceof ServerLevel)) return;
 
-		// Swing main hand for animation
-		player.swing(InteractionHand.MAIN_HAND);
+
+
+		// Swing main hand for animation (force client sync)
+		player.swing(InteractionHand.MAIN_HAND, true);
+		// Play vanilla attack sound
+		player.serverLevel().playSound(null, player.blockPosition(), SoundEvents.PLAYER_ATTACK_STRONG, SoundSource.PLAYERS, 1.0f, 1.0f);
 
 		// Use vanilla-like reach (approx.): survival 3.0, creative 5.0
 		float reach = player.getAbilities().instabuild ? 5.0F : 3.0F;

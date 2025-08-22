@@ -2,6 +2,8 @@ package com.github.b4ndithelps.forge.abilities;
 
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -33,8 +35,8 @@ public class EnhancedKickAbility extends Ability {
 		if (!(entity instanceof ServerPlayer player)) return;
 		if (!(player.level() instanceof ServerLevel)) return;
 
-		// Swing main hand for animation (reuse arm swing)
-		player.swing(InteractionHand.MAIN_HAND);
+		// Play attack sound
+		player.serverLevel().playSound(null, player.blockPosition(), SoundEvents.PLAYER_ATTACK_KNOCKBACK, SoundSource.PLAYERS, 1.0f, 1.0f);
 
 		float reach = player.getAbilities().instabuild ? 5.0F : 3.0F;
 		LivingEntity target = findTargetEntity(player, reach);
