@@ -1,0 +1,29 @@
+package com.github.b4ndithelps.forge.item;
+
+import com.github.b4ndithelps.BanditsQuirkLib;
+import com.github.b4ndithelps.forge.blocks.ModBlocks;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.registries.DeferredRegister;
+import net.minecraftforge.registries.RegistryObject;
+
+public class ModCreativeTabs {
+    public static final DeferredRegister<CreativeModeTab> TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, BanditsQuirkLib.MOD_ID);
+
+    public static final RegistryObject<CreativeModeTab> MAIN_TAB = TABS.register("main", () -> CreativeModeTab.builder()
+            .title(Component.translatable("itemGroup." + BanditsQuirkLib.MOD_ID))
+            .icon(() -> new ItemStack(ModBlocks.RESEARCH_TABLE_BLOCK.get()))
+            .displayItems((parameters, output) -> {
+                output.accept(ModBlocks.RESEARCH_TABLE_BLOCK.get());
+            })
+            .build());
+
+    public static void register(IEventBus bus) {
+        TABS.register(bus);
+    }
+}
+
+

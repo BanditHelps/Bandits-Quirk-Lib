@@ -1,5 +1,6 @@
 {
-  "block.bandits_quirk_lib.research_table_block": "Research Table"
+  "block.bandits_quirk_lib.research_table_block": "Research Table",
+  "itemGroup.bandits_quirk_lib": "Bandit's Quirk Lib"
 }
 
 
