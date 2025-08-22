@@ -43,6 +43,10 @@ public class DetroitSmashAbility extends Ability {
     public static final PalladiumProperty<Float> BASE_DAMAGE = new FloatProperty("base_damage").configurable("Base damage for the attack");
     public static final PalladiumProperty<Float> BASE_KNOCKBACK = new FloatProperty("base_knockback").configurable("Base knockback for the attack");
     public static final PalladiumProperty<Float> BASE_RADIUS = new FloatProperty("base_radius").configurable("Base explosion radius");
+    public static final PalladiumProperty<Float> MAX_POWER = new FloatProperty("max_power").configurable("Power value considered 100% scaling (e.g., 500000)");
+    public static final PalladiumProperty<Float> MAX_DAMAGE = new FloatProperty("max_damage").configurable("Maximum damage when power used is 100%");
+    public static final PalladiumProperty<Float> MAX_KNOCKBACK = new FloatProperty("max_knockback").configurable("Maximum knockback when power used is 100%");
+    public static final PalladiumProperty<Float> MAX_RADIUS = new FloatProperty("max_radius").configurable("Maximum AoE radius when power used is 100%");
 
     // Unique properties for tracking state
     public static final PalladiumProperty<Integer> CHARGE_TICKS;
@@ -54,7 +58,12 @@ public class DetroitSmashAbility extends Ability {
             .withProperty(MAX_DISTANCE, 30.0f)
             .withProperty(BASE_DAMAGE, 5.0f)
             .withProperty(BASE_KNOCKBACK, 1.0f)
-            .withProperty(BASE_RADIUS, 2.0f);
+            .withProperty(BASE_RADIUS, 2.0f)
+            // Linear scaling maxima for damage/knockback/radius and the power cap
+            .withProperty(MAX_POWER, 500000.0f)
+            .withProperty(MAX_DAMAGE, 100.0f)
+            .withProperty(MAX_KNOCKBACK, 5.0f)
+            .withProperty(MAX_RADIUS, 10.0f);
     }
 
     public void registerUniqueProperties(PropertyManager manager) {
@@ -227,39 +236,34 @@ public class DetroitSmashAbility extends Ability {
         float baseDamage = entry.getProperty(BASE_DAMAGE);
         float baseKnockback = entry.getProperty(BASE_KNOCKBACK);
         float baseRadius = entry.getProperty(BASE_RADIUS);
+        float maxPower = Math.max(1.0f, entry.getProperty(MAX_POWER));
+        float maxDamage = Math.max(baseDamage, entry.getProperty(MAX_DAMAGE));
+        float maxKnockback = Math.max(baseKnockback, entry.getProperty(MAX_KNOCKBACK));
+        float maxRadius = Math.max(baseRadius, entry.getProperty(MAX_RADIUS));
         
         float chargePercent = Math.min((chargeTicks / (float)maxChargeTicks) * 100.0f, 100.0f);
         float storedPower = PowerStockHelper.getStoredPower(player);
         float powerUsed = storedPower * chargePercent / 100.0f;
         
-        // Power scaling factor - designed for 0 to 500,000 power range
-        float powerScalingFactor = powerUsed > 0 ? Math.min(1.0f, (float)Math.sqrt(powerUsed) / 707.0f) : 0.0f; // sqrt(500000) ≈ 707
-         
-        // Calculate scaled attack values - heavily dependent on stored power (designed for 500k max)
-        float scaledDamage = baseDamage * (0.05f + powerScalingFactor * 19.95f); // 5% base, up to 2000% at max power
-        float scaledKnockback = baseKnockback * (0.1f + powerScalingFactor * 14.9f); // 10% base, up to 1500% at max power
-        float scaledRadius = baseRadius * (0.2f + powerScalingFactor * 9.8f); // 20% base, up to 1000% at max power
-        float scaledDistance = maxDistance * (0.15f + powerScalingFactor * 4.85f); // 15% base, up to 500% at max power
-
-        // Charge percentage multipliers (these are multiplicative, not additive)
-        float chargeMultiplier = 0.3f + (chargePercent / 100.0f) * 0.7f; // 30% to 100% based on charge
-         
-        // Apply charge multiplier to all scaled values (allow very small minimums for zero power)
-        float finalDamage = Math.max(0.1f, scaledDamage * chargeMultiplier);
-        float finalKnockback = Math.max(0.05f, scaledKnockback * chargeMultiplier);
-        float finalRadius = Math.max(0.2f, scaledRadius * chargeMultiplier);
-        float finalDistance = Math.max(1.0f, scaledDistance * chargeMultiplier);
+        // Linear power ratio based on configured max power
+        float powerRatio = Math.max(0.0f, Math.min(1.0f, powerUsed / maxPower));
+        
+        // Final values map linearly to configured maxima using the power ratio
+        float finalDamage = Math.max(0.0f, maxDamage * powerRatio);
+        float finalKnockback = Math.max(0.0f, maxKnockback * powerRatio);
+        float finalRadius = Math.max(0.0f, maxRadius * powerRatio);
+        float finalDistance = Math.max(1.0f, entry.getProperty(MAX_DISTANCE) * powerRatio);
 
         // Execute the ray smash - sounds and initial particles (scale with power)
         // Only play sounds if we have decent power, start very quiet
-        if (powerScalingFactor > 0.1f) {
-            float soundVolume = Math.max(0.1f, Math.min(3.0f, powerScalingFactor * 3.0f));
+        if (powerRatio > 0.1f) {
+            float soundVolume = Math.max(0.1f, Math.min(3.0f, powerRatio * 3.0f));
             level.playSound(null, player.blockPosition(), SoundEvents.GENERIC_EXPLODE, SoundSource.PLAYERS, soundVolume, 0.6f);
              
-            if (powerScalingFactor > 0.4f) {
+            if (powerRatio > 0.4f) {
                 level.playSound(null, player.blockPosition(), SoundEvents.LIGHTNING_BOLT_THUNDER, SoundSource.PLAYERS, soundVolume * 0.8f, 1.0f);
             }
-            if (powerScalingFactor > 0.6f) {
+            if (powerRatio > 0.6f) {
                 level.playSound(null, player.blockPosition(), SoundEvents.FIREWORK_ROCKET_BLAST, SoundSource.PLAYERS, soundVolume * 0.6f, 0.8f);
             }
         }
@@ -302,13 +306,13 @@ public class DetroitSmashAbility extends Ability {
         addParticleTrail(level, eyePosition, impactPoint, chargePercent);
 
         // Create TNT explosions for mid to high power levels
-        boolean shouldCreateExplosions = storedPower >= 50000 && chargePercent >= 50 && powerScalingFactor > 0.3f;
+        boolean shouldCreateExplosions = storedPower >= 50000 && chargePercent >= 50 && powerRatio > 0.3f;
         if (shouldCreateExplosions) {
             createExplosionChain(level, player, eyePosition, impactPoint, finalRadius, powerUsed, chargePercent);
         }
 
         // Enhanced visual effects at impact point
-        addImpactEffects(level, impactPoint, finalRadius, chargePercent, powerScalingFactor);
+        addImpactEffects(level, impactPoint, finalRadius, chargePercent, powerRatio);
 
         // Area of Effect Damage and Knockback
         applyAreaDamage(level, player, impactPoint, finalRadius, finalDamage, finalKnockback);
