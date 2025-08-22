@@ -1,6 +1,8 @@
 {
   "block.bandits_quirk_lib.research_table_block": "Research Table",
-  "itemGroup.bandits_quirk_lib": "Bandit's Quirk Lib"
+  "itemGroup.bandits_quirk_lib": "Bandit's Quirk Lib",
+  "death.attack.exhaustion.player": "too much exhaustion",
+  "effect.bandits_quirk_lib.pstock_overuse": "Power Overuse"
 }
 
 
