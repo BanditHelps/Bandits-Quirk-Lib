@@ -36,9 +36,9 @@ public class StaminaCapabilityHandler {
                     newStore.setPowersDisabled(oldStore.isPowersDisabled());
                     newStore.setInitialized(oldStore.isInitialized());
                     newStore.setUpgradePoints(oldStore.getUpgradePoints());
-                    newStore.setPointsProgress(oldStore.getPointsProgress());
 
                     // Special Values that should not be the same on death ie. exhaustion, lastHurrah, and current Stamina
+                    newStore.setPointsProgress(0);
                     newStore.setCurrentStamina((int) Math.floor( (double) oldStore.getMaxStamina() / 2));
                     newStore.setExhaustionLevel(0);
                     newStore.setLastHurrahUsed(false);
@@ -74,8 +74,8 @@ public class StaminaCapabilityHandler {
         // Force save capability data when player logs out
         event.getEntity().getCapability(StaminaDataProvider.STAMINA_DATA).ifPresent(staminaData -> {
             // The capability system should handle this automatically, but we can force it
-            BanditsQuirkLib.LOGGER.debug("Player {} logged out with stamina: {}",
-                    event.getEntity().getName().getString(), staminaData.getCurrentStamina());
+//            BanditsQuirkLib.LOGGER.debug("Player {} logged out with stamina: {}",
+//                    event.getEntity().getName().getString(), staminaData.getCurrentStamina());
         });
     }
 }
