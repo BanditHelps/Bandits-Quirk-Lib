@@ -47,6 +47,9 @@ public class DetroitSmashAbility extends Ability {
     public static final PalladiumProperty<Float> MAX_DAMAGE = new FloatProperty("max_damage").configurable("Maximum damage when power used is 100%");
     public static final PalladiumProperty<Float> MAX_KNOCKBACK = new FloatProperty("max_knockback").configurable("Maximum knockback when power used is 100%");
     public static final PalladiumProperty<Float> MAX_RADIUS = new FloatProperty("max_radius").configurable("Maximum AoE radius when power used is 100%");
+    public static final PalladiumProperty<Float> EXPLOSION_POWER_MAX = new FloatProperty("explosion_power_max").configurable("Max explosion strength at full power");
+    public static final PalladiumProperty<Float> EXPLOSION_SPACING_MIN = new FloatProperty("explosion_spacing_min").configurable("Minimum spacing between explosions at high power");
+    public static final PalladiumProperty<Integer> EXPLOSION_COUNT_MAX = new IntegerProperty("explosion_count_max").configurable("Maximum number of explosions along the path");
 
     // Unique properties for tracking state
     public static final PalladiumProperty<Integer> CHARGE_TICKS;
@@ -63,7 +66,11 @@ public class DetroitSmashAbility extends Ability {
             .withProperty(MAX_POWER, 500000.0f)
             .withProperty(MAX_DAMAGE, 100.0f)
             .withProperty(MAX_KNOCKBACK, 5.0f)
-            .withProperty(MAX_RADIUS, 10.0f);
+            .withProperty(MAX_RADIUS, 10.0f)
+            // Explosion tuning properties
+            .withProperty(EXPLOSION_POWER_MAX, 8.0f)
+            .withProperty(EXPLOSION_SPACING_MIN, 2.5f)
+            .withProperty(EXPLOSION_COUNT_MAX, 36);
     }
 
     public void registerUniqueProperties(PropertyManager manager) {
@@ -308,7 +315,12 @@ public class DetroitSmashAbility extends Ability {
         // Create TNT explosions for mid to high power levels
         boolean shouldCreateExplosions = storedPower >= 50000 && chargePercent >= 50 && powerRatio > 0.3f;
         if (shouldCreateExplosions) {
-            createExplosionChain(level, player, eyePosition, impactPoint, finalRadius, powerUsed, chargePercent);
+            float configuredMaxPower = Math.max(1.0f, entry.getProperty(MAX_POWER));
+            float explosionPowerMax = Math.max(1.0f, entry.getProperty(EXPLOSION_POWER_MAX));
+            float explosionSpacingMin = Math.max(0.5f, entry.getProperty(EXPLOSION_SPACING_MIN));
+            int explosionCountMax = Math.max(1, entry.getProperty(EXPLOSION_COUNT_MAX));
+            createExplosionChain(level, player, eyePosition, impactPoint, finalRadius, powerUsed, chargePercent,
+                    configuredMaxPower, explosionPowerMax, explosionSpacingMin, explosionCountMax);
         }
 
         // Enhanced visual effects at impact point
@@ -370,15 +382,17 @@ public class DetroitSmashAbility extends Ability {
     }
 
     private void createExplosionChain(ServerLevel level, ServerPlayer player, Vec3 startPos, Vec3 endPos, 
-                                    float finalRadius, float powerUsed, float chargePercent) {
+                                    float finalRadius, float powerUsed, float chargePercent,
+                                    float configuredMaxPower, float explosionPowerMax, float explosionSpacingMin, int explosionCountMax) {
         Vec3 direction = endPos.subtract(startPos).normalize();
         double distance = startPos.distanceTo(endPos);
         
-                 float powerRatio = Math.min(1.0f, powerUsed / 200000.0f); // Scale for higher power levels
-        float explosionPower = Math.min(4.0f, 1.0f + (finalRadius * 0.2f * powerRatio));
-        float explosionSpacing = Math.max(4.0f, 12.0f - (chargePercent / 10.0f));
-        int maxExplosions = Math.min(15, Math.round(powerRatio * 25));
-        int numExplosions = Math.min(maxExplosions, (int)(distance / explosionSpacing));
+        // Scale explosions using the same linear power ratio configuration
+        float powerRatio = Math.max(0.0f, Math.min(1.0f, powerUsed / configuredMaxPower));
+        float explosionPower = Math.min(explosionPowerMax, 1.5f + (finalRadius * 0.4f * powerRatio));
+        float explosionSpacing = Math.max(explosionSpacingMin, 10.0f - (chargePercent * 0.08f) - (powerRatio * 4.0f));
+        int maxExplosions = Math.min(explosionCountMax, Math.round(10 + powerRatio * (explosionCountMax - 10)));
+        int numExplosions = Math.min(maxExplosions, (int)Math.ceil(distance / explosionSpacing));
 
         // Create explosions along the ray path
         for (int i = 0; i <= numExplosions; i++) {
@@ -392,7 +406,7 @@ public class DetroitSmashAbility extends Ability {
             
             // Create explosion that damages entities
             level.explode(player, explosionPos.x, explosionPos.y, explosionPos.z, 
-                currentExplosionPower, Level.ExplosionInteraction.TNT);
+                currentExplosionPower, Level.ExplosionInteraction.BLOCK);
         }
 
         player.sendSystemMessage(Component.literal(String.format("High-power Detroit Smash with %d explosions!", numExplosions))
