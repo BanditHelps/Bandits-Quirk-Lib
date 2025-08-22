@@ -26,6 +26,7 @@ public class BQLConfig {
     // Body Constants
     public final ForgeConfigSpec.ConfigValue<List<? extends Double>> damageStagePercentages;
     public final ForgeConfigSpec.DoubleValue maxDamage;
+    public final ForgeConfigSpec.DoubleValue staminaSleepRecoverPercent;
 
     // Stamina Constants
     public final ForgeConfigSpec.ConfigValue<List<? extends Integer>> exhaustionLevels;
@@ -76,6 +77,10 @@ public class BQLConfig {
         this.maxDamage = builder
                 .comment("Maximum damage a body part can take")
                 .defineInRange("max_damage", 100.0, 1.0, 1000.0);
+
+        this.staminaSleepRecoverPercent = builder
+                .comment("Amount of stamina regained when successfully sleeping")
+                        .defineInRange("stamina_sleep_recover_percent", 0.75, 0.0, 1.0);
 
         builder.pop();
 

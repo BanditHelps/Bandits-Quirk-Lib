@@ -81,7 +81,7 @@ public class ConfigManager {
             LOGGER.info("Updated damage stage percentages: {}", Arrays.toString(BodyConstants.DAMAGE_STAGE_PERCENTAGES));
         }
         BodyConstants.MAX_DAMAGE = BQLConfig.INSTANCE.maxDamage.get().floatValue();
-        LOGGER.info("Updated max damage: {}", BodyConstants.MAX_DAMAGE);
+        BodyConstants.STAMINA_SLEEP_RECOVERY_PERCENTAGE = BQLConfig.INSTANCE.staminaSleepRecoverPercent.get().floatValue();
         
         // Update Stamina Constants
         List<? extends Integer> exhaustionLevels = BQLConfig.INSTANCE.exhaustionLevels.get();
