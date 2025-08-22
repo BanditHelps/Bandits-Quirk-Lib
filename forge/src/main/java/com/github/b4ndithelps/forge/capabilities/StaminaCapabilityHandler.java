@@ -77,6 +77,13 @@ public class StaminaCapabilityHandler {
             });
         }
 
+        if (event.getEntity() instanceof ServerPlayer sp) {
+            com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.send(
+                    net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> sp),
+                    com.github.b4ndithelps.forge.network.StaminaSyncPacket.fullSync(sp)
+            );
+        }
+
         event.getOriginal().invalidateCaps();
     }
 

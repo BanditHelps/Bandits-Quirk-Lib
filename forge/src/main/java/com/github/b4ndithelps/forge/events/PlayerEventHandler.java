@@ -40,6 +40,14 @@ public class PlayerEventHandler {
     private static final java.util.Map<Integer, Boolean> LAST_NO_SHADOW_SENT = new java.util.concurrent.ConcurrentHashMap<>();
 
     @SubscribeEvent
+    public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        if (event.getEntity() instanceof ServerPlayer sp) {
+            BQLNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> sp),
+                    com.github.b4ndithelps.forge.network.StaminaSyncPacket.fullSync(sp));
+        }
+    }
+
+    @SubscribeEvent
     public static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         Player player = event.getEntity();
         UUID playerUUID = player.getUUID();
