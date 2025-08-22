@@ -448,7 +448,13 @@ public class StaminaHelper {
         IStaminaData staminaData = getStaminaDataSafe(player);
         if (staminaData != null) {
             staminaData.setUpgradePoints(amount);
-//            syncUpgradePointsToBoard(player, amount);
+            // Sync to client if on server side
+            if (player instanceof net.minecraft.server.level.ServerPlayer sp) {
+                com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.send(
+                        net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> sp),
+                        com.github.b4ndithelps.forge.network.StaminaSyncPacket.fullSync(sp)
+                );
+            }
         }
     }
 

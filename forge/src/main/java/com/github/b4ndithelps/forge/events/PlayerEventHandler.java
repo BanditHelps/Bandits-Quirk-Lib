@@ -141,6 +141,14 @@ public class PlayerEventHandler {
             SuperpowerUtil.addSuperpower(player, ResourceLocation.parse("bql:base_quirk"));
             SuperpowerUtil.addSuperpower(player, ResourceLocation.parse("bql:body_status"));
         }
+
+        if (player instanceof ServerPlayer sp) {
+            // Send full stamina sync on login to ensure client-side GUI shows correct values
+            com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.send(
+                    net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> sp),
+                    com.github.b4ndithelps.forge.network.StaminaSyncPacket.fullSync(sp)
+            );
+        }
     }
 
     @SubscribeEvent

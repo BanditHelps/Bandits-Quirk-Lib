@@ -6,6 +6,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.resources.ResourceLocation;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -26,19 +27,28 @@ public abstract class PowersScreenMixin {
             return;
         }
 
-        // Compute position to the right of the localized title "gui.palladium.powers"
-        Component title = Component.translatable("gui.palladium.powers");
-        int titleWidth = minecraft.font.width(title);
-        int iconX = offsetX + 8 + titleWidth + 6;
-        int iconY = offsetY + 2; // align visually with title row
-
-        // Draw command block item icon (16x16)
-        guiGraphics.renderItem(new ItemStack(Blocks.COMMAND_BLOCK), iconX, iconY);
-
-        // Draw upgrade points text next to the icon
+        // Compute right-aligned position near the window's right edge
+        int rightEdge = offsetX + PowersScreen.WINDOW_WIDTH - 8; // 8px inner margin
         int points = StaminaHelper.getUpgradePoints(minecraft.player);
         Component pointsText = Component.literal(String.valueOf(points));
-        int textX = iconX + 18;
+        int textWidth = minecraft.font.width(pointsText);
+
+        // Layout: [icon][gap][text] aligned to rightEdge
+        int iconSize = 12; // target render size (scaled from 16)
+        int gap = 4;
+        int textX = rightEdge - textWidth; // right-align text
+        int iconX = textX - gap - iconSize;
+        int iconY = offsetY + 4; // align with title row
+
+        // Draw command block item scaled down from 16x16 to iconSize
+        float scale = iconSize / 16.0f;
+        guiGraphics.pose().pushPose();
+        guiGraphics.pose().translate(iconX, iconY, 0);
+        guiGraphics.pose().scale(scale, scale, 1.0f);
+        guiGraphics.renderItem(new ItemStack(Blocks.COMMAND_BLOCK), 0, 0);
+        guiGraphics.pose().popPose();
+
+        // Draw upgrade points text next to the icon (right-aligned overall)
         int textY = offsetY + 6; // match title baseline
         guiGraphics.drawString(minecraft.font, pointsText, textX, textY, 0x404040, false);
     }

@@ -31,6 +31,12 @@ public final class BQLNetwork {
                 .decoder(BodyStatusSyncPacket::decode)
                 .consumerMainThread(BodyStatusSyncPacket::handle)
                 .add();
+
+        CHANNEL.messageBuilder(StaminaSyncPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(StaminaSyncPacket::encode)
+                .decoder(StaminaSyncPacket::decode)
+                .consumerMainThread(StaminaSyncPacket::handle)
+                .add();
     }
 }
 
