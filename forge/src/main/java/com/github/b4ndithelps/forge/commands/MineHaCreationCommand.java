@@ -47,7 +47,6 @@ public class MineHaCreationCommand {
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("mineha_creation")
-                .requires(source -> source.hasPermission(2))
                 .then(Commands.argument("mode", StringArgumentType.string())
                         .suggests(MODE_SUGGESTIONS)
                         .then(Commands.argument("item", StringArgumentType.string())

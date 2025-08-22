@@ -19,7 +19,6 @@ public class MineHaSlotCommand {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(
                 Commands.literal("mineha_slot_item")
-                        .requires(source -> source.hasPermission(2))
                         .then(Commands.literal("get")
                                 .then(Commands.argument("slot", IntegerArgumentType.integer(1))
                                         .executes(context -> getSlotItem(context))
