@@ -6,6 +6,7 @@ import com.github.b4ndithelps.forge.systems.PowerStockHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -305,6 +306,9 @@ public class DetroitSmashAbility extends Ability {
             // Strong knockback on direct hit
             Vec3 kbDir = directTarget.position().subtract(player.position()).normalize().add(0, 0.2, 0);
             directTarget.setDeltaMovement(directTarget.getDeltaMovement().add(kbDir.scale(finalKnockback * 0.6)));
+            if (directTarget instanceof ServerPlayer sp) {
+                sp.connection.send(new ClientboundSetEntityMotionPacket(sp));
+            }
         }
 
         // Show particle trail along the ray path
@@ -545,6 +549,9 @@ public class DetroitSmashAbility extends Ability {
                     
                     Vec3 knockbackVelocity = knockbackDirection.scale(actualKnockback * 0.25);
                     entity.setDeltaMovement(entity.getDeltaMovement().add(knockbackVelocity));
+                    if (entity instanceof ServerPlayer sp) {
+                        sp.connection.send(new ClientboundSetEntityMotionPacket(sp));
+                    }
                 }
             }
         }

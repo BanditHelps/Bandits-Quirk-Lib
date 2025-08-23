@@ -1,5 +1,7 @@
 package com.github.b4ndithelps.forge.abilities;
 
+
+import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -59,6 +61,9 @@ public class EnhancedKickAbility extends Ability {
 				if (dir.lengthSqr() > 1.0E-4) {
 					Vec3 knock = dir.normalize().scale(kb * 0.5).add(0, 0.1F * kb, 0);
 					target.setDeltaMovement(target.getDeltaMovement().add(knock));
+					if (target instanceof ServerPlayer sp) {
+						sp.connection.send(new ClientboundSetEntityMotionPacket(sp));
+					}
 				}
 			}
 		}

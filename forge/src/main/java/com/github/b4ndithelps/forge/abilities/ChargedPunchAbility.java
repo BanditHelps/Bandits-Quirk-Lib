@@ -2,6 +2,7 @@ package com.github.b4ndithelps.forge.abilities;
 
 import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
 import com.github.b4ndithelps.forge.systems.PowerStockHelper;
+import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -150,6 +151,9 @@ public class ChargedPunchAbility extends Ability {
                 if (dir.lengthSqr() > 1.0E-4) {
                     Vec3 knock = dir.normalize().scale(finalKnockback * 0.6).add(0, 0.12F * finalKnockback, 0);
                     target.setDeltaMovement(target.getDeltaMovement().add(knock));
+                    if (target instanceof ServerPlayer sp) {
+                        sp.connection.send(new ClientboundSetEntityMotionPacket(sp));
+                    }
                 }
             }
 
@@ -172,6 +176,9 @@ public class ChargedPunchAbility extends Ability {
                     double strength = (finalKnockback * 0.5) * (1.0 + powerRatio) * Math.max(0.25, 1.0 - (dist / shockRadius));
                     Vec3 kb = new Vec3(norm.x * strength, Math.max(0.15, norm.y + 0.2) * (0.8 + powerRatio * 0.4), norm.z * strength);
                     e.setDeltaMovement(e.getDeltaMovement().add(kb));
+                    if (e instanceof ServerPlayer sp) {
+                        sp.connection.send(new ClientboundSetEntityMotionPacket(sp));
+                    }
                 }
             }
         } else {
