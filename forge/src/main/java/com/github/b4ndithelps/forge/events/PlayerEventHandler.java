@@ -44,6 +44,10 @@ public class PlayerEventHandler {
         if (event.getEntity() instanceof ServerPlayer sp) {
             BQLNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> sp),
                     com.github.b4ndithelps.forge.network.StaminaSyncPacket.fullSync(sp));
+
+            // Sync MineHa slot persistent keys to client after respawn (0..3 based on command usage)
+            BQLNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> sp),
+                    com.github.b4ndithelps.forge.network.MineHaSlotSyncPacket.fullSync(sp, 3));
         }
     }
 
@@ -155,6 +159,12 @@ public class PlayerEventHandler {
             com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.send(
                     net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> sp),
                     com.github.b4ndithelps.forge.network.StaminaSyncPacket.fullSync(sp)
+            );
+
+            // Send MineHa slot full sync on login as well (0..3 slots)
+            com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.send(
+                    net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> sp),
+                    com.github.b4ndithelps.forge.network.MineHaSlotSyncPacket.fullSync(sp, 3)
             );
         }
     }
