@@ -1,5 +1,6 @@
 package com.github.b4ndithelps.forge.abilities;
 
+import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
 import com.github.b4ndithelps.forge.systems.PowerStockHelper;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -39,6 +40,7 @@ public class ChargedPunchAbility extends Ability {
     public static final PalladiumProperty<Float> MAX_DAMAGE = new FloatProperty("max_damage").configurable("Maximum damage at full power");
     public static final PalladiumProperty<Float> MAX_KNOCKBACK = new FloatProperty("max_knockback").configurable("Maximum knockback at full power");
     public static final PalladiumProperty<Float> SHOCKWAVE_THRESHOLD = new FloatProperty("shockwave_threshold").configurable("Power ratio threshold (0-1) to trigger shockwave");
+    public static final PalladiumProperty<Float> BASE_DAMAGE = new FloatProperty("base_damage").configurable("Base damage scale for low power cases");
 
     // Unique tracking
     public static final PalladiumProperty<Integer> CHARGE_TICKS;
@@ -50,7 +52,8 @@ public class ChargedPunchAbility extends Ability {
                 .withProperty(MAX_POWER, 500000.0f)
                 .withProperty(MAX_DAMAGE, 80.0f)
                 .withProperty(MAX_KNOCKBACK, 4.0f)
-                .withProperty(SHOCKWAVE_THRESHOLD, 0.6f);
+                .withProperty(SHOCKWAVE_THRESHOLD, 0.6f)
+                .withProperty(BASE_DAMAGE, 5.0f);
     }
 
     public void registerUniqueProperties(PropertyManager manager) {
@@ -109,8 +112,20 @@ public class ChargedPunchAbility extends Ability {
         float maxPower = Math.max(1.0f, entry.getProperty(MAX_POWER));
         float powerRatio = Math.max(0.0f, Math.min(1.0f, powerUsed / maxPower));
 
-        float finalDamage = Math.max(0.0f, entry.getProperty(MAX_DAMAGE) * powerRatio);
+        // Power-scaled damage at current charge
+        float maxDamage = Math.max(0.0f, entry.getProperty(MAX_DAMAGE));
+        float powerScaledDamage = Math.max(0.0f, maxDamage * powerRatio);
+
+        // Base-plus-power: final damage is base damage scaled by charge PLUS power-scaled damage
+        float baseDamage = Math.max(0.0f, entry.getProperty(BASE_DAMAGE));
+        float baseScaledDamage = baseDamage * chargeRatio;
+        float finalDamage = baseScaledDamage + powerScaledDamage;
         float finalKnockback = Math.max(0.0f, entry.getProperty(MAX_KNOCKBACK) * powerRatio);
+
+        // Debug: log scaling numbers
+        BanditsQuirkLibForge.LOGGER.info(
+                "[ChargedPunch] storedPower={} maxPower={} chargeRatio={} powerRatio={} baseDamage={} baseScaledDamage={} powerScaledDamage={} finalDamage(additive)={}",
+                storedPower, maxPower, chargeRatio, powerRatio, baseDamage, baseScaledDamage, powerScaledDamage, finalDamage);
 
         // Swing and play sound
         player.swing(InteractionHand.MAIN_HAND, true);
