@@ -19,6 +19,11 @@ public class AbilityRegister {
     public static final RegistrySupplier<Ability> PERMEATION_RISE;
     public static final RegistrySupplier<Ability> QUIRK_FACTOR_SCALING_ATTRIBUTE;
     public static final RegistrySupplier<Ability> LIMITED_AIR_SUPPLY;
+    public static final RegistrySupplier<Ability> REGENERATION;
+    public static final RegistrySupplier<Ability> DETROIT_SMASH;
+    public static final RegistrySupplier<Ability> ENHANCED_PUNCH;
+    public static final RegistrySupplier<Ability> ENHANCED_KICK;
+    public static final RegistrySupplier<Ability> CHARGED_PUNCH;
 
 
     public AbilityRegister() {
@@ -42,5 +47,10 @@ public class AbilityRegister {
         PERMEATION_RISE = ABILITIES.register("permeation_rise", PermeationRiseAbility::new);
         QUIRK_FACTOR_SCALING_ATTRIBUTE = ABILITIES.register("quirk_factor_scaling_attribute", QuirkFactorScalingAttributeAbility::new);
         LIMITED_AIR_SUPPLY = ABILITIES.register("limited_air_supply", LimitedAirAbility::new);
+        REGENERATION = ABILITIES.register("regeneration", RegenerationAbility::new);
+        DETROIT_SMASH = ABILITIES.register("detroit_smash", DetroitSmashAbility::new);
+        ENHANCED_PUNCH = ABILITIES.register("enhanced_punch", EnhancedPunchAbility::new);
+        ENHANCED_KICK = ABILITIES.register("enhanced_kick", EnhancedKickAbility::new);
+        CHARGED_PUNCH = ABILITIES.register("charged_punch", ChargedPunchAbility::new);
     }
 }

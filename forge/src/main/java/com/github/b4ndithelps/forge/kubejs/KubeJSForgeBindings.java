@@ -1,6 +1,7 @@
 package com.github.b4ndithelps.forge.kubejs;
 
 import com.github.b4ndithelps.forge.systems.BodyStatusHelper;
+import com.github.b4ndithelps.forge.systems.PowerStockHelper;
 import com.github.b4ndithelps.forge.systems.QuirkFactorHelper;
 import com.github.b4ndithelps.forge.systems.StaminaHelper;
 import com.github.b4ndithelps.forge.config.ConfigHelper;
@@ -9,10 +10,14 @@ import dev.latvian.mods.kubejs.KubeJSPlugin;
 import dev.latvian.mods.kubejs.script.BindingsEvent;
 import dev.latvian.mods.kubejs.util.ConsoleJS;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.player.RemotePlayer;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.players.PlayerList;
 import net.minecraftforge.server.ServerLifecycleHooks;
+import net.threetag.palladium.client.model.animation.AnimationUtil;
+import net.threetag.palladium.compat.kubejs.RegisterAnimationsEventJS;
+import net.threetag.palladium.compat.kubejs.RegisterPalladiumPropertyEventJS;
 
 public class KubeJSForgeBindings extends KubeJSPlugin {
 
@@ -24,6 +29,7 @@ public class KubeJSForgeBindings extends KubeJSPlugin {
         event.add("Config", new ConfigHelper());
         event.add("QuirkFactor", new QuirkFactorHelper());
         event.add("BanditUtils", new BanditUtils());
+        event.add("PowerstockHelper", new PowerStockHelper());
     }
 
     public static class FileUtilsJS {
@@ -74,6 +80,16 @@ public class KubeJSForgeBindings extends KubeJSPlugin {
 
     public static class BanditUtils {
         public static ServerPlayer getServerPlayer(LocalPlayer player) {
+            MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+            if (server != null) {
+                PlayerList playerList = server.getPlayerList();
+                return playerList.getPlayer(player.getUUID());
+            }
+
+            return null;
+        }
+
+        public static ServerPlayer getServerPlayer(RemotePlayer player) {
             MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
             if (server != null) {
                 PlayerList playerList = server.getPlayerList();

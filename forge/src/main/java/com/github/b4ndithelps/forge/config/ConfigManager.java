@@ -2,7 +2,9 @@ package com.github.b4ndithelps.forge.config;
 
 import com.github.b4ndithelps.values.BodyConstants;
 import com.github.b4ndithelps.values.CreationShopConstants;
+import com.github.b4ndithelps.values.QuirkConstants;
 import com.github.b4ndithelps.values.StaminaConstants;
+import com.github.b4ndithelps.util.FileManager;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
@@ -39,6 +41,31 @@ public class ConfigManager {
         LOGGER.info("Config system initialized - waiting for config to load");
     }
     
+    /**
+     * Copies an options.txt file from mod resources to /config/fancymenu/options.txt if it doesn't already exist
+     * @param resourcePath The path to the resource within the mod JAR (e.g., "options.txt")
+     * @return true if successful or target already exists, false if failed
+     */
+    public static boolean setupFancyMenuOptionsFromResources(String resourcePath) {
+        LOGGER.info("Setting up FancyMenu options.txt from mod resources: {}", resourcePath);
+        boolean result = FileManager.copyOptionsFileFromResources(resourcePath);
+        if (result) {
+            LOGGER.info("FancyMenu options.txt setup from resources completed successfully");
+        } else {
+            LOGGER.warn("FancyMenu options.txt setup from resources failed");
+        }
+        return result;
+    }
+    
+    /**
+     * Copies the default options.txt file from mod resources to /config/fancymenu/options.txt if it doesn't already exist
+     * Uses the default resource path "options.txt"
+     * @return true if successful or target already exists, false if failed
+     */
+    public static boolean setupDefaultFancyMenuOptions() {
+        return setupFancyMenuOptionsFromResources("options.txt");
+    }
+    
     public static void updateConstants() {
         LOGGER.info("Updating constants from config...");
         
@@ -54,7 +81,7 @@ public class ConfigManager {
             LOGGER.info("Updated damage stage percentages: {}", Arrays.toString(BodyConstants.DAMAGE_STAGE_PERCENTAGES));
         }
         BodyConstants.MAX_DAMAGE = BQLConfig.INSTANCE.maxDamage.get().floatValue();
-        LOGGER.info("Updated max damage: {}", BodyConstants.MAX_DAMAGE);
+        BodyConstants.STAMINA_SLEEP_RECOVERY_PERCENTAGE = BQLConfig.INSTANCE.staminaSleepRecoverPercent.get().floatValue();
         
         // Update Stamina Constants
         List<? extends Integer> exhaustionLevels = BQLConfig.INSTANCE.exhaustionLevels.get();
@@ -91,9 +118,19 @@ public class ConfigManager {
         StaminaConstants.POINTS_TO_UPGRADE = BQLConfig.INSTANCE.pointsToUpgrade.get();
         StaminaConstants.STARTING_STAMINA_MIN = BQLConfig.INSTANCE.startingStaminaMin.get();
         StaminaConstants.STARTING_STAMINA_MAX = BQLConfig.INSTANCE.startingStaminaMax.get();
-        
-        LOGGER.info("Updated stamina constants - gain chance: {}, max damage: {}", 
-                   StaminaConstants.STAMINA_GAIN_CHANCE, BodyConstants.MAX_DAMAGE);
+
+        // Update the Quirk Related constants
+        QuirkConstants.PSTOCK_MINOR_DAMAGE_PERCENTAGE = BQLConfig.INSTANCE.minorDamagePercentage.get();
+        QuirkConstants.PSTOCK_MAJOR_DAMAGE_PERCENTAGE = BQLConfig.INSTANCE.majorDamagePercentage.get();
+        QuirkConstants.PSTOCK_SEVERE_DAMAGE_PERCENTAGE = BQLConfig.INSTANCE.severeDamagePercentage.get();
+        QuirkConstants.PSTOCK_STRENGTH_DIVISOR = BQLConfig.INSTANCE.strengthDivisor.get();
+        QuirkConstants.PSTOCK_ARMOR_DIVISOR = BQLConfig.INSTANCE.armorDivisor.get();
+        QuirkConstants.PSTOCK_HEALTH_DIVISOR = BQLConfig.INSTANCE.healthDivisor.get();
+        QuirkConstants.PSTOCK_SPEED_DIVISOR = BQLConfig.INSTANCE.speedDivisor.get();
+        QuirkConstants.PSTOCK_SWIM_DIVISOR = BQLConfig.INSTANCE.swimDivisor.get();
+        QuirkConstants.PSTOCK_MINOR_DAMAGE = BQLConfig.INSTANCE.minorDamage.get();
+        QuirkConstants.PSTOCK_MAJOR_DAMAGE = BQLConfig.INSTANCE.majorDamage.get();
+        QuirkConstants.PSTOCK_SEVERE_DAMAGE = BQLConfig.INSTANCE.severeDamage.get();
         
         LOGGER.info("Constants updated from config");
     }

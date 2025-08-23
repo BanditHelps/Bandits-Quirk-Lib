@@ -40,3 +40,11 @@ mandatory = true
 versionRange = ">=4.2.1"
 ordering = "BEFORE"
 side = "BOTH"
+
+[[dependencies.bandits_quirk_lib]]
+modId = "fancymenu"
+mandatory = true
+versionRange = "[3.5.2,)"
+ordering = "AFTER"
+side = "BOTH"
+

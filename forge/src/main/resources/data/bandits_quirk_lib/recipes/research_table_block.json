@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " Q ",
+    "CSC",
+    " B "
+  ],
+  "key": {
+    "Q": {
+      "item": "minecraft:writable_book"
+    },
+    "C": {
+      "item": "palladium:lead_circuit"
+    },
+    "S": {
+      "item": "minecraft:smithing_table"
+    },
+    "B": {
+      "item": "minecraft:bookshelf"
+    }
+  },
+  "result": {
+    "item": "bandits_quirk_lib:research_table_block",
+    "count": 1
+  }
+}

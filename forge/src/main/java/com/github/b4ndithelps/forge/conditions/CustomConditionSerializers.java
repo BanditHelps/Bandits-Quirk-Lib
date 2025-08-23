@@ -13,6 +13,7 @@ public class CustomConditionSerializers {
     public static final RegistrySupplier<ConditionSerializer> POWERS_ENABLED;
     public static final RegistrySupplier<ConditionSerializer> HELD_WITH_COOLDOWN;
     public static final RegistrySupplier<ConditionSerializer> BODY_FLOAT_CHECK;
+    public static final RegistrySupplier<ConditionSerializer> RANDOM_CHANCE;
 
 
     public static final DeferredRegister<ConditionSerializer> CUSTOM_SERIALIZERS;
@@ -28,5 +29,6 @@ public class CustomConditionSerializers {
         POWERS_ENABLED = CUSTOM_SERIALIZERS.register("powers_enabled", PowersEnabledCondition.Serializer::new);
         HELD_WITH_COOLDOWN = CUSTOM_SERIALIZERS.register("held_with_cooldown", HeldWithCooldownCondition.Serializer::new);
         BODY_FLOAT_CHECK = CUSTOM_SERIALIZERS.register("body_float_check", BodyFloatCondition.Serializer::new);
+        RANDOM_CHANCE = CUSTOM_SERIALIZERS.register("random_chance", RandomChanceCondition.Serializer::new);
     }
 }

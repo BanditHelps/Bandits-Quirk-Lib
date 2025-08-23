@@ -19,6 +19,9 @@ public class ConfigEventHandler {
             // Config is now loaded, we can safely access config values
             ConfigManager.loadCreationShopData();
             ConfigManager.updateConstants();
+            
+            // Setup FancyMenu options.txt from mod resources
+            ConfigManager.setupDefaultFancyMenuOptions();
         } else {
             LOGGER.info("Config loaded was not BQL config: {}", event.getConfig().getSpec());
         }

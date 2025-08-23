@@ -2,18 +2,24 @@ package com.github.b4ndithelps.util;
 
 import com.github.b4ndithelps.BanditsQuirkLib;
 import dev.architectury.platform.Platform;
-import org.slf4j.Logger;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 public class FileManager {
+    
+    // Track if we've already shown the options replacement screen this session
+    private static boolean optionsReplacementScreenShown = false;
 
     public static boolean moveFileToConfig(String sourcePath, String fileName) {
         try {
@@ -27,7 +33,7 @@ public class FileManager {
             // Attempt to copy the file to the correct directory
             Files.copy(sourceFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
 
-            BanditsQuirkLib.LOGGER.info("Successfully moved file to config: " + targetFile.toString());
+            BanditsQuirkLib.LOGGER.info("Successfully moved file to config: " + targetFile);
             return true;
 
         } catch (IOException e) {
@@ -83,13 +89,6 @@ public class FileManager {
 
             Path gameDir = Platform.getGameFolder();
 
-            // Construct the paths for the fancymenu files inside the addon
-            Path addonPath = gameDir.resolve("addonpacks").resolve(addonName);
-            Path layoutsPath = addonPath.resolve("assets").resolve(addonId).resolve("fancy_menu").resolve("layouts");
-            Path guiPath = addonPath.resolve("assets").resolve(addonId).resolve("fancy_menu").resolve("gui");
-            Path variablesPath = addonPath.resolve("assets").resolve(addonId).resolve("fancy_menu").resolve("variables");
-            Path assetsPath = addonPath.resolve("assets").resolve(addonId).resolve("fancy_menu").resolve("assets");
-
             // Find the target files inside of the /config/fancymenu folder of the minecraft instance
             Path fancyMenuConfigDir = configDir.resolve("fancymenu");
             Path customizationDir = fancyMenuConfigDir.resolve("customization");
@@ -104,32 +103,82 @@ public class FileManager {
             Files.createDirectories(fancyMenuConfigDir);
             Files.createDirectories(fancyMenuAssetDir);
 
-            // Copy all layout files
-            if (Files.exists(layoutsPath)) {
-                copyFiles(layoutsPath, customizationDir);
-            } else {
-                BanditsQuirkLib.LOGGER.info("Layouts directory not found: " + layoutsPath.toString());
+            boolean performed = false;
+
+            BanditsQuirkLib.LOGGER.info("Searching FancyMenu sources for addon '" + addonName + "' (id: " + addonId + ")");
+
+            // Case 1: Addon as a directory under addonpacks/<addonName>
+            Path addonDir = gameDir.resolve("addonpacks").resolve(addonName);
+            Path baseDir = addonDir.resolve("assets").resolve(addonId).resolve("fancy_menu");
+            if (Files.isDirectory(baseDir)) {
+                BanditsQuirkLib.LOGGER.info("Found FancyMenu base in folder: " + baseDir);
+                performFancyMenuSetupFromBase(baseDir, customizationDir, customGuiScreensFile, userVariablesFile, fancyMenuAssetDir);
+                performed = true;
             }
 
-            // Copy all asset files (mostly custom images)
-            if (Files.exists(assetsPath)) {
-                copyFiles(assetsPath, fancyMenuAssetDir);
-            } else {
-                BanditsQuirkLib.LOGGER.info("Assets directory not found: " + assetsPath.toString());
+            // Case 2: Addon packaged as a mod jar inside mods/
+            if (!performed) {
+                Path modsDir = gameDir.resolve("mods");
+                if (Files.isDirectory(modsDir)) {
+                    // First pass: prefer jars whose filename contains addonName
+                    Optional<Path> preferred = Optional.empty();
+                    try (Stream<Path> modFiles = Files.walk(modsDir, 3)) {
+                        preferred = modFiles
+                                .filter(p -> Files.isRegularFile(p))
+                                .filter(p -> {
+                                    String name = p.getFileName().toString().toLowerCase();
+                                    return (name.endsWith(".jar") || name.endsWith(".zip")) && name.contains(addonName.toLowerCase());
+                                })
+                                .filter(p -> {
+                                    try (FileSystem jarFs = FileSystems.newFileSystem(p, (ClassLoader) null)) {
+                                        Path fmBase = resolveFancyMenuBaseInFs(jarFs, addonId);
+                                        return fmBase != null && Files.isDirectory(fmBase);
+                                    } catch (Exception ignored) {
+                                        return false;
+                                    }
+                                })
+                                .findFirst();
+                    }
+
+                    Optional<Path> anyMatch = Optional.empty();
+                    if (preferred.isEmpty()) {
+                        try (Stream<Path> modFiles = Files.walk(modsDir, 3)) {
+                            anyMatch = modFiles
+                                    .filter(p -> Files.isRegularFile(p))
+                                    .filter(p -> {
+                                        String name = p.getFileName().toString().toLowerCase();
+                                        return name.endsWith(".jar") || name.endsWith(".zip");
+                                    })
+                                    .filter(p -> {
+                                        try (FileSystem jarFs = FileSystems.newFileSystem(p, (ClassLoader) null)) {
+                                            Path fmBase = resolveFancyMenuBaseInFs(jarFs, addonId);
+                                            return fmBase != null && Files.isDirectory(fmBase);
+                                        } catch (Exception ignored) {
+                                            return false;
+                                        }
+                                    })
+                                    .findFirst();
+                        }
+                    }
+
+                    Optional<Path> chosen = preferred.isPresent() ? preferred : anyMatch;
+                    if (chosen.isPresent()) {
+                        Path jarPath = chosen.get();
+                        try (FileSystem jarFs = FileSystems.newFileSystem(jarPath, (ClassLoader) null)) {
+                            Path fmBase = resolveFancyMenuBaseInFs(jarFs, addonId);
+                            if (fmBase != null) {
+                                BanditsQuirkLib.LOGGER.info("Found FancyMenu base in mod jar: " + jarPath + " -> " + fmBase);
+                                performFancyMenuSetupFromBase(fmBase, customizationDir, customGuiScreensFile, userVariablesFile, fancyMenuAssetDir);
+                                performed = true;
+                            }
+                        }
+                    }
+                }
             }
 
-            // Handle GUI screen files
-            if (Files.exists(guiPath)) {
-                mergeGuiScreenFiles(guiPath, customGuiScreensFile);
-            } else {
-                BanditsQuirkLib.LOGGER.info("GUI directory not found: " + guiPath.toString());
-            }
-
-            // Handle the user_variables merge
-            if (Files.exists(variablesPath)) {
-                mergeUserVariables(variablesPath, userVariablesFile);
-            } else {
-                BanditsQuirkLib.LOGGER.info("Variables directory not found: " + variablesPath.toString());
+            if (!performed) {
+                BanditsQuirkLib.LOGGER.error("Could not locate FancyMenu files for addon '" + addonName + "' (id: " + addonId + ") in addonpacks folder, zip, or mods jar.");
+                return false;
             }
 
             // Create marker file to prevent re-running
@@ -142,6 +191,100 @@ public class FileManager {
             BanditsQuirkLib.LOGGER.error("Failed to setup FancyMenu Files: " + e.getMessage());
             e.printStackTrace();
             return false;
+        }
+    }
+
+    private static Path resolveFancyMenuBaseInFs(FileSystem fs, String addonId) throws IOException {
+        // Try strict case first
+        Path fm = tryResolveFancyMenu(fs, addonId, false);
+        if (fm != null) return fm;
+        // Then fallback to case-insensitive and alternate names
+        return tryResolveFancyMenu(fs, addonId, true);
+    }
+
+    private static Path tryResolveFancyMenu(FileSystem fs, String addonId, boolean caseInsensitive) throws IOException {
+        Path root = fs.getPath("/");
+
+        Path assets = caseInsensitive ? findChildIgnoreCase(root, "assets") : root.resolve("assets");
+        if (assets != null && Files.isDirectory(assets)) {
+            Path idDir = caseInsensitive ? findChildIgnoreCase(assets, addonId) : assets.resolve(addonId);
+            if (idDir != null && Files.isDirectory(idDir)) {
+                Path fm1 = caseInsensitive ? findChildIgnoreCase(idDir, "fancy_menu") : idDir.resolve("fancy_menu");
+                if (fm1 != null && Files.isDirectory(fm1)) return fm1;
+                Path fm2 = caseInsensitive ? findChildIgnoreCase(idDir, "fancymenu") : idDir.resolve("fancymenu");
+                if (fm2 != null && Files.isDirectory(fm2)) return fm2;
+            }
+        }
+
+        // One-level wrapper folder
+        try (Stream<Path> children = Files.list(root)) {
+            Optional<Path> candidate = children
+                    .filter(Files::isDirectory)
+                    .map(wrapper -> {
+                        Path wAssets = caseInsensitive ? findChildIgnoreCase(wrapper, "assets") : wrapper.resolve("assets");
+                        if (wAssets == null || !Files.isDirectory(wAssets)) return null;
+                        Path idDir = caseInsensitive ? findChildIgnoreCase(wAssets, addonId) : wAssets.resolve(addonId);
+                        if (idDir == null || !Files.isDirectory(idDir)) return null;
+                        Path fm1 = caseInsensitive ? findChildIgnoreCase(idDir, "fancy_menu") : idDir.resolve("fancy_menu");
+                        if (fm1 != null && Files.isDirectory(fm1)) return fm1;
+                        Path fm2 = caseInsensitive ? findChildIgnoreCase(idDir, "fancymenu") : idDir.resolve("fancymenu");
+                        if (fm2 != null && Files.isDirectory(fm2)) return fm2;
+                        return null;
+                    })
+                    .filter(p -> p != null && Files.isDirectory(p))
+                    .findFirst();
+            return candidate.orElse(null);
+        }
+    }
+
+    private static Path findChildIgnoreCase(Path base, String name) {
+        String lower = name.toLowerCase();
+        try (Stream<Path> kids = Files.list(base)) {
+            return kids.filter(Files::isDirectory)
+                    .filter(p -> p.getFileName() != null && p.getFileName().toString().toLowerCase().equals(lower))
+                    .findFirst()
+                    .orElse(null);
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
+    private static void performFancyMenuSetupFromBase(Path baseFancyMenuPath,
+                                                       Path customizationDir,
+                                                       Path customGuiScreensFile,
+                                                       Path userVariablesFile,
+                                                       Path fancyMenuAssetDir) throws IOException {
+        Path layoutsPath = baseFancyMenuPath.resolve("layouts");
+        Path guiPath = baseFancyMenuPath.resolve("gui");
+        Path variablesPath = baseFancyMenuPath.resolve("variables");
+        Path assetsPath = baseFancyMenuPath.resolve("assets");
+
+        // Copy all layout files
+        if (Files.exists(layoutsPath)) {
+            copyFiles(layoutsPath, customizationDir);
+        } else {
+            BanditsQuirkLib.LOGGER.info("Layouts directory not found: " + layoutsPath.toString());
+        }
+
+        // Copy all asset files (mostly custom images)
+        if (Files.exists(assetsPath)) {
+            copyFiles(assetsPath, fancyMenuAssetDir);
+        } else {
+            BanditsQuirkLib.LOGGER.info("Assets directory not found: " + assetsPath.toString());
+        }
+
+        // Handle GUI screen files
+        if (Files.exists(guiPath)) {
+            mergeGuiScreenFiles(guiPath, customGuiScreensFile);
+        } else {
+            BanditsQuirkLib.LOGGER.info("GUI directory not found: " + guiPath.toString());
+        }
+
+        // Handle the user_variables merge
+        if (Files.exists(variablesPath)) {
+            mergeUserVariables(variablesPath, userVariablesFile);
+        } else {
+            BanditsQuirkLib.LOGGER.info("Variables directory not found: " + variablesPath.toString());
         }
     }
 
@@ -174,7 +317,8 @@ public class FileManager {
                     .forEach(sourceFile -> {
                         try {
                             Path relativePath = sourceDir.relativize(sourceFile);
-                            Path targetFile = targetDir.resolve(relativePath);
+                            // Avoid ProviderMismatchException by resolving with a String when crossing file systems
+                            Path targetFile = targetDir.resolve(relativePath.toString());
 
                             // Ensure parent directories exist
                             Files.createDirectories(targetFile.getParent());
@@ -278,6 +422,81 @@ public class FileManager {
                 StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 
         BanditsQuirkLib.LOGGER.info("Successfully merged variable files to: " + targetFile.toString());
+    }
+
+    /**
+     * Copies an options.txt file from mod resources to /config/fancymenu/options.txt
+     * Only copies the file if the marker file .delete_to_reload_fancymenu is not present
+     * @param resourcePath The path to the resource within the mod JAR (e.g., "options.txt")
+     * @return true if successful, false if failed or setup already completed
+     */
+    public static boolean copyOptionsFileFromResources(String resourcePath) {
+        try {
+            Path configDir = Platform.getConfigFolder();
+            Path fancyMenuDir = configDir.resolve("fancymenu");
+            Path targetFile = fancyMenuDir.resolve("options.txt");
+            Path markerFile = configDir.resolve(".delete_to_reload_fancymenu");
+
+            // Check if the marker file exists - if so, skip execution
+            if (Files.exists(markerFile)) {
+                BanditsQuirkLib.LOGGER.info("FancyMenu setup already completed, skipping options.txt copy from resources");
+                BanditsQuirkLib.LOGGER.info("Delete the marker file to re-run FancyMenu setup.");
+                return true; // Return true since this is expected behavior
+            }
+
+            // Get the resource from the mod JAR
+            InputStream resourceStream = FileManager.class.getClassLoader().getResourceAsStream(resourcePath);
+            if (resourceStream == null) {
+                BanditsQuirkLib.LOGGER.error("Could not find options.txt resource at: " + resourcePath);
+                return false;
+            }
+
+            // Ensure fancymenu directory exists
+            Files.createDirectories(fancyMenuDir);
+
+            // Copy the resource to the target location
+            Files.copy(resourceStream, targetFile, StandardCopyOption.REPLACE_EXISTING);
+            resourceStream.close();
+
+            BanditsQuirkLib.LOGGER.info("Successfully copied options.txt from mod resources to FancyMenu config: " + targetFile.toString());
+            return true;
+
+        } catch (IOException e) {
+            BanditsQuirkLib.LOGGER.error("Failed to copy options.txt from mod resources to FancyMenu config: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Checks if the options.txt file was recently placed by checking if options.txt exists 
+     * but the .delete_to_reload_fancymenu marker doesn't exist yet
+     * Only returns true once per session to avoid showing the screen multiple times
+     * @return true if the options.txt file was placed and FancyMenu setup hasn't completed
+     */
+    public static boolean wasOptionsFileReplaced() {
+        try {
+            // If we've already shown the screen this session, don't show it again
+            if (optionsReplacementScreenShown) {
+                return false;
+            }
+            
+            Path configDir = Platform.getConfigFolder();
+            Path markerFile = configDir.resolve(".delete_to_reload_fancymenu");
+            Path optionsFile = configDir.resolve("fancymenu").resolve("options.txt");
+            
+            // If options.txt exists but the marker file doesn't, then options.txt was just placed
+            boolean result = Files.exists(optionsFile) && !Files.exists(markerFile);
+            
+            if (result) {
+                BanditsQuirkLib.LOGGER.info("Options file was placed but FancyMenu setup not completed - showing info screen");
+                optionsReplacementScreenShown = true; // Mark that we've shown the screen
+            }
+            
+            return result;
+        } catch (Exception e) {
+            BanditsQuirkLib.LOGGER.error("Failed to check options replacement status: " + e.getMessage());
+            return false;
+        }
     }
 
     /**

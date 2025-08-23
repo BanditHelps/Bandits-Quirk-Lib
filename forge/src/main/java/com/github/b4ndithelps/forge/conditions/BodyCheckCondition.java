@@ -4,7 +4,6 @@ import com.github.b4ndithelps.forge.capabilities.Body.BodyPart;
 import com.github.b4ndithelps.forge.capabilities.Body.DamageStage;
 import com.github.b4ndithelps.forge.systems.BodyStatusHelper;
 import com.google.gson.JsonObject;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.threetag.palladium.condition.Condition;
 import net.threetag.palladium.condition.ConditionEnvironment;

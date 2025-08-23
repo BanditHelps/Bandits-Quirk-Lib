@@ -26,6 +26,7 @@ public class BQLConfig {
     // Body Constants
     public final ForgeConfigSpec.ConfigValue<List<? extends Double>> damageStagePercentages;
     public final ForgeConfigSpec.DoubleValue maxDamage;
+    public final ForgeConfigSpec.DoubleValue staminaSleepRecoverPercent;
 
     // Stamina Constants
     public final ForgeConfigSpec.ConfigValue<List<? extends Integer>> exhaustionLevels;
@@ -48,6 +49,20 @@ public class BQLConfig {
     // Creation Shop Constants - We'll handle the maps dynamically
     public final ForgeConfigSpec.ConfigValue<String> creationShopDataPath;
 
+    // Powerstock Constants
+    public final ForgeConfigSpec.DoubleValue minorDamagePercentage;
+    public final ForgeConfigSpec.DoubleValue majorDamagePercentage;
+    public final ForgeConfigSpec.DoubleValue severeDamagePercentage;
+    public final ForgeConfigSpec.DoubleValue strengthDivisor;
+    public final ForgeConfigSpec.DoubleValue armorDivisor;
+    public final ForgeConfigSpec.DoubleValue healthDivisor;
+    public final ForgeConfigSpec.DoubleValue speedDivisor;
+    public final ForgeConfigSpec.DoubleValue swimDivisor;
+    public final ForgeConfigSpec.DoubleValue minorDamage;
+    public final ForgeConfigSpec.DoubleValue majorDamage;
+    public final ForgeConfigSpec.DoubleValue severeDamage;
+
+
     public BQLConfig(ForgeConfigSpec.Builder builder) {
         // Body Constants Section
         builder.comment("Body System Configuration")
@@ -62,6 +77,10 @@ public class BQLConfig {
         this.maxDamage = builder
                 .comment("Maximum damage a body part can take")
                 .defineInRange("max_damage", 100.0, 1.0, 1000.0);
+
+        this.staminaSleepRecoverPercent = builder
+                .comment("Amount of stamina regained when successfully sleeping")
+                        .defineInRange("stamina_sleep_recover_percent", 0.75, 0.0, 1.0);
 
         builder.pop();
 
@@ -142,6 +161,57 @@ public class BQLConfig {
         this.creationShopDataPath = builder
                 .comment("Path to creation shop data file (relative to config directory)")
                 .define("creation_shop_data_path", "bql/creation_shop_data.json");
+
+        builder.pop();
+
+        // Powerstock section
+        builder.comment("Powerstock Value Configuration")
+                .push("powerstock");
+
+        this.minorDamagePercentage = builder
+                .comment("The percentage over the max power threshold considered to be 'Minor' (1.01 = 1% over max safety limit)")
+                .defineInRange("minor_damage_percentage", 1.01, 0.0, 5.0);
+
+        this.majorDamagePercentage = builder
+                .comment("The percentage over the max power threshold considered to be 'Major' (2.0 = 100% over max safety limit)")
+                .defineInRange("major_damage_percentage", 2.0, 0.0, 5.0);
+
+        this.severeDamagePercentage = builder
+                .comment("The percentage over the max power threshold considered to be 'Severe' (5.0 = 400% over max safety limit)")
+                .defineInRange("severe_damage_percentage", 5.0, 0.0, 5.0);
+
+        this.strengthDivisor = builder
+                .comment("The amount of power it takes to increase FC strength by +1 damage.")
+                .defineInRange("powerstock_strength_divisor", 10833, 1.0, 500000);
+
+        this.armorDivisor = builder
+                .comment("The amount of power it takes to increase FC armor by +0.5 points.")
+                .defineInRange("powerstock_armor_divisor", 5000, 1.0, 500000);
+
+        this.healthDivisor = builder
+                .comment("The amount of power it takes to increase FC health by +0.5 points.")
+                .defineInRange("powerstock_health_divisor", 10000, 1.0, 500000);
+
+        this.speedDivisor = builder
+                .comment("The amount of power it takes to increase FC speed. (Large values required as speed scales strangely)")
+                .defineInRange("powerstock_speed_divisor", 3000, 1.0, 100000);
+
+        this.swimDivisor = builder
+                .comment("The amount of power it takes to increase FC swim speed. (Large values required as speed scales strangely)")
+                .defineInRange("powerstock_swim_divisor", 3000, 1.0, 100000);
+
+        this.minorDamage = builder
+                .comment("The amount of damage overusing in the 'minor' level does to a limb")
+                .defineInRange("powerstock_minor_damage", 25, 0.0, 1000);
+
+        this.majorDamage = builder
+                .comment("The amount of damage overusing in the 'major' level does to a limb")
+                .defineInRange("powerstock_major_damage", 50, 0.0, 1000);
+
+        this.severeDamage = builder
+                .comment("The amount of damage overusing in the 'severe' level does to a limb")
+                .defineInRange("powerstock_severe_damage", 75, 0.0, 1000);
+
 
         builder.pop();
     }

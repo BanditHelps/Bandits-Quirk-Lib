@@ -174,7 +174,6 @@ public class MineHaEnchantCommand {
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("mineha_enchant")
-                .requires(source -> source.hasPermission(2))
                 .then(Commands.argument("type", StringArgumentType.string())
                         .then(Commands.argument("item_id", ResourceLocationArgument.id())
                                 .then(Commands.argument("custom_name", StringArgumentType.string())

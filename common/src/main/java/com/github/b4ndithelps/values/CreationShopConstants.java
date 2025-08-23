@@ -487,7 +487,7 @@ public class CreationShopConstants {
         put("minecraft:knockback", 5);
         put("minecraft:punch", 5);
         put("minecraft:sweeping", 5);
-        put("minecraft:loyaty", 5);
+        put("minecraft:loyalty", 5);
         put("minecraft:piercing", 5);
         put("minecraft:flame", 5);
         put("minecraft:blast_protection", 5);

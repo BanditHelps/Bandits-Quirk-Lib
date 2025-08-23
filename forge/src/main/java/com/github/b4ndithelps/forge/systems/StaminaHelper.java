@@ -448,7 +448,13 @@ public class StaminaHelper {
         IStaminaData staminaData = getStaminaDataSafe(player);
         if (staminaData != null) {
             staminaData.setUpgradePoints(amount);
-//            syncUpgradePointsToBoard(player, amount);
+            // Sync to client if on server side
+            if (player instanceof net.minecraft.server.level.ServerPlayer sp) {
+                com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.send(
+                        net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> sp),
+                        com.github.b4ndithelps.forge.network.StaminaSyncPacket.fullSync(sp)
+                );
+            }
         }
     }
 
@@ -498,30 +504,30 @@ public class StaminaHelper {
         return retValue.get();
     }
 
-    public static void debugStamina(Player player) {
-        IStaminaData staminaData = getStaminaDataSafe(player);
+    public static void debugStamina(Player sender, Player target) {
+        IStaminaData staminaData = getStaminaDataSafe(target);
         if (staminaData != null) {
-            player.sendSystemMessage(Component.literal("§6=== " + player.getGameProfile().getName() + "'s Stamina Status ==="));
-            player.sendSystemMessage(Component.literal("§eCurrent: " + getStaminaInfo(player)));
-            player.sendSystemMessage(Component.literal("§eExhaustion Level: " + staminaData.getExhaustionLevel()));
-            player.sendSystemMessage(Component.literal("§eRegen Cooldown: " + staminaData.getRegenCooldown() + " ticks"));
-            player.sendSystemMessage(Component.literal("§ePower Disabled: " + (staminaData.isPowersDisabled() ? "Yes" : "No")));
-            player.sendSystemMessage(Component.literal("§eLast Hurrah Used: " + (staminaData.getLastHurrahUsed() ? "Yes" : "No")));
-            player.sendSystemMessage(Component.literal("§ePlus Ultra: " + (player.getTags().contains("MineHa.PlusUltra") ? "§bYes" : "§cNo")));
-            player.sendSystemMessage(Component.literal("§eUsage Total: " + staminaData.getUsageTotal()));
-            player.sendSystemMessage(Component.literal("§aUpgrade Points: " + staminaData.getUpgradePoints()));
-            player.sendSystemMessage(Component.literal("§7Points Progress: " + staminaData.getPointsProgress() + "/" + POINTS_TO_UPGRADE));
+            sender.sendSystemMessage(Component.literal("§6=== " + target.getGameProfile().getName() + "'s Stamina Status ==="));
+            sender.sendSystemMessage(Component.literal("§eCurrent: " + getStaminaInfo(target)));
+            sender.sendSystemMessage(Component.literal("§eExhaustion Level: " + staminaData.getExhaustionLevel()));
+            sender.sendSystemMessage(Component.literal("§eRegen Cooldown: " + staminaData.getRegenCooldown() + " ticks"));
+            sender.sendSystemMessage(Component.literal("§ePower Disabled: " + (staminaData.isPowersDisabled() ? "Yes" : "No")));
+            sender.sendSystemMessage(Component.literal("§eLast Hurrah Used: " + (staminaData.getLastHurrahUsed() ? "Yes" : "No")));
+            sender.sendSystemMessage(Component.literal("§ePlus Ultra: " + (target.getTags().contains("MineHa.PlusUltra") ? "§bYes" : "§cNo")));
+            sender.sendSystemMessage(Component.literal("§eUsage Total: " + staminaData.getUsageTotal()));
+            sender.sendSystemMessage(Component.literal("§aUpgrade Points: " + staminaData.getUpgradePoints()));
+            sender.sendSystemMessage(Component.literal("§7Points Progress: " + staminaData.getPointsProgress() + "/" + POINTS_TO_UPGRADE));
         }
     }
 
-    public static void getUpgradePointsInfo(Player player) {
-        IStaminaData staminaData = getStaminaDataSafe(player);
+    public static void getUpgradePointsInfo(Player sender, Player target) {
+        IStaminaData staminaData = getStaminaDataSafe(target);
         if (staminaData != null) {
-            player.sendSystemMessage(Component.literal("§6=== " + player.getGameProfile().getName() + "'s Upgrade Points ==="));
-            player.sendSystemMessage(Component.literal("§aTotal Points: " + staminaData.getUpgradePoints()));
-            player.sendSystemMessage(Component.literal("§7Progress to next point: " + staminaData.getPointsProgress() + "/" + POINTS_TO_UPGRADE));
-            player.sendSystemMessage(Component.literal("§eUse these points to unlock new abilities!"));
-            player.sendSystemMessage(Component.literal("§7Tip: Using abilities while exhausted gives bonus points!"));
+            sender.sendSystemMessage(Component.literal("§6=== " + target.getGameProfile().getName() + "'s Upgrade Points ==="));
+            sender.sendSystemMessage(Component.literal("§aTotal Points: " + staminaData.getUpgradePoints()));
+            sender.sendSystemMessage(Component.literal("§7Progress to next point: " + staminaData.getPointsProgress() + "/" + POINTS_TO_UPGRADE));
+            sender.sendSystemMessage(Component.literal("§eUse these points to unlock new abilities!"));
+            sender.sendSystemMessage(Component.literal("§7Tip: Using abilities while exhausted gives bonus points!"));
         }
     }
 }

@@ -1,5 +1,4 @@
 package com.github.b4ndithelps.forge.abilities;
-
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -9,6 +8,10 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.core.BlockPos;
+import net.minecraft.util.Mth;
 import net.threetag.palladium.power.IPowerHolder;
 import net.threetag.palladium.power.ability.Ability;
 import net.threetag.palladium.power.ability.AbilityInstance;
@@ -58,6 +61,7 @@ public class PermeationRiseAbility extends Ability {
         if (player.level() instanceof ServerLevel level) {
             level.playSound(null, player.blockPosition(), SoundEvents.SLIME_BLOCK_BREAK, SoundSource.PLAYERS, 0.5f, 1.3f);
         }
+
     }
 
     @Override
@@ -90,6 +94,7 @@ public class PermeationRiseAbility extends Ability {
         float horDrag = Math.max(0.0F, Math.min(1.0F, entry.getProperty(HORIZONTAL_DRAG)));
         // Preserve horizontal momentum; optionally damp using configurable drag
         Vec3 next = new Vec3(prev.x * horDrag, vy * 2, prev.z * horDrag);
+        next = this.adjustMoveToRespectBedrock(player, next);
         player.setDeltaMovement(next.x, next.y, next.z);
         player.connection.send(new ClientboundSetEntityMotionPacket(player));
 
@@ -105,14 +110,6 @@ public class PermeationRiseAbility extends Ability {
 
         if (entry.getEnabledTicks() % 20 == 0) {
             applyActiveEffects(player, entry);
-        }
-
-        // Oxygen handling while rising: drain if still inside blocks, restore when in free space
-        if (!free) {
-            int air = player.getAirSupply();
-            if (air > -100) {
-                player.setAirSupply(air - 8);
-            }
         }
 
         if (reachedTargetY || freeTicks >= 2) {
@@ -154,6 +151,54 @@ public class PermeationRiseAbility extends Ability {
     public String getDocumentationDescription() {
         return "Handles the upward rise phase of permeation: while active, keeps the player intangible and moves them to the nearest air pocket above, then pops slightly on exit.";
     }
-}
+    
+    private boolean intersectsBedrock(ServerPlayer player, AABB box) {
+        int minX = Mth.floor(box.minX);
+        int maxX = Mth.floor(box.maxX);
+        int minY = Mth.floor(box.minY);
+        int maxY = Mth.floor(box.maxY);
+        int minZ = Mth.floor(box.minZ);
+        int maxZ = Mth.floor(box.maxZ);
 
+        for (int x = minX; x <= maxX; x++) {
+            for (int y = minY; y <= maxY; y++) {
+                for (int z = minZ; z <= maxZ; z++) {
+                    BlockPos pos = new BlockPos(x, y, z);
+                    if (player.level().getBlockState(pos).is(Blocks.BEDROCK)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private Vec3 adjustMoveToRespectBedrock(ServerPlayer player, Vec3 proposedMove) {
+        boolean insideNow = intersectsBedrock(player, player.getBoundingBox());
+        if (insideNow) {
+            if (proposedMove.y > 0.0) {
+                return new Vec3(0.0, proposedMove.y, 0.0);
+            } else {
+                return Vec3.ZERO;
+            }
+        }
+
+        AABB moved = player.getBoundingBox().move(proposedMove);
+        if (!intersectsBedrock(player, moved)) {
+            return proposedMove;
+        }
+
+        Vec3 noY = new Vec3(proposedMove.x, 0.0, proposedMove.z);
+        if (!intersectsBedrock(player, player.getBoundingBox().move(noY))) {
+            return noY;
+        }
+
+        Vec3 noXZ = new Vec3(0.0, proposedMove.y, 0.0);
+        if (!intersectsBedrock(player, player.getBoundingBox().move(noXZ))) {
+            return noXZ;
+        }
+
+        return Vec3.ZERO;
+    }
+}
 
