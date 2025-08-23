@@ -13,6 +13,8 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.level.block.Blocks;
 import net.threetag.palladium.power.IPowerHolder;
 import net.threetag.palladium.power.ability.Ability;
 import net.threetag.palladium.power.ability.AbilityInstance;
@@ -65,7 +67,9 @@ public class PermeationAbility extends Ability {
         Vec3 current = player.getDeltaMovement();
         double nudge = Math.max(0.08, 0.08 * 0.5 * speed);
         // Preserve horizontal momentum on activation; only adjust vertical
-        player.setDeltaMovement(current.x, Math.min(current.y, -nudge), current.z);
+        Vec3 proposed = new Vec3(current.x, Math.min(current.y, -nudge), current.z);
+        proposed = this.adjustMoveToRespectBedrock(player, proposed);
+        player.setDeltaMovement(proposed.x, proposed.y, proposed.z);
         player.connection.send(new ClientboundSetEntityMotionPacket(player));
 
         // Sound feedback
@@ -104,7 +108,9 @@ public class PermeationAbility extends Ability {
         double terminal = -3.92D * entry.getProperty(DESCENT_SPEED);
         if (newY < terminal) newY = terminal;
         // Preserve horizontal movement; only adjust vertical motion
-        player.setDeltaMovement(prev.x * horDrag, newY, prev.z * horDrag);
+        Vec3 proposed = new Vec3(prev.x * horDrag, newY, prev.z * horDrag);
+        proposed = this.adjustMoveToRespectBedrock(player, proposed);
+        player.setDeltaMovement(proposed.x, proposed.y, proposed.z);
         player.connection.send(new ClientboundSetEntityMotionPacket(player));
 
 
@@ -206,5 +212,60 @@ public class PermeationAbility extends Ability {
 
         // Fallback: if no suitable ground found, move to just below build height keeping space clear
         return Math.max(minY, maxBuildY);
+    }
+
+    private boolean intersectsBedrock(ServerPlayer player, AABB box) {
+        int minX = Mth.floor(box.minX);
+        int maxX = Mth.floor(box.maxX);
+        int minY = Mth.floor(box.minY);
+        int maxY = Mth.floor(box.maxY);
+        int minZ = Mth.floor(box.minZ);
+        int maxZ = Mth.floor(box.maxZ);
+
+        for (int x = minX; x <= maxX; x++) {
+            for (int y = minY; y <= maxY; y++) {
+                for (int z = minZ; z <= maxZ; z++) {
+                    BlockPos pos = new BlockPos(x, y, z);
+                    if (player.level().getBlockState(pos).is(Blocks.BEDROCK)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private Vec3 adjustMoveToRespectBedrock(ServerPlayer player, Vec3 proposedMove) {
+        // If we're already inside bedrock (e.g., world-gen edge cases), only allow upward movement to escape
+        boolean insideNow = intersectsBedrock(player, player.getBoundingBox());
+        if (insideNow) {
+            if (proposedMove.y > 0.0) {
+                // Allow upwards, but prevent horizontal drift while intersecting
+                return new Vec3(0.0, proposedMove.y, 0.0);
+            } else {
+                return Vec3.ZERO;
+            }
+        }
+
+        // Prevent entering bedrock on this tick
+        AABB moved = player.getBoundingBox().move(proposedMove);
+        if (!intersectsBedrock(player, moved)) {
+            return proposedMove;
+        }
+
+        // First, try stopping vertical component (avoid sinking into bedrock below)
+        Vec3 noY = new Vec3(proposedMove.x, 0.0, proposedMove.z);
+        if (!intersectsBedrock(player, player.getBoundingBox().move(noY))) {
+            return noY;
+        }
+
+        // Then, try stopping horizontal drift while keeping vertical (unlikely needed for downward motion)
+        Vec3 noXZ = new Vec3(0.0, proposedMove.y, 0.0);
+        if (!intersectsBedrock(player, player.getBoundingBox().move(noXZ))) {
+            return noXZ;
+        }
+
+        // Finally, block movement entirely this tick
+        return Vec3.ZERO;
     }
 }
