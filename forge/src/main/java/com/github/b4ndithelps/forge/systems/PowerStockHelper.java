@@ -45,20 +45,20 @@ public class PowerStockHelper {
     // This is a total amount of energy they can use, based on the current stamina of the player
     public static float getSafePowerThreshold(ServerPlayer player) {
         IBodyStatusCapability bodyStatus = BodyStatusHelper.getBodyStatus(player);
-        return bodyStatus.getCustomFloat(BodyPart.CHEST, MAXIMUM_SAFE_POWER_KEY);
+        return bodyStatus == null ? 0.0f : bodyStatus.getCustomFloat(BodyPart.CHEST, MAXIMUM_SAFE_POWER_KEY);
     }
 
     // Returns the player's current stored powerstock energy
     public static float getStoredPower(ServerPlayer player) {
         IBodyStatusCapability bodyStatus = BodyStatusHelper.getBodyStatus(player);
-        return bodyStatus.getCustomFloat(BodyPart.CHEST, STORED_POWER_KEY);
+        return bodyStatus == null ? 0.0f : bodyStatus.getCustomFloat(BodyPart.CHEST, STORED_POWER_KEY);
     }
 
     // Returns the player's selected Full Cowling Level
     // Converts to a percentage < 1 as the minecraft function sets it to an integer from 0-100
     public static float getFCPercentage(ServerPlayer player) {
         IBodyStatusCapability bodyStatus = BodyStatusHelper.getBodyStatus(player);
-        return bodyStatus.getCustomFloat(BodyPart.CHEST, FC_PERCENTAGE_KEY) / 100;
+        return bodyStatus == null ? 0.0f :bodyStatus.getCustomFloat(BodyPart.CHEST, FC_PERCENTAGE_KEY) / 100;
     }
 
     public static SafetyInfo getOverUseDamageLevel(ServerPlayer player, float powerUsed) {
