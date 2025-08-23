@@ -35,14 +35,6 @@ public class PersistentDataPlaceholder extends Placeholder {
         }
 
         try {
-            // Get the server instance
-            MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
-
-            if (server == null) {
-                BanditsQuirkLibForge.LOGGER.error("Server is not available");
-                return "";
-            }
-
             // Get the client player
             Minecraft minecraft = Minecraft.getInstance();
             if (minecraft.player == null) {
@@ -50,14 +42,7 @@ public class PersistentDataPlaceholder extends Placeholder {
                 return "";
             }
 
-            // Get the server player entity
-            ServerPlayer serverPlayer = server.getPlayerList().getPlayer(minecraft.player.getUUID());
-            if (serverPlayer == null) {
-                BanditsQuirkLibForge.LOGGER.error("ServerPlayer is not found");
-                return "";
-            }
-
-            return serverPlayer.getPersistentData().getString(dataKey);
+            return minecraft.player.getPersistentData().getString(dataKey);
 
 
         } catch (Exception e) {

@@ -403,6 +403,7 @@ public class BodyStatusHelper {
             // Auto-sync to client if this is a server player
             if (player instanceof ServerPlayer serverPlayer) {
                 syncToClient(serverPlayer);
+                BanditsQuirkLibForge.LOGGER.info("Synced Value to client");
             }
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("Invalid body part: " + bodyPartName + " (resolved to: " + resolveBodyPartName(player, bodyPartName) + ")");

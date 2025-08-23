@@ -37,6 +37,12 @@ public final class BQLNetwork {
                 .decoder(StaminaSyncPacket::decode)
                 .consumerMainThread(StaminaSyncPacket::handle)
                 .add();
+
+        CHANNEL.messageBuilder(MineHaSlotSyncPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(MineHaSlotSyncPacket::encode)
+                .decoder(MineHaSlotSyncPacket::decode)
+                .consumerMainThread(MineHaSlotSyncPacket::handle)
+                .add();
     }
 }
 

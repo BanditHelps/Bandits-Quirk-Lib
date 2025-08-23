@@ -145,6 +145,12 @@ public class MineHaSlotCommand {
                         false
                 );
 
+                // Send single-slot sync to the client so placeholders can read it immediately
+                com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.send(
+                        net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player),
+                        new com.github.b4ndithelps.forge.network.MineHaSlotSyncPacket(player.getUUID(), slot, item)
+                );
+
                 return 1;
             } else {
                 context.getSource().sendFailure(Component.literal("Error: IsSlottable false"));
