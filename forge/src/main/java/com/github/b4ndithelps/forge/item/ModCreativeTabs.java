@@ -18,6 +18,8 @@ public class ModCreativeTabs {
             .icon(() -> new ItemStack(ModBlocks.RESEARCH_TABLE_BLOCK.get()))
             .displayItems((parameters, output) -> {
                 output.accept(ModBlocks.RESEARCH_TABLE_BLOCK.get());
+                output.accept(ModItems.TISSUE_EXTRACTOR.get());
+                output.accept(ModItems.TISSUE_SAMPLE.get());
             })
             .build());
 

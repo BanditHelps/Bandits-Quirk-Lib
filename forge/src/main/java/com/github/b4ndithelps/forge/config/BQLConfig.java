@@ -62,6 +62,13 @@ public class BQLConfig {
     public final ForgeConfigSpec.DoubleValue majorDamage;
     public final ForgeConfigSpec.DoubleValue severeDamage;
 
+    // Genetics / Extractor Constants
+    public final ForgeConfigSpec.IntValue extractorMaxDurability;
+    public final ForgeConfigSpec.IntValue extractorDurabilityCost;
+    public final ForgeConfigSpec.BooleanValue extractorDamageTarget;
+    public final ForgeConfigSpec.DoubleValue extractorDamageAmount;
+    public final ForgeConfigSpec.ConfigValue<List<? extends String>> extractorValidEntityTypes;
+
 
     public BQLConfig(ForgeConfigSpec.Builder builder) {
         // Body Constants Section
@@ -212,6 +219,42 @@ public class BQLConfig {
                 .comment("The amount of damage overusing in the 'severe' level does to a limb")
                 .defineInRange("powerstock_severe_damage", 75, 0.0, 1000);
 
+
+        builder.pop();
+
+        // Genetics / Extractor section
+        builder.comment("Genetics & Tissue Extractor Configuration")
+                .push("genetics");
+
+        this.extractorMaxDurability = builder
+                .comment("Maximum durability of the Tissue Extractor item")
+                .defineInRange("extractor_max_durability", 128, 1, 4096);
+
+        this.extractorDurabilityCost = builder
+                .comment("Durability cost per successful use of the Tissue Extractor")
+                .defineInRange("extractor_durability_cost", 1, 1, 64);
+
+        this.extractorDamageTarget = builder
+                .comment("Whether using the Tissue Extractor damages the target entity")
+                .define("extractor_damage_target", false);
+
+        this.extractorDamageAmount = builder
+                .comment("Damage dealt to the target when extractor is used (in health points)")
+                .defineInRange("extractor_damage_amount", 1.0, 0.0, 20.0);
+
+        this.extractorValidEntityTypes = builder
+                .comment("List of entity type IDs that can be swabbed (e.g., minecraft:player)")
+                .defineList(
+                        "extractor_valid_entity_types",
+                        Arrays.asList(
+                                "minecraft:player",
+                                "minecraft:villager",
+                                "minecraft:zombie",
+                                "minecraft:husk",
+                                "minecraft:drowned"
+                        ),
+                        obj -> obj instanceof String
+                );
 
         builder.pop();
     }
