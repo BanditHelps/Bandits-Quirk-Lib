@@ -122,16 +122,6 @@ public class PermeationAbility extends Ability {
             applyActiveEffects(player, entry);
         }
 
-
-        // Oxygen handling: while phasing inside blocks (not in free air pocket), drain air; otherwise restore
-        boolean inFreeSpace = player.level().noCollision(player, player.getBoundingBox().inflate(-0.02));
-        if (!inFreeSpace) {
-            int air = player.getAirSupply();
-            if (air > -100) {
-                player.setAirSupply(air - 8);
-            }
-        }
-
     }
 
     @Override

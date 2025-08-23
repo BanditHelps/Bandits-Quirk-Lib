@@ -112,14 +112,6 @@ public class PermeationRiseAbility extends Ability {
             applyActiveEffects(player, entry);
         }
 
-        // Oxygen handling while rising: drain if still inside blocks, restore when in free space
-        if (!free) {
-            int air = player.getAirSupply();
-            if (air > -100) {
-                player.setAirSupply(air - 8);
-            }
-        }
-
         if (reachedTargetY || freeTicks >= 2) {
             // Finish rise
             player.noPhysics = false;
