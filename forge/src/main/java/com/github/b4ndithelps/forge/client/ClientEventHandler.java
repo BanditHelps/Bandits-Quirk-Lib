@@ -6,7 +6,7 @@ import com.github.b4ndithelps.forge.entities.ModEntities;
 import com.github.b4ndithelps.forge.entities.WindProjectileEntity;
 import com.github.b4ndithelps.util.FileManager;
 import com.github.b4ndithelps.forge.blocks.ModMenus;
-import com.github.b4ndithelps.forge.client.DNASequencerScreen;
+import com.github.b4ndithelps.forge.client.BioTerminalScreen;
 import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.TitleScreen;
@@ -34,7 +34,7 @@ public class ClientEventHandler {
 
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event) {
-            event.enqueueWork(() -> MenuScreens.register(ModMenus.DNA_SEQUENCER.get(), DNASequencerScreen::new));
+            event.enqueueWork(() -> MenuScreens.register(ModMenus.BIO_TERMINAL.get(), BioTerminalScreen::new));
         }
     }
 

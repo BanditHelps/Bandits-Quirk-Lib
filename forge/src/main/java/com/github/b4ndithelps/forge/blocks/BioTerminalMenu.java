@@ -9,14 +9,14 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.*;
 import net.minecraft.world.item.ItemStack;
 
-public class DNASequencerMenu extends AbstractContainerMenu {
+public class BioTerminalMenu extends AbstractContainerMenu {
     private final ContainerLevelAccess access;
     private final Container container;
     private final ContainerData data;
     private BlockPos pos;
 
-    public DNASequencerMenu(int id, Inventory playerInv, DNASequencerBlockEntity be, ContainerData data) {
-        super(ModMenus.DNA_SEQUENCER.get(), id);
+    public BioTerminalMenu(int id, Inventory playerInv, BioTerminalBlockEntity be, ContainerData data) {
+        super(ModMenus.BIO_TERMINAL.get(), id);
         this.container = be;
         this.data = data;
         this.access = ContainerLevelAccess.create(be.getLevel(), be.getBlockPos());
@@ -24,31 +24,27 @@ public class DNASequencerMenu extends AbstractContainerMenu {
         this.addDataSlots(data);
         this.pos = be.getBlockPos();
 
-        // Single storage drive slot only; positioned near top-left (outside console background)
-        this.addSlot(new Slot(be, DNASequencerBlockEntity.SLOT_DISK, -20, 6));
+        this.addSlot(new Slot(be, BioTerminalBlockEntity.SLOT_DISK, -20, 6));
     }
 
-    // Client-side constructor using buffer with BlockPos from NetworkHooks.openScreen
-    public DNASequencerMenu(int id, Inventory playerInv, FriendlyByteBuf buf) {
-        super(ModMenus.DNA_SEQUENCER.get(), id);
+    public BioTerminalMenu(int id, Inventory playerInv, FriendlyByteBuf buf) {
+        super(ModMenus.BIO_TERMINAL.get(), id);
         var pos = buf.readBlockPos();
         var be = playerInv.player.level().getBlockEntity(pos);
-        if (!(be instanceof DNASequencerBlockEntity sequencer)) {
-            // Fallback to dummy container to avoid crash; should not happen normally
+        if (!(be instanceof BioTerminalBlockEntity terminal)) {
             this.container = new SimpleContainer(1);
             this.data = new SimpleContainerData(2);
             this.access = ContainerLevelAccess.NULL;
         } else {
-            this.container = sequencer;
+            this.container = terminal;
             this.data = new SimpleContainerData(2);
-            this.access = ContainerLevelAccess.create(sequencer.getLevel(), sequencer.getBlockPos());
+            this.access = ContainerLevelAccess.create(terminal.getLevel(), terminal.getBlockPos());
         }
         this.pos = pos;
 
         this.addDataSlots(this.data);
 
-        // Only the storage drive slot
-        this.addSlot(new Slot((Container) this.container, DNASequencerBlockEntity.SLOT_DISK, -20, 6));
+        this.addSlot(new Slot((Container) this.container, BioTerminalBlockEntity.SLOT_DISK, -20, 6));
     }
 
     public BlockPos getBlockPos() {
@@ -65,12 +61,11 @@ public class DNASequencerMenu extends AbstractContainerMenu {
 
     @Override
     public boolean stillValid(Player player) {
-        return stillValid(this.access, player, ModBlocks.DNA_SEQUENCER.get());
+        return stillValid(this.access, player, ModBlocks.BIO_TERMINAL.get());
     }
 
     @Override
     public ItemStack quickMoveStack(Player player, int index) {
-        // Disable quick-move for console-only UI
         return ItemStack.EMPTY;
     }
 }

@@ -1,6 +1,6 @@
 package com.github.b4ndithelps.forge.network;
 
-import com.github.b4ndithelps.forge.blocks.DNASequencerBlockEntity;
+import com.github.b4ndithelps.forge.blocks.BioTerminalBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
@@ -35,8 +35,8 @@ public class ConsoleCommandC2SPacket {
             ServerPlayer player = ctx.getSender();
             if (player == null) return;
             BlockEntity be = player.level().getBlockEntity(this.pos);
-            if (be instanceof DNASequencerBlockEntity sequencer) {
-                sequencer.runCommand(this.command);
+            if (be instanceof BioTerminalBlockEntity terminal) {
+                terminal.runCommand(this.command);
             }
         });
         return true;

@@ -1,7 +1,7 @@
 {
   "parent": "block/cube_all",
   "textures": {
-    "all": "bandits_quirk_lib:block/dna_sequencer"
+    "all": "bandits_quirk_lib:block/bio_terminal"
   }
 }
 

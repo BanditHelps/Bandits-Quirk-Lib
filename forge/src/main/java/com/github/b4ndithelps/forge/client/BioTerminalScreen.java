@@ -1,7 +1,7 @@
 package com.github.b4ndithelps.forge.client;
 
-import com.github.b4ndithelps.forge.blocks.DNASequencerMenu;
-import com.github.b4ndithelps.forge.blocks.DNASequencerBlockEntity;
+import com.github.b4ndithelps.forge.blocks.BioTerminalMenu;
+import com.github.b4ndithelps.forge.blocks.BioTerminalBlockEntity;
 import com.github.b4ndithelps.forge.network.BQLNetwork;
 import com.github.b4ndithelps.forge.network.ConsoleCommandC2SPacket;
 import net.minecraft.client.gui.GuiGraphics;
@@ -11,18 +11,17 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.core.BlockPos;
-import net.minecraftforge.client.gui.widget.ScrollPanel;
 import net.minecraft.util.Mth;
 
 @SuppressWarnings("removal")
-public class DNASequencerScreen extends AbstractContainerScreen<DNASequencerMenu> {
-    private static final ResourceLocation TEXTURE = new ResourceLocation("bandits_quirk_lib", "textures/gui/dna_sequencer.png");
+public class BioTerminalScreen extends AbstractContainerScreen<BioTerminalMenu> {
+    private static final ResourceLocation TEXTURE = new ResourceLocation("bandits_quirk_lib", "textures/gui/bio_terminal.png");
     private EditBox input;
     private String consoleText = "";
     private int consoleScrollPixels = 0;
     private boolean stickToBottom = true;
 
-    public DNASequencerScreen(DNASequencerMenu menu, Inventory inv, Component title) {
+    public BioTerminalScreen(BioTerminalMenu menu, Inventory inv, Component title) {
         super(menu, inv, title);
         this.imageWidth = 240;
         this.imageHeight = 166;
@@ -63,7 +62,6 @@ public class DNASequencerScreen extends AbstractContainerScreen<DNASequencerMenu
             if (y >= textAreaY + textAreaHeight) break;
         }
 
-        // Optional simple scrollbar (right-side, 2px wide)
         if (maxScroll > 0) {
             int barTrackX = textAreaX + textAreaWidth - 2;
             int barTrackY = textAreaY;
@@ -78,8 +76,6 @@ public class DNASequencerScreen extends AbstractContainerScreen<DNASequencerMenu
 
     @Override
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
-        // This is the title of the page. Don't need it in the computer screen
-        //        graphics.drawString(this.font, this.title, 8, 6, 4210752, false);
     }
 
     @Override
@@ -94,19 +90,16 @@ public class DNASequencerScreen extends AbstractContainerScreen<DNASequencerMenu
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        // Consume inventory toggle to prevent closing while typing
         if (this.minecraft.options.keyInventory.matches(keyCode, scanCode)) {
             return true;
         }
-        // Enter submits
         if (keyCode == 257 || keyCode == 335) {
             submitCommand();
             return true;
         }
-        
-        // Up arrow for previous command
+
         if (keyCode == 265) {
-            DNASequencerBlockEntity be = getSequencerBE();
+            BioTerminalBlockEntity be = getTerminalBE();
             if (be != null) {
                 String prev = be.historyPrev();
                 this.input.setValue(prev);
@@ -114,17 +107,14 @@ public class DNASequencerScreen extends AbstractContainerScreen<DNASequencerMenu
             }
         }
 
-        // Down arrow for next command
         if (keyCode == 264) {
-            DNASequencerBlockEntity be = getSequencerBE();
+            BioTerminalBlockEntity be = getTerminalBE();
             if (be != null) {
                 String next = be.historyNext();
                 this.input.setValue(next);
                 return true;
             }
         }
-
-        // Let the input consume keys first
         if (this.input.keyPressed(keyCode, scanCode, modifiers)) {
             return true;
         }
@@ -178,11 +168,10 @@ public class DNASequencerScreen extends AbstractContainerScreen<DNASequencerMenu
     @Override
     protected void containerTick() {
         super.containerTick();
-        // Pull text from BE each tick via update tag; in a full implementation, the S2C packet already keeps it updated
         var pos = this.menu.getBlockPos();
         var be = this.minecraft.level.getBlockEntity(pos);
-        if (be instanceof com.github.b4ndithelps.forge.blocks.DNASequencerBlockEntity sequencer) {
-            this.consoleText = sequencer.getConsoleText();
+        if (be instanceof BioTerminalBlockEntity terminal) {
+            this.consoleText = terminal.getConsoleText();
         }
         this.input.tick();
     }
@@ -195,17 +184,15 @@ public class DNASequencerScreen extends AbstractContainerScreen<DNASequencerMenu
         this.input.setValue("");
     }
 
-    private DNASequencerBlockEntity getSequencerBE() {
+    private BioTerminalBlockEntity getTerminalBE() {
         if (this.minecraft == null || this.minecraft.level == null) return null;
         var pos = this.menu.getBlockPos();
         var be = this.minecraft.level.getBlockEntity(pos);
-        if (be instanceof DNASequencerBlockEntity) {
-            return (DNASequencerBlockEntity) be;
+        if (be instanceof BioTerminalBlockEntity) {
+            return (BioTerminalBlockEntity) be;
         }
         return null;
     }
-
-    
 }
 
 

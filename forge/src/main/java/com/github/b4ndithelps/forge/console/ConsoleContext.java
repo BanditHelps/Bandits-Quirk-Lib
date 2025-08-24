@@ -1,6 +1,6 @@
 package com.github.b4ndithelps.forge.console;
 
-import com.github.b4ndithelps.forge.blocks.DNASequencerBlockEntity;
+import com.github.b4ndithelps.forge.blocks.BioTerminalBlockEntity;
 
 import java.util.List;
 
@@ -8,16 +8,16 @@ import java.util.List;
  * Per-execution context that provides safe access to the DNA Sequencer state and output utilities.
  */
 public final class ConsoleContext {
-    private final DNASequencerBlockEntity blockEntity;
+    private final BioTerminalBlockEntity blockEntity;
 
-    public ConsoleContext(DNASequencerBlockEntity blockEntity) {
+    public ConsoleContext(BioTerminalBlockEntity blockEntity) {
         this.blockEntity = blockEntity;
     }
 
     /**
      * @return the live block entity for this console execution.
      */
-    public DNASequencerBlockEntity getBlockEntity() {
+    public BioTerminalBlockEntity getBlockEntity() {
         return blockEntity;
     }
 

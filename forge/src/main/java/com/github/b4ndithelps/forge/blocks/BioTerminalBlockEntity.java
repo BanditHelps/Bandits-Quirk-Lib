@@ -29,7 +29,7 @@ import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.List;
 
-public class DNASequencerBlockEntity extends BlockEntity implements net.minecraft.world.MenuProvider, net.minecraft.world.WorldlyContainer {
+public class BioTerminalBlockEntity extends BlockEntity implements net.minecraft.world.MenuProvider, net.minecraft.world.WorldlyContainer {
     public static final int SLOT_DISK = 0;
     private final NonNullList<ItemStack> items = NonNullList.withSize(1, ItemStack.EMPTY);
     private final ContainerData data = new SimpleContainerData(2); // 0: progress, 1: max
@@ -40,15 +40,12 @@ public class DNASequencerBlockEntity extends BlockEntity implements net.minecraf
     private String lastOutput = "";
     private boolean booted = false;
 
-	// Ensures built-in console commands are registered once per server run
-	private static boolean COMMANDS_INITIALIZED = false;
+    private static boolean COMMANDS_INITIALIZED = false;
 
-    // Simple scheduling support for console animations
     private final ArrayDeque<String> scheduledLines = new ArrayDeque<>();
     private int ticksUntilNextScheduledLine = 0;
     private int scheduledLineIntervalTicks = 0;
 
-    // Single-line character animation state
     private boolean singleLineAnimating = false;
     private String singleLineTarget = "";
     private int singleLineIndex = 0;
@@ -56,26 +53,23 @@ public class DNASequencerBlockEntity extends BlockEntity implements net.minecraf
     private int ticksUntilNextScheduledChar = 0;
     private boolean singleLineAppendNewlineWhenDone = true;
 
-    // Command history (server-side) for up/down navigation
     private final java.util.ArrayList<String> commandHistory = new java.util.ArrayList<>();
-    private int historyCursor = -1; // -1 means not browsing; otherwise index into commandHistory
+    private int historyCursor = -1;
     private static final int COMMAND_HISTORY_LIMIT = 10;
 
-    public DNASequencerBlockEntity(BlockPos pos, BlockState state) {
-        super(ModBlockEntities.DNA_SEQUENCER.get(), pos, state);
+    public BioTerminalBlockEntity(BlockPos pos, BlockState state) {
+        super(ModBlockEntities.BIO_TERMINAL.get(), pos, state);
     }
 
-    public static void serverTick(Level level, BlockPos pos, BlockState state, DNASequencerBlockEntity be) {
-        // Always ensure commands are registered after server/world (re)start
+    public static void serverTick(Level level, BlockPos pos, BlockState state, BioTerminalBlockEntity be) {
         if (!level.isClientSide && !COMMANDS_INITIALIZED) {
             BasicConsoleCommands.registerDefaults(ConsoleCommandRegistry.getInstance());
             COMMANDS_INITIALIZED = true;
         }
 
         if (!be.booted) {
-            // Ensure default commands are registered once server-side
             BasicConsoleCommands.registerDefaults(ConsoleCommandRegistry.getInstance());
-            be.appendConsole("DNA Sequencer v0.1");
+            be.appendConsole("Bio Terminal v0.1");
             be.appendConsole("Booting subsystems...");
             be.appendConsole("Ready. Type 'help' for commands.");
             be.booted = true;
@@ -83,7 +77,6 @@ public class DNASequencerBlockEntity extends BlockEntity implements net.minecraf
             if (be.level != null) be.level.sendBlockUpdated(be.worldPosition, state, state, 3);
         }
 
-        // Drain scheduled console lines to allow simple typewriter/step animations
         if (!be.scheduledLines.isEmpty()) {
             if (be.ticksUntilNextScheduledLine <= 0) {
                 String next = be.scheduledLines.pollFirst();
@@ -94,7 +87,6 @@ public class DNASequencerBlockEntity extends BlockEntity implements net.minecraf
             }
         }
 
-        // Process single-line character animation (updates the last line in-place)
         if (be.singleLineAnimating) {
             if (be.ticksUntilNextScheduledChar <= 0) {
                 if (be.singleLineIndex < be.singleLineTarget.length()) {
@@ -119,7 +111,7 @@ public class DNASequencerBlockEntity extends BlockEntity implements net.minecraf
                 be.ticksUntilNextScheduledChar--;
             }
         }
-        ItemStack input = ItemStack.EMPTY; // no input slot in console-only mode
+        ItemStack input = ItemStack.EMPTY;
         if (!input.isEmpty() && input.getItem() == ModItems.TISSUE_SAMPLE.get()) {
             be.progress++;
             be.data.set(0, be.progress);
@@ -144,7 +136,6 @@ public class DNASequencerBlockEntity extends BlockEntity implements net.minecraf
         CompoundTag inTag = input.getTag();
         if (inTag == null) return;
 
-        // Sequenced Sample
         ItemStack sequenced = new ItemStack(ModItems.SEQUENCED_SAMPLE.get());
         CompoundTag seqTag = sequenced.getOrCreateTag();
         seqTag.putLong("GenomeSeed", inTag.getLong("GenomeSeed"));
@@ -152,15 +143,12 @@ public class DNASequencerBlockEntity extends BlockEntity implements net.minecraf
         seqTag.putInt("Quality", inTag.getInt("Quality"));
         seqTag.putString("SourceEntity", inTag.getString("EntityType"));
 
-        // Readout
         ItemStack readout = new ItemStack(ModItems.READOUT.get());
         CompoundTag roTag = readout.getOrCreateTag();
         roTag.putLong("GenomeSeed", inTag.getLong("GenomeSeed"));
         roTag.putString("EncodedSequence", "ACTT-G7F-XXY-Z22");
         int q = Math.max(0, inTag.getInt("Quality") - 12);
         roTag.putInt("Quality", q);
-
-        // No output slots in console-only mode
     }
 
     public void appendConsole(String text) {
@@ -174,7 +162,6 @@ public class DNASequencerBlockEntity extends BlockEntity implements net.minecraf
         }
     }
 
-    // Empties the console text
     public void clearConsole() {
         consoleBuffer = new StringBuilder();
         setChanged();
@@ -189,7 +176,6 @@ public class DNASequencerBlockEntity extends BlockEntity implements net.minecraf
         appendConsole("> " + command);
         String trimmed = command == null ? "" : command.trim();
         if (trimmed.isEmpty()) return;
-        // Add to history, dedupe adjacent duplicates
         if (commandHistory.isEmpty() || !commandHistory.get(commandHistory.size() - 1).equals(trimmed)) {
             commandHistory.add(trimmed);
             while (commandHistory.size() > COMMAND_HISTORY_LIMIT) commandHistory.remove(0);
@@ -216,12 +202,10 @@ public class DNASequencerBlockEntity extends BlockEntity implements net.minecraf
     public int getProgress() { return this.progress; }
     public int getMaxProgress() { return this.maxProgress; }
 
-    // Client-side helper to update console text via packets
     public void clientSetConsoleText(String text) {
         this.consoleBuffer = new StringBuilder(text != null ? text : "");
     }
 
-    // --- Command history API ---
     public String historyPrev() {
         if (commandHistory.isEmpty()) return "";
         if (historyCursor == -1) historyCursor = commandHistory.size() - 1;
@@ -237,37 +221,31 @@ public class DNASequencerBlockEntity extends BlockEntity implements net.minecraf
             return commandHistory.get(historyCursor);
         } else {
             historyCursor = -1;
-            return ""; // empty means new input
+            return "";
         }
     }
 
-    // Schedule multiple lines with a delay between each
     public void queueConsoleLines(List<String> lines, int ticksBetween) {
         if (lines == null || lines.isEmpty()) return;
         this.scheduledLines.addAll(lines);
         this.scheduledLineIntervalTicks = Math.max(0, ticksBetween);
-        this.ticksUntilNextScheduledLine = 0; // start immediately next tick
+        this.ticksUntilNextScheduledLine = 0;
     }
 
-    // Schedule the characters in a single line
     public void queueSingleConsoleLine(String line, int ticksBetween) {
         if (line == null) line = "";
         if (line.isEmpty()) return;
-
-        // Ensure we are starting on a fresh line to avoid overwriting previous output
-        if (!consoleBuffer.isEmpty() && consoleBuffer.charAt(consoleBuffer.length() - 1) != '\n') {
+        if (consoleBuffer.length() > 0 && consoleBuffer.charAt(consoleBuffer.length() - 1) != '\n') {
             consoleBuffer.append('\n');
         }
-
         this.singleLineAnimating = true;
         this.singleLineTarget = line;
         this.singleLineIndex = 0;
         this.singleLineIntervalTicks = Math.max(0, ticksBetween);
-        this.ticksUntilNextScheduledChar = 0; // start next tick
+        this.ticksUntilNextScheduledChar = 0;
         this.singleLineAppendNewlineWhenDone = true;
     }
 
-    // Replace the last line of the console buffer with new content (no newline appended)
     private void updateConsoleLastLine(String newContent) {
         int start = 0;
         int lastNewline = consoleBuffer.lastIndexOf("\n");
@@ -291,7 +269,6 @@ public class DNASequencerBlockEntity extends BlockEntity implements net.minecraf
         tag.putBoolean("Booted", this.booted);
         tag.putInt("QueueInterval", this.scheduledLineIntervalTicks);
         tag.putInt("QueueTicks", this.ticksUntilNextScheduledLine);
-        // Save command history
         ListTag hist = new ListTag();
         for (String cmd : this.commandHistory) hist.add(StringTag.valueOf(cmd));
         tag.put("CommandHistory", hist);
@@ -307,10 +284,9 @@ public class DNASequencerBlockEntity extends BlockEntity implements net.minecraf
         this.booted = tag.contains("Booted") && tag.getBoolean("Booted");
         this.scheduledLineIntervalTicks = tag.contains("QueueInterval") ? tag.getInt("QueueInterval") : 0;
         this.ticksUntilNextScheduledLine = tag.contains("QueueTicks") ? tag.getInt("QueueTicks") : 0;
-        // Load command history
         this.commandHistory.clear();
-        if (tag.contains("CommandHistory", 9)) { // 9 = ListTag
-            ListTag list = tag.getList("CommandHistory", 8); // 8 = StringTag
+        if (tag.contains("CommandHistory", 9)) {
+            ListTag list = tag.getList("CommandHistory", 8);
             for (int i = 0; i < list.size(); i++) {
                 this.commandHistory.add(list.getString(i));
             }
@@ -327,12 +303,12 @@ public class DNASequencerBlockEntity extends BlockEntity implements net.minecraf
 
     @Override
     public Component getDisplayName() {
-        return Component.translatable("block.bandits_quirk_lib.dna_sequencer");
+        return Component.translatable("block.bandits_quirk_lib.bio_terminal");
     }
 
     @Override
     public AbstractContainerMenu createMenu(int id, Inventory inv, Player player) {
-        return new DNASequencerMenu(id, inv, this, data);
+        return new BioTerminalMenu(id, inv, this, data);
     }
 
     @Override
@@ -358,8 +334,6 @@ public class DNASequencerBlockEntity extends BlockEntity implements net.minecraf
     public boolean canPlaceItemThroughFace(int index, ItemStack stack, net.minecraft.core.Direction direction) { return index == SLOT_DISK; }
     @Override
     public boolean canTakeItemThroughFace(int index, ItemStack stack, net.minecraft.core.Direction direction) { return index == SLOT_DISK; }
-
-    
 }
 
 
