@@ -1,11 +1,10 @@
 package com.github.b4ndithelps.forge.network;
 
+import com.github.b4ndithelps.forge.blocks.DNASequencerBlockEntity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
@@ -21,23 +20,25 @@ public class ConsoleSyncS2CPacket {
 
     public static void encode(ConsoleSyncS2CPacket msg, FriendlyByteBuf buf) {
         buf.writeBlockPos(msg.pos);
-        buf.writeUtf(msg.text, 1_000_000);
+        buf.writeUtf(msg.text, 32767);
     }
 
     public static ConsoleSyncS2CPacket decode(FriendlyByteBuf buf) {
-        return new ConsoleSyncS2CPacket(buf.readBlockPos(), buf.readUtf(1_000_000));
+        BlockPos pos = buf.readBlockPos();
+        String text = buf.readUtf(32767);
+        return new ConsoleSyncS2CPacket(pos, text);
     }
 
-    public boolean handle(Supplier<NetworkEvent.Context> ctxSupplier) {
-        NetworkEvent.Context ctx = ctxSupplier.get();
-        ctx.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
-            var mc = Minecraft.getInstance();
-            if (mc.level == null) return;
-            var be = mc.level.getBlockEntity(this.pos);
-            if (be instanceof com.github.b4ndithelps.forge.blocks.DNASequencerBlockEntity sequencer) {
+    public boolean handle(Supplier<NetworkEvent.Context> contextSupplier) {
+        NetworkEvent.Context ctx = contextSupplier.get();
+        ctx.enqueueWork(() -> {
+            var level = Minecraft.getInstance().level;
+            if (level == null) return;
+            BlockEntity be = level.getBlockEntity(this.pos);
+            if (be instanceof DNASequencerBlockEntity sequencer) {
                 sequencer.clientSetConsoleText(this.text);
             }
-        }));
+        });
         return true;
     }
 }

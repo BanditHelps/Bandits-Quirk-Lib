@@ -24,21 +24,8 @@ public class DNASequencerMenu extends AbstractContainerMenu {
         this.addDataSlots(data);
         this.pos = be.getBlockPos();
 
-        // Machine inventory
-        this.addSlot(new Slot(be, DNASequencerBlockEntity.SLOT_INPUT, 43, 34));
-        this.addSlot(new Slot(be, DNASequencerBlockEntity.SLOT_DISK, 7, 53));
-        this.addSlot(new Slot(be, DNASequencerBlockEntity.SLOT_OUT_A, 89, 33));
-        this.addSlot(new Slot(be, DNASequencerBlockEntity.SLOT_OUT_B, 115, 33));
-
-        // Player inventory
-        for (int row = 0; row < 3; ++row) {
-            for (int col = 0; col < 9; ++col) {
-                this.addSlot(new Slot(playerInv, col + row * 9 + 9, 8 + col * 18, 84 + row * 18));
-            }
-        }
-        for (int col = 0; col < 9; ++col) {
-            this.addSlot(new Slot(playerInv, col, 8 + col * 18, 142));
-        }
+        // Single storage drive slot only; positioned near top-left (outside console background)
+        this.addSlot(new Slot(be, DNASequencerBlockEntity.SLOT_DISK, -20, 6));
     }
 
     // Client-side constructor using buffer with BlockPos from NetworkHooks.openScreen
@@ -48,7 +35,7 @@ public class DNASequencerMenu extends AbstractContainerMenu {
         var be = playerInv.player.level().getBlockEntity(pos);
         if (!(be instanceof DNASequencerBlockEntity sequencer)) {
             // Fallback to dummy container to avoid crash; should not happen normally
-            this.container = new SimpleContainer(4);
+            this.container = new SimpleContainer(1);
             this.data = new SimpleContainerData(2);
             this.access = ContainerLevelAccess.NULL;
         } else {
@@ -60,25 +47,20 @@ public class DNASequencerMenu extends AbstractContainerMenu {
 
         this.addDataSlots(this.data);
 
-        // Machine inventory
-        this.addSlot(new Slot((Container) this.container, DNASequencerBlockEntity.SLOT_INPUT, 26, 35));
-        this.addSlot(new Slot((Container) this.container, DNASequencerBlockEntity.SLOT_DISK, 26, 57));
-        this.addSlot(new Slot((Container) this.container, DNASequencerBlockEntity.SLOT_OUT_A, 134, 26));
-        this.addSlot(new Slot((Container) this.container, DNASequencerBlockEntity.SLOT_OUT_B, 134, 50));
-
-        // Player inventory
-        for (int row = 0; row < 3; ++row) {
-            for (int col = 0; col < 9; ++col) {
-                this.addSlot(new Slot(playerInv, col + row * 9 + 9, 8 + col * 18, 84 + row * 18));
-            }
-        }
-        for (int col = 0; col < 9; ++col) {
-            this.addSlot(new Slot(playerInv, col, 8 + col * 18, 142));
-        }
+        // Only the storage drive slot
+        this.addSlot(new Slot((Container) this.container, DNASequencerBlockEntity.SLOT_DISK, -20, 6));
     }
 
     public BlockPos getBlockPos() {
         return pos;
+    }
+
+    public int getProgress() {
+        return this.data.get(0);
+    }
+
+    public int getMaxProgress() {
+        return this.data.get(1);
     }
 
     @Override
@@ -88,20 +70,8 @@ public class DNASequencerMenu extends AbstractContainerMenu {
 
     @Override
     public ItemStack quickMoveStack(Player player, int index) {
-        ItemStack itemstack = ItemStack.EMPTY;
-        Slot slot = this.slots.get(index);
-        if (slot != null && slot.hasItem()) {
-            ItemStack stack = slot.getItem();
-            itemstack = stack.copy();
-            if (index < 4) {
-                if (!this.moveItemStackTo(stack, 4, 40, true)) return ItemStack.EMPTY;
-            } else {
-                if (!this.moveItemStackTo(stack, 0, 1, false)) return ItemStack.EMPTY;
-            }
-            if (stack.isEmpty()) slot.set(ItemStack.EMPTY);
-            else slot.setChanged();
-        }
-        return itemstack;
+        // Disable quick-move for console-only UI
+        return ItemStack.EMPTY;
     }
 }
 

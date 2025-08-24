@@ -1,5 +1,8 @@
 package com.github.b4ndithelps.forge.blocks;
 
+import com.github.b4ndithelps.forge.console.BasicConsoleCommands;
+import com.github.b4ndithelps.forge.console.ConsoleCommandRegistry;
+import com.github.b4ndithelps.forge.console.ConsoleContext;
 import com.github.b4ndithelps.forge.item.ModItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.NonNullList;
@@ -17,11 +20,8 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
 public class DNASequencerBlockEntity extends BlockEntity implements net.minecraft.world.MenuProvider, net.minecraft.world.WorldlyContainer {
-    public static final int SLOT_INPUT = 0;
-    public static final int SLOT_DISK = 1;
-    public static final int SLOT_OUT_A = 2;
-    public static final int SLOT_OUT_B = 3;
-    private final NonNullList<ItemStack> items = NonNullList.withSize(4, ItemStack.EMPTY);
+    public static final int SLOT_DISK = 0;
+    private final NonNullList<ItemStack> items = NonNullList.withSize(1, ItemStack.EMPTY);
     private final ContainerData data = new SimpleContainerData(2); // 0: progress, 1: max
 
     private int progress;
@@ -30,12 +30,19 @@ public class DNASequencerBlockEntity extends BlockEntity implements net.minecraf
     private String lastOutput = "";
     private boolean booted = false;
 
+    // Simple scheduling support for console animations
+    private final java.util.ArrayDeque<String> scheduledLines = new java.util.ArrayDeque<>();
+    private int ticksUntilNextScheduledLine = 0;
+    private int scheduledLineIntervalTicks = 0;
+
     public DNASequencerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.DNA_SEQUENCER.get(), pos, state);
     }
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, DNASequencerBlockEntity be) {
         if (!be.booted) {
+            // Ensure default commands are registered once server-side
+            BasicConsoleCommands.registerDefaults(ConsoleCommandRegistry.getInstance());
             be.appendConsole("DNA Sequencer v0.1");
             be.appendConsole("Booting subsystems...");
             be.appendConsole("Ready. Type 'help' for commands.");
@@ -43,7 +50,18 @@ public class DNASequencerBlockEntity extends BlockEntity implements net.minecraf
             be.setChanged();
             if (be.level != null) be.level.sendBlockUpdated(be.worldPosition, state, state, 3);
         }
-        ItemStack input = be.items.get(SLOT_INPUT);
+
+        // Drain scheduled console lines to allow simple typewriter/step animations
+        if (!be.scheduledLines.isEmpty()) {
+            if (be.ticksUntilNextScheduledLine <= 0) {
+                String next = be.scheduledLines.pollFirst();
+                if (next != null) be.appendConsole(next);
+                be.ticksUntilNextScheduledLine = be.scheduledLineIntervalTicks;
+            } else {
+                be.ticksUntilNextScheduledLine--;
+            }
+        }
+        ItemStack input = ItemStack.EMPTY; // no input slot in console-only mode
         if (!input.isEmpty() && input.getItem() == ModItems.TISSUE_SAMPLE.get()) {
             be.progress++;
             be.data.set(0, be.progress);
@@ -63,7 +81,7 @@ public class DNASequencerBlockEntity extends BlockEntity implements net.minecraf
     }
 
     private void finishProcessing() {
-        ItemStack input = items.get(SLOT_INPUT);
+        ItemStack input = ItemStack.EMPTY;
         if (input.isEmpty()) return;
         CompoundTag inTag = input.getTag();
         if (inTag == null) return;
@@ -84,9 +102,7 @@ public class DNASequencerBlockEntity extends BlockEntity implements net.minecraf
         int q = Math.max(0, inTag.getInt("Quality") - 12);
         roTag.putInt("Quality", q);
 
-        if (items.get(SLOT_OUT_A).isEmpty()) items.set(SLOT_OUT_A, sequenced);
-        if (items.get(SLOT_OUT_B).isEmpty()) items.set(SLOT_OUT_B, readout);
-        items.get(SLOT_INPUT).shrink(1);
+        // No output slots in console-only mode
     }
 
     public void appendConsole(String text) {
@@ -101,18 +117,18 @@ public class DNASequencerBlockEntity extends BlockEntity implements net.minecraf
     }
 
     public void runCommand(String command) {
-        // Placeholder command parser
-        if ("help".equalsIgnoreCase(command)) {
-            lastOutput = "Commands: help, echo <text>, status";
-        } else if (command.startsWith("echo ")) {
-            lastOutput = command.substring(5);
-        } else if ("status".equalsIgnoreCase(command)) {
-            lastOutput = "Progress: " + progress + "/" + maxProgress;
-        } else {
-            lastOutput = "Unknown command: " + command;
-        }
         appendConsole("> " + command);
-        appendConsole(lastOutput);
+        String trimmed = command == null ? "" : command.trim();
+        if (trimmed.isEmpty()) return;
+        String[] split = trimmed.split("\\s+");
+        String name = split[0];
+        java.util.List<String> args = java.util.Arrays.asList(split).subList(1, split.length);
+        var registry = ConsoleCommandRegistry.getInstance();
+        var ctx = new ConsoleContext(this);
+        registry.find(name).ifPresentOrElse(cmd -> cmd.execute(ctx, args), () -> {
+            lastOutput = "Unknown command: " + name;
+            appendConsole(lastOutput);
+        });
         if (this.level != null && !this.level.isClientSide) {
             this.level.sendBlockUpdated(this.worldPosition, getBlockState(), getBlockState(), 3);
             com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.send(net.minecraftforge.network.PacketDistributor.TRACKING_CHUNK.with(() -> ((net.minecraft.server.level.ServerLevel)this.level).getChunkAt(this.worldPosition)),
@@ -122,9 +138,20 @@ public class DNASequencerBlockEntity extends BlockEntity implements net.minecraf
 
     public String getConsoleText() { return consoleBuffer.toString(); }
 
+    public int getProgress() { return this.progress; }
+    public int getMaxProgress() { return this.maxProgress; }
+
     // Client-side helper to update console text via packets
     public void clientSetConsoleText(String text) {
         this.consoleBuffer = new StringBuilder(text != null ? text : "");
+    }
+
+    // Schedule multiple lines with a delay between each
+    public void queueConsoleLines(java.util.List<String> lines, int ticksBetween) {
+        if (lines == null || lines.isEmpty()) return;
+        this.scheduledLines.addAll(lines);
+        this.scheduledLineIntervalTicks = Math.max(0, ticksBetween);
+        this.ticksUntilNextScheduledLine = 0; // start immediately next tick
     }
 
     @Override
@@ -134,6 +161,8 @@ public class DNASequencerBlockEntity extends BlockEntity implements net.minecraf
         tag.putInt("Progress", this.progress);
         tag.putString("ConsoleText", this.consoleBuffer.toString());
         tag.putBoolean("Booted", this.booted);
+        tag.putInt("QueueInterval", this.scheduledLineIntervalTicks);
+        tag.putInt("QueueTicks", this.ticksUntilNextScheduledLine);
     }
 
     @Override
@@ -143,6 +172,8 @@ public class DNASequencerBlockEntity extends BlockEntity implements net.minecraf
         this.progress = tag.getInt("Progress");
         this.consoleBuffer = new StringBuilder(tag.getString("ConsoleText"));
         this.booted = tag.contains("Booted") && tag.getBoolean("Booted");
+        this.scheduledLineIntervalTicks = tag.contains("QueueInterval") ? tag.getInt("QueueInterval") : 0;
+        this.ticksUntilNextScheduledLine = tag.contains("QueueTicks") ? tag.getInt("QueueTicks") : 0;
     }
 
     @Override
@@ -180,11 +211,11 @@ public class DNASequencerBlockEntity extends BlockEntity implements net.minecraf
     public void clearContent() { items.clear(); }
 
     @Override
-    public int[] getSlotsForFace(net.minecraft.core.Direction side) { return new int[]{0,1,2,3}; }
+    public int[] getSlotsForFace(net.minecraft.core.Direction side) { return new int[]{SLOT_DISK}; }
     @Override
-    public boolean canPlaceItemThroughFace(int index, ItemStack stack, net.minecraft.core.Direction direction) { return index == SLOT_INPUT && stack.getItem() == ModItems.TISSUE_SAMPLE.get(); }
+    public boolean canPlaceItemThroughFace(int index, ItemStack stack, net.minecraft.core.Direction direction) { return index == SLOT_DISK; }
     @Override
-    public boolean canTakeItemThroughFace(int index, ItemStack stack, net.minecraft.core.Direction direction) { return index == SLOT_OUT_A || index == SLOT_OUT_B; }
+    public boolean canTakeItemThroughFace(int index, ItemStack stack, net.minecraft.core.Direction direction) { return index == SLOT_DISK; }
 
     
 }

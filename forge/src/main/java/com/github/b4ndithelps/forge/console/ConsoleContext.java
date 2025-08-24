@@ -1,0 +1,39 @@
+package com.github.b4ndithelps.forge.console;
+
+import com.github.b4ndithelps.forge.blocks.DNASequencerBlockEntity;
+
+import java.util.List;
+
+/**
+ * Per-execution context that provides safe access to the DNA Sequencer state and output utilities.
+ */
+public final class ConsoleContext {
+    private final DNASequencerBlockEntity blockEntity;
+
+    public ConsoleContext(DNASequencerBlockEntity blockEntity) {
+        this.blockEntity = blockEntity;
+    }
+
+    /**
+     * @return the live block entity for this console execution.
+     */
+    public DNASequencerBlockEntity getBlockEntity() {
+        return blockEntity;
+    }
+
+    /**
+     * Append a single line to the console output immediately.
+     */
+    public void println(String line) {
+        blockEntity.appendConsole(line);
+    }
+
+    /**
+     * Enqueue multiple lines with a delay in ticks between each, allowing for simple animations.
+     */
+    public void enqueueLines(List<String> lines, int ticksBetween) {
+        blockEntity.queueConsoleLines(lines, ticksBetween);
+    }
+}
+
+

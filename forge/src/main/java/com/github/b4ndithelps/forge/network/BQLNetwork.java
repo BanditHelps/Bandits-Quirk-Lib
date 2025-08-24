@@ -25,7 +25,12 @@ public final class BQLNetwork {
                 .consumerMainThread(NoShadowTagPacket::handle)
                 .add();
 
-        
+        CHANNEL.messageBuilder(ConsoleSyncS2CPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(ConsoleSyncS2CPacket::encode)
+                .decoder(ConsoleSyncS2CPacket::decode)
+                .consumerMainThread(ConsoleSyncS2CPacket::handle)
+                .add();
+
         CHANNEL.messageBuilder(BodyStatusSyncPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(BodyStatusSyncPacket::encode)
                 .decoder(BodyStatusSyncPacket::decode)
@@ -48,12 +53,6 @@ public final class BQLNetwork {
                 .encoder(ConsoleCommandC2SPacket::encode)
                 .decoder(ConsoleCommandC2SPacket::decode)
                 .consumerMainThread(ConsoleCommandC2SPacket::handle)
-                .add();
-
-        CHANNEL.messageBuilder(ConsoleSyncS2CPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
-                .encoder(ConsoleSyncS2CPacket::encode)
-                .decoder(ConsoleSyncS2CPacket::decode)
-                .consumerMainThread(ConsoleSyncS2CPacket::handle)
                 .add();
     }
 }
