@@ -5,6 +5,9 @@ import com.github.b4ndithelps.forge.client.renderer.entity.BetterWallProjectileR
 import com.github.b4ndithelps.forge.entities.ModEntities;
 import com.github.b4ndithelps.forge.entities.WindProjectileEntity;
 import com.github.b4ndithelps.util.FileManager;
+import com.github.b4ndithelps.forge.blocks.ModMenus;
+import com.github.b4ndithelps.forge.client.DNASequencerScreen;
+import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.renderer.entity.ArrowRenderer;
@@ -16,6 +19,7 @@ import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.client.event.ScreenEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 
 public class ClientEventHandler {
 
@@ -26,6 +30,11 @@ public class ClientEventHandler {
             // Register the wind projectile renderer - invisible renderer since particles handle visuals
             event.registerEntityRenderer(ModEntities.WIND_PROJECTILE.get(), WindProjectileRenderer::new);
             event.registerEntityRenderer(ModEntities.BETTER_WALL_PROJECTILE.get(), BetterWallProjectileRenderer::new);
+        }
+
+        @SubscribeEvent
+        public static void onClientSetup(FMLClientSetupEvent event) {
+            event.enqueueWork(() -> MenuScreens.register(ModMenus.DNA_SEQUENCER.get(), DNASequencerScreen::new));
         }
     }
 
@@ -44,6 +53,8 @@ public class ClientEventHandler {
             }
         }
     }
+
+    // MenuScreens are registered in onClientSetup above
 
     // Custom renderer that doesn't render anything visible (particles handle the visuals)
     public static class WindProjectileRenderer extends EntityRenderer<WindProjectileEntity> {

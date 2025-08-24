@@ -4,7 +4,10 @@
   "death.attack.exhaustion.player": "too much exhaustion",
   "effect.bandits_quirk_lib.pstock_overuse": "Power Overuse",
   "item.bandits_quirk_lib.tissue_extractor": "Tissue Extractor",
-  "item.bandits_quirk_lib.tissue_sample": "Tissue Sample"
+  "item.bandits_quirk_lib.tissue_sample": "Tissue Sample",
+  "block.bandits_quirk_lib.dna_sequencer": "DNA Sequencer",
+  "item.bandits_quirk_lib.sequenced_sample": "Sequenced Sample",
+  "item.bandits_quirk_lib.readout": "Readout"
 }
 
 
