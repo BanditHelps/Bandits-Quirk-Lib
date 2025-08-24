@@ -42,6 +42,13 @@ public final class ConsoleContext {
     public void enqueueLines(List<String> lines, int ticksBetween) {
         blockEntity.queueConsoleLines(lines, ticksBetween);
     }
+
+    /**
+     * Enqueue the characters in a line with a delay in ticks between
+     */
+    public void enqueueCharacters(String line, int ticksBetween) {
+        blockEntity.queueSingleConsoleLine(line, ticksBetween);
+    }
 }
 
 

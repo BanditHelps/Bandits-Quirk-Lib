@@ -1,5 +1,6 @@
 package com.github.b4ndithelps.forge.console;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -48,6 +49,47 @@ public final class BasicConsoleCommands {
             @Override public String getDescription() { return "Clears the current console screen"; }
             @Override public void execute(ConsoleContext ctx, List<String> args) {
                 ctx.clearConsole();
+            }
+        });
+
+        registry.register(new ConsoleCommand() {
+            @Override
+            public String getName() {
+                return "testAnim";
+            }
+
+            @Override
+            public String getDescription() {
+                return "Just to test the fanxy line";
+            }
+
+            @Override
+            public void execute(ConsoleContext ctx, List<String> args) {
+                List<String> lines = new ArrayList<>();
+                int speed = Integer.parseInt(String.valueOf(args.get(0)));
+                lines.add("Loading...");
+                lines.add("Doing something fancy...");
+                lines.add("Super stuff....");
+                lines.add("Complete!");
+                ctx.enqueueLines(lines, speed);
+            }
+        });
+
+        registry.register(new ConsoleCommand() {
+            @Override
+            public String getName() {
+                return "testAnimChar";
+            }
+
+            @Override
+            public String getDescription() {
+                return "Just to test the fancy animation";
+            }
+
+            @Override
+            public void execute(ConsoleContext ctx, List<String> args) {
+                int speed = Integer.parseInt(String.valueOf(args.get(0)));
+                ctx.enqueueCharacters("Loading: |||||||||||||||||||", speed);
             }
         });
     }

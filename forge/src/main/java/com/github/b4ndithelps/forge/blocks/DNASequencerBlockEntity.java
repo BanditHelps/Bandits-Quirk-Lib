@@ -23,6 +23,10 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.network.PacketDistributor;
 
+import java.util.ArrayDeque;
+import java.util.Arrays;
+import java.util.List;
+
 public class DNASequencerBlockEntity extends BlockEntity implements net.minecraft.world.MenuProvider, net.minecraft.world.WorldlyContainer {
     public static final int SLOT_DISK = 0;
     private final NonNullList<ItemStack> items = NonNullList.withSize(1, ItemStack.EMPTY);
@@ -38,9 +42,17 @@ public class DNASequencerBlockEntity extends BlockEntity implements net.minecraf
 	private static boolean COMMANDS_INITIALIZED = false;
 
     // Simple scheduling support for console animations
-    private final java.util.ArrayDeque<String> scheduledLines = new java.util.ArrayDeque<>();
+    private final ArrayDeque<String> scheduledLines = new ArrayDeque<>();
     private int ticksUntilNextScheduledLine = 0;
     private int scheduledLineIntervalTicks = 0;
+
+    // Single-line character animation state
+    private boolean singleLineAnimating = false;
+    private String singleLineTarget = "";
+    private int singleLineIndex = 0;
+    private int singleLineIntervalTicks = 0;
+    private int ticksUntilNextScheduledChar = 0;
+    private boolean singleLineAppendNewlineWhenDone = true;
 
     public DNASequencerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.DNA_SEQUENCER.get(), pos, state);
@@ -72,6 +84,32 @@ public class DNASequencerBlockEntity extends BlockEntity implements net.minecraf
                 be.ticksUntilNextScheduledLine = be.scheduledLineIntervalTicks;
             } else {
                 be.ticksUntilNextScheduledLine--;
+            }
+        }
+
+        // Process single-line character animation (updates the last line in-place)
+        if (be.singleLineAnimating) {
+            if (be.ticksUntilNextScheduledChar <= 0) {
+                if (be.singleLineIndex < be.singleLineTarget.length()) {
+                    be.singleLineIndex++;
+                    String frame = be.singleLineTarget.substring(0, be.singleLineIndex);
+                    be.updateConsoleLastLine(frame);
+                    be.ticksUntilNextScheduledChar = be.singleLineIntervalTicks;
+                }
+                if (be.singleLineIndex >= be.singleLineTarget.length()) {
+                    be.singleLineAnimating = false;
+                    if (be.singleLineAppendNewlineWhenDone) {
+                        be.consoleBuffer.append('\n');
+                        be.setChanged();
+                        if (be.level != null && !be.level.isClientSide) {
+                            be.level.sendBlockUpdated(be.worldPosition, state, state, 3);
+                            BQLNetwork.CHANNEL.send(PacketDistributor.TRACKING_CHUNK.with(() -> ((ServerLevel)be.level).getChunkAt(be.worldPosition)),
+                                new ConsoleSyncS2CPacket(be.worldPosition, be.consoleBuffer.toString()));
+                        }
+                    }
+                }
+            } else {
+                be.ticksUntilNextScheduledChar--;
             }
         }
         ItemStack input = ItemStack.EMPTY; // no input slot in console-only mode
@@ -146,7 +184,7 @@ public class DNASequencerBlockEntity extends BlockEntity implements net.minecraf
         if (trimmed.isEmpty()) return;
         String[] split = trimmed.split("\\s+");
         String name = split[0];
-        java.util.List<String> args = java.util.Arrays.asList(split).subList(1, split.length);
+        List<String> args = Arrays.asList(split).subList(1, split.length);
         var registry = ConsoleCommandRegistry.getInstance();
         var ctx = new ConsoleContext(this);
         registry.find(name).ifPresentOrElse(cmd -> cmd.execute(ctx, args), () -> {
@@ -171,11 +209,44 @@ public class DNASequencerBlockEntity extends BlockEntity implements net.minecraf
     }
 
     // Schedule multiple lines with a delay between each
-    public void queueConsoleLines(java.util.List<String> lines, int ticksBetween) {
+    public void queueConsoleLines(List<String> lines, int ticksBetween) {
         if (lines == null || lines.isEmpty()) return;
         this.scheduledLines.addAll(lines);
         this.scheduledLineIntervalTicks = Math.max(0, ticksBetween);
         this.ticksUntilNextScheduledLine = 0; // start immediately next tick
+    }
+
+    // Schedule the characters in a single line
+    public void queueSingleConsoleLine(String line, int ticksBetween) {
+        if (line == null) line = "";
+        if (line.isEmpty()) return;
+
+        // Ensure we are starting on a fresh line to avoid overwriting previous output
+        if (!consoleBuffer.isEmpty() && consoleBuffer.charAt(consoleBuffer.length() - 1) != '\n') {
+            consoleBuffer.append('\n');
+        }
+
+        this.singleLineAnimating = true;
+        this.singleLineTarget = line;
+        this.singleLineIndex = 0;
+        this.singleLineIntervalTicks = Math.max(0, ticksBetween);
+        this.ticksUntilNextScheduledChar = 0; // start next tick
+        this.singleLineAppendNewlineWhenDone = true;
+    }
+
+    // Replace the last line of the console buffer with new content (no newline appended)
+    private void updateConsoleLastLine(String newContent) {
+        int start = 0;
+        int lastNewline = consoleBuffer.lastIndexOf("\n");
+        if (lastNewline >= 0) start = lastNewline + 1;
+        consoleBuffer.delete(start, consoleBuffer.length());
+        consoleBuffer.append(newContent);
+        setChanged();
+        if (this.level != null && !this.level.isClientSide) {
+            this.level.sendBlockUpdated(this.worldPosition, getBlockState(), getBlockState(), 3);
+            BQLNetwork.CHANNEL.send(PacketDistributor.TRACKING_CHUNK.with(() -> ((ServerLevel)this.level).getChunkAt(this.worldPosition)),
+                new ConsoleSyncS2CPacket(this.worldPosition, this.consoleBuffer.toString()));
+        }
     }
 
     @Override
