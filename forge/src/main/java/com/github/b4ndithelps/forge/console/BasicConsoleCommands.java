@@ -42,6 +42,14 @@ public final class BasicConsoleCommands {
                 ctx.println("Progress: " + be.getProgress() + "/" + be.getMaxProgress());
             }
         });
+
+        registry.register(new ConsoleCommand() {
+            @Override public String getName() { return "clear"; }
+            @Override public String getDescription() { return "Clears the current console screen"; }
+            @Override public void execute(ConsoleContext ctx, List<String> args) {
+                ctx.clearConsole();
+            }
+        });
     }
 }
 

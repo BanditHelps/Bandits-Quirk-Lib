@@ -4,10 +4,13 @@ import com.github.b4ndithelps.forge.console.BasicConsoleCommands;
 import com.github.b4ndithelps.forge.console.ConsoleCommandRegistry;
 import com.github.b4ndithelps.forge.console.ConsoleContext;
 import com.github.b4ndithelps.forge.item.ModItems;
+import com.github.b4ndithelps.forge.network.BQLNetwork;
+import com.github.b4ndithelps.forge.network.ConsoleSyncS2CPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.ContainerHelper;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -18,6 +21,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraftforge.network.PacketDistributor;
 
 public class DNASequencerBlockEntity extends BlockEntity implements net.minecraft.world.MenuProvider, net.minecraft.world.WorldlyContainer {
     public static final int SLOT_DISK = 0;
@@ -111,8 +115,19 @@ public class DNASequencerBlockEntity extends BlockEntity implements net.minecraf
         setChanged();
         if (this.level != null && !this.level.isClientSide) {
             this.level.sendBlockUpdated(this.worldPosition, getBlockState(), getBlockState(), 3);
-            com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.send(net.minecraftforge.network.PacketDistributor.TRACKING_CHUNK.with(() -> ((net.minecraft.server.level.ServerLevel)this.level).getChunkAt(this.worldPosition)),
-                new com.github.b4ndithelps.forge.network.ConsoleSyncS2CPacket(this.worldPosition, this.consoleBuffer.toString()));
+            BQLNetwork.CHANNEL.send(PacketDistributor.TRACKING_CHUNK.with(() -> ((ServerLevel)this.level).getChunkAt(this.worldPosition)),
+                new ConsoleSyncS2CPacket(this.worldPosition, this.consoleBuffer.toString()));
+        }
+    }
+
+    // Empties the console text
+    public void clearConsole() {
+        consoleBuffer = new StringBuilder();
+        setChanged();
+        if (this.level != null && !this.level.isClientSide) {
+            this.level.sendBlockUpdated(this.worldPosition, getBlockState(), getBlockState(), 3);
+            BQLNetwork.CHANNEL.send(PacketDistributor.TRACKING_CHUNK.with(() -> ((ServerLevel)this.level).getChunkAt(this.worldPosition)),
+                    new ConsoleSyncS2CPacket(this.worldPosition, this.consoleBuffer.toString()));
         }
     }
 
@@ -131,8 +146,8 @@ public class DNASequencerBlockEntity extends BlockEntity implements net.minecraf
         });
         if (this.level != null && !this.level.isClientSide) {
             this.level.sendBlockUpdated(this.worldPosition, getBlockState(), getBlockState(), 3);
-            com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.send(net.minecraftforge.network.PacketDistributor.TRACKING_CHUNK.with(() -> ((net.minecraft.server.level.ServerLevel)this.level).getChunkAt(this.worldPosition)),
-                new com.github.b4ndithelps.forge.network.ConsoleSyncS2CPacket(this.worldPosition, this.consoleBuffer.toString()));
+            BQLNetwork.CHANNEL.send(PacketDistributor.TRACKING_CHUNK.with(() -> ((net.minecraft.server.level.ServerLevel)this.level).getChunkAt(this.worldPosition)),
+                new ConsoleSyncS2CPacket(this.worldPosition, this.consoleBuffer.toString()));
         }
     }
 

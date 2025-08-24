@@ -29,6 +29,14 @@ public final class ConsoleContext {
     }
 
     /**
+     * Remove all the lines inside the console. Then just adds in a
+     */
+    public void clearConsole() {
+        blockEntity.clearConsole();
+        println("> ");
+    }
+
+    /**
      * Enqueue multiple lines with a delay in ticks between each, allowing for simple animations.
      */
     public void enqueueLines(List<String> lines, int ticksBetween) {
