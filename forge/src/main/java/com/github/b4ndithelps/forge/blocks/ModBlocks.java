@@ -20,6 +20,7 @@ public class ModBlocks {
 
     public static final RegistryObject<Block> RESEARCH_TABLE_BLOCK = registerBlock("research_table_block", () -> new ResearchTableBlock(BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2.0F, 6.0F).sound(SoundType.METAL)));
     public static final RegistryObject<Block> BIO_TERMINAL = registerBlock("bio_terminal", () -> new BioTerminalBlock(BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(3.0F, 6.0F).sound(SoundType.METAL)));
+    public static final RegistryObject<Block> GENE_SEQUENCER = registerBlock("gene_sequencer", () -> new GeneSequencerBlock(BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(3.0F, 6.0F).sound(SoundType.METAL)));
 
     private static <T extends Block> RegistryObject<T> registerBlock(String name, Supplier<T> blockSupplier) {
         RegistryObject<T> block = BLOCKS.register(name, blockSupplier);

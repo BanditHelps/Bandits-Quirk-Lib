@@ -18,6 +18,7 @@ public class BioTerminalScreen extends AbstractContainerScreen<BioTerminalMenu> 
     private static final ResourceLocation TEXTURE = new ResourceLocation("bandits_quirk_lib", "textures/gui/bio_terminal.png");
     private EditBox input;
     private String consoleText = "";
+    private String programText = "";
     private int consoleScrollPixels = 0;
     private boolean stickToBottom = true;
 
@@ -32,6 +33,7 @@ public class BioTerminalScreen extends AbstractContainerScreen<BioTerminalMenu> 
         graphics.blit(TEXTURE, this.leftPos, this.topPos, 0, 0, this.imageWidth, this.imageHeight);
         int textAreaX = this.leftPos + 8;
         int textAreaY = this.topPos + 16;
+        boolean showProgram = this.programText != null && !this.programText.isEmpty();
         int textAreaWidth = this.imageWidth - 16;
         int inputHeight = 14;
         int gapBetween = 8;
@@ -41,7 +43,7 @@ public class BioTerminalScreen extends AbstractContainerScreen<BioTerminalMenu> 
         if (textAreaHeight < this.font.lineHeight) {
             textAreaHeight = this.font.lineHeight;
         }
-        var wrapped = this.font.split(Component.literal(this.consoleText), textAreaWidth);
+        var wrapped = this.font.split(Component.literal(showProgram ? "" : this.consoleText), textAreaWidth);
         int maxLines = Math.max(1, textAreaHeight / this.font.lineHeight);
         int contentHeight = wrapped.size() * this.font.lineHeight;
         int maxScroll = Math.max(0, contentHeight - textAreaHeight);
@@ -62,7 +64,7 @@ public class BioTerminalScreen extends AbstractContainerScreen<BioTerminalMenu> 
             if (y >= textAreaY + textAreaHeight) break;
         }
 
-        if (maxScroll > 0) {
+        if (!showProgram && maxScroll > 0) {
             int barTrackX = textAreaX + textAreaWidth - 2;
             int barTrackY = textAreaY;
             int barTrackH = textAreaHeight;
@@ -71,6 +73,20 @@ public class BioTerminalScreen extends AbstractContainerScreen<BioTerminalMenu> 
             int barY = barTrackY + (int)((float)this.consoleScrollPixels / (float)maxScroll * barMaxY);
             graphics.fill(barTrackX, barTrackY, barTrackX + 1, barTrackY + barTrackH, 0x55000000);
             graphics.fill(barTrackX, barY, barTrackX + 2, barY + barH, 0x88FFFFFF);
+        }
+        // Program screen full panel
+        if (showProgram) {
+            int progX = textAreaX;
+            int progY = textAreaY;
+            int progW = textAreaWidth;
+            int progH = textAreaHeight;
+            var progLines = this.font.split(Component.literal(this.programText), progW);
+            int py = progY;
+            for (int i = 0; i < progLines.size(); i++) {
+                if (py + this.font.lineHeight > progY + progH) break;
+                graphics.drawString(this.font, progLines.get(i), progX, py, 0xFFFFFF, false);
+                py += this.font.lineHeight;
+            }
         }
     }
 
@@ -172,6 +188,7 @@ public class BioTerminalScreen extends AbstractContainerScreen<BioTerminalMenu> 
         var be = this.minecraft.level.getBlockEntity(pos);
         if (be instanceof BioTerminalBlockEntity terminal) {
             this.consoleText = terminal.getConsoleText();
+            this.programText = terminal.getProgramScreenTextClient();
         }
         this.input.tick();
     }

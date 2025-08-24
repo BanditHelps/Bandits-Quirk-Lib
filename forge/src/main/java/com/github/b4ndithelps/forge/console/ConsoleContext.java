@@ -50,6 +50,20 @@ public final class ConsoleContext {
         blockEntity.queueSingleConsoleLine(line, ticksBetween);
     }
 
+    // --- Program control ---
+    public void pushProgram(ConsoleProgram program) {
+        blockEntity.pushProgram(program);
+    }
+
+    public void exitProgram() {
+        blockEntity.exitCurrentProgram();
+    }
+
+    // --- Program screen ---
+    public void setScreenText(String text) {
+        blockEntity.setProgramScreenText(text == null ? "" : text);
+    }
+
     // --- Command history navigation ---
     public String historyPrev() {
         return blockEntity.historyPrev();

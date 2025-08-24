@@ -92,6 +92,78 @@ public final class BasicConsoleCommands {
                 ctx.enqueueCharacters("Loading: |||||||||||||||||||", speed);
             }
         });
+
+        // Control adjacent GeneSequencer
+        registry.register(new ConsoleCommand() {
+            @Override public String getName() { return "seqstart"; }
+            @Override public String getDescription() { return "Start sequencing on adjacent GeneSequencer"; }
+            @Override public void execute(ConsoleContext ctx, List<String> args) {
+                var be = ctx.getBlockEntity();
+                var level = be.getLevel();
+                var pos = be.getBlockPos();
+                boolean found = false;
+                for (var dir : net.minecraft.core.Direction.values()) {
+                    var neighbor = level.getBlockEntity(pos.relative(dir));
+                    if (neighbor instanceof com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity seq) {
+                        seq.startProcessing();
+                        ctx.println("Sequencer started");
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) ctx.println("No GeneSequencer adjacent");
+            }
+        });
+
+        registry.register(new ConsoleCommand() {
+            @Override public String getName() { return "seqstop"; }
+            @Override public String getDescription() { return "Stop sequencing on adjacent GeneSequencer"; }
+            @Override public void execute(ConsoleContext ctx, List<String> args) {
+                var be = ctx.getBlockEntity();
+                var level = be.getLevel();
+                var pos = be.getBlockPos();
+                boolean found = false;
+                for (var dir : net.minecraft.core.Direction.values()) {
+                    var neighbor = level.getBlockEntity(pos.relative(dir));
+                    if (neighbor instanceof com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity seq) {
+                        seq.stopProcessing();
+                        ctx.println("Sequencer stopped");
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) ctx.println("No GeneSequencer adjacent");
+            }
+        });
+
+        registry.register(new ConsoleCommand() {
+            @Override public String getName() { return "seqstatus"; }
+            @Override public String getDescription() { return "Show status of adjacent GeneSequencer"; }
+            @Override public void execute(ConsoleContext ctx, List<String> args) {
+                var be = ctx.getBlockEntity();
+                var level = be.getLevel();
+                var pos = be.getBlockPos();
+                boolean found = false;
+                for (var dir : net.minecraft.core.Direction.values()) {
+                    var neighbor = level.getBlockEntity(pos.relative(dir));
+                    if (neighbor instanceof com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity seq) {
+                        ctx.println("Running: " + seq.isRunning() + ", Progress: " + seq.getProgress() + "/" + seq.getMaxProgress());
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) ctx.println("No GeneSequencer adjacent");
+            }
+        });
+
+        // Enter Analyze Program
+        registry.register(new ConsoleCommand() {
+            @Override public String getName() { return "analyze"; }
+            @Override public String getDescription() { return "Open Analyze Program for connected sequencers"; }
+            @Override public void execute(ConsoleContext ctx, List<String> args) {
+                ctx.getBlockEntity().pushProgram(new AnalyzeProgram());
+            }
+        });
     }
 }
 

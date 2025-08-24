@@ -60,6 +60,12 @@ public final class BQLNetwork {
                 .decoder(ConsoleCommandC2SPacket::decode)
                 .consumerMainThread(ConsoleCommandC2SPacket::handle)
                 .add();
+
+        CHANNEL.messageBuilder(ProgramScreenSyncS2CPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(ProgramScreenSyncS2CPacket::encode)
+                .decoder(ProgramScreenSyncS2CPacket::decode)
+                .consumerMainThread(ProgramScreenSyncS2CPacket::handle)
+                .add();
     }
 }
 

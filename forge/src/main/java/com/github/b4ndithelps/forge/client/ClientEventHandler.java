@@ -34,7 +34,10 @@ public class ClientEventHandler {
 
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event) {
-            event.enqueueWork(() -> MenuScreens.register(ModMenus.BIO_TERMINAL.get(), BioTerminalScreen::new));
+            event.enqueueWork(() -> {
+                MenuScreens.register(ModMenus.BIO_TERMINAL.get(), BioTerminalScreen::new);
+                MenuScreens.register(ModMenus.GENE_SEQUENCER.get(), GeneSequencerScreen::new);
+            });
         }
     }
 
