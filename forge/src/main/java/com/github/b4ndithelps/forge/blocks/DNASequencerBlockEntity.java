@@ -34,6 +34,9 @@ public class DNASequencerBlockEntity extends BlockEntity implements net.minecraf
     private String lastOutput = "";
     private boolean booted = false;
 
+	// Ensures built-in console commands are registered once per server run
+	private static boolean COMMANDS_INITIALIZED = false;
+
     // Simple scheduling support for console animations
     private final java.util.ArrayDeque<String> scheduledLines = new java.util.ArrayDeque<>();
     private int ticksUntilNextScheduledLine = 0;
@@ -44,6 +47,12 @@ public class DNASequencerBlockEntity extends BlockEntity implements net.minecraf
     }
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, DNASequencerBlockEntity be) {
+        // Always ensure commands are registered after server/world (re)start
+        if (!level.isClientSide && !COMMANDS_INITIALIZED) {
+            BasicConsoleCommands.registerDefaults(ConsoleCommandRegistry.getInstance());
+            COMMANDS_INITIALIZED = true;
+        }
+
         if (!be.booted) {
             // Ensure default commands are registered once server-side
             BasicConsoleCommands.registerDefaults(ConsoleCommandRegistry.getInstance());
