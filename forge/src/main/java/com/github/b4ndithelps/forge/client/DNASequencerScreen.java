@@ -1,6 +1,7 @@
 package com.github.b4ndithelps.forge.client;
 
 import com.github.b4ndithelps.forge.blocks.DNASequencerMenu;
+import com.github.b4ndithelps.forge.blocks.DNASequencerBlockEntity;
 import com.github.b4ndithelps.forge.network.BQLNetwork;
 import com.github.b4ndithelps.forge.network.ConsoleCommandC2SPacket;
 import net.minecraft.client.gui.GuiGraphics;
@@ -102,6 +103,27 @@ public class DNASequencerScreen extends AbstractContainerScreen<DNASequencerMenu
             submitCommand();
             return true;
         }
+        
+        // Up arrow for previous command
+        if (keyCode == 265) {
+            DNASequencerBlockEntity be = getSequencerBE();
+            if (be != null) {
+                String prev = be.historyPrev();
+                this.input.setValue(prev);
+                return true;
+            }
+        }
+
+        // Down arrow for next command
+        if (keyCode == 264) {
+            DNASequencerBlockEntity be = getSequencerBE();
+            if (be != null) {
+                String next = be.historyNext();
+                this.input.setValue(next);
+                return true;
+            }
+        }
+
         // Let the input consume keys first
         if (this.input.keyPressed(keyCode, scanCode, modifiers)) {
             return true;
@@ -171,6 +193,16 @@ public class DNASequencerScreen extends AbstractContainerScreen<DNASequencerMenu
         BlockPos pos = this.menu.getBlockPos();
         BQLNetwork.CHANNEL.sendToServer(new ConsoleCommandC2SPacket(pos, cmd));
         this.input.setValue("");
+    }
+
+    private DNASequencerBlockEntity getSequencerBE() {
+        if (this.minecraft == null || this.minecraft.level == null) return null;
+        var pos = this.menu.getBlockPos();
+        var be = this.minecraft.level.getBlockEntity(pos);
+        if (be instanceof DNASequencerBlockEntity) {
+            return (DNASequencerBlockEntity) be;
+        }
+        return null;
     }
 
     

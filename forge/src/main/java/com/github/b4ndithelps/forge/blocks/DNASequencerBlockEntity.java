@@ -9,6 +9,8 @@ import com.github.b4ndithelps.forge.network.ConsoleSyncS2CPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.ContainerHelper;
@@ -53,6 +55,11 @@ public class DNASequencerBlockEntity extends BlockEntity implements net.minecraf
     private int singleLineIntervalTicks = 0;
     private int ticksUntilNextScheduledChar = 0;
     private boolean singleLineAppendNewlineWhenDone = true;
+
+    // Command history (server-side) for up/down navigation
+    private final java.util.ArrayList<String> commandHistory = new java.util.ArrayList<>();
+    private int historyCursor = -1; // -1 means not browsing; otherwise index into commandHistory
+    private static final int COMMAND_HISTORY_LIMIT = 10;
 
     public DNASequencerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.DNA_SEQUENCER.get(), pos, state);
@@ -182,6 +189,12 @@ public class DNASequencerBlockEntity extends BlockEntity implements net.minecraf
         appendConsole("> " + command);
         String trimmed = command == null ? "" : command.trim();
         if (trimmed.isEmpty()) return;
+        // Add to history, dedupe adjacent duplicates
+        if (commandHistory.isEmpty() || !commandHistory.get(commandHistory.size() - 1).equals(trimmed)) {
+            commandHistory.add(trimmed);
+            while (commandHistory.size() > COMMAND_HISTORY_LIMIT) commandHistory.remove(0);
+        }
+        historyCursor = -1;
         String[] split = trimmed.split("\\s+");
         String name = split[0];
         List<String> args = Arrays.asList(split).subList(1, split.length);
@@ -206,6 +219,26 @@ public class DNASequencerBlockEntity extends BlockEntity implements net.minecraf
     // Client-side helper to update console text via packets
     public void clientSetConsoleText(String text) {
         this.consoleBuffer = new StringBuilder(text != null ? text : "");
+    }
+
+    // --- Command history API ---
+    public String historyPrev() {
+        if (commandHistory.isEmpty()) return "";
+        if (historyCursor == -1) historyCursor = commandHistory.size() - 1;
+        else if (historyCursor > 0) historyCursor--;
+        return commandHistory.get(historyCursor);
+    }
+
+    public String historyNext() {
+        if (commandHistory.isEmpty()) return "";
+        if (historyCursor == -1) return "";
+        if (historyCursor < commandHistory.size() - 1) {
+            historyCursor++;
+            return commandHistory.get(historyCursor);
+        } else {
+            historyCursor = -1;
+            return ""; // empty means new input
+        }
     }
 
     // Schedule multiple lines with a delay between each
@@ -258,6 +291,11 @@ public class DNASequencerBlockEntity extends BlockEntity implements net.minecraf
         tag.putBoolean("Booted", this.booted);
         tag.putInt("QueueInterval", this.scheduledLineIntervalTicks);
         tag.putInt("QueueTicks", this.ticksUntilNextScheduledLine);
+        // Save command history
+        ListTag hist = new ListTag();
+        for (String cmd : this.commandHistory) hist.add(StringTag.valueOf(cmd));
+        tag.put("CommandHistory", hist);
+        tag.putInt("HistoryCursor", this.historyCursor);
     }
 
     @Override
@@ -269,6 +307,15 @@ public class DNASequencerBlockEntity extends BlockEntity implements net.minecraf
         this.booted = tag.contains("Booted") && tag.getBoolean("Booted");
         this.scheduledLineIntervalTicks = tag.contains("QueueInterval") ? tag.getInt("QueueInterval") : 0;
         this.ticksUntilNextScheduledLine = tag.contains("QueueTicks") ? tag.getInt("QueueTicks") : 0;
+        // Load command history
+        this.commandHistory.clear();
+        if (tag.contains("CommandHistory", 9)) { // 9 = ListTag
+            ListTag list = tag.getList("CommandHistory", 8); // 8 = StringTag
+            for (int i = 0; i < list.size(); i++) {
+                this.commandHistory.add(list.getString(i));
+            }
+        }
+        if (tag.contains("HistoryCursor")) this.historyCursor = tag.getInt("HistoryCursor");
     }
 
     @Override

@@ -49,6 +49,15 @@ public final class ConsoleContext {
     public void enqueueCharacters(String line, int ticksBetween) {
         blockEntity.queueSingleConsoleLine(line, ticksBetween);
     }
+
+    // --- Command history navigation ---
+    public String historyPrev() {
+        return blockEntity.historyPrev();
+    }
+
+    public String historyNext() {
+        return blockEntity.historyNext();
+    }
 }
 
 
