@@ -6,6 +6,7 @@ import com.github.b4ndithelps.forge.console.ConsoleContext;
 import com.github.b4ndithelps.forge.item.ModItems;
 import com.github.b4ndithelps.forge.network.BQLNetwork;
 import com.github.b4ndithelps.forge.network.ConsoleSyncS2CPacket;
+import com.github.b4ndithelps.forge.network.ConsoleHistorySyncS2CPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
@@ -192,8 +193,12 @@ public class BioTerminalBlockEntity extends BlockEntity implements net.minecraft
         });
         if (this.level != null && !this.level.isClientSide) {
             this.level.sendBlockUpdated(this.worldPosition, getBlockState(), getBlockState(), 3);
-            BQLNetwork.CHANNEL.send(PacketDistributor.TRACKING_CHUNK.with(() -> ((net.minecraft.server.level.ServerLevel)this.level).getChunkAt(this.worldPosition)),
+            var serverLevel = (net.minecraft.server.level.ServerLevel)this.level;
+            BQLNetwork.CHANNEL.send(PacketDistributor.TRACKING_CHUNK.with(() -> serverLevel.getChunkAt(this.worldPosition)),
                 new ConsoleSyncS2CPacket(this.worldPosition, this.consoleBuffer.toString()));
+            // Also sync history immediately so client-side history navigation reflects new entries
+            BQLNetwork.CHANNEL.send(PacketDistributor.TRACKING_CHUNK.with(() -> serverLevel.getChunkAt(this.worldPosition)),
+                new ConsoleHistorySyncS2CPacket(this.worldPosition, new java.util.ArrayList<>(this.commandHistory), this.historyCursor));
         }
     }
 
@@ -204,6 +209,14 @@ public class BioTerminalBlockEntity extends BlockEntity implements net.minecraft
 
     public void clientSetConsoleText(String text) {
         this.consoleBuffer = new StringBuilder(text != null ? text : "");
+    }
+
+    public void clientSetHistory(java.util.List<String> history, int cursor) {
+        this.commandHistory.clear();
+        if (history != null) {
+            this.commandHistory.addAll(history);
+        }
+        this.historyCursor = cursor;
     }
 
     public String historyPrev() {

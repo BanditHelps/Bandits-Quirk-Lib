@@ -31,6 +31,12 @@ public final class BQLNetwork {
                 .consumerMainThread(ConsoleSyncS2CPacket::handle)
                 .add();
 
+        CHANNEL.messageBuilder(ConsoleHistorySyncS2CPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(ConsoleHistorySyncS2CPacket::encode)
+                .decoder(ConsoleHistorySyncS2CPacket::decode)
+                .consumerMainThread(ConsoleHistorySyncS2CPacket::handle)
+                .add();
+
         CHANNEL.messageBuilder(BodyStatusSyncPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(BodyStatusSyncPacket::encode)
                 .decoder(BodyStatusSyncPacket::decode)
