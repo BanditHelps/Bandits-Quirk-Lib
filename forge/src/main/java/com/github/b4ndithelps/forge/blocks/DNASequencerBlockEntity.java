@@ -26,12 +26,23 @@ public class DNASequencerBlockEntity extends BlockEntity implements net.minecraf
 
     private int progress;
     private int maxProgress = 200;
+    private StringBuilder consoleBuffer = new StringBuilder();
+    private String lastOutput = "";
+    private boolean booted = false;
 
     public DNASequencerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.DNA_SEQUENCER.get(), pos, state);
     }
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, DNASequencerBlockEntity be) {
+        if (!be.booted) {
+            be.appendConsole("DNA Sequencer v0.1");
+            be.appendConsole("Booting subsystems...");
+            be.appendConsole("Ready. Type 'help' for commands.");
+            be.booted = true;
+            be.setChanged();
+            if (be.level != null) be.level.sendBlockUpdated(be.worldPosition, state, state, 3);
+        }
         ItemStack input = be.items.get(SLOT_INPUT);
         if (!input.isEmpty() && input.getItem() == ModItems.TISSUE_SAMPLE.get()) {
             be.progress++;
@@ -78,6 +89,69 @@ public class DNASequencerBlockEntity extends BlockEntity implements net.minecraf
         items.get(SLOT_INPUT).shrink(1);
     }
 
+    public void appendConsole(String text) {
+        consoleBuffer.append(text);
+        consoleBuffer.append('\n');
+        setChanged();
+        if (this.level != null && !this.level.isClientSide) {
+            this.level.sendBlockUpdated(this.worldPosition, getBlockState(), getBlockState(), 3);
+            com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.send(net.minecraftforge.network.PacketDistributor.TRACKING_CHUNK.with(() -> ((net.minecraft.server.level.ServerLevel)this.level).getChunkAt(this.worldPosition)),
+                new com.github.b4ndithelps.forge.network.ConsoleSyncS2CPacket(this.worldPosition, this.consoleBuffer.toString()));
+        }
+    }
+
+    public void runCommand(String command) {
+        // Placeholder command parser
+        if ("help".equalsIgnoreCase(command)) {
+            lastOutput = "Commands: help, echo <text>, status";
+        } else if (command.startsWith("echo ")) {
+            lastOutput = command.substring(5);
+        } else if ("status".equalsIgnoreCase(command)) {
+            lastOutput = "Progress: " + progress + "/" + maxProgress;
+        } else {
+            lastOutput = "Unknown command: " + command;
+        }
+        appendConsole("> " + command);
+        appendConsole(lastOutput);
+        if (this.level != null && !this.level.isClientSide) {
+            this.level.sendBlockUpdated(this.worldPosition, getBlockState(), getBlockState(), 3);
+            com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.send(net.minecraftforge.network.PacketDistributor.TRACKING_CHUNK.with(() -> ((net.minecraft.server.level.ServerLevel)this.level).getChunkAt(this.worldPosition)),
+                new com.github.b4ndithelps.forge.network.ConsoleSyncS2CPacket(this.worldPosition, this.consoleBuffer.toString()));
+        }
+    }
+
+    public String getConsoleText() { return consoleBuffer.toString(); }
+
+    // Client-side helper to update console text via packets
+    public void clientSetConsoleText(String text) {
+        this.consoleBuffer = new StringBuilder(text != null ? text : "");
+    }
+
+    @Override
+    protected void saveAdditional(CompoundTag tag) {
+        super.saveAdditional(tag);
+        ContainerHelper.saveAllItems(tag, this.items);
+        tag.putInt("Progress", this.progress);
+        tag.putString("ConsoleText", this.consoleBuffer.toString());
+        tag.putBoolean("Booted", this.booted);
+    }
+
+    @Override
+    public void load(CompoundTag tag) {
+        super.load(tag);
+        ContainerHelper.loadAllItems(tag, this.items);
+        this.progress = tag.getInt("Progress");
+        this.consoleBuffer = new StringBuilder(tag.getString("ConsoleText"));
+        this.booted = tag.contains("Booted") && tag.getBoolean("Booted");
+    }
+
+    @Override
+    public CompoundTag getUpdateTag() {
+        CompoundTag tag = new CompoundTag();
+        this.saveAdditional(tag);
+        return tag;
+    }
+
     @Override
     public Component getDisplayName() {
         return Component.translatable("block.bandits_quirk_lib.dna_sequencer");
@@ -112,19 +186,7 @@ public class DNASequencerBlockEntity extends BlockEntity implements net.minecraf
     @Override
     public boolean canTakeItemThroughFace(int index, ItemStack stack, net.minecraft.core.Direction direction) { return index == SLOT_OUT_A || index == SLOT_OUT_B; }
 
-    @Override
-    protected void saveAdditional(CompoundTag tag) {
-        super.saveAdditional(tag);
-        ContainerHelper.saveAllItems(tag, this.items);
-        tag.putInt("Progress", this.progress);
-    }
-
-    @Override
-    public void load(CompoundTag tag) {
-        super.load(tag);
-        ContainerHelper.loadAllItems(tag, this.items);
-        this.progress = tag.getInt("Progress");
-    }
+    
 }
 
 

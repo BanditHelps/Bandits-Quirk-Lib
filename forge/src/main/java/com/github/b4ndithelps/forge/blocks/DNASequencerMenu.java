@@ -1,5 +1,6 @@
 package com.github.b4ndithelps.forge.blocks;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.Container;
 import net.minecraft.world.SimpleContainer;
@@ -12,6 +13,7 @@ public class DNASequencerMenu extends AbstractContainerMenu {
     private final ContainerLevelAccess access;
     private final Container container;
     private final ContainerData data;
+    private BlockPos pos;
 
     public DNASequencerMenu(int id, Inventory playerInv, DNASequencerBlockEntity be, ContainerData data) {
         super(ModMenus.DNA_SEQUENCER.get(), id);
@@ -20,6 +22,7 @@ public class DNASequencerMenu extends AbstractContainerMenu {
         this.access = ContainerLevelAccess.create(be.getLevel(), be.getBlockPos());
 
         this.addDataSlots(data);
+        this.pos = be.getBlockPos();
 
         // Machine inventory
         this.addSlot(new Slot(be, DNASequencerBlockEntity.SLOT_INPUT, 43, 34));
@@ -53,6 +56,7 @@ public class DNASequencerMenu extends AbstractContainerMenu {
             this.data = new SimpleContainerData(2);
             this.access = ContainerLevelAccess.create(sequencer.getLevel(), sequencer.getBlockPos());
         }
+        this.pos = pos;
 
         this.addDataSlots(this.data);
 
@@ -71,6 +75,10 @@ public class DNASequencerMenu extends AbstractContainerMenu {
         for (int col = 0; col < 9; ++col) {
             this.addSlot(new Slot(playerInv, col, 8 + col * 18, 142));
         }
+    }
+
+    public BlockPos getBlockPos() {
+        return pos;
     }
 
     @Override

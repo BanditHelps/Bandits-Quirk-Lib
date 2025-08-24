@@ -43,6 +43,18 @@ public final class BQLNetwork {
                 .decoder(MineHaSlotSyncPacket::decode)
                 .consumerMainThread(MineHaSlotSyncPacket::handle)
                 .add();
+
+        CHANNEL.messageBuilder(ConsoleCommandC2SPacket.class, index++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(ConsoleCommandC2SPacket::encode)
+                .decoder(ConsoleCommandC2SPacket::decode)
+                .consumerMainThread(ConsoleCommandC2SPacket::handle)
+                .add();
+
+        CHANNEL.messageBuilder(ConsoleSyncS2CPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(ConsoleSyncS2CPacket::encode)
+                .decoder(ConsoleSyncS2CPacket::decode)
+                .consumerMainThread(ConsoleSyncS2CPacket::handle)
+                .add();
     }
 }
 
