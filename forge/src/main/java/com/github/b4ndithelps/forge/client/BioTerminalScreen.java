@@ -86,15 +86,37 @@ public class BioTerminalScreen extends AbstractContainerScreen<BioTerminalMenu> 
                 if (py + this.font.lineHeight > progY + progH) break;
                 String raw = lines[li];
                 int color = 0xFFFFFF;
-                if (raw.startsWith("[RED]")) { color = 0xFF5555; raw = raw.substring(5); }
-                else if (raw.startsWith("[GREEN]")) { color = 0x55FF55; raw = raw.substring(7); }
-                else if (raw.startsWith("[YELLOW]")) { color = 0xFFFF55; raw = raw.substring(8); }
-                else if (raw.startsWith("[AQUA]")) { color = 0x55FFFF; raw = raw.substring(6); }
-                else if (raw.startsWith("[GRAY]")) { color = 0xAAAAAA; raw = raw.substring(6); }
+                boolean alignCenter = false;
+                boolean alignRight = false;
+                // Parse multiple tags in any order at the start of the line
+                boolean parsing = true;
+                while (parsing && raw.startsWith("[")) {
+                    int end = raw.indexOf(']');
+                    if (end <= 0) break;
+                    String tag = raw.substring(0, end + 1);
+                    if ("[RED]".equals(tag)) { color = 0xFF5555; }
+                    else if ("[GREEN]".equals(tag)) { color = 0x55FF55; }
+                    else if ("[YELLOW]".equals(tag)) { color = 0xFFFF55; }
+                    else if ("[AQUA]".equals(tag)) { color = 0x55FFFF; }
+                    else if ("[GRAY]".equals(tag)) { color = 0xAAAAAA; }
+                    else if ("[CENTER]".equals(tag)) { alignCenter = true; alignRight = false; }
+                    else if ("[RIGHT]".equals(tag)) { alignRight = true; alignCenter = false; }
+                    else { parsing = false; break; }
+                    raw = raw.substring(end + 1);
+                }
                 var wrappedSeqs = this.font.split(Component.literal(raw), progW);
                 for (int wi = 0; wi < wrappedSeqs.size(); wi++) {
                     if (py + this.font.lineHeight > progY + progH) break;
-                    graphics.drawString(this.font, wrappedSeqs.get(wi), progX, py, color, false);
+                    var comp = wrappedSeqs.get(wi);
+                    int drawX = progX;
+                    if (alignCenter) {
+                        int w = this.font.width(comp);
+                        drawX = progX + Math.max(0, (progW - w) / 2);
+                    } else if (alignRight) {
+                        int w = this.font.width(comp);
+                        drawX = progX + Math.max(0, progW - w);
+                    }
+                    graphics.drawString(this.font, comp, drawX, py, color, false);
                     py += this.font.lineHeight;
                 }
             }

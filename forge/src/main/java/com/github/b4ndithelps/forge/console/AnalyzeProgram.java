@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * Analyze program: lists adjacent sequencers, allows start N, status [N], readout N, back, exit.
  */
-public class AnalyzeProgram implements ConsoleProgram {
+public class AnalyzeProgram extends AbstractConsoleProgram {
     private final List<GeneSequencerBlockEntity> cachedSequencers = new ArrayList<>();
     private String statusLine = ""; // shown at top of program screen
     private enum ViewMode { LIST, READOUT }
@@ -40,17 +40,18 @@ public class AnalyzeProgram implements ConsoleProgram {
     }
 
     private void list(ConsoleContext ctx) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Analyze Program\n");
-        sb.append("Commands: list | start <n> | status [n] | readout <n> | back | exit\n");
+        var b = screen()
+                .header("Analyze Program")
+                .line("Commands: list | start <n> | status [n] | readout <n> | back | exit", ConsoleText.ColorTag.GRAY)
+                .blank();
         if (!statusLine.isEmpty()) {
-            sb.append(statusLine).append('\n');
+            b.line(statusLine);
+            b.blank();
         }
-        sb.append('\n');
         if (cachedSequencers.isEmpty()) {
-            sb.append("No connected sequencers.\n");
+            b.line("No connected sequencers.", ConsoleText.ColorTag.GRAY);
         } else {
-            sb.append("Connected Sequencers:\n");
+            b.line("Connected Sequencers:", ConsoleText.ColorTag.WHITE);
             for (int i = 0; i < cachedSequencers.size(); i++) {
                 var s = cachedSequencers.get(i);
                 int pct = s.getMaxProgress() == 0 ? 0 : (s.getProgress() * 100 / s.getMaxProgress());
@@ -62,22 +63,17 @@ public class AnalyzeProgram implements ConsoleProgram {
                         && (input.getTag().contains("GenomeSeed") || input.getTag().contains("Traits"));
                 boolean hasInvalidSample = !input.isEmpty() && !hasValidInput;
 
-                String colorTag;
-                if (hasOutput) colorTag = "[GREEN]"; // sequenced sample ready
-                else if (s.isRunning()) colorTag = "[YELLOW]";
-                else if (hasInvalidSample) colorTag = "[RED]"; // invalid sample present
-                else if (hasValidInput) colorTag = "[AQUA]"; // valid sample present, idle
-                else colorTag = "[GRAY]"; // empty
+                ConsoleText.ColorTag color;
+                if (hasOutput) color = ConsoleText.ColorTag.GREEN;
+                else if (s.isRunning()) color = ConsoleText.ColorTag.YELLOW;
+                else if (hasInvalidSample) color = ConsoleText.ColorTag.RED;
+                else if (hasValidInput) color = ConsoleText.ColorTag.AQUA;
+                else color = ConsoleText.ColorTag.GRAY;
 
-                sb.append(colorTag)
-                  .append(String.valueOf(i + 1)).append(") ")
-                  .append("[").append(bar(pct, 20)).append("] ").append(pct).append("% ");
-                sb.append(s.isRunning() ? "(Running)" : "(Idle)");
-                if (hasOutput) sb.append(" - Output Ready");
-                sb.append('\n');
+                b.line(i + 1 + ") [" + bar(pct, 20) + "] " + pct + "% " + (s.isRunning() ? "(Running)" : "(Idle)") + (hasOutput ? " - Output Ready" : ""), color);
             }
         }
-        ctx.setScreenText(sb.toString());
+        render(ctx, b.build());
     }
 
     private String bar(int pct, int width) {
@@ -129,7 +125,7 @@ public class AnalyzeProgram implements ConsoleProgram {
                 var selectedSeq = cachedSequencers.get(ridx);
                 var out = selectedSeq.getItem(GeneSequencerBlockEntity.SLOT_OUTPUT);
                 if (out.isEmpty()) {
-                    ctx.setScreenText("[GRAY]Readout for sequencer " + (ridx + 1) + ":\n<no output>");
+                    render(ctx, ConsoleText.color("Readout for sequencer " + (ridx + 1) + ":\n<no output>", ConsoleText.ColorTag.GRAY));
                 } else {
                     var tag = out.getTag();
                     List<String> labels = new ArrayList<>();
@@ -148,7 +144,7 @@ public class AnalyzeProgram implements ConsoleProgram {
                     }
                     String diagram = buildDnaDisplay(labels);
                     String header = buildDnaHeader(ridx + 1);
-                    ctx.setScreenText(header + ":\n" + diagram);
+                    render(ctx, header + ":\n" + diagram);
                 }
                 viewMode = ViewMode.READOUT;
                 readoutIndex = ridx;
@@ -178,8 +174,8 @@ public class AnalyzeProgram implements ConsoleProgram {
 
     // Makes a nice consistent header for the DNA Readout
     private String buildDnaHeader(int sequencer) {
-        String outputTitle = "[AQUA]DNA Results - Sequencer " + sequencer + "\n";
-        String outputBar = "=================================";
+        String outputTitle = "[CENTER][AQUA]DNA Results - Sequencer " + sequencer + "\n";
+        String outputBar = "[CENTER]==============================";
         return outputTitle + outputBar;
     }
 
