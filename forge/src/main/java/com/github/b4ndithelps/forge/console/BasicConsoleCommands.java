@@ -183,6 +183,15 @@ public final class BasicConsoleCommands {
                 ctx.getBlockEntity().pushProgram(new AnalyzeProgram());
             }
         });
+
+        // Enter Slicer Program
+        registry.register(new ConsoleCommand() {
+            @Override public String getName() { return "slicer"; }
+            @Override public String getDescription() { return "Open Slicer Program for connected gene slicers"; }
+            @Override public void execute(ConsoleContext ctx, List<String> args) {
+                ctx.getBlockEntity().pushProgram(new SlicerProgram());
+            }
+        });
     }
 }
 
