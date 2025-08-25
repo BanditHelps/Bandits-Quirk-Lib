@@ -8,7 +8,9 @@ import com.github.b4ndithelps.forge.item.ModItems;
 import com.github.b4ndithelps.forge.network.BQLNetwork;
 import com.github.b4ndithelps.forge.network.ConsoleSyncS2CPacket;
 import com.github.b4ndithelps.forge.network.ConsoleHistorySyncS2CPacket;
+import com.github.b4ndithelps.forge.network.ProgramScreenSyncS2CPacket;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -16,6 +18,8 @@ import net.minecraft.nbt.StringTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.ContainerHelper;
+import net.minecraft.world.MenuProvider;
+import net.minecraft.world.WorldlyContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -28,10 +32,11 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.network.PacketDistributor;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class BioTerminalBlockEntity extends BlockEntity implements net.minecraft.world.MenuProvider, net.minecraft.world.WorldlyContainer {
+public class BioTerminalBlockEntity extends BlockEntity implements MenuProvider, WorldlyContainer {
 	public static final int SLOT_DISK = 0;
 	private final NonNullList<ItemStack> items = NonNullList.withSize(1, ItemStack.EMPTY);
 	private final ContainerData data = new SimpleContainerData(2); // 0: progress, 1: max
@@ -55,7 +60,7 @@ public class BioTerminalBlockEntity extends BlockEntity implements net.minecraft
 	private int ticksUntilNextScheduledChar = 0;
 	private boolean singleLineAppendNewlineWhenDone = true;
 
-	private final java.util.ArrayList<String> commandHistory = new java.util.ArrayList<>();
+	private final ArrayList<String> commandHistory = new ArrayList<>();
 	private int historyCursor = -1;
 	private static final int COMMAND_HISTORY_LIMIT = 10;
 
@@ -219,7 +224,7 @@ public class BioTerminalBlockEntity extends BlockEntity implements net.minecraft
 				new ConsoleSyncS2CPacket(this.worldPosition, this.consoleBuffer.toString()));
 			// Also sync history immediately so client-side history navigation reflects new entries
 			BQLNetwork.CHANNEL.send(PacketDistributor.TRACKING_CHUNK.with(() -> serverLevel.getChunkAt(this.worldPosition)),
-				new ConsoleHistorySyncS2CPacket(this.worldPosition, new java.util.ArrayList<>(this.commandHistory), this.historyCursor));
+				new ConsoleHistorySyncS2CPacket(this.worldPosition, new ArrayList<>(this.commandHistory), this.historyCursor));
 		}
 	}
 
@@ -232,7 +237,7 @@ public class BioTerminalBlockEntity extends BlockEntity implements net.minecraft
 		this.consoleBuffer = new StringBuilder(text != null ? text : "");
 	}
 
-	public void clientSetHistory(java.util.List<String> history, int cursor) {
+	public void clientSetHistory(List<String> history, int cursor) {
 		this.commandHistory.clear();
 		if (history != null) {
 			this.commandHistory.addAll(history);
@@ -259,7 +264,7 @@ public class BioTerminalBlockEntity extends BlockEntity implements net.minecraft
 		}
 	}
 
-	public void queueConsoleLines(java.util.List<String> lines, int ticksBetween) {
+	public void queueConsoleLines(List<String> lines, int ticksBetween) {
 		if (lines == null || lines.isEmpty()) return;
 		this.scheduledLines.addAll(lines);
 		this.scheduledLineIntervalTicks = Math.max(0, ticksBetween);
@@ -302,7 +307,7 @@ public class BioTerminalBlockEntity extends BlockEntity implements net.minecraft
 		if (this.level != null && !this.level.isClientSide) {
 			this.level.sendBlockUpdated(this.worldPosition, getBlockState(), getBlockState(), 3);
 			BQLNetwork.CHANNEL.send(PacketDistributor.TRACKING_CHUNK.with(() -> ((ServerLevel)this.level).getChunkAt(this.worldPosition)),
-				new com.github.b4ndithelps.forge.network.ProgramScreenSyncS2CPacket(this.worldPosition, this.programScreenText));
+				new ProgramScreenSyncS2CPacket(this.worldPosition, this.programScreenText));
 		}
 	}
 
@@ -364,8 +369,8 @@ public class BioTerminalBlockEntity extends BlockEntity implements net.minecraft
 	}
 
 	@Override
-	public net.minecraft.network.chat.Component getDisplayName() {
-		return net.minecraft.network.chat.Component.translatable("block.bandits_quirk_lib.bio_terminal");
+	public Component getDisplayName() {
+		return Component.translatable("block.bandits_quirk_lib.bio_terminal");
 	}
 
 	@Override
@@ -391,11 +396,11 @@ public class BioTerminalBlockEntity extends BlockEntity implements net.minecraft
 	public void clearContent() { items.clear(); }
 
 	@Override
-	public int[] getSlotsForFace(net.minecraft.core.Direction side) { return new int[]{SLOT_DISK}; }
+	public int[] getSlotsForFace(Direction side) { return new int[]{SLOT_DISK}; }
 	@Override
-	public boolean canPlaceItemThroughFace(int index, ItemStack stack, net.minecraft.core.Direction direction) { return index == SLOT_DISK; }
+	public boolean canPlaceItemThroughFace(int index, ItemStack stack, Direction direction) { return index == SLOT_DISK; }
 	@Override
-	public boolean canTakeItemThroughFace(int index, ItemStack stack, net.minecraft.core.Direction direction) { return index == SLOT_DISK; }
+	public boolean canTakeItemThroughFace(int index, ItemStack stack, Direction direction) { return index == SLOT_DISK; }
 
 	// Client-side setter for program screen
 	public void clientSetProgramScreenText(String text) {

@@ -7,6 +7,8 @@ import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.ContainerHelper;
+import net.minecraft.world.MenuProvider;
+import net.minecraft.world.WorldlyContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -20,7 +22,7 @@ import net.minecraft.world.level.block.state.BlockState;
 /**
  * Processes a tissue sample into a sequenced sample when commanded by an adjacent BioTerminal.
  */
-public class GeneSequencerBlockEntity extends BlockEntity implements net.minecraft.world.MenuProvider, net.minecraft.world.WorldlyContainer {
+public class GeneSequencerBlockEntity extends BlockEntity implements MenuProvider, WorldlyContainer {
     public static final int SLOT_INPUT = 0;
     public static final int SLOT_OUTPUT = 1;
 

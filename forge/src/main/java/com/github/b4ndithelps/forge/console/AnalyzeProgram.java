@@ -1,6 +1,7 @@
 package com.github.b4ndithelps.forge.console;
 
 import com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity;
+import com.github.b4ndithelps.forge.item.ModItems;
 import net.minecraft.core.Direction;
 
 import java.util.ArrayList;
@@ -53,10 +54,10 @@ public class AnalyzeProgram implements ConsoleProgram {
             for (int i = 0; i < cachedSequencers.size(); i++) {
                 var s = cachedSequencers.get(i);
                 int pct = s.getMaxProgress() == 0 ? 0 : (s.getProgress() * 100 / s.getMaxProgress());
-                boolean hasOutput = !s.getItem(com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity.SLOT_OUTPUT).isEmpty();
-                var input = s.getItem(com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity.SLOT_INPUT);
+                boolean hasOutput = !s.getItem(GeneSequencerBlockEntity.SLOT_OUTPUT).isEmpty();
+                var input = s.getItem(GeneSequencerBlockEntity.SLOT_INPUT);
                 boolean hasValidInput = !input.isEmpty()
-                        && input.getItem() == com.github.b4ndithelps.forge.item.ModItems.TISSUE_SAMPLE.get()
+                        && input.getItem() == ModItems.TISSUE_SAMPLE.get()
                         && input.getTag() != null
                         && (input.getTag().contains("GenomeSeed") || input.getTag().contains("Traits"));
                 boolean hasInvalidSample = !input.isEmpty() && !hasValidInput;
@@ -97,13 +98,13 @@ public class AnalyzeProgram implements ConsoleProgram {
                 int idx = parseIndex(args.get(0));
                 if (!validIndex(idx)) { ctx.println("Invalid index"); return true; }
                 var seq = cachedSequencers.get(idx);
-                var input = seq.getItem(com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity.SLOT_INPUT);
-                var output = seq.getItem(com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity.SLOT_OUTPUT);
+                var input = seq.getItem(GeneSequencerBlockEntity.SLOT_INPUT);
+                var output = seq.getItem(GeneSequencerBlockEntity.SLOT_OUTPUT);
                 if (!output.isEmpty()) {
                     statusLine = "[RED]Error: Output slot not empty. Remove product first.";
                 } else if (input.isEmpty()) {
                     statusLine = "[RED]Error: Insert a tissue_sample in the input slot.";
-                } else if (input.getItem() != com.github.b4ndithelps.forge.item.ModItems.TISSUE_SAMPLE.get()) {
+                } else if (input.getItem() != ModItems.TISSUE_SAMPLE.get()) {
                     statusLine = "[RED]Error: Invalid input item. Requires tissue_sample.";
                 } else if (input.getTag() == null || (!input.getTag().contains("GenomeSeed") && !input.getTag().contains("Traits"))) {
                     statusLine = "[RED]Error: Sample missing genetic NBT. Re-extract a valid sample.";
@@ -126,12 +127,12 @@ public class AnalyzeProgram implements ConsoleProgram {
                 int ridx = parseIndex(args.get(0));
                 if (!validIndex(ridx)) { ctx.println("Invalid index"); return true; }
                 var selectedSeq = cachedSequencers.get(ridx);
-                var out = selectedSeq.getItem(com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity.SLOT_OUTPUT);
+                var out = selectedSeq.getItem(GeneSequencerBlockEntity.SLOT_OUTPUT);
                 if (out.isEmpty()) {
                     ctx.setScreenText("[GRAY]Readout for sequencer " + (ridx + 1) + ":\n<no output>");
                 } else {
                     var tag = out.getTag();
-                    java.util.List<String> labels = new java.util.ArrayList<>();
+                    List<String> labels = new ArrayList<>();
                     if (tag != null && tag.contains("Traits", 9)) {
                         var list = tag.getList("Traits", 8);
                         for (int i = 0; i < list.size() && labels.size() < 4; i++) {
@@ -146,7 +147,8 @@ public class AnalyzeProgram implements ConsoleProgram {
                         else labels.add("Immunity");
                     }
                     String diagram = buildDnaDisplay(labels);
-                    ctx.setScreenText("[AQUA]DNA Readout for sequencer " + (ridx + 1) + ":\n" + diagram);
+                    String header = buildDnaHeader(ridx + 1);
+                    ctx.setScreenText(header + ":\n" + diagram);
                 }
                 viewMode = ViewMode.READOUT;
                 readoutIndex = ridx;
@@ -174,18 +176,25 @@ public class AnalyzeProgram implements ConsoleProgram {
 
     private boolean validIndex(int idx) { return idx >= 0 && idx < cachedSequencers.size(); }
 
+    // Makes a nice consistent header for the DNA Readout
+    private String buildDnaHeader(int sequencer) {
+        String outputTitle = "[AQUA]DNA Results - Sequencer " + sequencer + "\n";
+        String outputBar = "=================================";
+        return outputTitle + outputBar;
+    }
+
     // Build a side-by-side DNA-like diagram with labels to the right
-    private String buildDnaDisplay(java.util.List<String> labels) {
+    private String buildDnaDisplay(List<String> labels) {
         String[] left = new String[]{
-                "A--==--T",
+                "A-=-T",
                 "\\    /",
                 " T==A",
                 "/    \\",
-                "C--==--G",
+                "C-=-G",
                 "\\    /",
                 " G==C",
                 "/    \\",
-                "T--==--A",
+                "T-=-A",
                 "\\    /",
                 " A==T"
         };
