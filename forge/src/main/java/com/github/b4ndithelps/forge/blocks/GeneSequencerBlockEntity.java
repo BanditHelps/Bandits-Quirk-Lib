@@ -91,6 +91,9 @@ public class GeneSequencerBlockEntity extends BlockEntity implements MenuProvide
         }
         if (inTag.contains("entity_name", 8)) seqTag.putString("entity_name", inTag.getString("entity_name"));
         if (inTag.contains("entity_uuid", 8)) seqTag.putString("entity_uuid", inTag.getString("entity_uuid"));
+        // propagate or initialize layout salt so layout differs per sample
+        if (inTag.contains("layout_salt", 4)) seqTag.putLong("layout_salt", inTag.getLong("layout_salt"));
+        else seqTag.putLong("layout_salt", this.level != null ? this.level.random.nextLong() : 0L);
         // Legacy compatibility -> convert
         if (!seqTag.contains("genes", 9)) {
             if (inTag.contains("Traits", 9)) {

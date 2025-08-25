@@ -65,6 +65,7 @@ public class TissueExtractorItem extends Item {
                 var tag = sample.getOrCreateTag();
                 tag.putString("entity_name", target.getName().getString());
                 tag.putString("entity_uuid", target.getUUID().toString());
+                tag.putLong("layout_salt", level.getRandom().nextLong());
                 net.minecraft.nbt.ListTag genes = new net.minecraft.nbt.ListTag();
                 for (int i = 0; i < instances.size(); i++) {
                     var gi = instances.get(i);

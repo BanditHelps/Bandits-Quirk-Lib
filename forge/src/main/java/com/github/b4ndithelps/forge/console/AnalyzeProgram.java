@@ -6,9 +6,13 @@ import com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity;
 import com.github.b4ndithelps.forge.item.ModItems;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.CompoundTag;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
+import java.util.Random;
 
 /**
  * Analyze program: lists adjacent sequencers, allows start N, status [N], readout N, back, exit.
@@ -33,6 +37,9 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
     // Current readout data (mapped 1:1 with visible slots order)
     private final List<String> currentGeneIds = new ArrayList<>();
     private final List<Integer> currentGeneQualities = new ArrayList<>();
+    // Rows (0..11) used for each gene label in current readout; parallels labels order
+    private final List<Integer> currentGeneRows = new ArrayList<>();
+    private final List<Integer> displayGeneIndices = new ArrayList<>();
 
     @Override
     public String getName() { return "analyze"; }
@@ -165,11 +172,11 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
                                 var g = list.getCompound(i);
                                 String id = g.getString("id");
                                 int q = g.getInt("quality");
-                                name = g.getString("name");
-                                if (name.isEmpty()) name = compactLabelFromId(id, q);
+                                String dispName = g.getString("name");
+                                if (dispName.isEmpty()) dispName = compactLabelFromId(id, q);
                                 currentGeneIds.add(id);
                                 currentGeneQualities.add(q);
-                                labels.add(name);
+                                labels.add(dispName);
                             }
                         } else if (tag.contains("Traits", 9)) {
                             var list = tag.getList("Traits", 8);
@@ -190,10 +197,14 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
                         else if (labels.size() == 2) labels.add("Enhancer");
                         else labels.add("Immunity");
                     }
-                    // Build centered DNA readout with left/right gene placements and animate char-by-char
-                    readoutAnimLines = buildCenteredDnaReadoutLines(ridx + 1, labels);
-                    // build index of selectable slots from current labels
-                    rebuildVisibleSlots(labels);
+                    // Build deterministic layout for this sample and render
+                    Layout layout = computeDeterministicLayout(tag, labels);
+                    readoutAnimLines = buildCenteredDnaReadoutLines(ridx + 1, layout.leftTexts, layout.rightTexts);
+                    // Build index of selectable slots from computed display order
+                    visibleSlotRowIndices.clear();
+                    visibleSlotRowIndices.addAll(layout.displayRows);
+                    displayGeneIndices.clear();
+                    displayGeneIndices.addAll(layout.displayGeneIndices);
                     selectedSlotIndex = visibleSlotRowIndices.isEmpty() ? -1 : 0;
                     // Insert non-rendering marker line at very top to flag readout on client
                     readoutAnimLines.add(0, "[READOUT]");
@@ -327,6 +338,124 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
         return lines;
     }
 
+    private static final class Layout {
+        final String[] leftTexts;
+        final String[] rightTexts;
+        final List<Integer> geneRows; // placement rows in insertion order
+        final List<Integer> displayRows; // rows sorted top->bottom for navigation/highlight
+        final List<Integer> displayGeneIndices; // mapping from display index -> gene index
+        Layout(String[] leftTexts, String[] rightTexts, List<Integer> geneRows, List<Integer> displayRows, List<Integer> displayGeneIndices) {
+            this.leftTexts = leftTexts;
+            this.rightTexts = rightTexts;
+            this.geneRows = geneRows;
+            this.displayRows = displayRows;
+            this.displayGeneIndices = displayGeneIndices;
+        }
+    }
+
+    private Layout computeDeterministicLayout(CompoundTag sampleTag, List<String> labels) {
+        // Define 12 potential rows; we will choose up to 4 unique rows based on seed
+        int[] leftRows = new int[]{0, 2, 4, 6, 8, 10};
+        int[] rightRows = new int[]{1, 3, 5, 7, 9};
+        long seed = 0L;
+        if (sampleTag != null) {
+            if (sampleTag.contains("entity_uuid", 8)) seed ^= sampleTag.getString("entity_uuid").hashCode();
+            if (sampleTag.contains("layout_salt", 4)) seed ^= sampleTag.getLong("layout_salt");
+            if (sampleTag.contains("genes", 9)) {
+                var list = sampleTag.getList("genes", 10);
+                for (int i = 0; i < Math.min(4, list.size()); i++) seed ^= list.getCompound(i).getString("id").hashCode();
+            }
+        }
+        Random rng = new Random(seed ^ 0xC2B2AE3D27D4EB4FL);
+
+        boolean[] usedLeft = new boolean[leftRows.length];
+        boolean[] usedRight = new boolean[rightRows.length];
+        String[] leftTexts = new String[leftRows.length];
+        String[] rightTexts = new String[rightRows.length];
+        List<Integer> rowsUsed = new ArrayList<>();
+        List<Integer> geneIndicesUsed = new ArrayList<>();
+
+        int max = Math.min(4, labels.size());
+        for (int i = 0; i < max; i++) {
+            boolean placeLeft = (rng.nextBoolean());
+            if (placeLeft) {
+                // pick an unused left row
+                int attempts = 0;
+                int idx;
+                do { idx = rng.nextInt(leftRows.length); attempts++; } while (usedLeft[idx] && attempts < 16);
+                // fallback to first free
+                if (usedLeft[idx]) {
+                    for (int j = 0; j < usedLeft.length; j++) if (!usedLeft[j]) { idx = j; break; }
+                }
+                usedLeft[idx] = true;
+                leftTexts[idx] = compactTag(labels.get(i));
+                rowsUsed.add(leftRows[idx]);
+            } else {
+                int attempts = 0;
+                int idx;
+                do { idx = rng.nextInt(rightRows.length); attempts++; } while (usedRight[idx] && attempts < 16);
+                if (usedRight[idx]) {
+                    for (int j = 0; j < usedRight.length; j++) if (!usedRight[j]) { idx = j; break; }
+                }
+                usedRight[idx] = true;
+                rightTexts[idx] = compactTag(labels.get(i));
+                rowsUsed.add(rightRows[idx]);
+            }
+            geneIndicesUsed.add(i);
+        }
+        // Sort display order top->bottom and map to gene indices
+        java.util.List<int[]> pairs = new java.util.ArrayList<>(); // [row, geneIdx]
+        for (int i = 0; i < rowsUsed.size(); i++) pairs.add(new int[]{rowsUsed.get(i), geneIndicesUsed.get(i)});
+        pairs.sort(java.util.Comparator.comparingInt(a -> a[0]));
+        List<Integer> displayRows = new ArrayList<>();
+        List<Integer> displayGeneIdxs = new ArrayList<>();
+        for (int[] p : pairs) { displayRows.add(p[0]); displayGeneIdxs.add(p[1]); }
+        // Default fill rowsUsed if fewer than labels count (should not happen)
+        while (rowsUsed.size() < max) rowsUsed.add(rowsUsed.isEmpty() ? 0 : rowsUsed.get(rowsUsed.size()-1));
+        if (displayRows.isEmpty()) { displayRows.addAll(rowsUsed); displayGeneIdxs.addAll(geneIndicesUsed); }
+        return new Layout(leftTexts, rightTexts, rowsUsed, displayRows, displayGeneIdxs);
+    }
+
+    private List<String> buildCenteredDnaReadoutLines(int sequencer, String[] leftTexts, String[] rightTexts) {
+        List<String> lines = new ArrayList<>();
+        String header = buildDnaHeader(sequencer);
+        for (String h : header.split("\\r?\\n", -1)) lines.add(h);
+
+        String[] dna = new String[]{
+                "A-=-T",
+                "\\    /",
+                " T==A",
+                "/    \\",
+                "C-=-G",
+                "\\    /",
+                " G==C",
+                "/    \\",
+                "T-=-A",
+                "\\    /",
+                " A==T"
+        };
+        int[] leftRows = new int[]{0, 2, 4, 6, 8, 10};
+        int[] rightRows = new int[]{1, 3, 5, 7, 9};
+
+        int labelWidth = 10;
+        String connector = "----";
+        for (int row = 0; row < dna.length; row++) {
+            String leftLab = "";
+            String rightLab = "";
+            for (int idx = 0; idx < leftRows.length; idx++) if (leftRows[idx] == row) { leftLab = leftTexts[idx] == null ? "" : leftTexts[idx]; break; }
+            for (int idx = 0; idx < rightRows.length; idx++) if (rightRows[idx] == row) { rightLab = rightTexts[idx] == null ? "" : rightTexts[idx]; break; }
+
+            String leftCol = padRight(leftLab, labelWidth);
+            String rightCol = padLeft(rightLab, labelWidth);
+            String leftConn = leftLab.isEmpty() ? " ".repeat(connector.length()) : connector;
+            String rightConn = rightLab.isEmpty() ? " ".repeat(connector.length()) : connector;
+
+            String composite = leftCol + leftConn + "[CORE]" + dna[row] + "[/CORE]" + rightConn + rightCol;
+            lines.add("[CENTER]" + composite);
+        }
+        return lines;
+    }
+
     private String compactLabelFromId(String id, int quality) {
         // Fallback generator for a consistent short tag
         return "gene_" + String.format("%04x", Math.abs((id + "_" + quality).hashCode()) & 0xFFFF);
@@ -388,6 +517,7 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
         for (int i = 0; i < visibleSlotRowIndices.size(); i++) {
             int row = visibleSlotRowIndices.get(i);
             int lineIdx = offset + headerLines + row;
+            if (lineIdx < 0 || lineIdx >= updated.size()) continue;
             String line = updated.get(lineIdx);
             // Remove any existing color tag at start
             String stripped = line;
