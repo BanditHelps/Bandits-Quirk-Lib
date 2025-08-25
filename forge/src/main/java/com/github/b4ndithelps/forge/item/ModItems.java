@@ -15,6 +15,15 @@ public class ModItems {
     public static final RegistryObject<Item> SEQUENCED_SAMPLE = ITEMS.register("sequenced_sample", () -> new SequencedSampleItem(new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> READOUT = ITEMS.register("readout", () -> new ReadoutItem(new Item.Properties().stacksTo(1)));
 
+    public static final RegistryObject<Item> GENE_VIAL_COSMETIC = ITEMS.register("gene_vial_cosmetic",
+            () -> new GeneVialItem(new Item.Properties().stacksTo(1), GeneVialItem.Category.COSMETIC));
+    public static final RegistryObject<Item> GENE_VIAL_RESISTANCE = ITEMS.register("gene_vial_resistance",
+            () -> new GeneVialItem(new Item.Properties().stacksTo(1), GeneVialItem.Category.RESISTANCE));
+    public static final RegistryObject<Item> GENE_VIAL_BUILDER = ITEMS.register("gene_vial_builder",
+            () -> new GeneVialItem(new Item.Properties().stacksTo(1), GeneVialItem.Category.BUILDER));
+    public static final RegistryObject<Item> GENE_VIAL_QUIRK = ITEMS.register("gene_vial_quirk",
+            () -> new GeneVialItem(new Item.Properties().stacksTo(1), GeneVialItem.Category.QUIRK));
+
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
     }
