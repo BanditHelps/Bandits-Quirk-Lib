@@ -68,6 +68,11 @@ public class BQLConfig {
     public final ForgeConfigSpec.BooleanValue extractorDamageTarget;
     public final ForgeConfigSpec.DoubleValue extractorDamageAmount;
     public final ForgeConfigSpec.ConfigValue<List<? extends String>> extractorValidEntityTypes;
+    public final ForgeConfigSpec.IntValue seqLenPlayer;
+    public final ForgeConfigSpec.ConfigValue<List<? extends Integer>> seqLenVillagerRange;
+    public final ForgeConfigSpec.ConfigValue<List<? extends Integer>> seqLenZombieRange;
+    public final ForgeConfigSpec.ConfigValue<List<? extends Integer>> seqLenHuskRange;
+    public final ForgeConfigSpec.ConfigValue<List<? extends Integer>> seqLenDrownedRange;
 
 
     public BQLConfig(ForgeConfigSpec.Builder builder) {
@@ -255,6 +260,26 @@ public class BQLConfig {
                         ),
                         obj -> obj instanceof String
                 );
+
+        this.seqLenPlayer = builder
+                .comment("Exact number of genes for players")
+                .defineInRange("sequence_len_player", 4, 1, 16);
+
+        this.seqLenVillagerRange = builder
+                .comment("Villager gene count range [min,max]")
+                .defineList("sequence_len_villager", Arrays.asList(3,4), o -> o instanceof Integer);
+
+        this.seqLenZombieRange = builder
+                .comment("Zombie gene count range [min,max]")
+                .defineList("sequence_len_zombie", Arrays.asList(2,3), o -> o instanceof Integer);
+
+        this.seqLenHuskRange = builder
+                .comment("Husk gene count range [min,max]")
+                .defineList("sequence_len_husk", Arrays.asList(2,3), o -> o instanceof Integer);
+
+        this.seqLenDrownedRange = builder
+                .comment("Drowned gene count range [min,max]")
+                .defineList("sequence_len_drowned", Arrays.asList(2,3), o -> o instanceof Integer);
 
         builder.pop();
     }

@@ -1,0 +1,10 @@
+{
+  "id": "bandits_quirk_lib:gene.heat_resistance",
+  "category": "resistance",
+  "rarity": "common",
+  "quality_range": [15, 75],
+  "combinable": true,
+  "description": "Reduces heat damage intake proportionally to quality."
+}
+
+

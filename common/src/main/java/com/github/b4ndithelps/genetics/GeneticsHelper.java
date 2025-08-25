@@ -42,6 +42,16 @@ public final class GeneticsHelper {
     }
 
     /**
+     * Generates a stable, pseudo-random gene display name like "gene_ab12" based on UUID, gene id, and index.
+     */
+    public static String generateStableGeneName(UUID uuid, net.minecraft.resources.ResourceLocation geneId, int index) {
+        long seed = computeStableSeed(uuid) ^ geneId.toString().hashCode() ^ (long)(index + 1) * 0x9E3779B97F4A7C15L;
+        int code = (int)(seed & 0xFFFF);
+        String suffix = String.format("%04x", code);
+        return "gene_" + suffix;
+    }
+
+    /**
      * Deterministically generate a set of traits from a seed. Count is small for readability.
      */
     public static List<String> generateTraitsFromSeed(long seed) {

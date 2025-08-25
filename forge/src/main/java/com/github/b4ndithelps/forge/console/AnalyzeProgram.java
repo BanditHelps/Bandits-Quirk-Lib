@@ -1,8 +1,11 @@
 package com.github.b4ndithelps.forge.console;
 
+import com.github.b4ndithelps.genetics.Gene;
+import com.github.b4ndithelps.genetics.GeneRegistry;
 import com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity;
 import com.github.b4ndithelps.forge.item.ModItems;
 import net.minecraft.core.Direction;
+import net.minecraft.resources.ResourceLocation;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +30,9 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
     private int readoutAnimSpeed = 80; // chars per tick (even faster)
     private boolean readoutHasAnimatedOnce = false;
     private boolean inDetailsView = false;
+    // Current readout data (mapped 1:1 with visible slots order)
+    private final List<String> currentGeneIds = new ArrayList<>();
+    private final List<Integer> currentGeneQualities = new ArrayList<>();
 
     @Override
     public String getName() { return "analyze"; }
@@ -71,7 +77,7 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
                 boolean hasValidInput = !input.isEmpty()
                         && input.getItem() == ModItems.TISSUE_SAMPLE.get()
                         && input.getTag() != null
-                        && (input.getTag().contains("GenomeSeed") || input.getTag().contains("Traits"));
+                        && (input.getTag().contains("genes", 9) || input.getTag().contains("GenomeSeed") || input.getTag().contains("Traits"));
                 boolean hasInvalidSample = !input.isEmpty() && !hasValidInput;
 
                 ConsoleText.ColorTag color;
@@ -123,7 +129,7 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
                     statusLine = "[RED]Error: Insert a tissue_sample in the input slot.";
                 } else if (input.getItem() != ModItems.TISSUE_SAMPLE.get()) {
                     statusLine = "[RED]Error: Invalid input item. Requires tissue_sample.";
-                } else if (input.getTag() == null || (!input.getTag().contains("GenomeSeed") && !input.getTag().contains("Traits"))) {
+                } else if (input.getTag() == null || (!input.getTag().contains("genes", 9) && !input.getTag().contains("GenomeSeed") && !input.getTag().contains("Traits"))) {
                     statusLine = "[RED]Error: Sample missing genetic NBT. Re-extract a valid sample.";
                 } else {
                     seq.startProcessing();
@@ -150,11 +156,32 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
                 } else {
                     var tag = out.getTag();
                     List<String> labels = new ArrayList<>();
-                    if (tag != null && tag.contains("Traits", 9)) {
-                        var list = tag.getList("Traits", 8);
-                        for (int i = 0; i < list.size() && labels.size() < 4; i++) {
-                            String raw = list.getString(i);
-                            labels.add(humanizeTrait(raw));
+                    currentGeneIds.clear();
+                    currentGeneQualities.clear();
+                    if (tag != null) {
+                        if (tag.contains("genes", 9)) {
+                            var list = tag.getList("genes", 10);
+                            for (int i = 0; i < list.size() && labels.size() < 4; i++) {
+                                var g = list.getCompound(i);
+                                String id = g.getString("id");
+                                int q = g.getInt("quality");
+                                name = g.getString("name");
+                                if (name.isEmpty()) name = compactLabelFromId(id, q);
+                                currentGeneIds.add(id);
+                                currentGeneQualities.add(q);
+                                labels.add(name);
+                            }
+                        } else if (tag.contains("Traits", 9)) {
+                            var list = tag.getList("Traits", 8);
+                            int q = tag.getInt("Quality");
+                            for (int i = 0; i < list.size() && labels.size() < 4; i++) {
+                                String raw = list.getString(i);
+                                String id = "bandits_quirk_lib:legacy." + raw.toLowerCase();
+                                currentGeneIds.add(id);
+                                currentGeneQualities.add(q);
+                                // legacy fallback: synthesize a name pattern
+                                labels.add("gene_" + String.format("%04x", Math.abs(id.hashCode()) & 0xFFFF));
+                            }
                         }
                     }
                     while (labels.size() < 4) {
@@ -275,8 +302,7 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
         String[] rightTexts = new String[rightRows.length];
         int maxGenes = Math.min(4, labels.size());
         for (int i = 0; i < maxGenes; i++) {
-            int id = Math.abs(labels.get(i).hashCode()) % 10000;
-            String tag = "gene_" + String.format("%04d", id);
+            String tag = compactTag(labels.get(i));
             if (i % 2 == 0) leftTexts[i / 2] = tag; else rightTexts[i / 2] = tag;
         }
 
@@ -299,6 +325,18 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
         }
 
         return lines;
+    }
+
+    private String compactLabelFromId(String id, int quality) {
+        // Fallback generator for a consistent short tag
+        return "gene_" + String.format("%04x", Math.abs((id + "_" + quality).hashCode()) & 0xFFFF);
+    }
+
+    private String compactTag(String label) {
+        // Trim and sanitize to fit in label column (10 chars)
+        String s = label == null ? "" : label.replaceAll("[^A-Za-z0-9_()]+", "");
+        if (s.length() > 10) return s.substring(0, 10);
+        return s;
     }
 
     private void rebuildVisibleSlots(List<String> labels) {
@@ -362,15 +400,25 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
 
     private void openSelectedGeneDetails(ConsoleContext ctx) {
         if (selectedSlotIndex < 0 || selectedSlotIndex >= visibleSlotRowIndices.size()) return;
-        int row = visibleSlotRowIndices.get(selectedSlotIndex);
-        // Build fake details for now
+        int geneIdx = selectedSlotIndex; // matches readout order
+        String id = geneIdx >= 0 && geneIdx < currentGeneIds.size() ? currentGeneIds.get(geneIdx) : "unknown";
+        int q = geneIdx >= 0 && geneIdx < currentGeneQualities.size() ? currentGeneQualities.get(geneIdx) : 0;
+        Gene g = null;
+        try { g = GeneRegistry.get(new ResourceLocation(id)); } catch (Exception ignored) {}
+
         ProgramScreenBuilder b = screen()
                 .header("Gene Details")
                 .separator()
-                .twoColumn("Name", "gene_selected", 10)
-                .twoColumn("Trait", "Unknown", 10)
-                .twoColumn("Level", "2", 10)
-                .blank();
+                .twoColumn("ID", id, 10)
+                .twoColumn("Quality", String.valueOf(q), 10);
+        if (g != null) {
+            b.twoColumn("Category", g.getCategory().name(), 10)
+             .twoColumn("Rarity", g.getRarity().name(), 10)
+             .twoColumn("Combinable", String.valueOf(g.isCombinable()), 10);
+            String desc = g.getDescription();
+            if (desc != null && !desc.isEmpty()) b.blank().line(desc);
+        }
+        b.blank();
         ctx.setScreenText(b.build());
         inDetailsView = true;
     }

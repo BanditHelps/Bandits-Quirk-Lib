@@ -68,10 +68,48 @@ public class GeneSequencerBlockEntity extends BlockEntity implements MenuProvide
 
         ItemStack sequenced = new ItemStack(ModItems.SEQUENCED_SAMPLE.get());
         CompoundTag seqTag = sequenced.getOrCreateTag();
-        seqTag.putLong("GenomeSeed", inTag.getLong("GenomeSeed"));
-        if (inTag.contains("Traits")) seqTag.put("Traits", inTag.get("Traits"));
-        seqTag.putInt("Quality", inTag.getInt("Quality"));
-        seqTag.putString("SourceEntity", inTag.getString("EntityType"));
+        // New schema propagation (ensure names exist; if not, add deterministic names)
+        if (inTag.contains("genes", 9)) {
+            net.minecraft.nbt.ListTag inGenes = inTag.getList("genes", 10);
+            net.minecraft.nbt.ListTag outGenes = new net.minecraft.nbt.ListTag();
+            String uuidStr = inTag.getString("entity_uuid");
+            java.util.UUID uuid = null;
+            try { uuid = java.util.UUID.fromString(uuidStr); } catch (Exception ignored) {}
+            for (int i = 0; i < inGenes.size(); i++) {
+                net.minecraft.nbt.CompoundTag gIn = inGenes.getCompound(i);
+                net.minecraft.nbt.CompoundTag gOut = gIn.copy();
+                if (!gOut.contains("name", 8)) {
+                    String id = gOut.getString("id");
+                    if (uuid != null && id != null && !id.isEmpty()) {
+                        String display = com.github.b4ndithelps.genetics.GeneticsHelper.generateStableGeneName(uuid, new net.minecraft.resources.ResourceLocation(id), i);
+                        gOut.putString("name", display);
+                    }
+                }
+                outGenes.add(gOut);
+            }
+            seqTag.put("genes", outGenes);
+        }
+        if (inTag.contains("entity_name", 8)) seqTag.putString("entity_name", inTag.getString("entity_name"));
+        if (inTag.contains("entity_uuid", 8)) seqTag.putString("entity_uuid", inTag.getString("entity_uuid"));
+        // Legacy compatibility -> convert
+        if (!seqTag.contains("genes", 9)) {
+            if (inTag.contains("Traits", 9)) {
+                net.minecraft.nbt.ListTag legacy = inTag.getList("Traits", 8);
+                net.minecraft.nbt.ListTag out = new net.minecraft.nbt.ListTag();
+                int q = inTag.getInt("Quality");
+                for (int i = 0; i < legacy.size(); i++) {
+                    String trait = legacy.getString(i);
+                    net.minecraft.nbt.CompoundTag g = new net.minecraft.nbt.CompoundTag();
+                    g.putString("id", "bandits_quirk_lib:legacy." + trait.toLowerCase());
+                    g.putInt("quality", q > 0 ? q : 50);
+                    // deterministic name fallback not possible without original uuid; use pseudo
+                    String name = "gene_" + String.format("%04x", Math.abs(trait.hashCode()) & 0xFFFF);
+                    g.putString("name", name);
+                    out.add(g);
+                }
+                seqTag.put("genes", out);
+            }
+        }
 
         items.set(SLOT_OUTPUT, sequenced);
         items.set(SLOT_INPUT, ItemStack.EMPTY);

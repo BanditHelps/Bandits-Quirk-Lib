@@ -14,8 +14,12 @@ import com.github.b4ndithelps.forge.blocks.ModMenus;
 import com.github.b4ndithelps.forge.network.BQLNetwork;
 import com.github.b4ndithelps.forge.config.ConfigManager;
 import com.github.b4ndithelps.forge.config.ModGameRules;
+import com.github.b4ndithelps.forge.genetics.GenesReloadListener;
 import dev.architectury.platform.forge.EventBuses;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 
@@ -58,6 +62,14 @@ public final class BanditsQuirkLibForge {
 
         BQLNetwork.register();
 
+    }
+
+    @Mod.EventBusSubscriber(modid = BanditsQuirkLib.MOD_ID)
+    public static class ReloadHandlers {
+        @SubscribeEvent
+        public static void onAddReloadListeners(AddReloadListenerEvent event) {
+            event.addListener(new GenesReloadListener());
+        }
     }
 
 

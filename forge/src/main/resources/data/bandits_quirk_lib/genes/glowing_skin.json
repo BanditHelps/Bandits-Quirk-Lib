@@ -1,0 +1,10 @@
+{
+  "id": "bandits_quirk_lib:gene.glowing_skin",
+  "category": "aesthetic",
+  "rarity": "rare",
+  "quality_range": [10, 90],
+  "combinable": true,
+  "description": "Skin emits a faint glow at higher quality."
+}
+
+

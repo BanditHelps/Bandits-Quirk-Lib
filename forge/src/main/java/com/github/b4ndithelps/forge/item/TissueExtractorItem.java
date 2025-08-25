@@ -34,13 +34,49 @@ public class TissueExtractorItem extends Item {
             LivingEntity target = getTargetedLivingEntity(player);
             if (target != null && isValidTarget(target)) {
                 long seed = GeneticsHelper.getOrAssignGenomeSeed(target);
-                var traits = GeneticsHelper.generateTraitsFromSeed(seed);
+
+                int minCount;
+                int maxCount;
+                if (target instanceof net.minecraft.world.entity.player.Player) {
+                    minCount = maxCount = BQLConfig.INSTANCE.seqLenPlayer.get();
+                } else if (target instanceof net.minecraft.world.entity.npc.Villager) {
+                    var r = BQLConfig.INSTANCE.seqLenVillagerRange.get();
+                    minCount = r.get(0);
+                    maxCount = r.get(1);
+                } else if (target instanceof net.minecraft.world.entity.monster.Zombie) {
+                    var r = BQLConfig.INSTANCE.seqLenZombieRange.get();
+                    minCount = r.get(0);
+                    maxCount = r.get(1);
+                } else if (target instanceof net.minecraft.world.entity.monster.Husk) {
+                    var r = BQLConfig.INSTANCE.seqLenHuskRange.get();
+                    minCount = r.get(0);
+                    maxCount = r.get(1);
+                } else if (target instanceof net.minecraft.world.entity.monster.Drowned) {
+                    var r = BQLConfig.INSTANCE.seqLenDrownedRange.get();
+                    minCount = r.get(0);
+                    maxCount = r.get(1);
+                } else {
+                    minCount = 2; maxCount = 3;
+                }
+
+                var instances = com.github.b4ndithelps.genetics.SequenceGenerator.generateForEntity(target, minCount, maxCount);
 
                 ItemStack sample = new ItemStack(ModItems.TISSUE_SAMPLE.get());
                 var tag = sample.getOrCreateTag();
-                int quality = 50 + level.random.nextInt(51); // 50-100
-                long timestamp = level.getGameTime();
-                GeneticsHelper.writeSampleNbt(tag, target, seed, traits, quality, timestamp);
+                tag.putString("entity_name", target.getName().getString());
+                tag.putString("entity_uuid", target.getUUID().toString());
+                net.minecraft.nbt.ListTag genes = new net.minecraft.nbt.ListTag();
+                for (int i = 0; i < instances.size(); i++) {
+                    var gi = instances.get(i);
+                    net.minecraft.nbt.CompoundTag g = new net.minecraft.nbt.CompoundTag();
+                    g.putString("id", gi.id.toString());
+                    g.putInt("quality", gi.quality);
+                    // Stable display name per entity/gene/index
+                    String display = com.github.b4ndithelps.genetics.GeneticsHelper.generateStableGeneName(target.getUUID(), gi.id, i);
+                    g.putString("name", display);
+                    genes.add(g);
+                }
+                tag.put("genes", genes);
 
                 if (!player.addItem(sample)) {
                     player.drop(sample, false);
