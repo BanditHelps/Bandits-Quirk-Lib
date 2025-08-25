@@ -34,7 +34,7 @@ public class BioTerminalScreen extends AbstractContainerScreen<BioTerminalMenu> 
         int textAreaX = this.leftPos + 8;
         int textAreaY = this.topPos + 16;
         boolean showProgram = this.programText != null && !this.programText.isEmpty();
-        int textAreaWidth = this.imageWidth - 16;
+        int textAreaWidth = this.imageWidth - 10;
         int inputHeight = 14;
         int gapBetween = 8;
         int bottomMargin = 8;
@@ -104,14 +104,33 @@ public class BioTerminalScreen extends AbstractContainerScreen<BioTerminalMenu> 
                     else { parsing = false; break; }
                     raw = raw.substring(end + 1);
                 }
-                var wrappedSeqs = this.font.split(Component.literal(raw), progW);
+                // Extract optional [CORE]...[/CORE] markers
+                int coreStartIdx = raw.indexOf("[CORE]");
+                int coreEndIdx = coreStartIdx >= 0 ? raw.indexOf("[/CORE]", coreStartIdx + 6) : -1;
+                boolean hasCore = coreStartIdx >= 0 && coreEndIdx > coreStartIdx;
+                String displayText = hasCore ? raw.replace("[CORE]", "").replace("[/CORE]", "") : raw;
+
+                var wrappedSeqs = this.font.split(Component.literal(displayText), progW);
                 for (int wi = 0; wi < wrappedSeqs.size(); wi++) {
                     if (py + this.font.lineHeight > progY + progH) break;
                     var comp = wrappedSeqs.get(wi);
                     int drawX = progX;
                     if (alignCenter) {
-                        int w = this.font.width(comp);
-                        drawX = progX + Math.max(0, (progW - w) / 2);
+                        if (hasCore) {
+                            // Compute core-centered X
+                            // Recompute left/core/right from original raw
+                            String left = raw.substring(0, coreStartIdx);
+                            String core = raw.substring(coreStartIdx + 6, coreEndIdx);
+                            String right = raw.substring(coreEndIdx + 7);
+                            // Strip tags from left/right segments too
+                            left = left.replace("[CENTER]", "").replace("[RIGHT]", "").replace("[RED]", "").replace("[GREEN]", "").replace("[YELLOW]", "").replace("[AQUA]", "").replace("[GRAY]", "");
+                            int leftWidth = this.font.width(left);
+                            int coreWidth = this.font.width(core);
+                            drawX = progX + Math.max(0, (progW - coreWidth) / 2) - leftWidth;
+                        } else {
+                            int w = this.font.width(comp);
+                            drawX = progX + Math.max(0, (progW - w) / 2);
+                        }
                     } else if (alignRight) {
                         int w = this.font.width(comp);
                         drawX = progX + Math.max(0, progW - w);
@@ -189,7 +208,7 @@ public class BioTerminalScreen extends AbstractContainerScreen<BioTerminalMenu> 
     public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
         int textAreaX = this.leftPos + 8;
         int textAreaY = this.topPos + 16;
-        int textAreaWidth = this.imageWidth - 16;
+        int textAreaWidth = this.imageWidth - 10;
         int inputHeight = 14;
         int gapBetween = 8;
         int bottomMargin = 8;

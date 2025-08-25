@@ -16,6 +16,12 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
     private enum ViewMode { LIST, READOUT }
     private ViewMode viewMode = ViewMode.LIST;
     private int readoutIndex = -1;
+    // Animation state for READOUT view (character-by-character)
+    private boolean readoutAnimating = false;
+    private List<String> readoutAnimLines = new ArrayList<>();
+    private int readoutAnimLineIndex = 0;
+    private int readoutAnimCharIndex = 0;
+    private int readoutAnimSpeed = 80; // chars per tick (even faster)
 
     @Override
     public String getName() { return "analyze"; }
@@ -142,9 +148,12 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
                         else if (labels.size() == 2) labels.add("Enhancer");
                         else labels.add("Immunity");
                     }
-                    String diagram = buildDnaDisplay(labels);
-                    String header = buildDnaHeader(ridx + 1);
-                    render(ctx, header + ":\n" + diagram);
+                    // Build centered DNA readout with left/right gene placements and animate char-by-char
+                    readoutAnimLines = buildCenteredDnaReadoutLines(ridx + 1, labels);
+                    readoutAnimating = true;
+                    readoutAnimLineIndex = 0;
+                    readoutAnimCharIndex = 0;
+                    render(ctx, "");
                 }
                 viewMode = ViewMode.READOUT;
                 readoutIndex = ridx;
@@ -163,6 +172,32 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
         // Periodically refresh the list/progress to auto-update the screen
         if (viewMode == ViewMode.LIST) {
             list(ctx);
+        } else if (viewMode == ViewMode.READOUT) {
+            if (readoutAnimating && !readoutAnimLines.isEmpty()) {
+                StringBuilder out = new StringBuilder();
+                // Fully emit lines before the current one
+                for (int i = 0; i < readoutAnimLineIndex; i++) {
+                    out.append(readoutAnimLines.get(i)).append('\n');
+                }
+                // Advance characters on current line
+                String current = readoutAnimLines.get(readoutAnimLineIndex);
+                int nextIdx = Math.min(current.length(), readoutAnimCharIndex + readoutAnimSpeed);
+                // Ensure leading tags (e.g., [CENTER][AQUA]) reveal atomically
+                int tagsEnd = leadingTagsEndIndex(current);
+                if (nextIdx > 0 && nextIdx < tagsEnd) nextIdx = tagsEnd;
+                readoutAnimCharIndex = nextIdx;
+                out.append(current, 0, readoutAnimCharIndex);
+                // Render current progress
+                render(ctx, out.toString());
+                // If current line finished, move to next
+                if (readoutAnimCharIndex >= current.length()) {
+                    readoutAnimLineIndex++;
+                    readoutAnimCharIndex = 0;
+                    if (readoutAnimLineIndex >= readoutAnimLines.size()) {
+                        readoutAnimating = false;
+                    }
+                }
+            }
         }
     }
 
@@ -175,13 +210,19 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
     // Makes a nice consistent header for the DNA Readout
     private String buildDnaHeader(int sequencer) {
         String outputTitle = "[CENTER][AQUA]DNA Results - Sequencer " + sequencer + "\n";
-        String outputBar = "[CENTER]==============================";
+        String outputBar = "[CENTER]==================================";
         return outputTitle + outputBar;
     }
 
-    // Build a side-by-side DNA-like diagram with labels to the right
-    private String buildDnaDisplay(List<String> labels) {
-        String[] left = new String[]{
+    // Build centered DNA with left/right compact gene labels around it; returns lines to render
+    private List<String> buildCenteredDnaReadoutLines(int sequencer, List<String> labels) {
+        List<String> lines = new ArrayList<>();
+        // Header (already includes [CENTER])
+        String header = buildDnaHeader(sequencer);
+        for (String h : header.split("\\r?\\n", -1)) lines.add(h);
+
+        // DNA art, 11 lines total
+        String[] dna = new String[]{
                 "A-=-T",
                 "\\    /",
                 " T==A",
@@ -194,27 +235,74 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
                 "\\    /",
                 " A==T"
         };
-        String[] right = new String[]{
-                "GENE_A: " + labels.get(0),
-                "",
-                "GENE_B: " + labels.get(1),
-                "",
-                "GENE_C: " + labels.get(2),
-                "",
-                "",
-                "",
-                "GENE_D: " + labels.get(3),
-                "",
-                ""
-        };
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < left.length; i++) {
-            String l = left[i];
-            String r = right[i];
-            // pad left to fixed width for alignment
-            sb.append(String.format("%-12s  %s", l, r)).append('\n');
+
+        // Define 12 potential slots mapped to DNA rows (indices in dna[]): 6 left, 6 right
+        int[] leftRows = new int[]{0, 2, 4, 6, 8, 10};
+        int[] rightRows = new int[]{1, 3, 5, 7, 9, 10};
+
+        // Generate compact gene ids for up to 4 labels (still render 4 for now): L,R,L,R
+        String[] leftTexts = new String[leftRows.length];
+        String[] rightTexts = new String[rightRows.length];
+        int maxGenes = Math.min(4, labels.size());
+        for (int i = 0; i < maxGenes; i++) {
+            int id = Math.abs(labels.get(i).hashCode()) % 10000;
+            String tag = "gene_" + String.format("%04d", id);
+            if (i % 2 == 0) leftTexts[i / 2] = tag; else rightTexts[i / 2] = tag;
         }
-        return sb.toString();
+
+        // Columns and connectors around centered DNA
+        int labelWidth = 10; // compact label region fits "gene_0000"
+        String connector = "----"; // 4 chars
+        for (int row = 0; row < dna.length; row++) {
+            String leftLab = "";
+            String rightLab = "";
+            for (int idx = 0; idx < leftRows.length; idx++) if (leftRows[idx] == row) { leftLab = leftTexts[idx] == null ? "" : leftTexts[idx]; break; }
+            for (int idx = 0; idx < rightRows.length; idx++) if (rightRows[idx] == row) { rightLab = rightTexts[idx] == null ? "" : rightTexts[idx]; break; }
+
+            String leftCol = padRight(leftLab, labelWidth);
+            String rightCol = padLeft(rightLab, labelWidth);
+            String leftConn = leftLab.isEmpty() ? " ".repeat(connector.length()) : connector;
+            String rightConn = rightLab.isEmpty() ? " ".repeat(connector.length()) : connector;
+
+            String composite = leftCol + leftConn + "[CORE]" + dna[row] + "[/CORE]" + rightConn + rightCol;
+            lines.add("[CENTER]" + composite);
+        }
+
+        return lines;
+    }
+
+    private int leadingTagsEndIndex(String line) {
+        int i = 0;
+        boolean cont = true;
+        while (cont && i < line.length() && line.charAt(i) == '[') {
+            int end = line.indexOf(']', i);
+            if (end <= i) break;
+            String tag = line.substring(i, end + 1);
+            if ("[RED]".equals(tag) || "[GREEN]".equals(tag) || "[YELLOW]".equals(tag) ||
+                    "[AQUA]".equals(tag) || "[GRAY]".equals(tag) || "[CENTER]".equals(tag) || "[RIGHT]".equals(tag)) {
+                i = end + 1;
+            } else {
+                cont = false;
+            }
+        }
+        return i;
+    }
+
+    private String padRight(String s, int width) {
+        if (s == null) s = "";
+        if (s.length() >= width) return s.substring(0, width);
+        StringBuilder b = new StringBuilder(s);
+        while (b.length() < width) b.append(' ');
+        return b.toString();
+    }
+
+    private String padLeft(String s, int width) {
+        if (s == null) s = "";
+        if (s.length() >= width) return s.substring(0, width);
+        StringBuilder b = new StringBuilder();
+        while (b.length() + s.length() < width) b.append(' ');
+        b.append(s);
+        return b.toString();
     }
 
     private String humanizeTrait(String raw) {
