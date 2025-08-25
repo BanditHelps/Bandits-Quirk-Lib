@@ -32,7 +32,9 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
     private int readoutAnimLineIndex = 0;
     private int readoutAnimCharIndex = 0;
     private int readoutAnimSpeed = 80; // chars per tick (even faster)
-    private boolean readoutHasAnimatedOnce = false;
+    // Animation state: track which unique samples have already animated
+    private final java.util.Set<String> animatedReadoutKeys = new java.util.HashSet<>();
+    private String currentReadoutKey = "";
     private boolean inDetailsView = false;
     // Current readout data (mapped 1:1 with visible slots order)
     private final List<String> currentGeneIds = new ArrayList<>();
@@ -209,7 +211,9 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
                     // Insert non-rendering marker line at very top to flag readout on client
                     readoutAnimLines.add(0, "[READOUT]");
                     inDetailsView = false;
-                    if (!readoutHasAnimatedOnce) {
+                    String key = computeReadoutKey(tag);
+                    currentReadoutKey = key;
+                    if (!animatedReadoutKeys.contains(key)) {
                         // Pre-highlight first selectable during animation
                         applySelectionToAnimLines();
                         readoutAnimating = true;
@@ -260,7 +264,9 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
                     readoutAnimCharIndex = 0;
                     if (readoutAnimLineIndex >= readoutAnimLines.size()) {
                         readoutAnimating = false;
-                        readoutHasAnimatedOnce = true;
+                        if (currentReadoutKey != null && !currentReadoutKey.isEmpty()) {
+                            animatedReadoutKeys.add(currentReadoutKey);
+                        }
                         // Ensure selection is green after animation completes
                         redrawReadoutWithSelection(ctx);
                     }
@@ -583,6 +589,21 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
             }
         }
         return i;
+    }
+
+    private String computeReadoutKey(CompoundTag tag) {
+        if (tag == null) return "";
+        StringBuilder sb = new StringBuilder();
+        if (tag.contains("entity_uuid", 8)) sb.append(tag.getString("entity_uuid"));
+        if (tag.contains("layout_salt", 4)) sb.append('|').append(tag.getLong("layout_salt"));
+        if (tag.contains("genes", 9)) {
+            var list = tag.getList("genes", 10);
+            for (int i = 0; i < Math.min(4, list.size()); i++) sb.append('|').append(list.getCompound(i).getString("id"));
+        } else if (tag.contains("Traits", 9)) {
+            var list = tag.getList("Traits", 8);
+            for (int i = 0; i < Math.min(4, list.size()); i++) sb.append('|').append(list.getString(i));
+        }
+        return sb.toString();
     }
 
     private String padRight(String s, int width) {
