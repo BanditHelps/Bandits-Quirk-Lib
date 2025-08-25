@@ -74,6 +74,9 @@ public class GeneSequencerBlockEntity extends BlockEntity implements net.minecra
         items.set(SLOT_OUTPUT, sequenced);
         items.set(SLOT_INPUT, ItemStack.EMPTY);
         setChanged();
+        if (this.level != null && !this.level.isClientSide) {
+            this.level.sendBlockUpdated(this.worldPosition, getBlockState(), getBlockState(), 3);
+        }
     }
 
     // Control API for BioTerminal
@@ -82,6 +85,9 @@ public class GeneSequencerBlockEntity extends BlockEntity implements net.minecra
     public boolean isRunning() { return running; }
     public int getProgress() { return progress; }
     public int getMaxProgress() { return maxProgress; }
+
+    /** Exposes container data for menu syncing on client. */
+    public ContainerData getContainerData() { return data; }
 
     @Override
     protected void saveAdditional(CompoundTag tag) {

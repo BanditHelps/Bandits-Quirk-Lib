@@ -35,7 +35,8 @@ public class GeneSequencerMenu extends AbstractContainerMenu {
             this.data = new SimpleContainerData(2);
         } else {
             this.container = sequencer;
-            this.data = new SimpleContainerData(2);
+            // Use the BE's live ContainerData so client sees progress/max updates
+            this.data = sequencer.getContainerData();
         }
         this.addDataSlots(this.data);
 

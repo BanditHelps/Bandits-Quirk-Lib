@@ -80,12 +80,23 @@ public class BioTerminalScreen extends AbstractContainerScreen<BioTerminalMenu> 
             int progY = textAreaY;
             int progW = textAreaWidth;
             int progH = textAreaHeight;
-            var progLines = this.font.split(Component.literal(this.programText), progW);
             int py = progY;
-            for (int i = 0; i < progLines.size(); i++) {
+            String[] lines = this.programText.split("\\r?\\n", -1);
+            for (int li = 0; li < lines.length; li++) {
                 if (py + this.font.lineHeight > progY + progH) break;
-                graphics.drawString(this.font, progLines.get(i), progX, py, 0xFFFFFF, false);
-                py += this.font.lineHeight;
+                String raw = lines[li];
+                int color = 0xFFFFFF;
+                if (raw.startsWith("[RED]")) { color = 0xFF5555; raw = raw.substring(5); }
+                else if (raw.startsWith("[GREEN]")) { color = 0x55FF55; raw = raw.substring(7); }
+                else if (raw.startsWith("[YELLOW]")) { color = 0xFFFF55; raw = raw.substring(8); }
+                else if (raw.startsWith("[AQUA]")) { color = 0x55FFFF; raw = raw.substring(6); }
+                else if (raw.startsWith("[GRAY]")) { color = 0xAAAAAA; raw = raw.substring(6); }
+                var wrappedSeqs = this.font.split(Component.literal(raw), progW);
+                for (int wi = 0; wi < wrappedSeqs.size(); wi++) {
+                    if (py + this.font.lineHeight > progY + progH) break;
+                    graphics.drawString(this.font, wrappedSeqs.get(wi), progX, py, color, false);
+                    py += this.font.lineHeight;
+                }
             }
         }
     }

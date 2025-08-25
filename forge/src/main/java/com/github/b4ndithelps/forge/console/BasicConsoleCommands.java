@@ -105,9 +105,28 @@ public final class BasicConsoleCommands {
                 for (var dir : net.minecraft.core.Direction.values()) {
                     var neighbor = level.getBlockEntity(pos.relative(dir));
                     if (neighbor instanceof com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity seq) {
+                        found = true;
+                        // Validate input sample
+                        var input = seq.getItem(com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity.SLOT_INPUT);
+                        var output = seq.getItem(com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity.SLOT_OUTPUT);
+                        if (!output.isEmpty()) {
+                            ctx.println("Sequencer error: Output slot not empty. Remove product first.");
+                            break;
+                        }
+                        if (input.isEmpty()) {
+                            ctx.println("Sequencer error: Insert a tissue_sample in the input slot.");
+                            break;
+                        }
+                        if (input.getItem() != com.github.b4ndithelps.forge.item.ModItems.TISSUE_SAMPLE.get()) {
+                            ctx.println("Sequencer error: Invalid input item. Requires tissue_sample.");
+                            break;
+                        }
+                        if (input.getTag() == null || (!input.getTag().contains("GenomeSeed") && !input.getTag().contains("Traits"))) {
+                            ctx.println("Sequencer error: Sample missing genetic NBT. Re-extract a valid sample.");
+                            break;
+                        }
                         seq.startProcessing();
                         ctx.println("Sequencer started");
-                        found = true;
                         break;
                     }
                 }
