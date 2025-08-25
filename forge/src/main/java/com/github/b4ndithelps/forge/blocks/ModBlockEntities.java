@@ -16,6 +16,9 @@ public class ModBlockEntities {
     public static final RegistryObject<BlockEntityType<GeneSequencerBlockEntity>> GENE_SEQUENCER = BLOCK_ENTITIES.register("gene_sequencer",
             () -> BlockEntityType.Builder.of(GeneSequencerBlockEntity::new, ModBlocks.GENE_SEQUENCER.get()).build(null));
 
+    public static final RegistryObject<BlockEntityType<GeneSlicerBlockEntity>> GENE_SLICER = BLOCK_ENTITIES.register("gene_slicer",
+            () -> BlockEntityType.Builder.of(GeneSlicerBlockEntity::new, ModBlocks.GENE_SLICER.get()).build(null));
+
     public static void register(IEventBus bus) {
         BLOCK_ENTITIES.register(bus);
     }

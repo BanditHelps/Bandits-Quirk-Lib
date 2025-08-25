@@ -20,6 +20,7 @@ public class ModCreativeTabs {
                 output.accept(ModBlocks.RESEARCH_TABLE_BLOCK.get());
                 output.accept(ModBlocks.BIO_TERMINAL.get());
                 output.accept(ModBlocks.GENE_SEQUENCER.get());
+                output.accept(ModBlocks.GENE_SLICER.get());
                 output.accept(ModItems.TISSUE_EXTRACTOR.get());
                 output.accept(ModItems.TISSUE_SAMPLE.get());
                 output.accept(ModItems.SEQUENCED_SAMPLE.get());

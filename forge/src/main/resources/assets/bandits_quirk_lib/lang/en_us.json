@@ -7,6 +7,7 @@
   "item.bandits_quirk_lib.tissue_sample": "Tissue Sample",
   "block.bandits_quirk_lib.bio_terminal": "Bio Terminal",
   "block.bandits_quirk_lib.gene_sequencer": "Gene Sequencer",
+  "block.bandits_quirk_lib.gene_slicer": "Gene Slicer",
   "item.bandits_quirk_lib.sequenced_sample": "Sequenced Sample",
   "item.bandits_quirk_lib.readout": "Readout"
 }

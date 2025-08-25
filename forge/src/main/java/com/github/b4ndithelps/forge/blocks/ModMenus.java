@@ -17,6 +17,9 @@ public class ModMenus {
     public static final RegistryObject<MenuType<GeneSequencerMenu>> GENE_SEQUENCER = MENUS.register("gene_sequencer",
             () -> IForgeMenuType.create((id, inv, buf) -> new GeneSequencerMenu(id, inv, buf)));
 
+    public static final RegistryObject<MenuType<GeneSlicerMenu>> GENE_SLICER = MENUS.register("gene_slicer",
+            () -> IForgeMenuType.create((id, inv, buf) -> new GeneSlicerMenu(id, inv, buf)));
+
     public static void register(IEventBus bus) {
         MENUS.register(bus);
     }

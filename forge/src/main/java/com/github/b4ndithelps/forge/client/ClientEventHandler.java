@@ -37,6 +37,7 @@ public class ClientEventHandler {
             event.enqueueWork(() -> {
                 MenuScreens.register(ModMenus.BIO_TERMINAL.get(), BioTerminalScreen::new);
                 MenuScreens.register(ModMenus.GENE_SEQUENCER.get(), GeneSequencerScreen::new);
+                MenuScreens.register(ModMenus.GENE_SLICER.get(), GeneSlicerScreen::new);
             });
         }
     }
