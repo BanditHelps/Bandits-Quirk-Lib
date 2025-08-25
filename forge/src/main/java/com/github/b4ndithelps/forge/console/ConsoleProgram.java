@@ -18,6 +18,12 @@ public interface ConsoleProgram {
      * @return true if the command was handled by this program.
      */
     boolean handle(ConsoleContext ctx, String name, List<String> args);
+
+    /**
+     * Optional key handling for programs that capture input (e.g., selection screens).
+     * @return true if the key was handled
+     */
+    default boolean onKey(ConsoleContext ctx, String action) { return false; }
 }
 
 

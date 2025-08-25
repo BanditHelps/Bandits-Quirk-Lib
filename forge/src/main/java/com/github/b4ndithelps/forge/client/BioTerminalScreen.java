@@ -21,6 +21,7 @@ public class BioTerminalScreen extends AbstractContainerScreen<BioTerminalMenu> 
     private String programText = "";
     private int consoleScrollPixels = 0;
     private boolean stickToBottom = true;
+    private boolean programCapturesInput = false;
 
     public BioTerminalScreen(BioTerminalMenu menu, Inventory inv, Component title) {
         super(menu, inv, title);
@@ -37,7 +38,7 @@ public class BioTerminalScreen extends AbstractContainerScreen<BioTerminalMenu> 
         int textAreaWidth = this.imageWidth - 10;
         int inputHeight = 14;
         int gapBetween = 8;
-        int bottomMargin = 8;
+        int bottomMargin = 6;
         int usedTop = textAreaY - this.topPos;
         int textAreaHeight = this.imageHeight - usedTop - gapBetween - inputHeight - bottomMargin;
         if (textAreaHeight < this.font.lineHeight) {
@@ -82,7 +83,10 @@ public class BioTerminalScreen extends AbstractContainerScreen<BioTerminalMenu> 
             int progH = textAreaHeight;
             int py = progY;
             String[] lines = this.programText.split("\\r?\\n", -1);
-            for (int li = 0; li < lines.length; li++) {
+            // Skip leading non-rendering marker lines like [READOUT]
+            int startLine = 0;
+            while (startLine < lines.length && lines[startLine].startsWith("[READOUT]")) startLine++;
+            for (int li = startLine; li < lines.length; li++) {
                 if (py + this.font.lineHeight > progY + progH) break;
                 String raw = lines[li];
                 int color = 0xFFFFFF;
@@ -101,6 +105,7 @@ public class BioTerminalScreen extends AbstractContainerScreen<BioTerminalMenu> 
                     else if ("[GRAY]".equals(tag)) { color = 0xAAAAAA; }
                     else if ("[CENTER]".equals(tag)) { alignCenter = true; alignRight = false; }
                     else if ("[RIGHT]".equals(tag)) { alignRight = true; alignCenter = false; }
+                    else if ("[READOUT]".equals(tag)) { /* marker to toggle input; do not render */ }
                     else { parsing = false; break; }
                     raw = raw.substring(end + 1);
                 }
@@ -161,9 +166,25 @@ public class BioTerminalScreen extends AbstractContainerScreen<BioTerminalMenu> 
         if (this.minecraft.options.keyInventory.matches(keyCode, scanCode)) {
             return true;
         }
-        if (keyCode == 257 || keyCode == 335) {
-            submitCommand();
-            return true;
+        if (!this.programCapturesInput) {
+            if (keyCode == 257 || keyCode == 335) { // Enter
+                submitCommand();
+                return true;
+            }
+        } else {
+            // Program capture: map keys to actions
+            String action = null;
+            if (keyCode == 87) action = "up";          // W
+            else if (keyCode == 83) action = "down";   // S
+            else if (keyCode == 257 || keyCode == 335) action = "enter"; // Enter
+            else if ((modifiers & 0x2) != 0 && keyCode == 67) action = "interrupt"; // Ctrl+C
+            if (action != null) {
+                var pos = this.menu.getBlockPos();
+                com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.sendToServer(
+                        new com.github.b4ndithelps.forge.network.ProgramInputC2SPacket(pos, action)
+                );
+                return true;
+            }
         }
 
         if (keyCode == 265) {
@@ -183,7 +204,7 @@ public class BioTerminalScreen extends AbstractContainerScreen<BioTerminalMenu> 
                 return true;
             }
         }
-        if (this.input.keyPressed(keyCode, scanCode, modifiers)) {
+        if (!this.programCapturesInput && this.input.keyPressed(keyCode, scanCode, modifiers)) {
             return true;
         }
         return super.keyPressed(keyCode, scanCode, modifiers);
@@ -211,7 +232,7 @@ public class BioTerminalScreen extends AbstractContainerScreen<BioTerminalMenu> 
         int textAreaWidth = this.imageWidth - 10;
         int inputHeight = 14;
         int gapBetween = 8;
-        int bottomMargin = 8;
+        int bottomMargin = 6;
         int usedTop = textAreaY - this.topPos;
         int textAreaHeight = this.imageHeight - usedTop - gapBetween - inputHeight - bottomMargin;
         if (textAreaHeight < this.font.lineHeight) {
@@ -241,6 +262,10 @@ public class BioTerminalScreen extends AbstractContainerScreen<BioTerminalMenu> 
         if (be instanceof BioTerminalBlockEntity terminal) {
             this.consoleText = terminal.getConsoleText();
             this.programText = terminal.getProgramScreenTextClient();
+            // Heuristic: when a readout screen is shown, capture input and hide text box
+            this.programCapturesInput = this.programText != null && !this.programText.isEmpty() && this.programText.contains("[READOUT]");
+            this.input.setVisible(!this.programCapturesInput);
+            this.input.setEditable(!this.programCapturesInput);
         }
         this.input.tick();
     }

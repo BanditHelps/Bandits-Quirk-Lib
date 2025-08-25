@@ -16,12 +16,17 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
     private enum ViewMode { LIST, READOUT }
     private ViewMode viewMode = ViewMode.LIST;
     private int readoutIndex = -1;
+    // Selection state for READOUT
+    private int selectedSlotIndex = -1; // 0..(visibleSlots-1) over actual gene entries
+    private List<Integer> visibleSlotRowIndices = new ArrayList<>(); // rows that have a gene label
     // Animation state for READOUT view (character-by-character)
     private boolean readoutAnimating = false;
     private List<String> readoutAnimLines = new ArrayList<>();
     private int readoutAnimLineIndex = 0;
     private int readoutAnimCharIndex = 0;
     private int readoutAnimSpeed = 80; // chars per tick (even faster)
+    private boolean readoutHasAnimatedOnce = false;
+    private boolean inDetailsView = false;
 
     @Override
     public String getName() { return "analyze"; }
@@ -92,6 +97,16 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
     @Override
     public boolean handle(ConsoleContext ctx, String name, List<String> args) {
         switch (name) {
+            case "back":
+                if (viewMode == ViewMode.READOUT) {
+                    // Return to last DNA readout screen from details view or selection
+                    viewMode = ViewMode.LIST;
+                    selectedSlotIndex = -1;
+                    ctx.setScreenText("");
+                    list(ctx);
+                    return true;
+                }
+                return false;
             case "list":
                 refresh(ctx);
                 return true;
@@ -150,15 +165,27 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
                     }
                     // Build centered DNA readout with left/right gene placements and animate char-by-char
                     readoutAnimLines = buildCenteredDnaReadoutLines(ridx + 1, labels);
-                    readoutAnimating = true;
-                    readoutAnimLineIndex = 0;
-                    readoutAnimCharIndex = 0;
-                    render(ctx, "");
+                    // build index of selectable slots from current labels
+                    rebuildVisibleSlots(labels);
+                    selectedSlotIndex = visibleSlotRowIndices.isEmpty() ? -1 : 0;
+                    // Insert non-rendering marker line at very top to flag readout on client
+                    readoutAnimLines.add(0, "[READOUT]");
+                    inDetailsView = false;
+                    if (!readoutHasAnimatedOnce) {
+                        // Pre-highlight first selectable during animation
+                        applySelectionToAnimLines();
+                        readoutAnimating = true;
+                        readoutAnimLineIndex = 0;
+                        readoutAnimCharIndex = 0;
+                        render(ctx, "");
+                    } else {
+                        // Immediately render full readout with current selection
+                        redrawReadoutWithSelection(ctx);
+                    }
                 }
                 viewMode = ViewMode.READOUT;
                 readoutIndex = ridx;
                 return true;
-            case "back":
             case "exit":
                 ctx.exitProgram();
                 return true;
@@ -195,6 +222,9 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
                     readoutAnimCharIndex = 0;
                     if (readoutAnimLineIndex >= readoutAnimLines.size()) {
                         readoutAnimating = false;
+                        readoutHasAnimatedOnce = true;
+                        // Ensure selection is green after animation completes
+                        redrawReadoutWithSelection(ctx);
                     }
                 }
             }
@@ -238,7 +268,7 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
 
         // Define 12 potential slots mapped to DNA rows (indices in dna[]): 6 left, 6 right
         int[] leftRows = new int[]{0, 2, 4, 6, 8, 10};
-        int[] rightRows = new int[]{1, 3, 5, 7, 9, 10};
+        int[] rightRows = new int[]{1, 3, 5, 7, 9, 11};
 
         // Generate compact gene ids for up to 4 labels (still render 4 for now): L,R,L,R
         String[] leftTexts = new String[leftRows.length];
@@ -269,6 +299,95 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
         }
 
         return lines;
+    }
+
+    private void rebuildVisibleSlots(List<String> labels) {
+        visibleSlotRowIndices.clear();
+        // Mirror assignment used above for 4 labels: L rows at 0,2; R rows at 1,3.
+        int[] rows = new int[]{0, 1, 2, 3};
+        int max = Math.min(4, labels.size());
+        for (int i = 0; i < max; i++) visibleSlotRowIndices.add(rows[i]);
+    }
+
+    @Override
+    public boolean onKey(ConsoleContext ctx, String action) {
+        if (viewMode != ViewMode.READOUT || visibleSlotRowIndices.isEmpty()) return false;
+        switch (action) {
+            case "up":
+                if (selectedSlotIndex > 0) selectedSlotIndex--;
+                redrawReadoutWithSelection(ctx);
+                return true;
+            case "down":
+                if (selectedSlotIndex < visibleSlotRowIndices.size() - 1) selectedSlotIndex++;
+                redrawReadoutWithSelection(ctx);
+                return true;
+            case "enter":
+                openSelectedGeneDetails(ctx);
+                return true;
+            case "interrupt":
+                // go back from details to readout if in details view, otherwise back to list
+                if (inDetailsView) {
+                    inDetailsView = false;
+                    redrawReadoutWithSelection(ctx);
+                } else {
+                    viewMode = ViewMode.LIST;
+                    selectedSlotIndex = -1;
+                    ctx.setScreenText("");
+                    list(ctx);
+                }
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    private void redrawReadoutWithSelection(ConsoleContext ctx) {
+        // recolor the selected label line to green by inserting [GREEN]
+        List<String> updated = new ArrayList<>(readoutAnimLines);
+        // first two lines are header; subsequent lines correspond to dna rows
+        int headerLines = 2;
+        int offset = 1; // due to [READOUT] marker line
+        for (int i = 0; i < visibleSlotRowIndices.size(); i++) {
+            int row = visibleSlotRowIndices.get(i);
+            int lineIdx = offset + headerLines + row;
+            String line = updated.get(lineIdx);
+            // Remove any existing color tag at start
+            String stripped = line;
+            if (stripped.startsWith("[GREEN]")) stripped = stripped.substring(7);
+            if (i == selectedSlotIndex) updated.set(lineIdx, "[GREEN]" + stripped);
+            else updated.set(lineIdx, stripped);
+        }
+        ctx.setScreenText(String.join("\n", updated));
+    }
+
+    private void openSelectedGeneDetails(ConsoleContext ctx) {
+        if (selectedSlotIndex < 0 || selectedSlotIndex >= visibleSlotRowIndices.size()) return;
+        int row = visibleSlotRowIndices.get(selectedSlotIndex);
+        // Build fake details for now
+        ProgramScreenBuilder b = screen()
+                .header("Gene Details")
+                .separator()
+                .twoColumn("Name", "gene_selected", 10)
+                .twoColumn("Trait", "Unknown", 10)
+                .twoColumn("Level", "2", 10)
+                .blank();
+        ctx.setScreenText(b.build());
+        inDetailsView = true;
+    }
+
+    private void applySelectionToAnimLines() {
+        if (readoutAnimLines == null || readoutAnimLines.isEmpty()) return;
+        int headerLines = 2;
+        int offset = 1; // [READOUT]
+        for (int i = 0; i < visibleSlotRowIndices.size(); i++) {
+            int row = visibleSlotRowIndices.get(i);
+            int lineIdx = offset + headerLines + row;
+            if (lineIdx >= 0 && lineIdx < readoutAnimLines.size()) {
+                String line = readoutAnimLines.get(lineIdx);
+                if (line.startsWith("[GREEN]")) continue;
+                if (i == selectedSlotIndex) readoutAnimLines.set(lineIdx, "[GREEN]" + line);
+            }
+        }
     }
 
     private int leadingTagsEndIndex(String line) {

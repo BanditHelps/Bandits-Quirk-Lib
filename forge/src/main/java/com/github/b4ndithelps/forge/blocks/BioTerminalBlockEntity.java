@@ -408,6 +408,9 @@ public class BioTerminalBlockEntity extends BlockEntity implements MenuProvider,
 	}
 
 	public String getProgramScreenTextClient() { return this.programScreenText; }
+
+	// expose active program to server packet handler
+	public ConsoleProgram getActiveProgram() { return this.activeProgram; }
 }
 
 
