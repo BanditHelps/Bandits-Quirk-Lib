@@ -3,13 +3,14 @@ package com.github.b4ndithelps.forge.console;
 import com.github.b4ndithelps.genetics.Gene;
 import com.github.b4ndithelps.genetics.GeneRegistry;
 import com.github.b4ndithelps.forge.blocks.GeneSlicerBlockEntity;
-import com.github.b4ndithelps.forge.item.GeneVialItem;
 import com.github.b4ndithelps.forge.item.ModItems;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.network.chat.Component;
+import net.minecraft.ChatFormatting;
 
 import java.util.*;
 
@@ -36,6 +37,7 @@ public class SlicerProgram extends AbstractConsoleProgram {
     private boolean slicingActive = false;
     private List<Integer> pendingGeneIndices = List.of();
     private List<ItemStack> pendingOutputs = List.of();
+    private List<String> pendingGeneNames = List.of();
 
     @Override
     public String getName() { return "slicer"; }
@@ -105,7 +107,7 @@ public class SlicerProgram extends AbstractConsoleProgram {
         ProgramScreenBuilder b = screen()
                 .header("Gene Slicer")
                 .line("Commands: slice <idx...> | back | exit", ConsoleText.ColorTag.GRAY)
-                .blank();
+                .separator();
 
         if (input.isEmpty() || input.getItem() != ModItems.SEQUENCED_SAMPLE.get()) {
             b.line("Insert a sequenced_sample in the slicer input.", ConsoleText.ColorTag.RED);
@@ -121,7 +123,9 @@ public class SlicerProgram extends AbstractConsoleProgram {
                     String id = g.getString("id");
                     int q = g.getInt("quality");
                     String name = g.contains("name", 8) ? g.getString("name") : compactLabelFromId(id, q);
-                    lines.add(String.format("%d) %s  (%s, %d%%)", i + 1, name, id, q));
+                    boolean selected = slicingActive && pendingGeneIndices.contains(i);
+                    String line = String.format("%d) %s  (%s, %d%%)", i + 1, name, id, q);
+                    lines.add(selected ? ConsoleText.color(line, ConsoleText.ColorTag.YELLOW) : line);
                 }
             }
             if (lines.isEmpty()) {
@@ -131,20 +135,16 @@ public class SlicerProgram extends AbstractConsoleProgram {
                 for (String ln : lines) b.line(ln);
             }
 
-            b.blank().line("Outputs:", ConsoleText.ColorTag.WHITE);
-            int free = 0;
-            for (int i = 0; i < GeneSlicerBlockEntity.SLOT_OUTPUT_COUNT; i++) {
-                int slot = GeneSlicerBlockEntity.SLOT_OUTPUT_START + i;
-                ItemStack out = slicer.getItem(slot);
-                b.line("- Slot " + (i + 1) + ": " + (out.isEmpty() ? "<empty>" : out.getHoverName().getString()));
-                if (out.isEmpty()) free++;
-            }
-
             b.blank();
             int pct = slicer.getMaxProgress() == 0 ? 0 : (slicer.getProgress() * 100 / slicer.getMaxProgress());
             if (slicer.isRunning() || slicingActive) {
-                b.line("Slicing in progress:");
-                b.progressBar(pct, 20);
+                b.line(ConsoleText.color("Slicing in progress", ConsoleText.ColorTag.AQUA));
+                b.progressBar(pct, 28);
+                if (pendingGeneNames != null && !pendingGeneNames.isEmpty()) {
+                    for (String n : pendingGeneNames) {
+                        b.line(ConsoleText.color(" - " + n, ConsoleText.ColorTag.YELLOW));
+                    }
+                }
             } else {
                 b.line("Ready.", ConsoleText.ColorTag.GRAY);
             }
@@ -199,6 +199,7 @@ public class SlicerProgram extends AbstractConsoleProgram {
 
                 // Build pending outputs now, validate categories
                 java.util.List<ItemStack> outputs = new java.util.ArrayList<>();
+                java.util.List<String> names = new java.util.ArrayList<>();
                 for (int gi : toSlice) {
                     CompoundTag g = genes.getCompound(gi);
                     String idStr = g.getString("id");
@@ -212,12 +213,16 @@ public class SlicerProgram extends AbstractConsoleProgram {
                     // Propagate sample metadata for traceability
                     if (tag.contains("entity_uuid", 8)) vtag.putString("entity_uuid", tag.getString("entity_uuid"));
                     if (tag.contains("entity_name", 8)) vtag.putString("entity_name", tag.getString("entity_name"));
+                    // Custom display name includes gene name
+                    vial.setHoverName(Component.literal("Gene Vial - " + nameStr).withStyle(ChatFormatting.WHITE));
                     outputs.add(vial);
+                    names.add(nameStr);
                 }
 
                 // Stage and start processing
                 pendingGeneIndices = toSlice;
                 pendingOutputs = outputs;
+                pendingGeneNames = names;
                 slicingActive = true;
                 slicer.startProcessing();
                 renderDetails(ctx);

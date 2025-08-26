@@ -8,6 +8,7 @@
   "block.bandits_quirk_lib.bio_terminal": "Bio Terminal",
   "block.bandits_quirk_lib.gene_sequencer": "Gene Sequencer",
   "block.bandits_quirk_lib.gene_slicer": "Gene Slicer",
+  "block.bandits_quirk_lib.sample_refrigerator": "Sample Refrigerator",
   "item.bandits_quirk_lib.sequenced_sample": "Sequenced Sample",
   "item.bandits_quirk_lib.readout": "Readout",
   "item.bandits_quirk_lib.gene_vial": "Gene Vial",
