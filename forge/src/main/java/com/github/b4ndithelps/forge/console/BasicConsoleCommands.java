@@ -192,6 +192,15 @@ public final class BasicConsoleCommands {
                 ctx.getBlockEntity().pushProgram(new SlicerProgram());
             }
         });
+
+        // Enter Catalog Program
+        registry.register(new ConsoleCommand() {
+            @Override public String getName() { return "catalog"; }
+            @Override public String getDescription() { return "Open Catalog Program to view gene vials in adjacent refrigerators"; }
+            @Override public void execute(ConsoleContext ctx, List<String> args) {
+                ctx.getBlockEntity().pushProgram(new CatalogProgram());
+            }
+        });
     }
 }
 
