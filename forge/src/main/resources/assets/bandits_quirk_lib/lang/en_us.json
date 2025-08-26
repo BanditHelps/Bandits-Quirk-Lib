@@ -12,11 +12,6 @@
   "item.bandits_quirk_lib.sequenced_sample": "Sequenced Sample",
   "item.bandits_quirk_lib.readout": "Readout",
   "item.bandits_quirk_lib.gene_vial": "Gene Vial",
-  "tooltip.bandits_quirk_lib.gene_vial.category": "%s Gene",
-  "category.bandits_quirk_lib.cosmetic": "Cosmetic",
-  "category.bandits_quirk_lib.resistance": "Resistance",
-  "category.bandits_quirk_lib.builder": "Builder",
-  "category.bandits_quirk_lib.quirk": "Quirk"
   "item.bandits_quirk_lib.gene_database": "Gene Database",
   "tooltip.bandits_quirk_lib.gene_vial.category": "Category: %s",
   "category.bandits_quirk_lib.cosmetic": "Cosmetic",
