@@ -149,10 +149,10 @@ public class CatalogProgram extends AbstractConsoleProgram {
     private ConsoleText.ColorTag colorForCategory(Gene.Category c) {
         if (c == null) return ConsoleText.ColorTag.WHITE;
         return switch (c) {
-            case aesthetic -> ConsoleText.ColorTag.AQUA;
+            case cosmetic -> ConsoleText.ColorTag.AQUA;
             case resistance -> ConsoleText.ColorTag.GREEN;
-            case physique -> ConsoleText.ColorTag.YELLOW;
-            case quirk_misc -> ConsoleText.ColorTag.RED;
+            case builder -> ConsoleText.ColorTag.YELLOW;
+            case quirk -> ConsoleText.ColorTag.RED;
         };
     }
 

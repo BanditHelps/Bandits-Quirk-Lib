@@ -2,7 +2,9 @@ package com.github.b4ndithelps.forge.item;
 
 import com.github.b4ndithelps.genetics.GeneticsHelper;
 import com.github.b4ndithelps.forge.config.BQLConfig;
+import com.github.b4ndithelps.genetics.SequenceGenerator;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -10,6 +12,9 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.monster.Drowned;
+import net.minecraft.world.entity.monster.Husk;
+import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -19,7 +24,6 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.List;
-import java.util.Random;
 
 public class TissueExtractorItem extends Item {
     public TissueExtractorItem(Properties properties) {
@@ -43,15 +47,15 @@ public class TissueExtractorItem extends Item {
                     var r = BQLConfig.INSTANCE.seqLenVillagerRange.get();
                     minCount = r.get(0);
                     maxCount = r.get(1);
-                } else if (target instanceof net.minecraft.world.entity.monster.Zombie) {
+                } else if (target instanceof Zombie) {
                     var r = BQLConfig.INSTANCE.seqLenZombieRange.get();
                     minCount = r.get(0);
                     maxCount = r.get(1);
-                } else if (target instanceof net.minecraft.world.entity.monster.Husk) {
+                } else if (target instanceof Husk) {
                     var r = BQLConfig.INSTANCE.seqLenHuskRange.get();
                     minCount = r.get(0);
                     maxCount = r.get(1);
-                } else if (target instanceof net.minecraft.world.entity.monster.Drowned) {
+                } else if (target instanceof Drowned) {
                     var r = BQLConfig.INSTANCE.seqLenDrownedRange.get();
                     minCount = r.get(0);
                     maxCount = r.get(1);
@@ -59,14 +63,14 @@ public class TissueExtractorItem extends Item {
                     minCount = 2; maxCount = 3;
                 }
 
-                var instances = com.github.b4ndithelps.genetics.SequenceGenerator.generateForEntity(target, minCount, maxCount);
+                var instances = SequenceGenerator.generateForEntity(target, minCount, maxCount);
 
                 ItemStack sample = new ItemStack(ModItems.TISSUE_SAMPLE.get());
                 var tag = sample.getOrCreateTag();
                 tag.putString("entity_name", target.getName().getString());
                 tag.putString("entity_uuid", target.getUUID().toString());
                 tag.putLong("layout_salt", level.getRandom().nextLong());
-                net.minecraft.nbt.ListTag genes = new net.minecraft.nbt.ListTag();
+                ListTag genes = new net.minecraft.nbt.ListTag();
                 for (int i = 0; i < instances.size(); i++) {
                     var gi = instances.get(i);
                     net.minecraft.nbt.CompoundTag g = new net.minecraft.nbt.CompoundTag();
@@ -104,6 +108,9 @@ public class TissueExtractorItem extends Item {
     private LivingEntity getTargetedLivingEntity(Player player) {
         HitResult hit = player.pick(4.5, 0.0f, false);
         if (hit == null) return null;
+
+        // Cast out and grab the entity that is in front of the player that they hit
+        // Determines the closest
         Vec3 start = player.getEyePosition(1.0f);
         Vec3 look = player.getLookAngle();
         Vec3 end = start.add(look.scale(4.5));

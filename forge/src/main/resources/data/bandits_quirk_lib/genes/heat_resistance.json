@@ -4,7 +4,11 @@
   "rarity": "common",
   "quality_range": [15, 75],
   "combinable": true,
-  "description": "Reduces heat damage intake proportionally to quality."
+  "description": "Reduces heat damage intake proportionally to quality.",
+  "mobs": [
+    "minecraft:player",
+    "minecraft:zombie"
+  ]
 }
 
 

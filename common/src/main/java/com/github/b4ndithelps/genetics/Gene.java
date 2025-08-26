@@ -2,8 +2,10 @@ package com.github.b4ndithelps.genetics;
 
 import net.minecraft.resources.ResourceLocation;
 
+import java.util.List;
+
 public final class Gene {
-    public enum Category { resistance, physique, aesthetic, quirk_misc }
+    public enum Category { resistance, cosmetic, builder, quirk }
     public enum Rarity { common, uncommon, rare, very_rare }
 
     private final ResourceLocation id;
@@ -13,6 +15,7 @@ public final class Gene {
     private final int qualityMax;
     private final boolean combinable;
     private final String description;
+    private final List<String> mobs;
 
     public Gene(ResourceLocation id,
                 Category category,
@@ -20,7 +23,8 @@ public final class Gene {
                 int qualityMin,
                 int qualityMax,
                 boolean combinable,
-                String description) {
+                String description,
+                List<String> mobs) {
         this.id = id;
         this.category = category;
         this.rarity = rarity;
@@ -28,6 +32,7 @@ public final class Gene {
         this.qualityMax = qualityMax;
         this.combinable = combinable;
         this.description = description;
+        this.mobs = mobs;
     }
 
     public ResourceLocation getId() { return id; }
@@ -37,6 +42,7 @@ public final class Gene {
     public int getQualityMax() { return qualityMax; }
     public boolean isCombinable() { return combinable; }
     public String getDescription() { return description; }
+    public List<String> getMobs() { return mobs; }
 }
 
 

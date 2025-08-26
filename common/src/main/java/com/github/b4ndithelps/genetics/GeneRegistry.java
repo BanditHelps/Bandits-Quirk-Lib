@@ -28,6 +28,19 @@ public final class GeneRegistry {
 
     public static List<Gene> all() { return cachedList; }
 
+    public static List<Gene> getAllOfType(String type) {
+        List<Gene> output = new ArrayList<>();
+        for (Gene gene : cachedList) {
+            System.out.println("Attempting " + gene.getId());
+            if (gene.getMobs().contains(type)) {
+                output.add(gene);
+                System.out.println("Adding " + gene.getId());
+            }
+        }
+
+        return output;
+    }
+
     public static boolean isEmpty() { return idToGene.isEmpty(); }
 }
 

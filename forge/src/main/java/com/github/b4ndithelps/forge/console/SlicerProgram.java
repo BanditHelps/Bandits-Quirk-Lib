@@ -329,9 +329,9 @@ public class SlicerProgram extends AbstractConsoleProgram {
             if (g != null) {
                 return switch (g.getCategory()) {
                     case resistance -> ModItems.GENE_VIAL_RESISTANCE.get();
-                    case physique -> ModItems.GENE_VIAL_BUILDER.get();
-                    case aesthetic -> ModItems.GENE_VIAL_COSMETIC.get();
-                    case quirk_misc -> ModItems.GENE_VIAL_QUIRK.get();
+                    case builder -> ModItems.GENE_VIAL_BUILDER.get();
+                    case cosmetic -> ModItems.GENE_VIAL_COSMETIC.get();
+                    case quirk -> ModItems.GENE_VIAL_QUIRK.get();
                 };
             }
         } catch (Exception ignored) {}

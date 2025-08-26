@@ -3,15 +3,14 @@ package com.github.b4ndithelps.forge.genetics;
 import com.github.b4ndithelps.BanditsQuirkLib;
 import com.github.b4ndithelps.genetics.Gene;
 import com.github.b4ndithelps.genetics.GeneRegistry;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
+import com.google.gson.*;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class GenesReloadListener extends SimpleJsonResourceReloadListener {
@@ -38,7 +37,25 @@ public class GenesReloadListener extends SimpleJsonResourceReloadListener {
                 boolean combinable = json.get("combinable").getAsBoolean();
                 String description = json.has("description") ? json.get("description").getAsString() : "";
 
-                Gene gene = new Gene(id, category, rarity, qMin, qMax, combinable, description);
+                List<String> mobList = new ArrayList<>();
+                // List of mob types. Defaults to ALL when not defined
+                if (json.has("mobs")) {
+                    JsonArray elementList = json.get("mobs").getAsJsonArray();
+
+                    for (int x = 0; x < elementList.size(); x++ ) {
+                        mobList.add(elementList.get(x).toString().replace("\"", ""));
+                        System.out.println(elementList.get(x).toString());
+                    }
+                } else {
+                    mobList = new ArrayList<>();
+                    mobList.add("minecraft:player");
+                    mobList.add("minecraft:drowned");
+                    mobList.add("minecraft:zombie");
+                    mobList.add("minecraft:villager");
+                    mobList.add("minecraft:husk");
+                }
+
+                Gene gene = new Gene(id, category, rarity, qMin, qMax, combinable, description, mobList);
                 GeneRegistry.register(gene);
                 loaded++;
             } catch (Exception ex) {

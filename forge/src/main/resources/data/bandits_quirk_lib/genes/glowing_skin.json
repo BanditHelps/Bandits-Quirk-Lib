@@ -4,7 +4,11 @@
   "rarity": "rare",
   "quality_range": [10, 90],
   "combinable": true,
-  "description": "Skin emits a faint glow at higher quality."
+  "description": "Skin emits a faint glow at higher quality.",
+  "mobs": [
+    "minecraft:player",
+    "minecraft:zombie"
+  ]
 }
 
 
