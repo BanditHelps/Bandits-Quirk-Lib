@@ -18,6 +18,7 @@ import com.github.b4ndithelps.genetics.Gene;
  * Portable database that stores which gene types have been identified.
  * Data is stored on the item NBT under a string list tag "known_genes".
  */
+@SuppressWarnings("removal")
 public class GeneDatabaseItem extends Item {
     public static final String TAG_KNOWN_GENES = "known_genes";
 

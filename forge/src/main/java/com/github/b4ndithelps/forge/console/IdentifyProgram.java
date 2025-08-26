@@ -8,6 +8,7 @@ import com.github.b4ndithelps.forge.item.GeneVialItem;
 import com.github.b4ndithelps.forge.item.ModItems;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
@@ -20,6 +21,7 @@ import java.util.Set;
  * Identify program: queue research tasks for genes from current sample (in sequencer/slicer)
  * or from gene vials in adjacent sample refrigerators. Shows progress of up to 3 concurrent tasks.
  */
+@SuppressWarnings("removal")
 public class IdentifyProgram extends AbstractConsoleProgram {
     private enum View { LIST }
     private View view = View.LIST;

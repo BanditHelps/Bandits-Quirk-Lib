@@ -7,6 +7,7 @@ import com.github.b4ndithelps.forge.item.GeneVialItem;
 import com.github.b4ndithelps.forge.item.ModItems;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
@@ -18,6 +19,7 @@ import java.util.List;
  * Catalog program: lists all gene vials stored in any Sample Refrigerator adjacent to the Bio Terminal.
  * Supports viewing details for a specific vial by index.
  */
+@SuppressWarnings("removal")
 public class CatalogProgram extends AbstractConsoleProgram {
     private ConsoleContext ctxRef;
     private enum View { LIST, DETAILS }
@@ -101,7 +103,9 @@ public class CatalogProgram extends AbstractConsoleProgram {
                 } catch (Exception ignored) {}
             }
             if (gene.contains("quality", 3)) quality = gene.getInt("quality");
-            if (gene.contains("name", 8)) display = gene.getString("name");
+            if (gene.contains("name", 8))  {
+                display = gene.getString("name");
+            }
         }
         return new GeneInfo(display, geneId, quality, category);
     }
@@ -163,8 +167,8 @@ public class CatalogProgram extends AbstractConsoleProgram {
         boolean known = false;
         try { known = ctxRef != null && ctxRef.getBlockEntity().isGeneKnown(new ResourceLocation(e.geneId)); } catch (Exception ignored) {}
         b.line("Name: " + e.displayName, ConsoleText.ColorTag.WHITE);
-        b.line("Gene ID: " + (known ? (e.geneId == null ? "" : e.geneId) : "unknown"), ConsoleText.ColorTag.GRAY);
-        b.line("Category: " + (e.category == null ? "Unknown" : e.category.name()), colorForCategory(e.category));
+        b.line("Gene ID: " + (known ? (e.geneId == null ? "" : Component.translatable(e.geneId).getString()) : "unknown"), ConsoleText.ColorTag.GRAY);
+        b.line("Category: " + (e.category == null ? "Unknown" : e.category.name().substring(0, 1).toUpperCase() + e.category.name().substring(1)), colorForCategory(e.category));
         b.line("Quality: " + (known && e.quality != null ? (e.quality + "%") : "unknown"), ConsoleText.ColorTag.YELLOW);
         b.blank();
         b.line(String.format("Source: Fridge %d, Slot %d", e.fridgeIndex + 1, e.slotIndex + 1), ConsoleText.ColorTag.GRAY);
@@ -173,7 +177,6 @@ public class CatalogProgram extends AbstractConsoleProgram {
         CompoundTag tag = e.stack.getTag();
         if (tag != null) {
             if (tag.contains("entity_name", 8)) b.line("From: " + tag.getString("entity_name"), ConsoleText.ColorTag.GRAY);
-            if (tag.contains("entity_uuid", 8)) b.line("UUID: " + tag.getString("entity_uuid"), ConsoleText.ColorTag.GRAY);
         }
 
         render(ctx, b.build());
