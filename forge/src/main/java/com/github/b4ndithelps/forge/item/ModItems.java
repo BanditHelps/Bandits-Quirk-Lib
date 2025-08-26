@@ -24,6 +24,9 @@ public class ModItems {
     public static final RegistryObject<Item> GENE_VIAL_QUIRK = ITEMS.register("gene_vial_quirk",
             () -> new GeneVialItem(new Item.Properties().stacksTo(1), GeneVialItem.Category.QUIRK));
 
+    public static final RegistryObject<Item> GENE_DATABASE = ITEMS.register("gene_database",
+            () -> new GeneDatabaseItem(new Item.Properties().stacksTo(1)));
+
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
     }

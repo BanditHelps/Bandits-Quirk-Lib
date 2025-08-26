@@ -201,6 +201,15 @@ public final class BasicConsoleCommands {
                 ctx.getBlockEntity().pushProgram(new CatalogProgram());
             }
         });
+
+        // Enter Identify Program
+        registry.register(new ConsoleCommand() {
+            @Override public String getName() { return "identify"; }
+            @Override public String getDescription() { return "Open Identify Program to research and reveal gene data"; }
+            @Override public void execute(ConsoleContext ctx, List<String> args) {
+                ctx.getBlockEntity().pushProgram(new IdentifyProgram());
+            }
+        });
     }
 }
 

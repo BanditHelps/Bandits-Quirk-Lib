@@ -19,6 +19,7 @@ import java.util.List;
  * Supports viewing details for a specific vial by index.
  */
 public class CatalogProgram extends AbstractConsoleProgram {
+    private ConsoleContext ctxRef;
     private enum View { LIST, DETAILS }
 
     private static final class VialEntry {
@@ -51,6 +52,7 @@ public class CatalogProgram extends AbstractConsoleProgram {
 
     @Override
     public void onEnter(ConsoleContext ctx) {
+        this.ctxRef = ctx;
         refresh(ctx);
         renderList(ctx);
     }
@@ -125,7 +127,10 @@ public class CatalogProgram extends AbstractConsoleProgram {
             int idx = 1;
             for (VialEntry e : entries) {
                 String cat = e.category == null ? "Unknown" : e.category.name();
-                String line = String.format("%d) %s  [%s]  %s", idx, e.displayName, cat, e.quality == null ? "" : (e.quality + "%"));
+                boolean known = false;
+                try { known = ctxRef != null && ctxRef.getBlockEntity().isGeneKnown(new ResourceLocation(e.geneId)); } catch (Exception ignored) {}
+                String qual = known && e.quality != null ? (e.quality + "%") : "";
+                String line = String.format("%d) %s  [%s]  %s", idx, e.displayName, cat, qual);
                 ConsoleText.ColorTag color = colorForCategory(e.category);
                 b.line(ConsoleText.color(line, color));
                 idx++;
@@ -155,10 +160,12 @@ public class CatalogProgram extends AbstractConsoleProgram {
                 .line("Commands: back | exit", ConsoleText.ColorTag.GRAY)
                 .separator();
 
+        boolean known = false;
+        try { known = ctxRef != null && ctxRef.getBlockEntity().isGeneKnown(new ResourceLocation(e.geneId)); } catch (Exception ignored) {}
         b.line("Name: " + e.displayName, ConsoleText.ColorTag.WHITE);
-        b.line("Gene ID: " + (e.geneId == null ? "" : e.geneId), ConsoleText.ColorTag.GRAY);
+        b.line("Gene ID: " + (known ? (e.geneId == null ? "" : e.geneId) : "unknown"), ConsoleText.ColorTag.GRAY);
         b.line("Category: " + (e.category == null ? "Unknown" : e.category.name()), colorForCategory(e.category));
-        b.line("Quality: " + (e.quality == null ? "?" : (e.quality + "%")), ConsoleText.ColorTag.YELLOW);
+        b.line("Quality: " + (known && e.quality != null ? (e.quality + "%") : "unknown"), ConsoleText.ColorTag.YELLOW);
         b.blank();
         b.line(String.format("Source: Fridge %d, Slot %d", e.fridgeIndex + 1, e.slotIndex + 1), ConsoleText.ColorTag.GRAY);
 

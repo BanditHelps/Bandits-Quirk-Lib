@@ -5,6 +5,9 @@ import com.github.b4ndithelps.forge.console.ConsoleCommandRegistry;
 import com.github.b4ndithelps.forge.console.ConsoleContext;
 import com.github.b4ndithelps.forge.console.ConsoleProgram;
 import com.github.b4ndithelps.forge.item.ModItems;
+import com.github.b4ndithelps.forge.item.GeneDatabaseItem;
+import com.github.b4ndithelps.genetics.Gene;
+import com.github.b4ndithelps.genetics.GeneRegistry;
 import com.github.b4ndithelps.forge.network.BQLNetwork;
 import com.github.b4ndithelps.forge.network.ConsoleSyncS2CPacket;
 import com.github.b4ndithelps.forge.network.ConsoleHistorySyncS2CPacket;
@@ -13,6 +16,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.network.chat.Component;
@@ -68,6 +72,28 @@ public class BioTerminalBlockEntity extends BlockEntity implements MenuProvider,
 	private ConsoleProgram activeProgram = null;
 	private String programScreenText = "";
 	private int programTickCounter = 0;
+
+	// Identification queue (max 3 concurrent)
+	private static final int MAX_IDENTIFICATIONS = 3;
+	private final java.util.List<IdentificationTask> identificationTasks = new java.util.ArrayList<>();
+
+	public static final class IdentificationTask {
+		public String geneId = "";
+		public int quality = 0;
+		public int progress = 0;
+		public int max = 0;
+		public boolean complete = false;
+
+		public IdentificationTask() {}
+
+		public IdentificationTask(String geneId, int quality, int max) {
+			this.geneId = geneId == null ? "" : geneId;
+			this.quality = Math.max(0, quality);
+			this.max = Math.max(1, max);
+			this.progress = 0;
+			this.complete = false;
+		}
+	}
 
 	public BioTerminalBlockEntity(BlockPos pos, BlockState state) {
 		super(ModBlockEntities.BIO_TERMINAL.get(), pos, state);
@@ -129,6 +155,28 @@ public class BioTerminalBlockEntity extends BlockEntity implements MenuProvider,
 			if (be.programTickCounter >= 10) {
 				be.programTickCounter = 0;
 				be.activeProgram.onTick(new ConsoleContext(be));
+			}
+		}
+
+		// Advance identification tasks (limit concurrency to MAX_IDENTIFICATIONS)
+		if (!level.isClientSide) {
+			int running = 0;
+			for (IdentificationTask task : be.identificationTasks) {
+				if (task.complete) continue;
+				if (running >= MAX_IDENTIFICATIONS) break;
+				// Require a database present to progress
+				if (!be.hasDatabase()) break;
+				task.progress = Math.min(task.progress + 1, task.max);
+				running++;
+				if (task.progress >= task.max) {
+					// Store knowledge to database; if DB missing, leave at max-1 (handled above)
+					ResourceLocation gid;
+					try { gid = new ResourceLocation(task.geneId); } catch (Exception e) { gid = null; }
+					if (gid != null && be.hasDatabase()) {
+						be.markGeneKnown(gid);
+						task.complete = true;
+					}
+				}
 			}
 		}
 
@@ -340,6 +388,19 @@ public class BioTerminalBlockEntity extends BlockEntity implements MenuProvider,
 		for (String cmd : this.commandHistory) hist.add(StringTag.valueOf(cmd));
 		tag.put("CommandHistory", hist);
 		tag.putInt("HistoryCursor", this.historyCursor);
+
+		// Persist identification tasks
+		ListTag tasks = new ListTag();
+		for (IdentificationTask t : identificationTasks) {
+			CompoundTag ct = new CompoundTag();
+			ct.putString("GeneId", t.geneId);
+			ct.putInt("Quality", t.quality);
+			ct.putInt("Progress", t.progress);
+			ct.putInt("Max", t.max);
+			ct.putBoolean("Complete", t.complete);
+			tasks.add(ct);
+		}
+		tag.put("IdentifyTasks", tasks);
 	}
 
 	@Override
@@ -359,6 +420,22 @@ public class BioTerminalBlockEntity extends BlockEntity implements MenuProvider,
 			}
 		}
 		if (tag.contains("HistoryCursor")) this.historyCursor = tag.getInt("HistoryCursor");
+
+		// Load identification tasks
+		this.identificationTasks.clear();
+		if (tag.contains("IdentifyTasks", 9)) {
+			ListTag tasks = tag.getList("IdentifyTasks", 10);
+			for (int i = 0; i < tasks.size(); i++) {
+				CompoundTag ct = tasks.getCompound(i);
+				IdentificationTask t = new IdentificationTask();
+				t.geneId = ct.getString("GeneId");
+				t.quality = ct.getInt("Quality");
+				t.progress = ct.getInt("Progress");
+				t.max = Math.max(1, ct.getInt("Max"));
+				t.complete = ct.contains("Complete") && ct.getBoolean("Complete");
+				this.identificationTasks.add(t);
+			}
+		}
 	}
 
 	@Override
@@ -411,6 +488,50 @@ public class BioTerminalBlockEntity extends BlockEntity implements MenuProvider,
 
 	// expose active program to server packet handler
 	public ConsoleProgram getActiveProgram() { return this.activeProgram; }
+
+	// --- Gene database helpers ---
+	public ItemStack getDatabaseStack() { return this.items.get(SLOT_DISK); }
+	public boolean hasDatabase() { ItemStack s = getDatabaseStack(); return s != null && !s.isEmpty() && s.getItem() instanceof GeneDatabaseItem; }
+	public boolean isGeneKnown(ResourceLocation id) { return GeneDatabaseItem.isKnown(getDatabaseStack(), id); }
+	public void markGeneKnown(ResourceLocation id) { GeneDatabaseItem.addKnown(getDatabaseStack(), id); setChanged(); }
+
+	// --- Identification API ---
+	public java.util.List<IdentificationTask> getIdentificationTasks() { return java.util.Collections.unmodifiableList(this.identificationTasks); }
+
+	public boolean canStartIdentification(ResourceLocation geneId) {
+		if (geneId == null) return false;
+		if (!hasDatabase()) return false;
+		if (isGeneKnown(geneId)) return false;
+		int active = 0;
+		for (IdentificationTask t : identificationTasks) if (!t.complete) active++;
+		return active < MAX_IDENTIFICATIONS;
+	}
+
+	public boolean startIdentification(ResourceLocation geneId, int quality) {
+		if (!canStartIdentification(geneId)) return false;
+		Gene g = null;
+		try { g = GeneRegistry.get(geneId); } catch (Exception ignored) {}
+		int ticks = computeIdentifyTicks(g, quality);
+		this.identificationTasks.add(new IdentificationTask(geneId.toString(), quality, ticks));
+		setChanged();
+		return true;
+	}
+
+	private int computeIdentifyTicks(Gene g, int quality) {
+		int base;
+		if (g == null) base = 20 * 15; // default 15s
+		else {
+			base = switch (g.getRarity()) {
+				case common -> 20 * 5;
+				case uncommon -> 20 * 10;
+				case rare -> 20 * 20;
+				case very_rare -> 20 * 40;
+			};
+		}
+		int qualityPenalty = Math.max(0, 100 - Math.max(0, Math.min(100, quality)));
+		int extra = (int)Math.round(base * (qualityPenalty / 200.0)); // up to +50% for low quality
+		return Math.max(20 * 3, base + extra);
+	}
 }
 
 

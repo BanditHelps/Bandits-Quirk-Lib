@@ -123,8 +123,11 @@ public class SlicerProgram extends AbstractConsoleProgram {
                     String id = g.getString("id");
                     int q = g.getInt("quality");
                     String name = g.contains("name", 8) ? g.getString("name") : compactLabelFromId(id, q);
+                    // Show cryptic name always; mask only ID/quality if unknown
+                    boolean known = false;
+                    try { known = ctx.getBlockEntity().isGeneKnown(new ResourceLocation(id)); } catch (Exception ignored) {}
                     boolean selected = slicingActive && pendingGeneIndices.contains(i);
-                    String line = String.format("%d) %s  (%s, %d%%)", i + 1, name, id, q);
+                    String line = String.format("%d) %s  (%s, %s)", i + 1, name, known ? id : "unknown", known ? (q + "%") : "unknown");
                     lines.add(selected ? ConsoleText.color(line, ConsoleText.ColorTag.YELLOW) : line);
                 }
             }

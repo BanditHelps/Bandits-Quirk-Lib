@@ -176,9 +176,12 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
                                 int q = g.getInt("quality");
                                 String dispName = g.getString("name");
                                 if (dispName.isEmpty()) dispName = compactLabelFromId(id, q);
+                                boolean known = false;
+                                try { known = ctx.getBlockEntity().isGeneKnown(new ResourceLocation(id)); } catch (Exception ignored) {}
+                                String display = known ? dispName : dispName; // cryptic if unknown
                                 currentGeneIds.add(id);
                                 currentGeneQualities.add(q);
-                                labels.add(dispName);
+                                labels.add(display);
                             }
                         } else if (tag.contains("Traits", 9)) {
                             var list = tag.getList("Traits", 8);
@@ -540,7 +543,12 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
         String id = geneIdx >= 0 && geneIdx < currentGeneIds.size() ? currentGeneIds.get(geneIdx) : "unknown";
         int q = geneIdx >= 0 && geneIdx < currentGeneQualities.size() ? currentGeneQualities.get(geneIdx) : 0;
         Gene g = null;
-        try { g = GeneRegistry.get(new ResourceLocation(id)); } catch (Exception ignored) {}
+        boolean known = false;
+        try {
+            var rid = new ResourceLocation(id);
+            g = GeneRegistry.get(rid);
+            known = ctx.getBlockEntity().isGeneKnown(rid);
+        } catch (Exception ignored) {}
 
         ProgramScreenBuilder b = screen()
                 .header("Gene Details")
