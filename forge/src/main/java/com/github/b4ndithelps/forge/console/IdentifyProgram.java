@@ -44,7 +44,6 @@ public class IdentifyProgram extends AbstractConsoleProgram {
     @Override
     public void onEnter(ConsoleContext ctx) {
         refresh(ctx);
-        autoQueueIfPossible(ctx);
         render(ctx);
     }
 
@@ -122,7 +121,6 @@ public class IdentifyProgram extends AbstractConsoleProgram {
     public void onTick(ConsoleContext ctx) {
         // Keep candidates fresh and auto-queue up to capacity
         refresh(ctx);
-        autoQueueIfPossible(ctx);
         render(ctx);
     }
 
