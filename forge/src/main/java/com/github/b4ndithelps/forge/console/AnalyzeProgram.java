@@ -178,7 +178,7 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
                                 if (dispName.isEmpty()) dispName = compactLabelFromId(id, q);
                                 boolean known = false;
                                 try { known = ctx.getBlockEntity().isGeneKnown(new ResourceLocation(id)); } catch (Exception ignored) {}
-                                String display = known ? dispName : dispName; // cryptic if unknown
+                                String display = known ? net.minecraft.network.chat.Component.translatable(id).getString() : dispName;
                                 currentGeneIds.add(id);
                                 currentGeneQualities.add(q);
                                 labels.add(display);

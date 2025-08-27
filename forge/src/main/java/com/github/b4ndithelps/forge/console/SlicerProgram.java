@@ -127,7 +127,7 @@ public class SlicerProgram extends AbstractConsoleProgram {
                     boolean known = false;
                     try { known = ctx.getBlockEntity().isGeneKnown(new ResourceLocation(id)); } catch (Exception ignored) {}
                     boolean selected = slicingActive && pendingGeneIndices.contains(i);
-                    String line = String.format("%d) %s  (%s, %s)", i + 1, name, known ? id : "unknown", known ? (q + "%") : "unknown");
+                    String line = String.format("%d) %s  (%s, %s)", i + 1, name, known ? Component.translatable(id).getString() : "unknown", known ? (q + "%") : "unknown");
                     lines.add(selected ? ConsoleText.color(line, ConsoleText.ColorTag.YELLOW) : line);
                 }
             }

@@ -143,7 +143,9 @@ public class IdentifyProgram extends AbstractConsoleProgram {
             b.line("Active Research:", ConsoleText.ColorTag.AQUA);
             for (var t : tasks) {
                 int pct = t.max == 0 ? 0 : (t.progress * 100 / t.max);
-                String line = String.format(" - %s  %d%% %s", t.geneId, pct, t.complete ? "(Done)" : "");
+                String resolved = "unknown";
+                try { if (be.isGeneKnown(new ResourceLocation(t.geneId))) resolved = net.minecraft.network.chat.Component.translatable(t.geneId).getString(); } catch (Exception ignored) {}
+                String line = String.format(" - %s  %d%% %s", resolved, pct, t.complete ? "(Done)" : "");
                 b.line(line, t.complete ? ConsoleText.ColorTag.GREEN : ConsoleText.ColorTag.GRAY);
             }
             b.blank();
@@ -158,7 +160,8 @@ public class IdentifyProgram extends AbstractConsoleProgram {
             for (Candidate c : candidates) {
                 boolean known = false;
                 try { known = be.isGeneKnown(new ResourceLocation(c.geneId)); } catch (Exception ignored) {}
-                String label = i + ") " + c.crypticName + "  [" + c.geneId + "]" + (known ? " (Known)" : "");
+                String shownId = known ? net.minecraft.network.chat.Component.translatable(c.geneId).getString() : "unknown";
+                String label = i + ") " + c.crypticName + "  [" + shownId + "]" + (known ? " (Known)" : "");
                 b.line(label, known ? ConsoleText.ColorTag.GREEN : ConsoleText.ColorTag.WHITE);
                 i++;
             }
