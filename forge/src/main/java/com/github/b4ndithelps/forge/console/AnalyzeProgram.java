@@ -17,6 +17,7 @@ import java.util.Random;
 /**
  * Analyze program: lists adjacent sequencers, allows start N, status [N], readout N, back, exit.
  */
+@SuppressWarnings("removal")
 public class AnalyzeProgram extends AbstractConsoleProgram {
     private final List<GeneSequencerBlockEntity> cachedSequencers = new ArrayList<>();
     private String statusLine = ""; // shown at top of program screen
@@ -196,12 +197,7 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
                             }
                         }
                     }
-                    while (labels.size() < 4) {
-                        if (labels.isEmpty()) labels.add("Regulator");
-                        else if (labels.size() == 1) labels.add("Repair Prot");
-                        else if (labels.size() == 2) labels.add("Enhancer");
-                        else labels.add("Immunity");
-                    }
+
                     // Build deterministic layout for this sample and render
                     Layout layout = computeDeterministicLayout(tag, labels);
                     readoutAnimLines = buildCenteredDnaReadoutLines(ridx + 1, layout.leftTexts, layout.rightTexts);
@@ -372,7 +368,7 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
             if (sampleTag.contains("layout_salt", 4)) seed ^= sampleTag.getLong("layout_salt");
             if (sampleTag.contains("genes", 9)) {
                 var list = sampleTag.getList("genes", 10);
-                for (int i = 0; i < Math.min(4, list.size()); i++) seed ^= list.getCompound(i).getString("id").hashCode();
+                for (int i = 0; i < list.size(); i++) seed ^= list.getCompound(i).getString("id").hashCode();
             }
         }
         Random rng = new Random(seed ^ 0xC2B2AE3D27D4EB4FL);
