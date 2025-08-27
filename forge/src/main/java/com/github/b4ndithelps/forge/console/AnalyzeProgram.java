@@ -40,6 +40,7 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
     // Current readout data (mapped 1:1 with visible slots order)
     private final List<String> currentGeneIds = new ArrayList<>();
     private final List<Integer> currentGeneQualities = new ArrayList<>();
+    private final List<String> currentGeneLabels = new ArrayList<>(); // cryptic names used in readout (no translation)
     // Rows (0..11) used for each gene label in current readout; parallels labels order
     private final List<Integer> currentGeneRows = new ArrayList<>();
     private final List<Integer> displayGeneIndices = new ArrayList<>();
@@ -168,6 +169,7 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
                     List<String> labels = new ArrayList<>();
                     currentGeneIds.clear();
                     currentGeneQualities.clear();
+                    currentGeneLabels.clear();
                     if (tag != null) {
                         if (tag.contains("genes", 9)) {
                             var list = tag.getList("genes", 10);
@@ -177,12 +179,10 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
                                 int q = g.getInt("quality");
                                 String dispName = g.getString("name");
                                 if (dispName.isEmpty()) dispName = compactLabelFromId(id, q);
-                                boolean known = false;
-                                try { known = ctx.getBlockEntity().isGeneKnown(new ResourceLocation(id)); } catch (Exception ignored) {}
-                                String display = known ? net.minecraft.network.chat.Component.translatable(id).getString() : dispName;
                                 currentGeneIds.add(id);
                                 currentGeneQualities.add(q);
-                                labels.add(display);
+                                currentGeneLabels.add(dispName);
+                                labels.add(dispName);
                             }
                         } else if (tag.contains("Traits", 9)) {
                             var list = tag.getList("Traits", 8);
@@ -192,6 +192,7 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
                                 String id = "bandits_quirk_lib:legacy." + raw.toLowerCase();
                                 currentGeneIds.add(id);
                                 currentGeneQualities.add(q);
+                                currentGeneLabels.add("gene_" + String.format("%04x", Math.abs(id.hashCode()) & 0xFFFF));
                                 // legacy fallback: synthesize a name pattern
                                 labels.add("gene_" + String.format("%04x", Math.abs(id.hashCode()) & 0xFFFF));
                             }
@@ -541,6 +542,7 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
         Gene g = null;
         boolean known = false;
         boolean hasDb = false;
+        String cryptic = (geneIdx >= 0 && geneIdx < currentGeneLabels.size()) ? currentGeneLabels.get(geneIdx) : "";
         try {
             var rid = new ResourceLocation(id);
             g = GeneRegistry.get(rid);
@@ -551,7 +553,8 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
         ProgramScreenBuilder b = screen()
                 .header("Gene Details")
                 .separator()
-                .twoColumn("ID", (known ? net.minecraft.network.chat.Component.translatable(id).getString() : "unknown"), 10)
+                .twoColumn("Label", cryptic, 10)
+                .twoColumn("Translated", (known ? net.minecraft.network.chat.Component.translatable(id).getString() : "unknown"), 10)
                 .twoColumn("Quality", (known ? (q + "%") : "unknown"), 10);
         if (known && g != null) {
             b.twoColumn("Category", g.getCategory().name(), 10)
