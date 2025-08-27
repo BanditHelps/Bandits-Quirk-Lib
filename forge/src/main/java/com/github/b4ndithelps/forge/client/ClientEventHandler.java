@@ -38,6 +38,7 @@ public class ClientEventHandler {
                 MenuScreens.register(ModMenus.BIO_TERMINAL.get(), BioTerminalScreen::new);
                 MenuScreens.register(ModMenus.GENE_SEQUENCER.get(), GeneSequencerScreen::new);
                 MenuScreens.register(ModMenus.GENE_SLICER.get(), GeneSlicerScreen::new);
+                MenuScreens.register(ModMenus.BIO_PRINTER.get(), BioPrinterScreen::new);
             });
         }
     }

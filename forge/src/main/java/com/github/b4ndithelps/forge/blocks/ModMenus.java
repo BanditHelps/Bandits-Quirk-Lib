@@ -20,6 +20,9 @@ public class ModMenus {
     public static final RegistryObject<MenuType<GeneSlicerMenu>> GENE_SLICER = MENUS.register("gene_slicer",
             () -> IForgeMenuType.create((id, inv, buf) -> new GeneSlicerMenu(id, inv, buf)));
 
+    public static final RegistryObject<MenuType<BioPrinterMenu>> BIO_PRINTER = MENUS.register("bio_printer",
+            () -> IForgeMenuType.create((id, inv, buf) -> new BioPrinterMenu(id, inv, buf)));
+
     public static void register(IEventBus bus) {
         MENUS.register(bus);
     }

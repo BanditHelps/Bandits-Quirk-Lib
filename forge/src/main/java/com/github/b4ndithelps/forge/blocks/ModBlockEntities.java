@@ -22,6 +22,9 @@ public class ModBlockEntities {
     public static final RegistryObject<BlockEntityType<SampleRefrigeratorBlockEntity>> SAMPLE_REFRIGERATOR = BLOCK_ENTITIES.register("sample_refrigerator",
             () -> BlockEntityType.Builder.of(SampleRefrigeratorBlockEntity::new, ModBlocks.SAMPLE_REFRIGERATOR.get()).build(null));
 
+    public static final RegistryObject<BlockEntityType<BioPrinterBlockEntity>> BIO_PRINTER = BLOCK_ENTITIES.register("bio_printer",
+            () -> BlockEntityType.Builder.of(BioPrinterBlockEntity::new, ModBlocks.BIO_PRINTER.get()).build(null));
+
     public static void register(IEventBus bus) {
         BLOCK_ENTITIES.register(bus);
     }
