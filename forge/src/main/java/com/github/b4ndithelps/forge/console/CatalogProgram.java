@@ -130,12 +130,16 @@ public class CatalogProgram extends AbstractConsoleProgram {
         } else {
             int idx = 1;
             for (VialEntry e : entries) {
-                String cat = e.category == null ? "Unknown" : e.category.name();
+                boolean hasDb = false;
                 boolean known = false;
-                try { known = ctxRef != null && ctxRef.getBlockEntity().isGeneKnown(new ResourceLocation(e.geneId)); } catch (Exception ignored) {}
-                String qual = known && e.quality != null ? (e.quality + "%") : "";
+                try {
+                    hasDb = ctxRef != null && ctxRef.getBlockEntity().hasDatabase();
+                    known = hasDb && ctxRef.getBlockEntity().isGeneKnown(new ResourceLocation(e.geneId));
+                } catch (Exception ignored) {}
+                String cat = (known && e.category != null) ? e.category.name() : "Unknown";
+                String qual = (known && e.quality != null) ? (e.quality + "%") : "";
                 String line = String.format("%d) %s  [%s]  %s", idx, e.displayName, cat, qual);
-                ConsoleText.ColorTag color = colorForCategory(e.category);
+                ConsoleText.ColorTag color = known ? colorForCategory(e.category) : ConsoleText.ColorTag.WHITE;
                 b.line(ConsoleText.color(line, color));
                 idx++;
             }
@@ -164,12 +168,21 @@ public class CatalogProgram extends AbstractConsoleProgram {
                 .line("Commands: back | exit", ConsoleText.ColorTag.GRAY)
                 .separator();
 
+        boolean hasDb = false;
         boolean known = false;
-        try { known = ctxRef != null && ctxRef.getBlockEntity().isGeneKnown(new ResourceLocation(e.geneId)); } catch (Exception ignored) {}
+        try {
+            hasDb = ctxRef != null && ctxRef.getBlockEntity().hasDatabase();
+            known = hasDb && ctxRef.getBlockEntity().isGeneKnown(new ResourceLocation(e.geneId));
+        } catch (Exception ignored) {}
         b.line("Name: " + e.displayName, ConsoleText.ColorTag.WHITE);
         b.line("Gene ID: " + (known ? (e.geneId == null ? "" : Component.translatable(e.geneId).getString()) : "unknown"), ConsoleText.ColorTag.GRAY);
-        b.line("Category: " + (e.category == null ? "Unknown" : e.category.name().substring(0, 1).toUpperCase() + e.category.name().substring(1)), colorForCategory(e.category));
-        b.line("Quality: " + (known && e.quality != null ? (e.quality + "%") : "unknown"), ConsoleText.ColorTag.YELLOW);
+        b.line("Category: " + ((known && e.category != null) ? (e.category.name().substring(0, 1).toUpperCase() + e.category.name().substring(1)) : "Unknown"), colorForCategory(e.category));
+        b.line("Quality: " + ((known && e.quality != null) ? (e.quality + "%") : "unknown"), ConsoleText.ColorTag.YELLOW);
+        if (!known) {
+            b.blank();
+            if (!hasDb) b.line("Insert a Gene Database to reveal details.", ConsoleText.ColorTag.GRAY);
+            else b.line("Identify this gene to reveal details.", ConsoleText.ColorTag.GRAY);
+        }
         b.blank();
         b.line(String.format("Source: Fridge %d, Slot %d", e.fridgeIndex + 1, e.slotIndex + 1), ConsoleText.ColorTag.GRAY);
 

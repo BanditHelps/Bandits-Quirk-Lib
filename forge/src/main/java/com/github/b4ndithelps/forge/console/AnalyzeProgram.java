@@ -540,23 +540,31 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
         int q = geneIdx >= 0 && geneIdx < currentGeneQualities.size() ? currentGeneQualities.get(geneIdx) : 0;
         Gene g = null;
         boolean known = false;
+        boolean hasDb = false;
         try {
             var rid = new ResourceLocation(id);
             g = GeneRegistry.get(rid);
-            known = ctx.getBlockEntity().isGeneKnown(rid);
+            hasDb = ctx.getBlockEntity().hasDatabase();
+            known = hasDb && ctx.getBlockEntity().isGeneKnown(rid);
         } catch (Exception ignored) {}
 
         ProgramScreenBuilder b = screen()
                 .header("Gene Details")
                 .separator()
-                .twoColumn("ID", id, 10)
-                .twoColumn("Quality", String.valueOf(q), 10);
-        if (g != null) {
+                .twoColumn("ID", (known ? net.minecraft.network.chat.Component.translatable(id).getString() : "unknown"), 10)
+                .twoColumn("Quality", (known ? (q + "%") : "unknown"), 10);
+        if (known && g != null) {
             b.twoColumn("Category", g.getCategory().name(), 10)
              .twoColumn("Rarity", g.getRarity().name(), 10)
              .twoColumn("Combinable", String.valueOf(g.isCombinable()), 10);
             String desc = g.getDescription();
             if (desc != null && !desc.isEmpty()) b.blank().line(desc);
+        } else {
+            if (!hasDb) {
+                b.blank().line("Insert a Gene Database to reveal details.", ConsoleText.ColorTag.GRAY);
+            } else {
+                b.blank().line("Identify this gene to reveal details.", ConsoleText.ColorTag.GRAY);
+            }
         }
         b.blank();
         ctx.setScreenText(b.build());
