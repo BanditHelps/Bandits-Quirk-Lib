@@ -210,6 +210,15 @@ public final class BasicConsoleCommands {
                 ctx.getBlockEntity().pushProgram(new IdentifyProgram());
             }
         });
+
+        // Enter Printer Program
+        registry.register(new ConsoleCommand() {
+            @Override public String getName() { return "printer"; }
+            @Override public String getDescription() { return "Open Printer Program to build genomes and produce injectors"; }
+            @Override public void execute(ConsoleContext ctx, List<String> args) {
+                ctx.getBlockEntity().pushProgram(new PrinterProgram());
+            }
+        });
     }
 }
 

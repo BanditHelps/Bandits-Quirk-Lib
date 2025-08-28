@@ -72,6 +72,12 @@ public final class BQLNetwork {
                 .decoder(ProgramScreenSyncS2CPacket::decode)
                 .consumerMainThread(ProgramScreenSyncS2CPacket::handle)
                 .add();
+
+        CHANNEL.messageBuilder(GenomeSyncPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(GenomeSyncPacket::encode)
+                .decoder(GenomeSyncPacket::decode)
+                .consumerMainThread(GenomeSyncPacket::handle)
+                .add();
     }
 }
 

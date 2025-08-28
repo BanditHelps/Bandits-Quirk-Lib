@@ -131,6 +131,9 @@ public class ConfigManager {
         QuirkConstants.PSTOCK_MINOR_DAMAGE = BQLConfig.INSTANCE.minorDamage.get();
         QuirkConstants.PSTOCK_MAJOR_DAMAGE = BQLConfig.INSTANCE.majorDamage.get();
         QuirkConstants.PSTOCK_SEVERE_DAMAGE = BQLConfig.INSTANCE.severeDamage.get();
+
+        // Update Genetics constants
+        com.github.b4ndithelps.values.GeneticsConstants.PLAYER_MAX_GENES = BQLConfig.INSTANCE.playerMaxGenes.get();
         
         LOGGER.info("Constants updated from config");
     }

@@ -74,6 +74,9 @@ public class BQLConfig {
     public final ForgeConfigSpec.ConfigValue<List<? extends Integer>> seqLenHuskRange;
     public final ForgeConfigSpec.ConfigValue<List<? extends Integer>> seqLenDrownedRange;
 
+    // Player Genome
+    public final ForgeConfigSpec.IntValue playerMaxGenes;
+
 
     public BQLConfig(ForgeConfigSpec.Builder builder) {
         // Body Constants Section
@@ -280,6 +283,10 @@ public class BQLConfig {
         this.seqLenDrownedRange = builder
                 .comment("Drowned gene count range [min,max]")
                 .defineList("sequence_len_drowned", Arrays.asList(2,3), o -> o instanceof Integer);
+
+        this.playerMaxGenes = builder
+                .comment("Maximum number of genes a player can have at once")
+                .defineInRange("player_max_genes", 12, 1, 64);
 
         builder.pop();
     }
