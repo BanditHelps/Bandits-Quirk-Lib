@@ -6,6 +6,7 @@ The Bandit's Quirk Lib is a library specifically designed to allow Palladium add
 - Fully customization "body" system to enable per body part data tracking
 - A dynamic config system, allowing developers to create configs for their addons
 - A Fancy Menu integrator that allows devs to ship fancy menu G.U.Is with their product.
+- Pre-Made abilities and conditions to make developer's lives easier.
 
 
 # Body Status Commands
