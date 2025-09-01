@@ -23,6 +23,7 @@ public class ModCreativeTabs {
                 output.accept(ModBlocks.GENE_SLICER.get());
                 output.accept(ModBlocks.SAMPLE_REFRIGERATOR.get());
                 output.accept(ModBlocks.BIO_PRINTER.get());
+                output.accept(ModBlocks.GENE_COMBINER.get());
                 output.accept(ModItems.TISSUE_EXTRACTOR.get());
                 output.accept(ModItems.TISSUE_SAMPLE.get());
                 output.accept(ModItems.SEQUENCED_SAMPLE.get());

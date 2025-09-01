@@ -25,6 +25,9 @@ public class ModBlockEntities {
     public static final RegistryObject<BlockEntityType<BioPrinterBlockEntity>> BIO_PRINTER = BLOCK_ENTITIES.register("bio_printer",
             () -> BlockEntityType.Builder.of(BioPrinterBlockEntity::new, ModBlocks.BIO_PRINTER.get()).build(null));
 
+    public static final RegistryObject<BlockEntityType<GeneCombinerBlockEntity>> GENE_COMBINER = BLOCK_ENTITIES.register("gene_combiner",
+            () -> BlockEntityType.Builder.of(GeneCombinerBlockEntity::new, ModBlocks.GENE_COMBINER.get()).build(null));
+
     public static void register(IEventBus bus) {
         BLOCK_ENTITIES.register(bus);
     }
