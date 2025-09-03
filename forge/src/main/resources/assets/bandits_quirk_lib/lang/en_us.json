@@ -21,7 +21,15 @@
   "category.bandits_quirk_lib.quirk": "Quirk",
 
   "bandits_quirk_lib:gene.water_breathing": "Water Breathing",
-  "bandits_quirk_lib:gene.heat_resistance": "Heat Resistance"
+  "bandits_quirk_lib:gene.heat_resistance": "Heat Resistance",
+  "bandits_quirk_lib:gene.alpha_gene": "Alpha Gene",
+  "bandits_quirk_lib:gene.beta_gene": "Beta Gene",
+  "bandits_quirk_lib:gene.gamma_gene": "Gamma Gene",
+  "bandits_quirk_lib:gene.cold_resistance": "Cold Resistance",
+  "bandits_quirk_lib:gene.poison_resistance": "Poison Resistance",
+  "bandits_quirk_lib:gene.hunger_resistance": "Hunger Resistance",
+  "bandits_quirk_lib:gene.glowing_skin": "Glowing Skin",
+  "bandits_quirk_lib:gene.night_vision": "Night Vision"
 }
 
 

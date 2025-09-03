@@ -23,8 +23,13 @@ import java.util.Set;
  */
 @SuppressWarnings("removal")
 public class IdentifyProgram extends AbstractConsoleProgram {
-    private enum View { LIST }
+    private enum View { LIST, TASKS, DETAILS }
     private View view = View.LIST;
+    private boolean showHelp = false;
+    private int page = 0;
+    private static final int GRID_COLUMNS = 2;
+    private static final int GRID_ROWS = 6; // up to 18 candidates per screen
+    private int selectedIndex = -1; // for DETAILS view
 
     private static final class Candidate {
         final String source; // e.g., "SEQ", "SLICER", or "FRIDGE x,y"
@@ -119,54 +124,119 @@ public class IdentifyProgram extends AbstractConsoleProgram {
 
     @Override
     public void onTick(ConsoleContext ctx) {
-        // Keep candidates fresh and auto-queue up to capacity
+        // Keep candidates fresh and update current view
         refresh(ctx);
         render(ctx);
     }
 
     private void render(ConsoleContext ctx) {
+        if (view == View.TASKS) {
+            renderTasks(ctx);
+        } else if (view == View.DETAILS) {
+            renderDetails(ctx);
+        } else {
+            renderList(ctx);
+        }
+    }
+
+    private void renderList(ConsoleContext ctx) {
         BioTerminalBlockEntity be = ctx.getBlockEntity();
         ProgramScreenBuilder b = screen()
-                .header("Identify Genes")
-                .line("Commands: list | start <id/index...> | exit", ConsoleText.ColorTag.GRAY)
-                .separator();
+                .header("Identify Genes");
+        if (showHelp) {
+            b.line("Commands: list | start <id/index...> | tasks | info <idx> | page <n> | next | prev | help | exit", ConsoleText.ColorTag.GRAY);
+        } else {
+            b.line("Type 'help' for commands.", ConsoleText.ColorTag.GRAY);
+        }
 
         if (!be.hasDatabase()) {
             b.line("Insert a Gene Database into the terminal slot.", ConsoleText.ColorTag.RED);
         }
 
-        // Show current tasks
+        // Compact summary of current tasks (no verbose progress here)
         var tasks = be.getIdentificationTasks();
-        int active = 0;
-        for (var t : tasks) if (!t.complete) active++;
         if (!tasks.isEmpty()) {
-            b.line("Active Research:", ConsoleText.ColorTag.AQUA);
+            int active = 0, done = 0;
+            for (var t : tasks) { if (t.complete) done++; else active++; }
+            b.line(String.format("Research: %d active%s  (type 'tasks' for details)", active, done > 0 ? ", " + done + " done" : ""), ConsoleText.ColorTag.AQUA)
+             .blank();
+        }
+
+        // Candidates grid (compact) - only show unknown genes
+        List<Candidate> unknown = getUnknownCandidates(be);
+        if (unknown.isEmpty()) {
+            b.line("<none detected>", ConsoleText.ColorTag.GRAY);
+        } else {
+            int start = page * (GRID_COLUMNS * GRID_ROWS);
+            int end = Math.min(unknown.size(), start + GRID_COLUMNS * GRID_ROWS);
+            int totalPages = Math.max(1, (unknown.size() + (GRID_COLUMNS * GRID_ROWS) - 1) / (GRID_COLUMNS * GRID_ROWS));
+            page = Math.max(0, Math.min(page, totalPages - 1));
+
+            // Build grid rows
+            for (int r = 0; r < GRID_ROWS; r++) {
+                int base = start + r * GRID_COLUMNS;
+                if (base >= end) break;
+                StringBuilder row = new StringBuilder();
+                for (int c = 0; c < GRID_COLUMNS; c++) {
+                    int idx = base + c;
+                    if (idx >= end) break;
+                    Candidate cand = unknown.get(idx);
+                    String cell = String.format("%2d) %s", idx + 1, trimCell(cand.crypticName, 14));
+                    row.append(padRight(cell, 26));
+                }
+                b.line(row.toString(), ConsoleText.ColorTag.WHITE);
+            }
+            // Footer with pagination
+            if (totalPages > 1) {
+                b.blank();
+                b.centerLine("Page " + (page + 1) + "/" + totalPages + "  (next/prev/page <n>)");
+            }
+        }
+
+        render(ctx, b.build());
+    }
+
+    private void renderTasks(ConsoleContext ctx) {
+        BioTerminalBlockEntity be = ctx.getBlockEntity();
+        ProgramScreenBuilder b = screen()
+                .header("Research Tasks")
+                .line("Commands: back | exit", ConsoleText.ColorTag.GRAY)
+                .separator();
+
+        var tasks = be.getIdentificationTasks();
+        if (tasks.isEmpty()) {
+            b.line("<no research tasks>", ConsoleText.ColorTag.GRAY);
+        } else {
             for (var t : tasks) {
                 int pct = t.max == 0 ? 0 : (t.progress * 100 / t.max);
                 String resolved = "unknown";
                 try { if (be.isGeneKnown(new ResourceLocation(t.geneId))) resolved = net.minecraft.network.chat.Component.translatable(t.geneId).getString(); } catch (Exception ignored) {}
-                String line = String.format(" - %s  %d%% %s", resolved, pct, t.complete ? "(Done)" : "");
-                b.line(line, t.complete ? ConsoleText.ColorTag.GREEN : ConsoleText.ColorTag.GRAY);
+                String status = (t.complete ? "Done" : pct + "%");
+                b.twoColumn(resolved, status, 24);
             }
-            b.blank();
         }
+        render(ctx, b.build());
+    }
 
-        // List candidates that are not known
-        b.line("Candidates:", ConsoleText.ColorTag.WHITE);
-        if (candidates.isEmpty()) {
-            b.line("<none detected>", ConsoleText.ColorTag.GRAY);
+    private void renderDetails(ConsoleContext ctx) {
+        BioTerminalBlockEntity be = ctx.getBlockEntity();
+        ProgramScreenBuilder b = screen()
+                .header("Gene Details")
+                .line("Commands: back | start <idx|id> | exit", ConsoleText.ColorTag.GRAY)
+                .separator();
+        List<Candidate> unknown = getUnknownCandidates(be);
+        if (selectedIndex < 0 || selectedIndex >= unknown.size()) {
+            b.line("<no selection>", ConsoleText.ColorTag.GRAY);
         } else {
-            int i = 1;
-            for (Candidate c : candidates) {
-                boolean known = false;
-                try { known = be.isGeneKnown(new ResourceLocation(c.geneId)); } catch (Exception ignored) {}
-                String shownId = known ? net.minecraft.network.chat.Component.translatable(c.geneId).getString() : "unknown";
-                String label = i + ") " + c.crypticName + "  [" + shownId + "]" + (known ? " (Known)" : "");
-                b.line(label, known ? ConsoleText.ColorTag.GREEN : ConsoleText.ColorTag.WHITE);
-                i++;
-            }
+            Candidate c = unknown.get(selectedIndex);
+            boolean known = false;
+            try { known = be.isGeneKnown(new ResourceLocation(c.geneId)); } catch (Exception ignored) {}
+            String translated = known ? net.minecraft.network.chat.Component.translatable(c.geneId).getString() : "unknown";
+            b.twoColumn("Index", String.valueOf(selectedIndex + 1), 12)
+             .twoColumn("Label", c.crypticName, 12)
+             .twoColumn("Translated", translated, 12)
+             .twoColumn("Quality", c.quality + "%", 12);
         }
-
         render(ctx, b.build());
     }
 
@@ -174,9 +244,50 @@ public class IdentifyProgram extends AbstractConsoleProgram {
     public boolean handle(ConsoleContext ctx, String name, List<String> args) {
         BioTerminalBlockEntity be = ctx.getBlockEntity();
         if ("list".equalsIgnoreCase(name)) {
+            view = View.LIST;
             refresh(ctx);
             render(ctx);
             return true;
+        }
+        if ("tasks".equalsIgnoreCase(name)) {
+            view = View.TASKS;
+            render(ctx);
+            return true;
+        }
+        if ("help".equalsIgnoreCase(name)) {
+            showHelp = !showHelp;
+            render(ctx);
+            return true;
+        }
+        if ("info".equalsIgnoreCase(name)) {
+            if (args.isEmpty()) { setStatusWarn("Usage: info <index>"); render(ctx); return true; }
+            try {
+                int idx = Integer.parseInt(args.get(0)) - 1;
+                List<Candidate> unknown = getUnknownCandidates(be);
+                if (idx < 0 || idx >= unknown.size()) { setStatusErr("Invalid index"); render(ctx); return true; }
+                selectedIndex = idx;
+                view = View.DETAILS;
+                render(ctx);
+            } catch (Exception e) {
+                setStatusErr("Invalid index"); render(ctx);
+            }
+            return true;
+        }
+        if ("page".equalsIgnoreCase(name)) {
+            if (args.isEmpty()) { setStatusWarn("Usage: page <n>"); render(ctx); return true; }
+            try { page = Math.max(0, Integer.parseInt(args.get(0)) - 1); } catch (Exception ignored) { setStatusErr("Invalid page"); }
+            render(ctx);
+            return true;
+        }
+        if ("next".equalsIgnoreCase(name)) { page++; render(ctx); return true; }
+        if ("prev".equalsIgnoreCase(name)) { page = Math.max(0, page - 1); render(ctx); return true; }
+        if ("back".equalsIgnoreCase(name)) {
+            if (view == View.TASKS || view == View.DETAILS) {
+                view = View.LIST;
+                render(ctx);
+                return true;
+            }
+            return false;
         }
         if ("start".equalsIgnoreCase(name)) {
             if (args.isEmpty()) { setStatusWarn("Usage: start <gene_id/index...>"); render(ctx); return true; }
@@ -186,8 +297,9 @@ public class IdentifyProgram extends AbstractConsoleProgram {
                 // allow numeric index
                 try {
                     int idx = Integer.parseInt(idStr) - 1;
-                    if (idx >= 0 && idx < candidates.size()) {
-                        id = new ResourceLocation(candidates.get(idx).geneId);
+                    List<Candidate> unknown = getUnknownCandidates(be);
+                    if (idx >= 0 && idx < unknown.size()) {
+                        id = new ResourceLocation(unknown.get(idx).geneId);
                     }
                 } catch (Exception ignored) {}
                 if (id == null) {
@@ -230,6 +342,31 @@ public class IdentifyProgram extends AbstractConsoleProgram {
                 if (active >= 3) break;
             }
         }
+    }
+
+    private List<Candidate> getUnknownCandidates(BioTerminalBlockEntity be) {
+        List<Candidate> list = new ArrayList<>();
+        for (Candidate c : candidates) {
+            boolean known = false;
+            try { known = be.isGeneKnown(new ResourceLocation(c.geneId)); } catch (Exception ignored) {}
+            if (!known) list.add(c);
+        }
+        return list;
+    }
+
+    private String trimCell(String s, int width) {
+        if (s == null) return "";
+        String cleaned = s.replaceAll("[^A-Za-z0-9_()]+", "");
+        if (cleaned.length() <= width) return cleaned;
+        return cleaned.substring(0, width);
+    }
+
+    private String padRight(String s, int width) {
+        if (s == null) s = "";
+        if (s.length() >= width) return s.substring(0, width);
+        StringBuilder b = new StringBuilder(s);
+        while (b.length() < width) b.append(' ');
+        return b.toString();
     }
 }
 
