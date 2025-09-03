@@ -8,8 +8,7 @@
   "mobs": [
     "minecraft:player",
     "minecraft:zombie"
-  ]
-  ,
+  ],
   "combination": {
     "requires": [
       { "id": "bandits_quirk_lib:gene.fire_skin", "min_quality": 30 },
