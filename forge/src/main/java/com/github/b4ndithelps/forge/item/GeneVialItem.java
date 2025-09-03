@@ -29,14 +29,29 @@ public class GeneVialItem extends Item {
 
     @Override
     public Component getName(ItemStack stack) {
-        // Single shared display name "Gene Vial" with category-specific color
+        // Base display name with category-specific color, plus cryptic label if available
         ChatFormatting color = switch (category) {
             case COSMETIC -> ChatFormatting.AQUA;
             case RESISTANCE -> ChatFormatting.DARK_GREEN;
             case BUILDER -> ChatFormatting.GOLD;
             case QUIRK -> ChatFormatting.RED;
         };
-        return Component.translatable("item.bandits_quirk_lib.gene_vial").withStyle(color);
+        Component base = Component.translatable("item.bandits_quirk_lib.gene_vial").withStyle(color);
+        String label = null;
+        var tag = stack.getTag();
+        if (tag != null && tag.contains("gene", 10)) {
+            var g = tag.getCompound("gene");
+            label = g.contains("name", 8) ? g.getString("name") : "";
+            if (label == null || label.isEmpty()) {
+                String id = g.contains("id", 8) ? g.getString("id") : "";
+                int q = g.contains("quality", 3) ? g.getInt("quality") : 0;
+                if (!id.isEmpty()) label = compactLabelFromId(id, q);
+            }
+        }
+        if (label != null && !label.isEmpty()) {
+            return base.copy().append(Component.literal(" (" + label + ")"));
+        }
+        return base;
     }
 
     @Override
@@ -48,6 +63,25 @@ public class GeneVialItem extends Item {
             case QUIRK -> Component.translatable("category.bandits_quirk_lib.quirk");
         };
         tooltip.add(Component.translatable("tooltip.bandits_quirk_lib.gene_vial.category", catText).withStyle(ChatFormatting.GRAY));
+
+        // Show cryptic gene label if present in NBT (e.g., gene_21f5)
+        var tag = stack.getTag();
+        if (tag != null && tag.contains("gene", 10)) {
+            var g = tag.getCompound("gene");
+            String label = g.contains("name", 8) ? g.getString("name") : "";
+            if (label == null || label.isEmpty()) {
+                String id = g.contains("id", 8) ? g.getString("id") : "";
+                int q = g.contains("quality", 3) ? g.getInt("quality") : 0;
+                if (!id.isEmpty()) label = compactLabelFromId(id, q);
+            }
+            if (label != null && !label.isEmpty()) {
+                tooltip.add(Component.literal(label).withStyle(ChatFormatting.DARK_GRAY));
+            }
+        }
+    }
+
+    private String compactLabelFromId(String id, int quality) {
+        return "gene_" + String.format("%04x", Math.abs((id + "_" + quality).hashCode()) & 0xFFFF);
     }
 }
 

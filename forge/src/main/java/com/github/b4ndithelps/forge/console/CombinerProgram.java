@@ -238,18 +238,13 @@ public class CombinerProgram extends AbstractConsoleProgram {
                 int q = 0;
                 for (var ing : provided) q = Math.max(q, ing.quality);
                 gene.putInt("quality", Math.max(result.getQualityMin(), Math.min(result.getQualityMax(), q)));
-                // Only show translated name if already known; otherwise hide to require Identify
-                boolean known = false;
-                try { known = ctx.getBlockEntity().hasDatabase() && ctx.getBlockEntity().isGeneKnown(result.getId()); } catch (Exception ignored) {}
-                if (known) {
-                    gene.putString("name", net.minecraft.network.chat.Component.translatable(result.getId().toString()).getString());
-                } else {
-                    gene.putString("name", "");
-                }
+                // Always assign a cryptic name that includes the id-derived tag
+                String cryptic = compactLabelFromId(result.getId().toString(), q);
+                gene.putString("name", cryptic);
                 CompoundTag vtag = vial.getOrCreateTag();
                 vtag.put("gene", gene);
                 output = vial;
-                setStatusOk("Combination complete: " + (known ? net.minecraft.network.chat.Component.translatable(result.getId().toString()).getString() : "unknown gene"));
+                setStatusOk("Combination complete: unknown gene");
             } else {
                 // Failed sample
                 output = new ItemStack(ModItems.FAILED_SAMPLE.get());
@@ -280,6 +275,10 @@ public class CombinerProgram extends AbstractConsoleProgram {
     }
 
     private int parseIndex(String token) { try { return Integer.parseInt(token) - 1; } catch (Exception e) { return -1; } }
+
+    private String compactLabelFromId(String id, int quality) {
+        return "gene_" + String.format("%04x", Math.abs((id + "_" + quality).hashCode()) & 0xFFFF);
+    }
 }
 
 
