@@ -11,8 +11,7 @@
   ],
   "combination": {
     "requires": [
-      { "id": "bandits_quirk_lib:gene.fire_skin", "min_quality": 30 },
-      { "id": "bandits_quirk_lib:gene.thermal_regulation", "min_quality": 20 }
+      { "id": "bandits_quirk_lib:gene.glowing_skin", "min_quality": 30 }
     ],
     "builder": { "count": 1, "min_quality": 25 }
   }

@@ -30,6 +30,9 @@ public class ModItems {
     public static final RegistryObject<Item> INJECTOR = ITEMS.register("injector",
             () -> new InjectorItem(new Item.Properties().stacksTo(1)));
 
+    public static final RegistryObject<Item> FAILED_SAMPLE = ITEMS.register("failed_sample",
+            () -> new FailedSampleItem(new Item.Properties().stacksTo(1)));
+
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
     }

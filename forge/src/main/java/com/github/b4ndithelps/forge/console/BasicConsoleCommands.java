@@ -219,6 +219,15 @@ public final class BasicConsoleCommands {
                 ctx.getBlockEntity().pushProgram(new PrinterProgram());
             }
         });
+
+        // Enter Combiner Program
+        registry.register(new ConsoleCommand() {
+            @Override public String getName() { return "combiner"; }
+            @Override public String getDescription() { return "Open Combiner Program to combine genes in adjacent combiner"; }
+            @Override public void execute(ConsoleContext ctx, List<String> args) {
+                ctx.getBlockEntity().pushProgram(new CombinerProgram());
+            }
+        });
     }
 }
 
