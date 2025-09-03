@@ -16,6 +16,7 @@ public final class Gene {
     private final boolean combinable;
     private final String description;
     private final List<String> mobs;
+    private final GeneCombinationRecipe combinationRecipe; // optional
 
     public Gene(ResourceLocation id,
                 Category category,
@@ -24,7 +25,8 @@ public final class Gene {
                 int qualityMax,
                 boolean combinable,
                 String description,
-                List<String> mobs) {
+                List<String> mobs,
+                GeneCombinationRecipe combinationRecipe) {
         this.id = id;
         this.category = category;
         this.rarity = rarity;
@@ -33,6 +35,7 @@ public final class Gene {
         this.combinable = combinable;
         this.description = description;
         this.mobs = mobs;
+        this.combinationRecipe = combinationRecipe;
     }
 
     public ResourceLocation getId() { return id; }
@@ -43,6 +46,7 @@ public final class Gene {
     public boolean isCombinable() { return combinable; }
     public String getDescription() { return description; }
     public List<String> getMobs() { return mobs; }
+    public GeneCombinationRecipe getCombinationRecipe() { return combinationRecipe; }
 }
 
 
