@@ -32,13 +32,29 @@ public class GenomeCommand {
             return SharedSuggestionProvider.suggestResource(java.util.List.<ResourceLocation>of(), builder);
         }
     };
+    private static final SuggestionProvider<CommandSourceStack> PLAYER_GENE_ID_SUGGESTIONS = (context, builder) -> {
+        try {
+            ServerPlayer player = EntityArgument.getPlayer(context, "player");
+            ListTag genome = GenomeHelper.getGenome(player);
+            java.util.List<ResourceLocation> ids = new java.util.ArrayList<>();
+            for (int i = 0; i < genome.size(); i++) {
+                CompoundTag g = genome.getCompound(i);
+                if (g.contains("id", 8)) {
+                    try { ids.add(new ResourceLocation(g.getString("id"))); } catch (Exception ignored) {}
+                }
+            }
+            return SharedSuggestionProvider.suggestResource(ids, builder);
+        } catch (Throwable t) {
+            return SharedSuggestionProvider.suggestResource(java.util.List.<ResourceLocation>of(), builder);
+        }
+    };
     
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(
             Commands.literal("genome")
                 .requires(src -> src.hasPermission(2))
-                .then(Commands.literal("get")
+                .then(Commands.literal("list")
                     .then(Commands.argument("player", EntityArgument.player())
                         .executes(ctx -> {
                             ServerPlayer player = EntityArgument.getPlayer(ctx, "player");
@@ -68,6 +84,17 @@ public class GenomeCommand {
                                         ctx.getSource().sendFailure(Component.literal("Invalid quality: " + qRaw));
                                         return 0;
                                     }
+                                    // If the player already has this gene, overwrite its quality instead of adding a duplicate
+                                    ListTag genome = GenomeHelper.getGenome(player);
+                                    for (int i = 0; i < genome.size(); i++) {
+                                        CompoundTag existing = genome.getCompound(i);
+                                        if (id.toString().equals(existing.getString("id"))) {
+                                            existing.putInt("quality", q);
+                                            GenomeHelper.syncToClient(player);
+                                            ctx.getSource().sendSuccess(() -> Component.literal("Updated gene quality"), false);
+                                            return 1;
+                                        }
+                                    }
                                     CompoundTag g = new CompoundTag();
                                     g.putString("id", id.toString());
                                     g.putInt("quality", q);
@@ -77,7 +104,14 @@ public class GenomeCommand {
                                 })))))
                 .then(Commands.literal("remove")
                     .then(Commands.argument("player", EntityArgument.player())
-                        .then(Commands.argument("gene_id", ResourceLocationArgument.id()).suggests(GENE_ID_SUGGESTIONS)
+                        .then(Commands.literal("*")
+                            .executes(ctx -> {
+                                ServerPlayer player = EntityArgument.getPlayer(ctx, "player");
+                                GenomeHelper.clear(player);
+                                ctx.getSource().sendSuccess(() -> Component.literal("Cleared genome"), false);
+                                return 1;
+                            }))
+                        .then(Commands.argument("gene_id", ResourceLocationArgument.id()).suggests(PLAYER_GENE_ID_SUGGESTIONS)
                             .executes(ctx -> {
                                 ServerPlayer player = EntityArgument.getPlayer(ctx, "player");
                                 ResourceLocation id = ResourceLocationArgument.getId(ctx, "gene_id");
