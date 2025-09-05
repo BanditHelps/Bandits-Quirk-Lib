@@ -1,6 +1,7 @@
 package com.github.b4ndithelps.forge.events;
 
 import com.github.b4ndithelps.forge.effects.ModEffects;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.LivingEntity;
@@ -19,6 +20,7 @@ public class ResistanceEvents {
     public static void onLivingHurt(LivingHurtEvent event) {
         LivingEntity entity = event.getEntity();
         if (entity.level().isClientSide) return;
+        if (!(entity instanceof ServerPlayer)) return;
 
         var source = event.getSource();
         float amount = event.getAmount();
@@ -62,6 +64,7 @@ public class ResistanceEvents {
         }
 
         event.setAmount(amount);
+//        System.out.println("Damage Type: " + source);
     }
 
     private static float reduceByAmplifier(float base, int amplifier) {

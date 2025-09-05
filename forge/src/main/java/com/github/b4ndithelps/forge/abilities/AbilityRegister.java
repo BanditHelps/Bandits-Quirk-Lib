@@ -24,6 +24,7 @@ public class AbilityRegister {
     public static final RegistrySupplier<Ability> ENHANCED_PUNCH;
     public static final RegistrySupplier<Ability> ENHANCED_KICK;
     public static final RegistrySupplier<Ability> CHARGED_PUNCH;
+    public static final RegistrySupplier<Ability> SCALING_GENE_EFFECT;
 
 
     public AbilityRegister() {
@@ -52,5 +53,6 @@ public class AbilityRegister {
         ENHANCED_PUNCH = ABILITIES.register("enhanced_punch", EnhancedPunchAbility::new);
         ENHANCED_KICK = ABILITIES.register("enhanced_kick", EnhancedKickAbility::new);
         CHARGED_PUNCH = ABILITIES.register("charged_punch", ChargedPunchAbility::new);
+        SCALING_GENE_EFFECT = ABILITIES.register("scaling_gene_effect", ScalingGeneEffect::new);
     }
 }

@@ -1,0 +1,24 @@
+{
+  "name": "Genome Quirk",
+  "background": "minecraft:textures/block/white_wool.png",
+  "icon": "bandits_quirk_lib:tissue_extractor",
+  "gui_display_type": "tree",
+  "persistent_data": true,
+  "abilities": {
+    "water_breathing": {
+      "type": "bandits_quirk_lib:scaling_gene_effect",
+      "title": "Quality 1 Water Breathing",
+      "description": "Kinda breath underwater",
+      "effect": "minecraft:water_breathing",
+      "gene": "bandits_quirk_lib:gene.water_breathing",
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:is_under_water"
+          }
+        ]
+      }
+    }
+
+  }
+}

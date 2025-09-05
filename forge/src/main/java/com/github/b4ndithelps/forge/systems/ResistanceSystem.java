@@ -26,18 +26,15 @@ public final class ResistanceSystem {
             String id = gene.getString("id");
             int quality = Math.max(0, Math.min(100, gene.getInt("quality")));
 
-            if (id.equals("bandits_quirk_lib:gene.heat_resistance")) {
-                heatAmplifier = Math.max(heatAmplifier, mapQualityToAmplifier(quality));
-            } else if (id.equals("bandits_quirk_lib:gene.cold_resistance")) {
-                coldAmplifier = Math.max(coldAmplifier, mapQualityToAmplifier(quality));
-            } else if (id.equals("bandits_quirk_lib:gene.poison_resistance")) {
-                poisonAmplifier = Math.max(poisonAmplifier, mapQualityToAmplifier(quality));
-            } else if (id.equals("bandits_quirk_lib:gene.hunger_resistance")) {
-                hungerAmplifier = Math.max(hungerAmplifier, mapQualityToAmplifier(quality));
-            } else if (id.equals("bandits_quirk_lib:gene.water_breathing")) {
-                wantsWaterBreathing = true;
-            } else if (id.equals("bandits_quirk_lib:gene.night_vision")) {
-                wantsNightVision = true;
+            switch (id) {
+                case "bandits_quirk_lib:gene.heat_resistance" ->
+                        heatAmplifier = Math.max(heatAmplifier, mapQualityToAmplifier(quality));
+                case "bandits_quirk_lib:gene.cold_resistance" ->
+                        coldAmplifier = Math.max(coldAmplifier, mapQualityToAmplifier(quality));
+                case "bandits_quirk_lib:gene.poison_resistance" ->
+                        poisonAmplifier = Math.max(poisonAmplifier, mapQualityToAmplifier(quality));
+                case "bandits_quirk_lib:gene.hunger_resistance" ->
+                        hungerAmplifier = Math.max(hungerAmplifier, mapQualityToAmplifier(quality));
             }
         }
 
@@ -47,9 +44,6 @@ public final class ResistanceSystem {
         if (coldAmplifier > 0) player.addEffect(new MobEffectInstance(ModEffects.COLD_RESISTANCE.get(), duration, coldAmplifier - 1, true, false, true));
         if (poisonAmplifier > 0) player.addEffect(new MobEffectInstance(ModEffects.POISON_RESISTANCE.get(), duration, poisonAmplifier - 1, true, false, true));
         if (hungerAmplifier > 0) player.addEffect(new MobEffectInstance(ModEffects.HUNGER_RESISTANCE.get(), duration, hungerAmplifier - 1, true, false, true));
-
-        if (wantsWaterBreathing) player.addEffect(new MobEffectInstance(MobEffects.WATER_BREATHING, duration, 0, true, false, true));
-        if (wantsNightVision) player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, duration + 220, 0, true, false, true));
     }
 
     private static int mapQualityToAmplifier(int quality) {

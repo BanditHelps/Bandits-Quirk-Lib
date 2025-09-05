@@ -7,7 +7,7 @@
   "description": "Allows the user to breathe underwater for short durations.",
   "mobs": [
     "minecraft:player",
-    "minecraft:zombie"
+    "minecraft:drowned"
   ]
 }
 
