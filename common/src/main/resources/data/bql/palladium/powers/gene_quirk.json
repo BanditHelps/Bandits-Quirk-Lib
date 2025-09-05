@@ -32,7 +32,31 @@
           }
         ]
       }
+    },
+    "invisibility": {
+      "type": "palladium:command",
+      "title": "Invisibility",
+      "description": "Your body becomes permanently invisible.",
+      "first_tick_commands": [
+        "tag @s add Bql.NoShadow",
+        "effect give @s bandits_quirk_lib:true_invisibility infinite 0 true",
+        "effect give @s minecraft:invisibility infinite 0 true"
+      ],
+      "commands": [],
+      "last_tick_commands": [
+        "tag @s remove Bql.NoShadow",
+        "effect clear @s bandits_quirk_lib:true_invisibility",
+        "effect clear @s minecraft:invisibility"
+      ],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "bandits_quirk_lib:genome_has_gene",
+            "gene_id": "bandits_quirk_lib:gene.invisibility",
+            "min_quality": 0
+          }
+        ]
+      }
     }
-
   }
 }
