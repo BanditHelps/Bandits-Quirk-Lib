@@ -98,6 +98,74 @@
           }
         ]
       }
+    },
+    "zoom": {
+      "type": "bandits_quirk_lib:zoom",
+      "title": "Zoom",
+      "description": "You are able to attract things you are looking at towards you.",
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:held",
+            "key_type": "key_bind"
+          }
+        ],
+        "unlocking": [
+          {
+            "type": "bandits_quirk_lib:genome_has_gene",
+            "gene_id": "bandits_quirk_lib:gene.zoom",
+            "min_quality": 0
+          }
+        ]
+      }
+    },
+    "zoom_change_up": {
+      "type": "bandits_quirk_lib:body_status_modifier",
+      "description": "Allows you to zoom in while using the zoom ability",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "float_value": 1,
+      "body_part": "head",
+      "key": "zoom_level",
+      "operation": "add",
+      "max_value": 15,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:action",
+            "key_type": "scroll_up",
+            "allow_scrolling_when_crouching": true
+          },
+          {
+            "type": "palladium:ability_enabled",
+            "ability": "zoom"
+          }
+        ]
+      }
+    },
+    "zoom_change_down": {
+      "type": "bandits_quirk_lib:body_status_modifier",
+      "description": "Allows you to zoom out while using the zoom ability",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "float_value": -1,
+      "body_part": "head",
+      "key": "zoom_level",
+      "operation": "add",
+      "min_value": 1,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:action",
+            "key_type": "scroll_down",
+            "allow_scrolling_when_crouching": true
+          },
+          {
+            "type": "palladium:ability_enabled",
+            "ability": "zoom"
+          }
+        ]
+      }
     }
   }
 }

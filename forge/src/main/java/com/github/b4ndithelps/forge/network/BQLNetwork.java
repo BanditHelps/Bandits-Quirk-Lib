@@ -25,6 +25,12 @@ public final class BQLNetwork {
                 .consumerMainThread(NoShadowTagPacket::handle)
                 .add();
 
+        CHANNEL.messageBuilder(ZoomStatePacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(ZoomStatePacket::encode)
+                .decoder(ZoomStatePacket::decode)
+                .consumerMainThread(ZoomStatePacket::handle)
+                .add();
+
         CHANNEL.messageBuilder(ConsoleSyncS2CPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(ConsoleSyncS2CPacket::encode)
                 .decoder(ConsoleSyncS2CPacket::decode)

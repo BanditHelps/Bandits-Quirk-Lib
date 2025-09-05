@@ -16,6 +16,7 @@ import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.EntityRenderersEvent;
+import net.minecraftforge.client.event.ViewportEvent;
 import net.minecraftforge.client.event.ScreenEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -58,6 +59,15 @@ public class ClientEventHandler {
                 }
             }
         }
+
+		@SubscribeEvent
+		public static void onComputeFov(ViewportEvent.ComputeFov event) {
+			// Apply zoom FOV scaling if enabled
+			if (com.github.b4ndithelps.forge.network.ZoomStatePacket.ENABLED) {
+				double base = event.getFOV();
+				event.setFOV(base * com.github.b4ndithelps.forge.network.ZoomStatePacket.FOV_SCALE);
+			}
+		}
     }
 
     // MenuScreens are registered in onClientSetup above
