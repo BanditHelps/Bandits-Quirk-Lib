@@ -174,6 +174,8 @@ public class PlayerEventHandler {
         if (event.phase != TickEvent.Phase.END) return;
 
         if (!(event.player instanceof ServerPlayer player)) return;
+        // Apply genome-driven resistance and utility effects
+        com.github.b4ndithelps.forge.systems.ResistanceSystem.applyGenomeBasedEffects(player);
         // Keep no-shadow flag in sync for permeation-related tags; only send when changed
         boolean wantNoShadow = player.getTags().contains("Bql.PermeateActive") || player.getTags().contains("Bql.PermeateRise") || player.getTags().contains("Bql.NoShadow");
         Boolean prev = LAST_NO_SHADOW_SENT.put(player.getId(), wantNoShadow);
