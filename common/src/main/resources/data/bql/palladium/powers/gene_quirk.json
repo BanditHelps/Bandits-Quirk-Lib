@@ -78,6 +78,26 @@
           }
         ]
       }
+    },
+    "minor_object_attraction": {
+      "type": "bandits_quirk_lib:minor_object_attraction",
+      "title": "Toggle Minor Object Attraction",
+      "description": "You are able to attract things you are looking at towards you.",
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:held",
+            "key_type": "key_bind"
+          }
+        ],
+        "unlocking": [
+          {
+            "type": "bandits_quirk_lib:genome_has_gene",
+            "gene_id": "bandits_quirk_lib:gene.minor_object_attraction",
+            "min_quality": 0
+          }
+        ]
+      }
     }
   }
 }
