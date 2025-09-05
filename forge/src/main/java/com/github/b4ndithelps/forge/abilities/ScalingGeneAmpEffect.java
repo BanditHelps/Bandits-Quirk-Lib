@@ -8,35 +8,35 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.threetag.palladium.power.IPowerHolder;
 import net.threetag.palladium.power.ability.Ability;
 import net.threetag.palladium.power.ability.AbilityInstance;
-import net.threetag.palladium.util.property.*;
+import net.threetag.palladium.util.property.PalladiumProperty;
+import net.threetag.palladium.util.property.StringProperty;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class ScalingGeneEffect extends Ability {
+public class ScalingGeneAmpEffect extends Ability {
 
     // Configurable properties
     public static final PalladiumProperty<String> EFFECT = new StringProperty("effect").configurable("The effect to give the player, that scales with gene quality");
     public static final PalladiumProperty<String> GENE = new StringProperty("gene").configurable("The gene that scales the effect based on the quality.");
 
-    public ScalingGeneEffect() {
+    public ScalingGeneAmpEffect() {
         super();
         this.withProperty(EFFECT, "minecraft:water_breathing")
                 .withProperty(GENE, "bandits_quirk_lib:gene.water_breathing");
     }
 
     @Override
-    public void firstTick(LivingEntity entity, AbilityInstance entry, IPowerHolder holder, boolean enabled) {
+    public void tick(LivingEntity entity, AbilityInstance entry, IPowerHolder holder, boolean enabled) {
         if (!enabled) return;
-        Pattern idPattern = Pattern.compile("id:\"([^\"]+)\"");
-        Pattern qualityPattern = Pattern.compile("quality:(\\d+)");
         if (entity instanceof ServerPlayer player) {
+            Pattern idPattern = Pattern.compile("id:\"([^\"]+)\"");
+            Pattern qualityPattern = Pattern.compile("quality:(\\d+)");
             ListTag genes = GenomeHelper.getGenome(player);
             String geneId = entry.getProperty(GENE);
 
@@ -59,13 +59,13 @@ public class ScalingGeneEffect extends Ability {
             }
 
             if (found) {
-                int duration = getDurationFromQuality(quality);
+                int amplification = getAmplificationFromQuality(quality);
                 String potionRegistryId = entry.getProperty(EFFECT);
                 MobEffect effect = ForgeRegistries.MOB_EFFECTS.getValue(ResourceLocation.parse(potionRegistryId));
                 if (effect == null) {
                     BanditsQuirkLibForge.LOGGER.error("Invalid name for potion effect: " + potionRegistryId);
                 } else {
-                    player.addEffect(new MobEffectInstance(effect, duration * 20, 0, true, false));
+                    player.addEffect(new MobEffectInstance(effect, 20, amplification, true, false));
                 }
 
 
@@ -86,19 +86,13 @@ public class ScalingGeneEffect extends Ability {
         }
     }
 
-    private int getDurationFromQuality(int quality) {
-        if (quality >= 100) return 3600; // 1 hour
-        if (quality >= 85) return  120; // 2 minutes
-        if (quality >= 50) return  60; // 1 minute
-        if (quality >= 25) return  15; // 15 seconds
-        return 5; // 30 seconds
+    private int getAmplificationFromQuality(int quality) {
+        if (quality >= 100) return 4;
+        if (quality >= 85) return  3;
+        if (quality >= 50) return  2;
+        if (quality >= 25) return  1;
+        return 0;
 
-    }
-
-    @Override
-    public void tick(LivingEntity entity, AbilityInstance entry, IPowerHolder holder, boolean enabled) {
-        if (!(entity instanceof ServerPlayer player)) return;
-        if (!enabled) return;
     }
 
     @Override

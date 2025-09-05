@@ -6,7 +6,7 @@
   "persistent_data": true,
   "abilities": {
     "water_breathing": {
-      "type": "bandits_quirk_lib:scaling_gene_effect",
+      "type": "bandits_quirk_lib:scaling_gene_duration_effect",
       "title": "Quality 1 Water Breathing",
       "description": "Kinda breath underwater",
       "effect": "minecraft:water_breathing",
@@ -15,6 +15,20 @@
         "enabling": [
           {
             "type": "palladium:is_under_water"
+          }
+        ]
+      }
+    },
+    "jump_boost": {
+      "type": "bandits_quirk_lib:scaling_gene_amp_effect",
+      "title": "Jump Boost",
+      "description": "Add a jump boost when holding shift.",
+      "effect": "minecraft:jump_boost",
+      "gene": "bandits_quirk_lib:gene.jump_boost",
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:crouching"
           }
         ]
       }
