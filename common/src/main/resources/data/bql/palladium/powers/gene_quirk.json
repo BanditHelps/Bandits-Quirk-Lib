@@ -33,6 +33,27 @@
         ]
       }
     },
+    "glowing_skin": {
+      "type": "palladium:command",
+      "title": "Glowing Skin",
+      "description": "Your skin is so shiny, that all can see you.",
+      "first_tick_commands": [
+        "effect give @s minecraft:glowing infinite 0 true"
+      ],
+      "commands": [],
+      "last_tick_commands": [
+        "effect clear @s minecraft:glowing"
+      ],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "bandits_quirk_lib:genome_has_gene",
+            "gene_id": "bandits_quirk_lib:gene.glowing_skin",
+            "min_quality": 0
+          }
+        ]
+      }
+    },
     "invisibility": {
       "type": "palladium:command",
       "title": "Invisibility",
