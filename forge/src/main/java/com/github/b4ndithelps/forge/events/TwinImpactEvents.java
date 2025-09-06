@@ -30,16 +30,19 @@ public class TwinImpactEvents {
         public final int entityId; // -1 when not for entity
         public final BlockPos blockPos; // may be null
         public final Vec3 position; // impact point as fallback
+        public final Vec3 direction; // normalized direction of initial hit knockback
 
-        public StoredMark(long createdTick, int entityId, BlockPos blockPos, Vec3 position) {
+        public StoredMark(long createdTick, int entityId, BlockPos blockPos, Vec3 position, Vec3 direction) {
             this.createdTick = createdTick;
             this.entityId = entityId;
             this.blockPos = blockPos;
             this.position = position;
+            this.direction = direction;
         }
     }
 
     private static final Map<UUID, StoredMark> LAST_MARK = new ConcurrentHashMap<>();
+    private static final Map<UUID, Long> IGNORE_UNTIL_TICK = new ConcurrentHashMap<>();
 
     @SubscribeEvent
     public static void onLivingHurt(LivingHurtEvent event) {
@@ -47,15 +50,23 @@ public class TwinImpactEvents {
         if (target.level().isClientSide) return;
 
         var source = event.getSource();
+        // Only record standard melee player attacks
+        if (!source.is(net.minecraft.world.damagesource.DamageTypes.PLAYER_ATTACK)) return;
         Entity attacker = source.getEntity();
         if (!(attacker instanceof ServerPlayer player)) return;
+
+        // Avoid re-marking caused by second impact
+        Long until = IGNORE_UNTIL_TICK.get(player.getUUID());
+        if (until != null && target.level().getGameTime() <= until) return;
 
         // Only record if player has TwinImpactMarkAbility enabled
         if (!isMarkingEnabled(player)) return;
 
         // Record entity mark with rough impact position
         Vec3 hitPos = target.position();
-        storeMark(player, new StoredMark(player.level().getGameTime(), target.getId(), null, hitPos));
+        Vec3 dir = hitPos.subtract(player.position());
+        if (dir.lengthSqr() > 1.0e-6) dir = dir.normalize(); else dir = player.getLookAngle().normalize();
+        storeMark(player, new StoredMark(player.level().getGameTime(), target.getId(), null, hitPos, dir));
     }
 
     // Utility: check if player currently has TwinImpactMarkAbility enabled in any power
@@ -94,7 +105,21 @@ public class TwinImpactEvents {
             Entity e = serverLevel.getEntity(mark.entityId);
             if (e instanceof LivingEntity living && living.isAlive()) {
                 float base = 2.0F;
+                // Ensure following damage won't re-create a mark (set BEFORE hurt so the event sees it)
+                IGNORE_UNTIL_TICK.put(player.getUUID(), level.getGameTime() + 5);
+
+                // Apply enhanced knockback in stored direction before or after damage
+                Vec3 dir = mark.direction != null && mark.direction.lengthSqr() > 1.0e-6 ? mark.direction : living.position().subtract(player.position()).normalize();
+                double kb = Math.min(1.2, 0.35 + (multiplier * 0.15));
+                living.push(dir.x * kb, Math.min(0.8, kb * 0.6), dir.z * kb);
                 living.hurt(level.damageSources().playerAttack(player), base * multiplier);
+
+                // Visual feedback: small burst effects
+                serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.CRIT, living.getX(), living.getY(0.5), living.getZ(), 12,
+                        0.15, 0.15, 0.15, 0.15);
+                serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.EXPLOSION, living.getX(), living.getY(0.5), living.getZ(), 2,
+                        0.0, 0.0, 0.0, 0.0);
+
                 return;
             }
         }
@@ -107,6 +132,8 @@ public class TwinImpactEvents {
         if (pos == null) return;
 
         double radius = Math.min(8.0, 2.0 + multiplier);
+        // Prevent re-marking before any damage is applied in AoE case as well
+        IGNORE_UNTIL_TICK.put(player.getUUID(), level.getGameTime() + 5);
         for (LivingEntity le : serverLevel.getEntitiesOfClass(LivingEntity.class, new net.minecraft.world.phys.AABB(pos, pos).inflate(radius))) {
             if (le == player) continue;
             double dist = Math.max(0.1, le.position().distanceTo(pos));
@@ -115,6 +142,9 @@ public class TwinImpactEvents {
             le.push(push.x, Math.min(0.7, force * 0.5), push.z);
             le.hurt(level.damageSources().playerAttack(player), (float)Math.max(1.0, multiplier));
         }
+        // Particle ring at center
+        serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.CRIT, pos.x, pos.y + 0.2, pos.z, 16,
+                radius * 0.25, 0.15, radius * 0.25, 0.05);
         serverLevel.levelEvent(2001, new BlockPos((int)pos.x, (int)pos.y, (int)pos.z), 0);
     }
 }
