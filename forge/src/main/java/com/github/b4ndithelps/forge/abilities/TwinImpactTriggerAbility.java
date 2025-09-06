@@ -34,15 +34,10 @@ public class TwinImpactTriggerAbility extends Ability {
         float mult = Math.max(1.0F, entry.getProperty(MULTIPLIER));
         int maxDist = Math.max(1, entry.getProperty(MAX_DISTANCE));
 
-        TwinImpactEvents.StoredMark mark = TwinImpactEvents.consumeMark(player, maxDist);
-        if (mark == null) return;
+        java.util.List<TwinImpactEvents.StoredMark> marks = TwinImpactEvents.consumeMarks(player, maxDist);
+        if (marks.isEmpty()) return;
 
-        if (mark.entityId >= 0) {
-            TwinImpactEvents.applySecondImpact(player, mark, mult);
-        } else if (mark.blockPos != null) {
-            TwinImpactEvents.applySecondImpact(player, mark, mult);
-        } else if (mark.position != null) {
-            // Fallback: apply AoE at position
+        for (TwinImpactEvents.StoredMark mark : marks) {
             TwinImpactEvents.applySecondImpact(player, mark, mult);
         }
     }

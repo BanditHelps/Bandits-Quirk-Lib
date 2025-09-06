@@ -16,6 +16,8 @@ import net.minecraftforge.fml.common.Mod;
 import net.threetag.palladium.power.ability.AbilityInstance;
 import net.threetag.palladium.power.ability.AbilityUtil;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -41,7 +43,8 @@ public class TwinImpactEvents {
         }
     }
 
-    private static final Map<UUID, StoredMark> LAST_MARK = new ConcurrentHashMap<>();
+    // For each player, keep a set/map of entity-id -> mark so multiple targets can be stored
+    private static final Map<UUID, Map<Integer, StoredMark>> LAST_MARKS = new ConcurrentHashMap<>();
     private static final Map<UUID, Long> IGNORE_UNTIL_TICK = new ConcurrentHashMap<>();
 
     @SubscribeEvent
@@ -77,23 +80,34 @@ public class TwinImpactEvents {
     }
 
     private static void storeMark(ServerPlayer player, StoredMark mark) {
-        LAST_MARK.put(player.getUUID(), mark);
+        LAST_MARKS.computeIfAbsent(player.getUUID(), k -> new ConcurrentHashMap<>())
+                .put(mark.entityId, mark);
     }
 
-    public static StoredMark consumeMark(ServerPlayer player, int maxDistance) {
-        StoredMark mark = LAST_MARK.remove(player.getUUID());
-        if (mark == null) return null;
+    public static List<StoredMark> consumeMarks(ServerPlayer player, int maxDistance) {
+        Map<Integer, StoredMark> map = LAST_MARKS.get(player.getUUID());
+        if (map == null || map.isEmpty()) return java.util.Collections.emptyList();
 
-        // Range safety check
-        if (mark.position != null) {
-            if (mark.position.distanceTo(player.position()) > maxDistance) return null;
-        } else if (mark.blockPos != null) {
-            if (player.blockPosition().distManhattan(mark.blockPos) > maxDistance) return null;
-        } else if (mark.entityId >= 0) {
-            Entity e = ((ServerLevel)player.level()).getEntity(mark.entityId);
-            if (e != null && e.position().distanceTo(player.position()) > maxDistance) return null;
+        List<StoredMark> result = new ArrayList<>();
+        ServerLevel slevel = (ServerLevel) player.level();
+        for (Map.Entry<Integer, StoredMark> e : new java.util.ArrayList<>(map.entrySet())) {
+            StoredMark mark = e.getValue();
+            boolean inRange = true;
+            if (mark.position != null) {
+                inRange = mark.position.distanceTo(player.position()) <= maxDistance;
+            } else if (mark.blockPos != null) {
+                inRange = player.blockPosition().distManhattan(mark.blockPos) <= maxDistance;
+            } else if (mark.entityId >= 0) {
+                Entity ent = slevel.getEntity(mark.entityId);
+                inRange = ent == null || ent.position().distanceTo(player.position()) <= maxDistance;
+            }
+            if (inRange) {
+                result.add(mark);
+                map.remove(e.getKey());
+            }
         }
-        return mark;
+        if (map.isEmpty()) LAST_MARKS.remove(player.getUUID());
+        return result;
     }
 
     public static void applySecondImpact(ServerPlayer player, StoredMark mark, float multiplier) {
