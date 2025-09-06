@@ -135,7 +135,9 @@
             "type": "palladium:action",
             "key_type": "scroll_up",
             "allow_scrolling_when_crouching": true
-          },
+          }
+        ],
+        "unlocking": [
           {
             "type": "palladium:ability_enabled",
             "ability": "zoom"
@@ -159,7 +161,9 @@
             "type": "palladium:action",
             "key_type": "scroll_down",
             "allow_scrolling_when_crouching": true
-          },
+          }
+        ],
+        "unlocking": [
           {
             "type": "palladium:ability_enabled",
             "ability": "zoom"
