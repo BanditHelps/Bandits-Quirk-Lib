@@ -28,6 +28,8 @@ public class AbilityRegister {
     public static final RegistrySupplier<Ability> SCALING_GENE_AMP_EFFECT;
     public static final RegistrySupplier<Ability> MINOR_OBJECT_ATTRACTION;
     public static final RegistrySupplier<Ability> ZOOM;
+    public static final RegistrySupplier<Ability> TWIN_IMPACT_MARK;
+    public static final RegistrySupplier<Ability> TWIN_IMPACT_TRIGGER;
 
 
     public AbilityRegister() {
@@ -60,6 +62,8 @@ public class AbilityRegister {
         SCALING_GENE_AMP_EFFECT = ABILITIES.register("scaling_gene_amp_effect", ScalingGeneAmpEffect::new);
         MINOR_OBJECT_ATTRACTION = ABILITIES.register("minor_object_attraction", MinorObjectAttractionAbility::new);
         ZOOM = ABILITIES.register("zoom", ZoomAbility::new);
+        TWIN_IMPACT_MARK = ABILITIES.register("twin_impact_mark", TwinImpactMarkAbility::new);
+        TWIN_IMPACT_TRIGGER = ABILITIES.register("twin_impact_trigger", TwinImpactTriggerAbility::new);
 
     }
 }
