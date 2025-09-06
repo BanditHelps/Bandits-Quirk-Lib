@@ -5,10 +5,120 @@
   "gui_display_type": "tree",
   "persistent_data": true,
   "abilities": {
+    "startup": {
+      "type": "palladium:command",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "first_tick_commands": [
+        "scoreboard objectives add Bql.Larceny.Type dummy",
+        "scoreboard players set @p Bql.Larceny.Type 0"
+      ],
+      "commands": []
+    },
+    "larceny_selector": {
+      "type": "palladium:ability_wheel",
+      "icon": "minecraft:stone_button",
+      "hidden": true,
+      "hidden_in_bar": false,
+      "list_index": 0,
+      "abilities": [
+        "larceny_type_hand",
+        "larceny_type_head",
+        "larceny_type_back"
+      ],
+      "disable_mouse_scrolling": false,
+      "disable_center_icon": false,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:held",
+            "key_type": "key_bind",
+            "needs_empty_hand": false
+          }
+        ]
+      }
+    },
+    "larceny_type_hand": {
+      "type": "palladium:command",
+      "title": "Steal from Hand",
+      "icon": "minecraft:diamond_sword",
+      "description": "Steal the item from the targets main/off hand.",
+      "gui_position": [
+        -1,
+        -2
+      ],
+      "hidden": false,
+      "hidden_in_bar": true,
+      "first_tick_commands": [
+        "scoreboard players set @p Bql.Larceny.Type 0",
+        "execute as @p run title @p actionbar {\"text\":\"Steal Type: Main Hand\",\"color\":\"red\"}"
+      ],
+      "commands": [],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:ability_wheel",
+            "cooldown": 0
+          }
+        ]
+      }
+    },
+    "larceny_type_head": {
+      "type": "palladium:command",
+      "title": "Steal from Head",
+      "icon": "minecraft:diamond_helmet",
+      "description": "Steal the helmet off of the targets head.",
+      "gui_position": [
+        -1,
+        -1
+      ],
+      "hidden": false,
+      "hidden_in_bar": true,
+      "first_tick_commands": [
+        "scoreboard players set @p Bql.Larceny.Type 1",
+        "execute as @p run title @p actionbar {\"text\":\"Steal Type: Head\",\"color\":\"red\"}"
+      ],
+      "commands": [],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:ability_wheel",
+            "cooldown": 0
+          }
+        ]
+      }
+    },
+    "larceny_type_back": {
+      "type": "palladium:command",
+      "title": "Steal from Back",
+      "icon": "minecraft:elytra",
+      "description": "Steal light items from the targets back.",
+      "gui_position": [
+        -1,
+        0
+      ],
+      "hidden": false,
+      "hidden_in_bar": true,
+      "first_tick_commands": [
+        "scoreboard players set @p Bql.Larceny.Type 2",
+        "execute as @p run title @p actionbar {\"text\":\"Steal Type: Back\",\"color\":\"red\"}"
+      ],
+      "commands": [],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:ability_wheel",
+            "cooldown": 0
+          }
+        ]
+      }
+    },
     "larceny_hand": {
       "type": "bandits_quirk_lib:larceny",
+      "icon": "minecraft:diamond_sword",
       "title": "Larceny (Hands)",
       "description": "Steal the item from a target's hands and pull it to you.",
+      "list_index": 1,
       "mode": "hand",
       "range": 8.0,
       "base_limit": 16,
@@ -19,13 +129,23 @@
             "type": "palladium:held",
             "key_type": "key_bind"
           }
+        ],
+        "unlocking": [
+          {
+            "type": "palladium:objective_score",
+            "objective": "Bql.Larceny.Type",
+            "min_score": 0,
+            "max_score": 0
+          }
         ]
       }
     },
     "larceny_elytra": {
       "type": "bandits_quirk_lib:larceny",
+      "icon": "minecraft:elytra",
       "title": "Larceny (Elytra)",
       "description": "Steal a target's elytra and pull it to you.",
+      "list_index": 1,
       "mode": "elytra",
       "range": 8.0,
       "base_limit": 16,
@@ -33,13 +153,23 @@
       "conditions": {
         "enabling": [
           { "type": "palladium:held", "key_type": "key_bind" }
+        ],
+        "unlocking": [
+          {
+            "type": "palladium:objective_score",
+            "objective": "Bql.Larceny.Type",
+            "min_score": 2,
+            "max_score": 2
+          }
         ]
       }
     },
     "larceny_helmet": {
       "type": "bandits_quirk_lib:larceny",
+      "icon": "minecraft:diamond_helmet",
       "title": "Larceny (Helmet)",
       "description": "Steal the target's helmet and pull it to you.",
+      "list_index": 1,
       "mode": "helmet",
       "range": 8.0,
       "base_limit": 16,
@@ -47,6 +177,14 @@
       "conditions": {
         "enabling": [
           { "type": "palladium:held", "key_type": "key_bind" }
+        ],
+        "unlocking": [
+          {
+            "type": "palladium:objective_score",
+            "objective": "Bql.Larceny.Type",
+            "min_score": 1,
+            "max_score": 1
+          }
         ]
       }
     },
@@ -54,6 +192,7 @@
       "type": "bandits_quirk_lib:minor_object_attraction",
       "title": "Minor Object Attraction",
       "description": "You are able to attract things you are looking at towards you.",
+      "list_index": 2,
       "conditions": {
         "enabling": [
           {
