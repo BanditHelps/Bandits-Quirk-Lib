@@ -1,0 +1,67 @@
+{
+  "name": "Larceny",
+  "background": "minecraft:textures/block/stone.png",
+  "icon": "minecraft:lapis_lazuli",
+  "gui_display_type": "tree",
+  "persistent_data": true,
+  "abilities": {
+    "larceny_hand": {
+      "type": "bandits_quirk_lib:larceny",
+      "title": "Larceny (Hands)",
+      "description": "Steal the item from a target's hands and pull it to you.",
+      "mode": "hand",
+      "range": 8.0,
+      "base_limit": 16,
+      "pull_strength": 0.35,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:held",
+            "key_type": "key_bind"
+          }
+        ]
+      }
+    },
+    "larceny_elytra": {
+      "type": "bandits_quirk_lib:larceny",
+      "title": "Larceny (Elytra)",
+      "description": "Steal a target's elytra and pull it to you.",
+      "mode": "elytra",
+      "range": 8.0,
+      "base_limit": 16,
+      "pull_strength": 0.35,
+      "conditions": {
+        "enabling": [
+          { "type": "palladium:held", "key_type": "key_bind" }
+        ]
+      }
+    },
+    "larceny_helmet": {
+      "type": "bandits_quirk_lib:larceny",
+      "title": "Larceny (Helmet)",
+      "description": "Steal the target's helmet and pull it to you.",
+      "mode": "helmet",
+      "range": 8.0,
+      "base_limit": 16,
+      "pull_strength": 0.35,
+      "conditions": {
+        "enabling": [
+          { "type": "palladium:held", "key_type": "key_bind" }
+        ]
+      }
+    },
+    "minor_object_attraction": {
+      "type": "bandits_quirk_lib:minor_object_attraction",
+      "title": "Minor Object Attraction",
+      "description": "You are able to attract things you are looking at towards you.",
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:held",
+            "key_type": "key_bind"
+          }
+        ]
+      }
+    }
+  }
+}

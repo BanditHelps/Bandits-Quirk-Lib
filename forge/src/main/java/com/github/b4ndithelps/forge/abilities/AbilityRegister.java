@@ -30,6 +30,7 @@ public class AbilityRegister {
     public static final RegistrySupplier<Ability> ZOOM;
     public static final RegistrySupplier<Ability> TWIN_IMPACT_MARK;
     public static final RegistrySupplier<Ability> TWIN_IMPACT_TRIGGER;
+    public static final RegistrySupplier<Ability> LARCENY;
 
 
     public AbilityRegister() {
@@ -64,6 +65,7 @@ public class AbilityRegister {
         ZOOM = ABILITIES.register("zoom", ZoomAbility::new);
         TWIN_IMPACT_MARK = ABILITIES.register("twin_impact_mark", TwinImpactMarkAbility::new);
         TWIN_IMPACT_TRIGGER = ABILITIES.register("twin_impact_trigger", TwinImpactTriggerAbility::new);
+        LARCENY = ABILITIES.register("larceny", LarcenyAbility::new);
 
     }
 }
