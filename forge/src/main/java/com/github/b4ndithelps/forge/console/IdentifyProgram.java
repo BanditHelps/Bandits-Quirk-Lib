@@ -6,7 +6,7 @@ import com.github.b4ndithelps.forge.blocks.GeneSlicerBlockEntity;
 import com.github.b4ndithelps.forge.blocks.SampleRefrigeratorBlockEntity;
 import com.github.b4ndithelps.forge.item.GeneVialItem;
 import com.github.b4ndithelps.forge.item.ModItems;
-import net.minecraft.core.Direction;
+import com.github.b4ndithelps.forge.blocks.util.CableNetworkUtil;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -58,22 +58,21 @@ public class IdentifyProgram extends AbstractConsoleProgram {
         var level = term.getLevel();
         var pos = term.getBlockPos();
 
-        // Collect from adjacent sequencer output
-        for (var dir : Direction.values()) {
-            var be = level.getBlockEntity(pos.relative(dir));
+        // Collect via cable network (connected devices)
+        java.util.Set<net.minecraft.world.level.block.entity.BlockEntity> connected = CableNetworkUtil.findConnected(level, pos, be ->
+                be instanceof GeneSequencerBlockEntity || be instanceof GeneSlicerBlockEntity || be instanceof SampleRefrigeratorBlockEntity);
+        for (var be : connected) {
             if (be instanceof GeneSequencerBlockEntity seq) {
                 ItemStack out = seq.getItem(GeneSequencerBlockEntity.SLOT_OUTPUT);
                 if (!out.isEmpty() && out.getItem() == ModItems.SEQUENCED_SAMPLE.get()) {
                     collectFromSample("SEQ", out.getTag());
                 }
-            }
-            if (be instanceof GeneSlicerBlockEntity slicer) {
+            } else if (be instanceof GeneSlicerBlockEntity slicer) {
                 ItemStack in = slicer.getItem(GeneSlicerBlockEntity.SLOT_INPUT);
                 if (!in.isEmpty() && in.getItem() == ModItems.SEQUENCED_SAMPLE.get()) {
                     collectFromSample("SLICER", in.getTag());
                 }
-            }
-            if (be instanceof SampleRefrigeratorBlockEntity fridge) {
+            } else if (be instanceof SampleRefrigeratorBlockEntity fridge) {
                 for (int i = 0; i < SampleRefrigeratorBlockEntity.SLOT_COUNT; i++) {
                     ItemStack st = fridge.getItem(i);
                     if (st == null || st.isEmpty()) continue;

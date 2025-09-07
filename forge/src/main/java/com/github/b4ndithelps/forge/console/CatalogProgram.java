@@ -5,7 +5,7 @@ import com.github.b4ndithelps.genetics.GeneRegistry;
 import com.github.b4ndithelps.forge.blocks.SampleRefrigeratorBlockEntity;
 import com.github.b4ndithelps.forge.item.GeneVialItem;
 import com.github.b4ndithelps.forge.item.ModItems;
-import net.minecraft.core.Direction;
+import com.github.b4ndithelps.forge.blocks.util.CableNetworkUtil;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -65,10 +65,8 @@ public class CatalogProgram extends AbstractConsoleProgram {
         var term = ctx.getBlockEntity();
         var level = term.getLevel();
         var pos = term.getBlockPos();
-        for (var dir : Direction.values()) {
-            var be = level.getBlockEntity(pos.relative(dir));
-            if (be instanceof SampleRefrigeratorBlockEntity fridge) cachedFridges.add(fridge);
-        }
+        java.util.Set<net.minecraft.world.level.block.entity.BlockEntity> connected = CableNetworkUtil.findConnected(level, pos, be -> be instanceof SampleRefrigeratorBlockEntity);
+        for (var be : connected) if (be instanceof SampleRefrigeratorBlockEntity fridge) cachedFridges.add(fridge);
         // Collect vial entries
         for (int f = 0; f < cachedFridges.size(); f++) {
             var fridge = cachedFridges.get(f);

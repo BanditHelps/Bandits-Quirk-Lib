@@ -1,0 +1,37 @@
+{
+  "multipart": [
+    { "apply": { "model": "bandits_quirk_lib:block/bio_cable_core" } },
+
+    { "when": { "cable_north": true, "cont_north": false },
+      "apply": { "model": "bandits_quirk_lib:block/bio_cable_arm_n" } },
+    { "when": { "cable_north": true, "cont_north": true },
+      "apply": { "model": "bandits_quirk_lib:block/bio_cable_arm_n_cont" } },
+
+    { "when": { "cable_south": true, "cont_south": false },
+      "apply": { "model": "bandits_quirk_lib:block/bio_cable_arm_s" } },
+    { "when": { "cable_south": true, "cont_south": true },
+      "apply": { "model": "bandits_quirk_lib:block/bio_cable_arm_s_cont" } },
+
+    { "when": { "cable_east": true, "cont_east": false },
+      "apply": { "model": "bandits_quirk_lib:block/bio_cable_arm_e" } },
+    { "when": { "cable_east": true, "cont_east": true },
+      "apply": { "model": "bandits_quirk_lib:block/bio_cable_arm_e_cont" } },
+
+    { "when": { "cable_west": true, "cont_west": false },
+      "apply": { "model": "bandits_quirk_lib:block/bio_cable_arm_w" } },
+    { "when": { "cable_west": true, "cont_west": true },
+      "apply": { "model": "bandits_quirk_lib:block/bio_cable_arm_w_cont" } },
+
+    { "when": { "cable_up": true, "cont_up": false },
+      "apply": { "model": "bandits_quirk_lib:block/bio_cable_arm_u" } },
+    { "when": { "cable_up": true, "cont_up": true },
+      "apply": { "model": "bandits_quirk_lib:block/bio_cable_arm_u_cont" } },
+
+    { "when": { "cable_down": true, "cont_down": false },
+      "apply": { "model": "bandits_quirk_lib:block/bio_cable_arm_d" } },
+    { "when": { "cable_down": true, "cont_down": true },
+      "apply": { "model": "bandits_quirk_lib:block/bio_cable_arm_d_cont" } }
+  ]
+}
+
+

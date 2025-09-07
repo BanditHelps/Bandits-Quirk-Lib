@@ -6,7 +6,7 @@ import com.github.b4ndithelps.forge.blocks.BioPrinterBlockEntity;
 import com.github.b4ndithelps.forge.blocks.SampleRefrigeratorBlockEntity;
 import com.github.b4ndithelps.forge.item.GeneVialItem;
 import com.github.b4ndithelps.forge.item.ModItems;
-import net.minecraft.core.Direction;
+import com.github.b4ndithelps.forge.blocks.util.CableNetworkUtil;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.resources.ResourceLocation;
@@ -71,8 +71,9 @@ public class PrinterProgram extends AbstractConsoleProgram {
         var term = ctx.getBlockEntity();
         var level = term.getLevel();
         var pos = term.getBlockPos();
-        for (var dir : Direction.values()) {
-            var be = level.getBlockEntity(pos.relative(dir));
+        java.util.Set<net.minecraft.world.level.block.entity.BlockEntity> connected = CableNetworkUtil.findConnected(level, pos,
+                be -> be instanceof SampleRefrigeratorBlockEntity || be instanceof BioPrinterBlockEntity);
+        for (var be : connected) {
             if (be instanceof SampleRefrigeratorBlockEntity fridge) cachedFridges.add(fridge);
             if (be instanceof BioPrinterBlockEntity printer) cachedPrinters.add(printer);
         }

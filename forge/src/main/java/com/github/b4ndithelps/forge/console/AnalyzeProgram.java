@@ -4,7 +4,7 @@ import com.github.b4ndithelps.genetics.Gene;
 import com.github.b4ndithelps.genetics.GeneRegistry;
 import com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity;
 import com.github.b4ndithelps.forge.item.ModItems;
-import net.minecraft.core.Direction;
+import com.github.b4ndithelps.forge.blocks.util.CableNetworkUtil;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.CompoundTag;
@@ -58,10 +58,8 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
         var term = ctx.getBlockEntity();
         var level = term.getLevel();
         var pos = term.getBlockPos();
-        for (var dir : Direction.values()) {
-            var be = level.getBlockEntity(pos.relative(dir));
-            if (be instanceof GeneSequencerBlockEntity seq) cachedSequencers.add(seq);
-        }
+        java.util.Set<net.minecraft.world.level.block.entity.BlockEntity> connected = CableNetworkUtil.findConnected(level, pos, be -> be instanceof GeneSequencerBlockEntity);
+        for (var be : connected) if (be instanceof GeneSequencerBlockEntity seq) cachedSequencers.add(seq);
         viewMode = ViewMode.LIST;
         readoutIndex = -1;
         list(ctx);

@@ -102,8 +102,7 @@ public final class BasicConsoleCommands {
                 var level = be.getLevel();
                 var pos = be.getBlockPos();
                 boolean found = false;
-                for (var dir : net.minecraft.core.Direction.values()) {
-                    var neighbor = level.getBlockEntity(pos.relative(dir));
+                for (var neighbor : com.github.b4ndithelps.forge.blocks.util.CableNetworkUtil.findConnected(level, pos, x -> x instanceof com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity)) {
                     if (neighbor instanceof com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity seq) {
                         found = true;
                         // Validate input sample
@@ -130,7 +129,7 @@ public final class BasicConsoleCommands {
                         break;
                     }
                 }
-                if (!found) ctx.println("No GeneSequencer adjacent");
+                if (!found) ctx.println("No GeneSequencer connected");
             }
         });
 
@@ -142,8 +141,7 @@ public final class BasicConsoleCommands {
                 var level = be.getLevel();
                 var pos = be.getBlockPos();
                 boolean found = false;
-                for (var dir : net.minecraft.core.Direction.values()) {
-                    var neighbor = level.getBlockEntity(pos.relative(dir));
+                for (var neighbor : com.github.b4ndithelps.forge.blocks.util.CableNetworkUtil.findConnected(level, pos, x -> x instanceof com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity)) {
                     if (neighbor instanceof com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity seq) {
                         seq.stopProcessing();
                         ctx.println("Sequencer stopped");
@@ -151,7 +149,7 @@ public final class BasicConsoleCommands {
                         break;
                     }
                 }
-                if (!found) ctx.println("No GeneSequencer adjacent");
+                if (!found) ctx.println("No GeneSequencer connected");
             }
         });
 
@@ -163,15 +161,14 @@ public final class BasicConsoleCommands {
                 var level = be.getLevel();
                 var pos = be.getBlockPos();
                 boolean found = false;
-                for (var dir : net.minecraft.core.Direction.values()) {
-                    var neighbor = level.getBlockEntity(pos.relative(dir));
+                for (var neighbor : com.github.b4ndithelps.forge.blocks.util.CableNetworkUtil.findConnected(level, pos, x -> x instanceof com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity)) {
                     if (neighbor instanceof com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity seq) {
                         ctx.println("Running: " + seq.isRunning() + ", Progress: " + seq.getProgress() + "/" + seq.getMaxProgress());
                         found = true;
                         break;
                     }
                 }
-                if (!found) ctx.println("No GeneSequencer adjacent");
+                if (!found) ctx.println("No GeneSequencer connected");
             }
         });
 

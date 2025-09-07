@@ -7,7 +7,7 @@ import com.github.b4ndithelps.forge.blocks.GeneCombinerBlockEntity;
 import com.github.b4ndithelps.forge.blocks.SampleRefrigeratorBlockEntity;
 import com.github.b4ndithelps.forge.item.GeneVialItem;
 import com.github.b4ndithelps.forge.item.ModItems;
-import net.minecraft.core.Direction;
+import com.github.b4ndithelps.forge.blocks.util.CableNetworkUtil;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -42,10 +42,11 @@ public class CombinerProgram extends AbstractConsoleProgram {
         var be = ctx.getBlockEntity();
         var level = be.getLevel();
         var pos = be.getBlockPos();
-        for (var dir : Direction.values()) {
-            var neighbor = level.getBlockEntity(pos.relative(dir));
-            if (neighbor instanceof GeneCombinerBlockEntity c) cachedCombiners.add(c);
-            if (neighbor instanceof SampleRefrigeratorBlockEntity f) cachedFridges.add(f);
+        java.util.Set<net.minecraft.world.level.block.entity.BlockEntity> connected = CableNetworkUtil.findConnected(level, pos,
+                be2 -> be2 instanceof GeneCombinerBlockEntity || be2 instanceof SampleRefrigeratorBlockEntity);
+        for (var be2 : connected) {
+            if (be2 instanceof GeneCombinerBlockEntity c) cachedCombiners.add(c);
+            if (be2 instanceof SampleRefrigeratorBlockEntity f) cachedFridges.add(f);
         }
         if (selectedCombiner < 0 || selectedCombiner >= cachedCombiners.size()) selectedCombiner = -1;
     }

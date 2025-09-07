@@ -4,7 +4,7 @@ import com.github.b4ndithelps.genetics.Gene;
 import com.github.b4ndithelps.genetics.GeneRegistry;
 import com.github.b4ndithelps.forge.blocks.GeneSlicerBlockEntity;
 import com.github.b4ndithelps.forge.item.ModItems;
-import net.minecraft.core.Direction;
+import com.github.b4ndithelps.forge.blocks.util.CableNetworkUtil;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
@@ -60,10 +60,8 @@ public class SlicerProgram extends AbstractConsoleProgram {
         var term = ctx.getBlockEntity();
         var level = term.getLevel();
         var pos = term.getBlockPos();
-        for (var dir : Direction.values()) {
-            var be = level.getBlockEntity(pos.relative(dir));
-            if (be instanceof GeneSlicerBlockEntity gsb) cachedSlicers.add(gsb);
-        }
+        java.util.Set<net.minecraft.world.level.block.entity.BlockEntity> connected = CableNetworkUtil.findConnected(level, pos, be2 -> be2 instanceof GeneSlicerBlockEntity);
+        for (var be2 : connected) if (be2 instanceof GeneSlicerBlockEntity gsb) cachedSlicers.add(gsb);
     }
 
     private void renderList(ConsoleContext ctx) {
