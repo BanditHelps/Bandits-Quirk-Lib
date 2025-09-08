@@ -3,6 +3,10 @@ package com.github.b4ndithelps.forge.systems;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.core.particles.ParticleTypes;
 
 /**
  * Server-side rules and helpers for performing double jumps based on genome gene presence.
@@ -50,9 +54,15 @@ public final class DoubleJumpSystem {
         player.getPersistentData().putBoolean(TAG_CAN_DOUBLE_JUMP, false);
         player.getPersistentData().putInt(TAG_DJ_COOLDOWN_TICKS, 6);
 
-        // Optional: play vanilla jump animation/sound client-side via built-in method
         player.fallDistance = 0.0F;
-        player.level().broadcastEntityEvent(player, (byte) 30); // jump animation
+        // Play a subtle poof-like sound and spawn small cloud at feet
+        ServerLevel serverLevel = player.serverLevel();
+        serverLevel.playSound(null, player.blockPosition(), SoundEvents.FIRE_EXTINGUISH, SoundSource.PLAYERS, 0.6f, 1.15f);
+        double fxX = player.getX();
+        double fxY = player.getY();
+        double fxZ = player.getZ();
+        serverLevel.sendParticles(ParticleTypes.POOF, fxX, fxY + 0.05, fxZ, 8, 0.2, 0.05, 0.2, 0.01);
+        serverLevel.sendParticles(ParticleTypes.CLOUD, fxX, fxY + 0.05, fxZ, 6, 0.15, 0.02, 0.15, 0.0);
 
         // Also inform the client to apply the same boost immediately to avoid interpolation delays
         com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.send(net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player),
