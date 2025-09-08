@@ -15,6 +15,9 @@ import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraft.client.renderer.ItemBlockRenderTypes;
+import net.minecraft.client.renderer.RenderType;
+import com.github.b4ndithelps.forge.blocks.ModBlocks;
 import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.client.event.ViewportEvent;
 import net.minecraftforge.client.event.ScreenEvent;
@@ -41,6 +44,8 @@ public class ClientEventHandler {
                 MenuScreens.register(ModMenus.GENE_SLICER.get(), GeneSlicerScreen::new);
                 MenuScreens.register(ModMenus.BIO_PRINTER.get(), BioPrinterScreen::new);
                 MenuScreens.register(ModMenus.GENE_COMBINER.get(), GeneCombinerScreen::new);
+				// Ensure blocks with transparency render correctly
+				ItemBlockRenderTypes.setRenderLayer(ModBlocks.BIO_TERMINAL.get(), RenderType.cutout());
             });
         }
     }
