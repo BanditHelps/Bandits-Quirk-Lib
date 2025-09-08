@@ -32,6 +32,7 @@ public class AbilityRegister {
     public static final RegistrySupplier<Ability> TWIN_IMPACT_TRIGGER;
     public static final RegistrySupplier<Ability> LARCENY;
     public static final RegistrySupplier<Ability> GENE_QUALITY_SCALING_ATTRIBUTE;
+    public static final RegistrySupplier<Ability> DASHSTEP;
 
 
     public AbilityRegister() {
@@ -68,6 +69,7 @@ public class AbilityRegister {
         TWIN_IMPACT_TRIGGER = ABILITIES.register("twin_impact_trigger", TwinImpactTriggerAbility::new);
         LARCENY = ABILITIES.register("larceny", LarcenyAbility::new);
         GENE_QUALITY_SCALING_ATTRIBUTE = ABILITIES.register("gene_quality_scaling_attribute", GeneQualityScalingAttributeAbility::new);
+        DASHSTEP = ABILITIES.register("dashstep", DashstepAbility::new);
 
     }
 }

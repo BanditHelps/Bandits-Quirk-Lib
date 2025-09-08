@@ -112,3 +112,4 @@ public class GeneQualityScalingAttributeAbility extends AttributeModifierAbility
 
 
 
+
