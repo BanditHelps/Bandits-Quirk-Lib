@@ -93,6 +93,8 @@ public class ScalingGeneAmpEffect extends Ability {
         if (quality >= 25) return  1;
         return 0;
 
+
+
     }
 
     @Override
