@@ -33,6 +33,20 @@
         ]
       }
     },
+    "slow_fall": {
+      "type": "bandits_quirk_lib:scaling_gene_amp_effect",
+      "title": "Slow Fall",
+      "description": "Add a slow fall effect when holding shift.",
+      "effect": "minecraft:slow_falling",
+      "gene": "bandits_quirk_lib:gene.slow_fall",
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:crouching"
+          }
+        ]
+      }
+    },
     "glowing_skin": {
       "type": "palladium:command",
       "title": "Glowing Skin",
