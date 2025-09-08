@@ -170,6 +170,81 @@
           }
         ]
       }
+    },
+    "sprint_speed": {
+      "type": "bandits_quirk_lib:gene_quality_scaling_attribute",
+      "title": "Sprint Boost",
+      "description": "Increases the users sprint speed.",
+      "attribute": "minecraft:generic.movement_speed",
+      "amount": 0.03,
+      "operation": 0,
+      "uuid": "907edcf7-8a6e-414e-b410-b0ec2193b910",
+      "gene": "bandits_quirk_lib:gene.sprint",
+      "conditions": {
+        "unlocking": [
+          {
+            "type": "bandits_quirk_lib:genome_has_gene",
+            "gene_id": "bandits_quirk_lib:gene.sprint",
+            "min_quality": 0
+          }
+        ]
+      }
+    },
+    "swim_speed": {
+      "type": "bandits_quirk_lib:gene_quality_scaling_attribute",
+      "title": "Swim Boost",
+      "description": "Increases the users swim speed.",
+      "attribute": "forge:swim_speed",
+      "amount": 0.6,
+      "operation": 0,
+      "uuid": "131bf509-0568-4df5-a506-217b616560d2",
+      "gene": "bandits_quirk_lib:gene.swim_speed",
+      "conditions": {
+        "unlocking": [
+          {
+            "type": "bandits_quirk_lib:genome_has_gene",
+            "gene_id": "bandits_quirk_lib:gene.swim_speed",
+            "min_quality": 0
+          }
+        ]
+      }
+    },
+    "enhanced_strength": {
+      "type": "bandits_quirk_lib:gene_quality_scaling_attribute",
+      "title": "Strength Boost",
+      "description": "Increases the users base strength",
+      "attribute": "minecraft:generic.attack_damage",
+      "amount": 4,
+      "operation": 0,
+      "uuid": "376c3639-ac00-4138-8676-0f7d8ce69301",
+      "gene": "bandits_quirk_lib:gene.enhanced_strength",
+      "conditions": {
+        "unlocking": [
+          {
+            "type": "bandits_quirk_lib:genome_has_gene",
+            "gene_id": "bandits_quirk_lib:gene.enhanced_strength",
+            "min_quality": 0
+          }
+        ]
+      }
+    },
+    "step_up": {
+      "type": "palladium:attribute_modifier",
+      "title": "Step Boost",
+      "description": "Increases the users auto step",
+      "attribute": "forge:step_height_addition",
+      "amount": 1,
+      "operation": 0,
+      "uuid": "23744f5f-135c-43f7-ae4e-9bef64165a2d",
+      "conditions": {
+        "unlocking": [
+          {
+            "type": "bandits_quirk_lib:genome_has_gene",
+            "gene_id": "bandits_quirk_lib:gene.step_up",
+            "min_quality": 0
+          }
+        ]
+      }
     }
   }
 }
