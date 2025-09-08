@@ -28,6 +28,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.util.Mth;
 import com.github.b4ndithelps.forge.systems.QuirkFactorHelper;
+import com.github.b4ndithelps.forge.systems.DoubleJumpSystem;
 import net.threetag.palladium.power.SuperpowerUtil;
 import net.threetag.palladium.power.ability.AbilityUtil;
 
@@ -174,6 +175,8 @@ public class PlayerEventHandler {
         if (event.phase != TickEvent.Phase.END) return;
 
         if (!(event.player instanceof ServerPlayer player)) return;
+        // Update per-tick double jump availability and cooldown
+        DoubleJumpSystem.serverTick(player);
         // Apply genome-driven resistance and utility effects
         com.github.b4ndithelps.forge.systems.ResistanceSystem.applyGenomeBasedEffects(player);
         // Keep no-shadow flag in sync for permeation-related tags; only send when changed

@@ -21,6 +21,8 @@ import com.github.b4ndithelps.forge.blocks.ModBlocks;
 import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.client.event.ViewportEvent;
 import net.minecraftforge.client.event.ScreenEvent;
+import net.minecraftforge.client.event.InputEvent;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
@@ -73,6 +75,40 @@ public class ClientEventHandler {
 				event.setFOV(base * com.github.b4ndithelps.forge.network.ZoomStatePacket.FOV_SCALE);
 			}
 		}
+
+        // Client-side: detect jump key while airborne to trigger double jump request once per press
+        private static boolean lastJumpDown = false;
+
+        @SubscribeEvent
+        public static void onKeyInput(InputEvent.Key event) {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.player == null || mc.level == null) return;
+
+            boolean jumpDown = mc.options.keyJump.isDown();
+            if (jumpDown && !lastJumpDown) {
+                // Rising edge of jump key
+                if (!mc.player.onGround() && !mc.player.isInWater() && !mc.player.isInLava()) {
+                    com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.sendToServer(new com.github.b4ndithelps.forge.network.DoubleJumpC2SPacket());
+                }
+            }
+            lastJumpDown = jumpDown;
+        }
+
+        @SubscribeEvent
+        public static void onClientTick(TickEvent.ClientTickEvent event) {
+            if (event.phase != TickEvent.Phase.END) return;
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.player == null || mc.level == null) return;
+            if (mc.screen != null) return; // ignore while in GUIs
+
+            boolean jumpDown = mc.options.keyJump.isDown();
+            if (jumpDown && !lastJumpDown) {
+                if (!mc.player.onGround() && !mc.player.isInWater() && !mc.player.isInLava()) {
+                    com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.sendToServer(new com.github.b4ndithelps.forge.network.DoubleJumpC2SPacket());
+                }
+            }
+            lastJumpDown = jumpDown;
+        }
     }
 
     // MenuScreens are registered in onClientSetup above

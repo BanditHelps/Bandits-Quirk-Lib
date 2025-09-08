@@ -73,6 +73,18 @@ public final class BQLNetwork {
                 .consumerMainThread(ProgramInputC2SPacket::handle)
                 .add();
 
+        CHANNEL.messageBuilder(DoubleJumpC2SPacket.class, index++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(DoubleJumpC2SPacket::encode)
+                .decoder(DoubleJumpC2SPacket::decode)
+                .consumerMainThread(DoubleJumpC2SPacket::handle)
+                .add();
+
+        CHANNEL.messageBuilder(DoubleJumpS2CPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(DoubleJumpS2CPacket::encode)
+                .decoder(DoubleJumpS2CPacket::decode)
+                .consumerMainThread(DoubleJumpS2CPacket::handle)
+                .add();
+
         CHANNEL.messageBuilder(ProgramScreenSyncS2CPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(ProgramScreenSyncS2CPacket::encode)
                 .decoder(ProgramScreenSyncS2CPacket::decode)
