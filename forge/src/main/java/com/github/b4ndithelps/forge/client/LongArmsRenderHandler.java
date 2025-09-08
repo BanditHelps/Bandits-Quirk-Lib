@@ -36,10 +36,6 @@ public class LongArmsRenderHandler {
             return;
         }
 
-        if (IN_CUSTOM_RENDER) {
-            return; // prevent recursion
-        }
-
         HumanoidModel<?> model = event.getRenderer().getModel();
         if (model == null) return;
 
@@ -53,30 +49,12 @@ public class LongArmsRenderHandler {
         prev.leftArmVisible = leftArm == null || leftArm.visible;
         prev.rightSleeveVisible = rightSleeve == null || rightSleeve.visible;
         prev.leftSleeveVisible = leftSleeve == null || leftSleeve.visible;
-        if (rightArm != null) { prev.rightArmX = rightArm.x; prev.rightArmY = rightArm.y; prev.rightArmZ = rightArm.z; }
-        if (leftArm != null)  { prev.leftArmX  = leftArm.x;  prev.leftArmY  = leftArm.y;  prev.leftArmZ  = leftArm.z; }
-        if (rightSleeve != null) { prev.rightSleeveX = rightSleeve.x; prev.rightSleeveY = rightSleeve.y; prev.rightSleeveZ = rightSleeve.z; }
-        if (leftSleeve != null)  { prev.leftSleeveX  = leftSleeve.x;  prev.leftSleeveY  = leftSleeve.y;  prev.leftSleeveZ  = leftSleeve.z; }
         PREV_SCALES.put(player, prev);
 
-        // Hide vanilla arms and sleeves; our layer will render both scaled
         if (rightArm != null) rightArm.visible = false;
         if (leftArm != null) leftArm.visible = false;
         if (rightSleeve != null) rightSleeve.visible = false;
         if (leftSleeve != null) leftSleeve.visible = false;
-
-        // Cancel default pipeline and perform manual render once
-        if (event.getRenderer() instanceof PlayerRenderer && event.getEntity() instanceof AbstractClientPlayer) {
-            PlayerRenderer pr = (PlayerRenderer) event.getRenderer();
-            AbstractClientPlayer acp = (AbstractClientPlayer) event.getEntity();
-            event.setCanceled(true);
-            try {
-                IN_CUSTOM_RENDER = true;
-                pr.render(acp, acp.getYRot(), event.getPartialTick(), event.getPoseStack(), event.getMultiBufferSource(), event.getPackedLight());
-            } finally {
-                IN_CUSTOM_RENDER = false;
-            }
-        }
     }
 
     @SubscribeEvent
@@ -89,11 +67,11 @@ public class LongArmsRenderHandler {
         if (model == null) return;
         ModelPart rightArm = model.rightArm;
         ModelPart leftArm = model.leftArm;
-        if (rightArm != null) { rightArm.visible = prev.rightArmVisible; rightArm.x = prev.rightArmX; rightArm.y = prev.rightArmY; rightArm.z = prev.rightArmZ; }
-        if (leftArm != null)  { leftArm.visible = prev.leftArmVisible;  leftArm.x  = prev.leftArmX;  leftArm.y  = prev.leftArmY;  leftArm.z  = prev.leftArmZ; }
+        if (rightArm != null) rightArm.visible = prev.rightArmVisible;
+        if (leftArm != null) leftArm.visible = prev.leftArmVisible;
         if (model instanceof PlayerModel<?> pm) {
-            if (pm.rightSleeve != null) { pm.rightSleeve.visible = prev.rightSleeveVisible; pm.rightSleeve.x = prev.rightSleeveX; pm.rightSleeve.y = prev.rightSleeveY; pm.rightSleeve.z = prev.rightSleeveZ; }
-            if (pm.leftSleeve != null)  { pm.leftSleeve.visible  = prev.leftSleeveVisible;  pm.leftSleeve.x  = prev.leftSleeveX;  pm.leftSleeve.y  = prev.leftSleeveY;  pm.leftSleeve.z  = prev.leftSleeveZ; }
+            if (pm.rightSleeve != null) pm.rightSleeve.visible = prev.rightSleeveVisible;
+            if (pm.leftSleeve != null) pm.leftSleeve.visible = prev.leftSleeveVisible;
         }
     }
 

@@ -49,6 +49,7 @@ public class LongArmsLayer extends RenderLayer<AbstractClientPlayer, PlayerModel
         float yScale = debugForce ? 2.0F : (1.6F + (factor * 0.9F));
 
         PlayerModel<AbstractClientPlayer> model = this.getParentModel();
+        // Base arms already hidden in pre-hook; proceed to draw stretched arms
         ModelPart rightArm = model.rightArm;
         ModelPart leftArm = model.leftArm;
         ModelPart rightSleeve = model.rightSleeve;
