@@ -19,6 +19,7 @@ import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
 import com.github.b4ndithelps.forge.blocks.ModBlocks;
 import net.minecraftforge.client.event.EntityRenderersEvent;
+import net.minecraft.client.renderer.entity.player.PlayerRenderer;
 import net.minecraftforge.client.event.ViewportEvent;
 import net.minecraftforge.client.event.ScreenEvent;
 import net.minecraftforge.client.event.InputEvent;
@@ -36,6 +37,18 @@ public class ClientEventHandler {
             // Register the wind projectile renderer - invisible renderer since particles handle visuals
             event.registerEntityRenderer(ModEntities.WIND_PROJECTILE.get(), WindProjectileRenderer::new);
             event.registerEntityRenderer(ModEntities.BETTER_WALL_PROJECTILE.get(), BetterWallProjectileRenderer::new);
+        }
+
+        @SubscribeEvent
+        public static void addLayers(EntityRenderersEvent.AddLayers event) {
+            PlayerRenderer defaultRenderer = event.getSkin("default");
+            if (defaultRenderer != null) {
+                defaultRenderer.addLayer(new LongArmsLayer(defaultRenderer));
+            }
+            PlayerRenderer slimRenderer = event.getSkin("slim");
+            if (slimRenderer != null) {
+                slimRenderer.addLayer(new LongArmsLayer(slimRenderer));
+            }
         }
 
         @SubscribeEvent
