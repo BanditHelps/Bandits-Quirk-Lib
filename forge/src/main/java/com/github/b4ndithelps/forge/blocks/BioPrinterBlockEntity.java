@@ -101,27 +101,12 @@ public class BioPrinterBlockEntity extends BlockEntity implements MenuProvider, 
             }
         }
 
-        // Choose a single category to display to avoid z-fighting if multiples present
-        boolean showCosmetic = false;
-        boolean showResistance = false;
-        boolean showBuilder = false;
-        boolean showQuirk = false;
-        if (hasQuirk) {
-            showQuirk = true;
-        } else if (hasBuilder) {
-            showBuilder = true;
-        } else if (hasResistance) {
-            showResistance = true;
-        } else if (hasCosmetic) {
-            showCosmetic = true;
-        }
-
         BlockState state = this.getBlockState();
         BlockState newState = state
-                .setValue(BioPrinterBlock.VIAL_COSMETIC, showCosmetic)
-                .setValue(BioPrinterBlock.VIAL_RESISTANCE, showResistance)
-                .setValue(BioPrinterBlock.VIAL_BUILDER, showBuilder)
-                .setValue(BioPrinterBlock.VIAL_QUIRK, showQuirk);
+                .setValue(BioPrinterBlock.VIAL_COSMETIC, hasCosmetic)
+                .setValue(BioPrinterBlock.VIAL_RESISTANCE, hasResistance)
+                .setValue(BioPrinterBlock.VIAL_BUILDER, hasBuilder)
+                .setValue(BioPrinterBlock.VIAL_QUIRK, hasQuirk);
         if (!newState.equals(state)) {
             this.level.setBlock(this.worldPosition, newState, 3);
         }
