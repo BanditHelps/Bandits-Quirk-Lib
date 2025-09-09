@@ -46,7 +46,11 @@ public class LongArmsLayer extends RenderLayer<AbstractClientPlayer, PlayerModel
         boolean debugForce = player.isCrouching();
 
         float factor = Math.max(0F, Math.min(1F, (quality < 0 ? 100 : quality) / 100F));
-        float yScale = debugForce ? 2.0F : (1.6F + (factor * 0.9F));
+        // Ease-in curve for more variety: smaller growth at low % and reach prior max at high %
+        float eased = factor * factor; // quadratic ease-in
+        float baseScale = 1.10F;      // smaller extension at low gene quality
+        float maxScale = 2.00F;       // cap at former ~80% length to avoid clipping
+        float yScale = debugForce ? 2.0F : (baseScale + (maxScale - baseScale) * eased);
 
         PlayerModel<AbstractClientPlayer> model = this.getParentModel();
         // Base arms already hidden in pre-hook; proceed to draw stretched arms
