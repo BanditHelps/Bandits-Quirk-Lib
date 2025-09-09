@@ -29,8 +29,9 @@ public abstract class PlayerModelIndexFilterMixin<T extends LivingEntity> {
         for (ModelPart part : orig) {
             float ax = Math.abs(part.x);
             float ay = part.y;
-            boolean looksLikeArmOrSleeve = (ax >= 4.0F && ay <= 6.0F);
-            if (looksLikeArmOrSleeve) continue;
+            boolean looksLikeArmOrSleeve = (LongArmsController.isHideVanillaArms() && ax >= 4.0F && ay <= 6.0F);
+            boolean looksLikeLegOrPant = (com.github.b4ndithelps.forge.client.LongLegsController.isHideVanillaLegs() && ay >= 10.0F && ax >= 1.5F && ax <= 2.3F);
+            if (looksLikeArmOrSleeve || looksLikeLegOrPant) continue;
             filtered.add(part);
         }
         cir.setReturnValue(filtered);

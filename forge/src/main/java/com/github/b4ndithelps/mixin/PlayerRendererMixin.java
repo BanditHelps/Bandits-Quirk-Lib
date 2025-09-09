@@ -18,26 +18,36 @@ public abstract class PlayerRendererMixin {
     @Inject(method = "render(Lnet/minecraft/client/player/AbstractClientPlayer;FFLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V",
             at = @At("HEAD"))
     private void bql$markHideArmsStart(AbstractClientPlayer player, float entityYaw, float partialTicks, PoseStack poseStack, MultiBufferSource buffer, int packedLight, CallbackInfo ci) {
-        boolean hide = LongArmsController.shouldRenderLongArms(player);
-        LongArmsController.setHideVanillaArms(hide);
+        boolean hideArms = LongArmsController.shouldRenderLongArms(player);
+        LongArmsController.setHideVanillaArms(hideArms);
+        boolean hideLegs = com.github.b4ndithelps.forge.client.LongLegsController.shouldRenderLongLegs(player);
+        com.github.b4ndithelps.forge.client.LongLegsController.setHideVanillaLegs(hideLegs);
     }
 
     @Inject(method = "render(Lnet/minecraft/client/player/AbstractClientPlayer;FFLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V",
             at = @At("RETURN"))
     private void bql$markHideArmsEnd(AbstractClientPlayer player, float entityYaw, float partialTicks, PoseStack poseStack, MultiBufferSource buffer, int packedLight, CallbackInfo ci) {
         LongArmsController.setHideVanillaArms(false);
+        com.github.b4ndithelps.forge.client.LongLegsController.setHideVanillaLegs(false);
     }
 
     // After vanilla sets visibilities in setModelProperties, re-hide arms/sleeves if needed
     @Inject(method = "setModelProperties", at = @At("TAIL"))
     private void bql$forceHideArmsAfterProperties(AbstractClientPlayer player, CallbackInfo ci) {
-        if (!LongArmsController.shouldRenderLongArms(player)) return;
         PlayerRenderer self = (PlayerRenderer)(Object)this;
         PlayerModel<AbstractClientPlayer> model = (PlayerModel<AbstractClientPlayer>) self.getModel();
-        if (model.rightArm != null) model.rightArm.visible = false;
-        if (model.leftArm != null) model.leftArm.visible = false;
-        if (model.rightSleeve != null) model.rightSleeve.visible = false;
-        if (model.leftSleeve != null) model.leftSleeve.visible = false;
+        if (LongArmsController.shouldRenderLongArms(player)) {
+            if (model.rightArm != null) model.rightArm.visible = false;
+            if (model.leftArm != null) model.leftArm.visible = false;
+            if (model.rightSleeve != null) model.rightSleeve.visible = false;
+            if (model.leftSleeve != null) model.leftSleeve.visible = false;
+        }
+        if (com.github.b4ndithelps.forge.client.LongLegsController.shouldRenderLongLegs(player)) {
+            if (model.rightLeg != null) model.rightLeg.visible = false;
+            if (model.leftLeg != null) model.leftLeg.visible = false;
+            if (model.rightPants != null) model.rightPants.visible = false;
+            if (model.leftPants != null) model.leftPants.visible = false;
+        }
     }
 
     // Cancel vanilla first-person arm rendering; long-arms layer will handle custom draw

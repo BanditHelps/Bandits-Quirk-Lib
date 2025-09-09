@@ -1,10 +1,10 @@
 {
-  "id": "bandits_quirk_lib:gene.long_arms",
+  "id": "bandits_quirk_lib:gene.long_legs",
   "category": "cosmetic",
   "rarity": "uncommon",
   "quality_range": [0, 100],
   "combinable": true,
-  "description": "Gives some longer arms for some reason",
+  "description": "Adds some of them fancy legs.",
   "mobs": [
     "minecraft:player",
     "minecraft:drowned"

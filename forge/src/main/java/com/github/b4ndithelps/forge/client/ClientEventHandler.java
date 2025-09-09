@@ -44,10 +44,12 @@ public class ClientEventHandler {
             PlayerRenderer defaultRenderer = event.getSkin("default");
             if (defaultRenderer != null) {
                 defaultRenderer.addLayer(new LongArmsLayer(defaultRenderer));
+                defaultRenderer.addLayer(new LongLegsLayer(defaultRenderer));
             }
             PlayerRenderer slimRenderer = event.getSkin("slim");
             if (slimRenderer != null) {
                 slimRenderer.addLayer(new LongArmsLayer(slimRenderer));
+                slimRenderer.addLayer(new LongLegsLayer(slimRenderer));
             }
         }
 
