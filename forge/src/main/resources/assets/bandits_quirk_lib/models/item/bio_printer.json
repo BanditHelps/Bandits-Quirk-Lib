@@ -1,5 +1,6 @@
 {
-  "parent": "bandits_quirk_lib:block/bio_printer"
+  "parent": "bandits_quirk_lib:block/bio_printer",
+  "gui_light": "side"
 }
 
 

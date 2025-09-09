@@ -63,6 +63,7 @@ public class ClientEventHandler {
                 MenuScreens.register(ModMenus.GENE_COMBINER.get(), GeneCombinerScreen::new);
 				// Ensure blocks with transparency render correctly
 				ItemBlockRenderTypes.setRenderLayer(ModBlocks.BIO_TERMINAL.get(), RenderType.cutout());
+				ItemBlockRenderTypes.setRenderLayer(ModBlocks.BIO_PRINTER.get(), RenderType.cutout());
             });
         }
     }
