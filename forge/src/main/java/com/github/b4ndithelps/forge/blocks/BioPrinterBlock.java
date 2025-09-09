@@ -19,16 +19,27 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraftforge.network.NetworkHooks;
 
 public class BioPrinterBlock extends Block implements EntityBlock {
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
+    public static final BooleanProperty VIAL_COSMETIC = BooleanProperty.create("vial_cosmetic");
+    public static final BooleanProperty VIAL_RESISTANCE = BooleanProperty.create("vial_resistance");
+    public static final BooleanProperty VIAL_BUILDER = BooleanProperty.create("vial_builder");
+    public static final BooleanProperty VIAL_QUIRK = BooleanProperty.create("vial_quirk");
 
     public BioPrinterBlock(Properties properties) {
         super(properties);
-        this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH));
+        this.registerDefaultState(this.stateDefinition.any()
+            .setValue(FACING, Direction.NORTH)
+            .setValue(VIAL_COSMETIC, false)
+            .setValue(VIAL_RESISTANCE, false)
+            .setValue(VIAL_BUILDER, false)
+            .setValue(VIAL_QUIRK, false)
+        );
     }
 
     @Override
@@ -60,7 +71,7 @@ public class BioPrinterBlock extends Block implements EntityBlock {
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING);
+        builder.add(FACING, VIAL_COSMETIC, VIAL_RESISTANCE, VIAL_BUILDER, VIAL_QUIRK);
     }
 
     @Override

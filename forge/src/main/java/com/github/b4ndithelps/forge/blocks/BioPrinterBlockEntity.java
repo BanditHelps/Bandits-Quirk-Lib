@@ -71,15 +71,74 @@ public class BioPrinterBlockEntity extends BlockEntity implements MenuProvider, 
     @Override
     public ItemStack getItem(int slot) { return items.get(slot); }
     @Override
-    public ItemStack removeItem(int slot, int amount) { ItemStack r = ContainerHelper.removeItem(items, slot, amount); if (!r.isEmpty()) setChanged(); return r; }
+    public ItemStack removeItem(int slot, int amount) { ItemStack r = ContainerHelper.removeItem(items, slot, amount); if (!r.isEmpty()) { setChanged(); updateVialPropertiesFromInventory(); } return r; }
     @Override
-    public ItemStack removeItemNoUpdate(int slot) { return ContainerHelper.takeItem(items, slot); }
+    public ItemStack removeItemNoUpdate(int slot) { ItemStack r = ContainerHelper.takeItem(items, slot); updateVialPropertiesFromInventory(); return r; }
     @Override
-    public void setItem(int slot, ItemStack stack) { items.set(slot, stack); if (stack.getCount() > getMaxStackSize()) stack.setCount(getMaxStackSize()); setChanged(); }
+    public void setItem(int slot, ItemStack stack) { items.set(slot, stack); if (stack.getCount() > getMaxStackSize()) stack.setCount(getMaxStackSize()); setChanged(); updateVialPropertiesFromInventory(); }
     @Override
     public boolean stillValid(Player player) { return player.distanceToSqr(worldPosition.getX()+0.5, worldPosition.getY()+0.5, worldPosition.getZ()+0.5) <= 64.0; }
     @Override
-    public void clearContent() { items.clear(); }
+    public void clearContent() { items.clear(); updateVialPropertiesFromInventory(); }
+
+    private void updateVialPropertiesFromInventory() {
+        if (this.level == null) return;
+        boolean hasCosmetic = false;
+        boolean hasResistance = false;
+        boolean hasBuilder = false;
+        boolean hasQuirk = false;
+
+        for (int i = 0; i < SLOT_INPUT_COUNT; i++) {
+            ItemStack stack = this.items.get(i);
+            if (stack.isEmpty()) continue;
+            GeneVialItem.Category c = getCategory(stack);
+            if (c == null) continue;
+            switch (c) {
+                case COSMETIC -> hasCosmetic = true;
+                case RESISTANCE -> hasResistance = true;
+                case BUILDER -> hasBuilder = true;
+                case QUIRK -> hasQuirk = true;
+            }
+        }
+
+        // Choose a single category to display to avoid z-fighting if multiples present
+        boolean showCosmetic = false;
+        boolean showResistance = false;
+        boolean showBuilder = false;
+        boolean showQuirk = false;
+        if (hasQuirk) {
+            showQuirk = true;
+        } else if (hasBuilder) {
+            showBuilder = true;
+        } else if (hasResistance) {
+            showResistance = true;
+        } else if (hasCosmetic) {
+            showCosmetic = true;
+        }
+
+        BlockState state = this.getBlockState();
+        BlockState newState = state
+                .setValue(BioPrinterBlock.VIAL_COSMETIC, showCosmetic)
+                .setValue(BioPrinterBlock.VIAL_RESISTANCE, showResistance)
+                .setValue(BioPrinterBlock.VIAL_BUILDER, showBuilder)
+                .setValue(BioPrinterBlock.VIAL_QUIRK, showQuirk);
+        if (!newState.equals(state)) {
+            this.level.setBlock(this.worldPosition, newState, 3);
+        }
+    }
+
+    private GeneVialItem.Category getCategory(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return null;
+        var item = stack.getItem();
+        if (item instanceof GeneVialItem vial) {
+            return vial.getCategory();
+        }
+        if (item == ModItems.GENE_VIAL_COSMETIC.get()) return GeneVialItem.Category.COSMETIC;
+        if (item == ModItems.GENE_VIAL_RESISTANCE.get()) return GeneVialItem.Category.RESISTANCE;
+        if (item == ModItems.GENE_VIAL_BUILDER.get()) return GeneVialItem.Category.BUILDER;
+        if (item == ModItems.GENE_VIAL_QUIRK.get()) return GeneVialItem.Category.QUIRK;
+        return null;
+    }
 
     // WorldlyContainer filtering for hoppers etc.
     @Override

@@ -1,10 +1,30 @@
 {
-  "variants": {
-    "facing=north": { "model": "bandits_quirk_lib:block/bio_printer" },
-    "facing=south": { "model": "bandits_quirk_lib:block/bio_printer", "y": 180 },
-    "facing=west":  { "model": "bandits_quirk_lib:block/bio_printer", "y": 270 },
-    "facing=east":  { "model": "bandits_quirk_lib:block/bio_printer", "y": 90 }
-  }
+  "multipart": [
+    { "when": { "facing": "north" }, "apply": { "model": "bandits_quirk_lib:block/bio_printer_base" } },
+    { "when": { "facing": "south" }, "apply": { "model": "bandits_quirk_lib:block/bio_printer_base", "y": 180 } },
+    { "when": { "facing": "west"  }, "apply": { "model": "bandits_quirk_lib:block/bio_printer_base", "y": 270 } },
+    { "when": { "facing": "east"  }, "apply": { "model": "bandits_quirk_lib:block/bio_printer_base", "y": 90 } },
+
+    { "when": { "vial_cosmetic": "true", "facing": "north" }, "apply": { "model": "bandits_quirk_lib:block/bio_printer_vial_cosmetic" } },
+    { "when": { "vial_cosmetic": "true", "facing": "south" }, "apply": { "model": "bandits_quirk_lib:block/bio_printer_vial_cosmetic", "y": 180 } },
+    { "when": { "vial_cosmetic": "true", "facing": "west"  }, "apply": { "model": "bandits_quirk_lib:block/bio_printer_vial_cosmetic", "y": 270 } },
+    { "when": { "vial_cosmetic": "true", "facing": "east"  }, "apply": { "model": "bandits_quirk_lib:block/bio_printer_vial_cosmetic", "y": 90 } },
+
+    { "when": { "vial_resistance": "true", "facing": "north" }, "apply": { "model": "bandits_quirk_lib:block/bio_printer_vial_resistance" } },
+    { "when": { "vial_resistance": "true", "facing": "south" }, "apply": { "model": "bandits_quirk_lib:block/bio_printer_vial_resistance", "y": 180 } },
+    { "when": { "vial_resistance": "true", "facing": "west"  }, "apply": { "model": "bandits_quirk_lib:block/bio_printer_vial_resistance", "y": 270 } },
+    { "when": { "vial_resistance": "true", "facing": "east"  }, "apply": { "model": "bandits_quirk_lib:block/bio_printer_vial_resistance", "y": 90 } },
+
+    { "when": { "vial_builder": "true", "facing": "north" }, "apply": { "model": "bandits_quirk_lib:block/bio_printer_vial_builder" } },
+    { "when": { "vial_builder": "true", "facing": "south" }, "apply": { "model": "bandits_quirk_lib:block/bio_printer_vial_builder", "y": 180 } },
+    { "when": { "vial_builder": "true", "facing": "west"  }, "apply": { "model": "bandits_quirk_lib:block/bio_printer_vial_builder", "y": 270 } },
+    { "when": { "vial_builder": "true", "facing": "east"  }, "apply": { "model": "bandits_quirk_lib:block/bio_printer_vial_builder", "y": 90 } },
+
+    { "when": { "vial_quirk": "true", "facing": "north" }, "apply": { "model": "bandits_quirk_lib:block/bio_printer_vial_quirk" } },
+    { "when": { "vial_quirk": "true", "facing": "south" }, "apply": { "model": "bandits_quirk_lib:block/bio_printer_vial_quirk", "y": 180 } },
+    { "when": { "vial_quirk": "true", "facing": "west"  }, "apply": { "model": "bandits_quirk_lib:block/bio_printer_vial_quirk", "y": 270 } },
+    { "when": { "vial_quirk": "true", "facing": "east"  }, "apply": { "model": "bandits_quirk_lib:block/bio_printer_vial_quirk", "y": 90 } }
+  ]
 }
 
 
