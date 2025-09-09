@@ -36,14 +36,14 @@ public class LongArmsLayer extends RenderLayer<AbstractClientPlayer, PlayerModel
                        float ageInTicks,
                        float netHeadYaw,
                        float headPitch) {
-        int quality = getGeneQualityClient(player, LONG_ARMS_GENE_ID);
-        if (quality < 0) {
-            quality = getGeneQualityClient(player, LONG_ARMS_GENE_ID_ALT);
-        }
-        boolean debugForce = player.isCrouching();
-        if (quality < 0 && !debugForce) {
+        // Gate rendering on the same logic used by the pre-render hider to avoid duplicates
+        if (!LongArmsController.shouldRenderLongArms(player)) {
             return;
         }
+
+        int quality = getGeneQualityClient(player, LONG_ARMS_GENE_ID);
+        if (quality < 0) quality = getGeneQualityClient(player, LONG_ARMS_GENE_ID_ALT);
+        boolean debugForce = player.isCrouching();
 
         float factor = Math.max(0F, Math.min(1F, (quality < 0 ? 100 : quality) / 100F));
         float yScale = debugForce ? 2.0F : (1.6F + (factor * 0.9F));
@@ -58,30 +58,43 @@ public class LongArmsLayer extends RenderLayer<AbstractClientPlayer, PlayerModel
         ResourceLocation skin = player.getSkinTextureLocation();
         VertexConsumer vc = buffer.getBuffer(RenderType.entityCutoutNoCull(skin));
 
-        // Ensure vanilla arms are hidden; draw our scaled arms regardless of their visibility
+        // Ensure vanilla arms are hidden by pre-hook; here we draw scaled arms and
+        // temporarily force visibility so ModelPart.render actually draws
         if (rightArm != null) {
+            boolean prev = rightArm.visible;
+            rightArm.visible = true;
             poseStack.pushPose();
             poseStack.scale(1.0F, yScale, 1.0F);
             rightArm.render(poseStack, vc, packedLight, OverlayTexture.NO_OVERLAY);
             poseStack.popPose();
+            rightArm.visible = prev;
         }
         if (leftArm != null) {
+            boolean prev = leftArm.visible;
+            leftArm.visible = true;
             poseStack.pushPose();
             poseStack.scale(1.0F, yScale, 1.0F);
             leftArm.render(poseStack, vc, packedLight, OverlayTexture.NO_OVERLAY);
             poseStack.popPose();
+            leftArm.visible = prev;
         }
         if (rightSleeve != null) {
+            boolean prev = rightSleeve.visible;
+            rightSleeve.visible = true;
             poseStack.pushPose();
             poseStack.scale(1.0F, yScale, 1.0F);
             rightSleeve.render(poseStack, vc, packedLight, OverlayTexture.NO_OVERLAY);
             poseStack.popPose();
+            rightSleeve.visible = prev;
         }
         if (leftSleeve != null) {
+            boolean prev = leftSleeve.visible;
+            leftSleeve.visible = true;
             poseStack.pushPose();
             poseStack.scale(1.0F, yScale, 1.0F);
             leftSleeve.render(poseStack, vc, packedLight, OverlayTexture.NO_OVERLAY);
             poseStack.popPose();
+            leftSleeve.visible = prev;
         }
     }
 

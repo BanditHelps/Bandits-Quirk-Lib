@@ -31,7 +31,7 @@ public class LongArmsRenderHandler {
     public static void onRenderPlayerPre(RenderPlayerEvent.Pre event) {
         Player player = event.getEntity();
 
-        boolean active = hasLongArms(player) || player.isCrouching();
+        boolean active = LongArmsController.shouldRenderLongArms(player);
         if (!active) {
             return;
         }
@@ -55,6 +55,11 @@ public class LongArmsRenderHandler {
         if (leftArm != null) leftArm.visible = false;
         if (rightSleeve != null) rightSleeve.visible = false;
         if (leftSleeve != null) leftSleeve.visible = false;
+
+        // Move vanilla arms offscreen to prevent any other layers from drawing them
+        if (model instanceof PlayerModel<?> pmAll) {
+            LongArmsController.saveAndMoveArmsOffscreen(player, pmAll);
+        }
     }
 
     @SubscribeEvent
@@ -72,6 +77,9 @@ public class LongArmsRenderHandler {
         if (model instanceof PlayerModel<?> pm) {
             if (pm.rightSleeve != null) pm.rightSleeve.visible = prev.rightSleeveVisible;
             if (pm.leftSleeve != null) pm.leftSleeve.visible = prev.leftSleeveVisible;
+            // restore positions moved off-screen
+            LongArmsController.restoreArmPositions(player, pm);
+            LongArmsController.clearArmPositions(player);
         }
     }
 
