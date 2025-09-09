@@ -84,7 +84,7 @@ public final class PehkuiLongLegsScaler {
         float legYScale = baseLegScale + (maxLegScale - baseLegScale) * eased;
 
         // Total model height increases with leg extension; use a stronger contribution to match visuals.
-        float legPortion = 0.55F; // tuned higher for larger hitbox at high leg scales
+        float legPortion = 0.52F; // tuned higher for larger hitbox at high leg scales
         float heightScale = 1.0F + (legYScale - 1.0F) * legPortion;
         return heightScale;
     }

@@ -22,6 +22,19 @@ public abstract class PlayerRendererMixin {
         LongArmsController.setHideVanillaArms(hideArms);
         boolean hideLegs = com.github.b4ndithelps.forge.client.LongLegsController.shouldRenderLongLegs(player);
         com.github.b4ndithelps.forge.client.LongLegsController.setHideVanillaLegs(hideLegs);
+
+        // Proactively move vanilla legs offscreen so any layer that forces visibility won't draw them
+        if (hideLegs) {
+            PlayerRenderer self = (PlayerRenderer)(Object)this;
+            PlayerModel<AbstractClientPlayer> model = (PlayerModel<AbstractClientPlayer>) self.getModel();
+            if (model != null) {
+                if (model.rightLeg != null) model.rightLeg.visible = false;
+                if (model.leftLeg != null) model.leftLeg.visible = false;
+                if (model.rightPants != null) model.rightPants.visible = false;
+                if (model.leftPants != null) model.leftPants.visible = false;
+                com.github.b4ndithelps.forge.client.LongLegsController.saveAndMoveLegsOffscreen(player, model);
+            }
+        }
     }
 
     @Inject(method = "render(Lnet/minecraft/client/player/AbstractClientPlayer;FFLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V",
@@ -29,6 +42,14 @@ public abstract class PlayerRendererMixin {
     private void bql$markHideArmsEnd(AbstractClientPlayer player, float entityYaw, float partialTicks, PoseStack poseStack, MultiBufferSource buffer, int packedLight, CallbackInfo ci) {
         LongArmsController.setHideVanillaArms(false);
         com.github.b4ndithelps.forge.client.LongLegsController.setHideVanillaLegs(false);
+
+        // Restore any leg part positions moved offscreen
+        PlayerRenderer self = (PlayerRenderer)(Object)this;
+        PlayerModel<AbstractClientPlayer> model = (PlayerModel<AbstractClientPlayer>) self.getModel();
+        if (model != null) {
+            com.github.b4ndithelps.forge.client.LongLegsController.restoreLegPositions(player, model);
+            com.github.b4ndithelps.forge.client.LongLegsController.clearLegPositions(player);
+        }
     }
 
     // After vanilla sets visibilities in setModelProperties, re-hide arms/sleeves if needed

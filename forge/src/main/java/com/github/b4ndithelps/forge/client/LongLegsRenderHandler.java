@@ -45,10 +45,11 @@ public class LongLegsRenderHandler {
         PoseStack poseStack = event.getPoseStack();
         poseStack.translate(0.0D, offsetY, 0.0D);
 
-        // Additionally, hide vanilla leg parts defensively for this render
+        // Additionally, hide and move vanilla leg parts offscreen for this render
         if (event.getRenderer().getModel() instanceof PlayerModel) {
             PlayerModel<?> pm = (PlayerModel<?>) event.getRenderer().getModel();
             storeAndHideLegs(player, pm);
+            LongLegsController.saveAndMoveLegsOffscreen(player, pm);
         }
     }
 
@@ -58,6 +59,8 @@ public class LongLegsRenderHandler {
         if (event.getRenderer().getModel() instanceof PlayerModel) {
             PlayerModel<?> pm = (PlayerModel<?>) event.getRenderer().getModel();
             restoreLegs(player, pm);
+            LongLegsController.restoreLegPositions(player, pm);
+            LongLegsController.clearLegPositions(player);
         }
         LongLegsController.setHideVanillaLegs(false);
     }

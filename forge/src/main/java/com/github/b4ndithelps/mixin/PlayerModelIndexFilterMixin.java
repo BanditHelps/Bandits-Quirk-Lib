@@ -23,7 +23,7 @@ public abstract class PlayerModelIndexFilterMixin<T extends LivingEntity> {
 
     @Inject(method = "bodyParts", at = @At("RETURN"), cancellable = true)
     private void bql$filterArmsByOrder(CallbackInfoReturnable<Iterable<ModelPart>> cir) {
-        if (!LongArmsController.isHideVanillaArms()) return;
+        if (!LongArmsController.isHideVanillaArms() && !com.github.b4ndithelps.forge.client.LongLegsController.isHideVanillaLegs()) return;
         Iterable<ModelPart> orig = cir.getReturnValue();
         List<ModelPart> filtered = new ArrayList<>();
         for (ModelPart part : orig) {
