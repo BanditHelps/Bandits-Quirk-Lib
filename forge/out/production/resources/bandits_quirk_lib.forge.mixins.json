@@ -1,0 +1,21 @@
+{
+  "required": true,
+  "package": "com.github.b4ndithelps.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "minVersion": "0.8",
+  "client": [
+    "EntityRendererMixin",
+    "PowersScreenMixin"
+  ],
+  "mixins": [
+    "ElementMixin",
+    "AbilityInstanceMixin",
+    "AbilityStaminaMixin",
+    "ExecuteCommandMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
+
+

@@ -1,0 +1,20 @@
+{
+  "id": "bandits_quirk_lib:gene.heat_resistance",
+  "category": "resistance",
+  "rarity": "common",
+  "quality_range": [15, 75],
+  "combinable": true,
+  "description": "Reduces heat damage intake proportionally to quality.",
+  "mobs": [
+    "minecraft:player",
+    "minecraft:zombie"
+  ],
+  "combination": {
+    "requires": [
+      { "id": "bandits_quirk_lib:gene.glowing_skin", "min_quality": 30 }
+    ],
+    "builder": { "count": 1, "min_quality": 25 }
+  }
+}
+
+

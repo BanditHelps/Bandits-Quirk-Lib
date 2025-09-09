@@ -1,0 +1,18 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": { "all": "bandits_quirk_lib:block/bio_cable" },
+  "elements": [
+    { "from": [7, 7, 2], "to": [9, 9, 6],
+      "faces": {
+        "north": { "uv": [0, 0, 2, 2], "texture": "#all" },
+        "south": { "uv": [0, 0, 2, 2], "texture": "#all" },
+        "west": { "uv": [0, 0, 2, 2], "texture": "#all" },
+        "east": { "uv": [0, 0, 2, 2], "texture": "#all" },
+        "up": { "uv": [0, 0, 2, 2], "texture": "#all" },
+        "down": { "uv": [0, 0, 2, 2], "texture": "#all" }
+      }
+    }
+  ]
+}
+
+

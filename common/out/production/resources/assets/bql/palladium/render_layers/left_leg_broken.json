@@ -1,0 +1,5 @@
+{
+    "type": "palladium:skin_overlay",
+    "render_type": "solid",
+    "texture": "bql:textures/models/left_leg_broken.png"
+}

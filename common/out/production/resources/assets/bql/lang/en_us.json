@@ -1,0 +1,19 @@
+{
+  "banditsquirklib.gui.elements.iconbutton.key": "Set Image Key",
+  "banditsquirklib.gui.editor.add.iconbutton": "Icon Button",
+  "banditsquirklib.gui.editor.add.iconbutton.desc": "An easy to use clickable icon.",
+  "banditsquirklib.gui.elements.iconbutton.icon_offset_x": "Set Icon Offset X",
+  "banditsquirklib.gui.elements.iconbutton.icon_offset_y": "Set Icon Offset Y",
+  "banditsquirklib.gui.elements.iconbutton.icon_scale": "Set Image Scale",
+  "banditsquirklib.gui.editor.add.enchant_slider": "Enchant Slider",
+  "banditsquirklib.gui.editor.add.enchant_slider.desc": "A slider specifically for enchantments",
+  "banditsquirklib.gui.elements.enchant_slider.enchantment_id": "Enchantment Id",
+  "banditsquirklib.gui.elements.enchant_slider.enchantment_id.desc": "The minecraft id for the enchantment. i.e minecraft:sharpness",
+
+  "death.attack.exhaustion": "%1$s collapsed from exhaustion",
+  "death.attach.exhaustion.player": "%1$s collapsed from exhaustion while fighting %2$s",
+
+  "effect.bandits_quirk_lib.decay_effect": "Decay",
+  "effect.bandits_quirk_lib.stun_effect": "Stunned",
+  "effect.bandits_quirk_lib.true_invisibility": "True Invisibility"
+}

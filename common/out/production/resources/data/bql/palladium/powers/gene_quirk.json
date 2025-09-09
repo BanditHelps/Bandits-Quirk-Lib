@@ -1,0 +1,175 @@
+{
+  "name": "Genome Quirk",
+  "background": "minecraft:textures/block/white_wool.png",
+  "icon": "bandits_quirk_lib:tissue_extractor",
+  "gui_display_type": "tree",
+  "persistent_data": true,
+  "abilities": {
+    "water_breathing": {
+      "type": "bandits_quirk_lib:scaling_gene_duration_effect",
+      "title": "Quality 1 Water Breathing",
+      "description": "Kinda breath underwater",
+      "effect": "minecraft:water_breathing",
+      "gene": "bandits_quirk_lib:gene.water_breathing",
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:is_under_water"
+          }
+        ]
+      }
+    },
+    "jump_boost": {
+      "type": "bandits_quirk_lib:scaling_gene_amp_effect",
+      "title": "Jump Boost",
+      "description": "Add a jump boost when holding shift.",
+      "effect": "minecraft:jump_boost",
+      "gene": "bandits_quirk_lib:gene.jump_boost",
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:crouching"
+          }
+        ]
+      }
+    },
+    "glowing_skin": {
+      "type": "palladium:command",
+      "title": "Glowing Skin",
+      "description": "Your skin is so shiny, that all can see you.",
+      "first_tick_commands": [
+        "effect give @s minecraft:glowing infinite 0 true"
+      ],
+      "commands": [],
+      "last_tick_commands": [
+        "effect clear @s minecraft:glowing"
+      ],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "bandits_quirk_lib:genome_has_gene",
+            "gene_id": "bandits_quirk_lib:gene.glowing_skin",
+            "min_quality": 0
+          }
+        ]
+      }
+    },
+    "invisibility": {
+      "type": "palladium:command",
+      "title": "Invisibility",
+      "description": "Your body becomes permanently invisible.",
+      "first_tick_commands": [
+        "tag @s add Bql.NoShadow",
+        "effect give @s bandits_quirk_lib:true_invisibility infinite 0 true",
+        "effect give @s minecraft:invisibility infinite 0 true"
+      ],
+      "commands": [],
+      "last_tick_commands": [
+        "tag @s remove Bql.NoShadow",
+        "effect clear @s bandits_quirk_lib:true_invisibility",
+        "effect clear @s minecraft:invisibility"
+      ],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "bandits_quirk_lib:genome_has_gene",
+            "gene_id": "bandits_quirk_lib:gene.invisibility",
+            "min_quality": 0
+          }
+        ]
+      }
+    },
+    "minor_object_attraction": {
+      "type": "bandits_quirk_lib:minor_object_attraction",
+      "title": "Toggle Minor Object Attraction",
+      "description": "You are able to attract things you are looking at towards you.",
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:held",
+            "key_type": "key_bind"
+          }
+        ],
+        "unlocking": [
+          {
+            "type": "bandits_quirk_lib:genome_has_gene",
+            "gene_id": "bandits_quirk_lib:gene.minor_object_attraction",
+            "min_quality": 0
+          }
+        ]
+      }
+    },
+    "zoom": {
+      "type": "bandits_quirk_lib:zoom",
+      "title": "Zoom",
+      "description": "You are able to attract things you are looking at towards you.",
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:held",
+            "key_type": "key_bind"
+          }
+        ],
+        "unlocking": [
+          {
+            "type": "bandits_quirk_lib:genome_has_gene",
+            "gene_id": "bandits_quirk_lib:gene.zoom",
+            "min_quality": 0
+          }
+        ]
+      }
+    },
+    "zoom_change_up": {
+      "type": "bandits_quirk_lib:body_status_modifier",
+      "description": "Allows you to zoom in while using the zoom ability",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "float_value": 1,
+      "body_part": "head",
+      "key": "zoom_level",
+      "operation": "add",
+      "max_value": 15,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:action",
+            "key_type": "scroll_up",
+            "allow_scrolling_when_crouching": true
+          }
+        ],
+        "unlocking": [
+          {
+            "type": "palladium:ability_enabled",
+            "ability": "zoom"
+          }
+        ]
+      }
+    },
+    "zoom_change_down": {
+      "type": "bandits_quirk_lib:body_status_modifier",
+      "description": "Allows you to zoom out while using the zoom ability",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "float_value": -1,
+      "body_part": "head",
+      "key": "zoom_level",
+      "operation": "add",
+      "min_value": 1,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:action",
+            "key_type": "scroll_down",
+            "allow_scrolling_when_crouching": true
+          }
+        ],
+        "unlocking": [
+          {
+            "type": "palladium:ability_enabled",
+            "ability": "zoom"
+          }
+        ]
+      }
+    }
+  }
+}

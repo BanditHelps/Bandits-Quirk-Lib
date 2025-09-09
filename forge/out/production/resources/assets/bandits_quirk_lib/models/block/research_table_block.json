@@ -1,0 +1,14 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "bandits_quirk_lib:block/research_table_top",
+    "down": "bandits_quirk_lib:block/research_table_bottom",
+    "up": "bandits_quirk_lib:block/research_table_top",
+    "north": "bandits_quirk_lib:block/research_table_north",
+    "south": "bandits_quirk_lib:block/research_table_south",
+    "west": "bandits_quirk_lib:block/research_table_west",
+    "east": "bandits_quirk_lib:block/research_table_east"
+  }
+}
+
+

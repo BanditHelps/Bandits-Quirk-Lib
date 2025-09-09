@@ -1,0 +1,206 @@
+{
+  "name": "Base Quirk",
+  "background": "minecraft:textures/block/stone.png",
+  "icon": "minecraft:wooden_sword",
+  "gui_display_type": "tree",
+  "abilities": {
+    "stamina_1": {
+      "type": "bandits_quirk_lib:happen_once",
+      "commands": [
+        "scoreboard players add @s MineHa.StaminaMax 50",
+        "tellraw @s {\"text\":\"Training Session complete! +50 stamina capacity\",\"color\":\"gold\"}"
+      ],
+      "key": "base_stamina_1",
+      "icon": "minecraft:feather",
+      "title": "Stamina Training - I",
+      "description": "Your rigorous training increases your stamina capacity by 50 points.",
+      "hidden_in_bar": true,
+      "gui_position": [2, -1],
+      "conditions": {
+        "unlocking": [
+          {
+            "type": "bandits_quirk_lib:upgrade_point_buy",
+            "score": 1
+          }
+        ]
+      }
+    },
+    "body_arm_break_test": {
+      "type": "palladium:command",
+      "title": "arm test",
+      "first_tick_commands": [],
+      "last_tick_commands": [],
+      "commands": [
+        "say arm broken"
+      ],
+      "hidden": true,
+      "hidden_in_bar": true,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "bandits_quirk_lib:body_damage",
+            "body_part": "right_arm",
+            "damage_state": "broken"
+          }
+        ]
+      }
+    },
+    "stamina_check": {
+      "type": "palladium:command",
+      "title": "Stam test",
+      "first_tick_commands": [
+        "say test"
+      ],
+      "last_tick_commands": [],
+      "commands": [],
+      "stamina_cost": 20,
+      "stamina_drain_interval": 0,
+      "hidden": false,
+      "hidden_in_bar": false,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:held",
+            "key_type": "key_bind",
+            "needs_empty_hand": false
+          }
+        ]
+      }
+    },
+    "slowthing": {
+      "type": "palladium:slowfall",
+      "icon": "minecraft:feather",
+      "title": "thingggg",
+      "bar_color": "light_gray",
+      "hidden": false,
+      "hidden_in_bar": false,
+      "list_index": 10,
+      "gui_position": "null",
+      "description": "null",
+      "stamina_cost": 10,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:held",
+            "key_type": "key_bind",
+            "needs_empty_hand": false
+          }
+        ]
+      }
+    },
+    "airforce": {
+      "type": "bandits_quirk_lib:wind_projectile",
+      "title": "Air Force",
+      "hidden": false,
+      "hidden_in_bar": false,
+      "list_index": 0,
+      "max_range": 40.0,
+      "max_damage": 15.0,
+      "max_knockback": 5.0,
+      "damage_threshold": 10000.0,
+      "projectile_speed": 3,
+      "projectile_width": 2.0,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:action",
+            "key_type": "key_bind"
+          }
+        ]
+      }
+    },
+    "grow_status": {
+      "type": "bandits_quirk_lib:body_status_modifier",
+      "title": "Grow",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "value_type": "float",
+      "body_part": "chest",
+      "key": "test_val",
+      "operation": "add",
+      "float_value": 1.0,
+      "max_value": 40,
+      "send_message": false
+    },
+    "wind_wall": {
+      "type": "bandits_quirk_lib:wind_wall_smash",
+      "title": "Wind Wall Smash",
+      "hidden": true,
+      "hidden_in_bar": false,
+      "base_knockback": 2.0,
+      "max_radius": 15,
+      "speed": 2.0,
+      "max_charge_time": 100,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:held",
+            "key_type": "key_bind"
+          }
+        ]
+      }
+    },
+    "test_action": {
+      "type": "palladium:command",
+      "title": "test_hold",
+      "list_index": 2,
+      "hidden": true,
+      "hidden_in_bar": false,
+      "commands": [
+        "say holding"
+      ],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "bandits_quirk_lib:held_with_cooldown",
+            "key_type": "key_bind",
+            "cooldown": 40
+          }
+        ]
+      }
+
+    },
+    "permeation": {
+      "type": "bandits_quirk_lib:permeation",
+      "title": "Full Body Permeation",
+      "description": "does stuff",
+      "icon": "minecraft:bucket",
+      "hidden": false,
+      "hidden_in_bar": false,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:toggle"
+          }
+        ]
+      },
+      "mode": "full_body",
+      "descent_speed": 0.6,
+      "pop_strength": 1.0,
+      "apply_blindness": true,
+      "apply_water_breathing": true
+    },
+    "gene_test": {
+      "type": "palladium:command",
+      "title": "Gene Test",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "first_tick_commands": [
+        "effect give @s minecraft:glowing infinite 1 false"
+      ],
+      "commands": [],
+      "last_tick_commands": [
+        "effect clear @s minecraft:glowing"
+      ],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "bandits_quirk_lib:genome_has_gene",
+            "gene_id": "bandits_quirk_lib:gene.glowing_skin",
+            "min_quality": 50
+          }
+        ]
+      }
+    }
+  }
+}

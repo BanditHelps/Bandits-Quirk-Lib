@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "bandits_quirk_lib",
+  "version": "${version}",
+  "name": "Bandit's Quirk Lib",
+  "description": "A library mod that allows for extra Kube JS integration and other cool stuff.",
+  "authors": [
+    "B4nditHelps"
+  ],
+  "contact": {
+    "homepage": "https://fabricmc.net/",
+    "sources": "https://github.com/FabricMC/fabric-example-mod"
+  },
+  "license": "CC0-1.0",
+  "icon": "assets/bandits_quirk_lib/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.github.b4ndithelps.fabric.BanditsQuirkLibFabric"
+    ],
+    "client": [
+      "com.github.b4ndithelps.fabric.client.BanditsQuirkLibFabricClient"
+    ]
+  },
+  "mixins": [
+    "bandits_quirk_lib.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.16.14",
+    "minecraft": "~1.20.1",
+    "java": ">=17",
+    "architectury": ">=9.2.14"
+  },
+  "suggests": {
+    "another-mod": "*"
+  }
+}

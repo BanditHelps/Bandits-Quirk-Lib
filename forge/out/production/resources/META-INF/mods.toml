@@ -1,0 +1,50 @@
+modLoader = "javafml"
+loaderVersion = "[47,)"
+#issueTrackerURL = ""
+license = "All Rights Reservered"
+
+[[mods]]
+modId = "bandits_quirk_lib"
+version = "${version}"
+displayName = "Bandit's Quirk Lib"
+authors = "B4nditHelps"
+description = '''
+A library mod that allows for extra Kube JS integration and other cool stuff.
+'''
+#logoFile = ""
+
+[[dependencies.bandits_quirk_lib]]
+modId = "forge"
+mandatory = true
+versionRange = "[47,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.bandits_quirk_lib]]
+modId = "minecraft"
+mandatory = true
+versionRange = "[1.20.1,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.bandits_quirk_lib]]
+modId = "architectury"
+mandatory = true
+versionRange = "[9.2.14,)"
+ordering = "AFTER"
+side = "BOTH"
+
+[[dependencies.bandits_quirk_lib]]
+modId = "palladium"
+mandatory = true
+versionRange = ">=4.2.1"
+ordering = "BEFORE"
+side = "BOTH"
+
+[[dependencies.bandits_quirk_lib]]
+modId = "fancymenu"
+mandatory = true
+versionRange = "[3.5.2,)"
+ordering = "AFTER"
+side = "BOTH"
+

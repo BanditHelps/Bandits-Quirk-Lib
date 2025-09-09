@@ -35,6 +35,9 @@ public class ModCreativeTabs {
                 output.accept(ModItems.GENE_VIAL_QUIRK.get());
                 output.accept(ModItems.GENE_DATABASE.get());
                 output.accept(ModItems.INJECTOR.get());
+                output.accept(ModItems.TIER1_TRIGGER.get());
+                output.accept(ModItems.TIER2_TRIGGER.get());
+                output.accept(ModItems.TIER3_TRIGGER.get());
             })
             .build());
 
