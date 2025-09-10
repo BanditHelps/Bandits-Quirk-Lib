@@ -1,19 +1,30 @@
 {
-  "block.bandits_quirk_lib.research_table_block": "Research Table",
   "itemGroup.bandits_quirk_lib": "Bandit's Quirk Lib",
-  "death.attack.exhaustion.player": "too much exhaustion",
-  "effect.bandits_quirk_lib.pstock_overuse": "Power Overuse",
   "item.bandits_quirk_lib.tissue_extractor": "Tissue Extractor",
   "item.bandits_quirk_lib.tissue_sample": "Tissue Sample",
+  "item.bandits_quirk_lib.sequenced_sample": "Sequenced Sample",
+  "item.bandits_quirk_lib.readout": "Readout",
+  "item.bandits_quirk_lib.gene_vial": "Gene Vial",
+  "item.bandits_quirk_lib.gene_database": "Gene Database",
+
+  "block.bandits_quirk_lib.research_table_block": "Research Table",
   "block.bandits_quirk_lib.bio_terminal": "Bio Terminal",
   "block.bandits_quirk_lib.gene_sequencer": "Gene Sequencer",
   "block.bandits_quirk_lib.gene_slicer": "Gene Slicer",
   "block.bandits_quirk_lib.sample_refrigerator": "Sample Refrigerator",
   "block.bandits_quirk_lib.bio_printer": "Bio Printer",
-  "item.bandits_quirk_lib.sequenced_sample": "Sequenced Sample",
-  "item.bandits_quirk_lib.readout": "Readout",
-  "item.bandits_quirk_lib.gene_vial": "Gene Vial",
-  "item.bandits_quirk_lib.gene_database": "Gene Database",
+
+  "death.attack.exhaustion.player": "too much exhaustion",
+
+  "effect.bandits_quirk_lib.pstock_overuse": "Power Overuse",
+  "effect.bandits_quirk_lib.decay_effect": "Decay",
+  "effect.bandits_quirk_lib.stun_effect": "Stun Effect",
+  "effect.bandits_quirk_lib.true_invisibility": "True Invisibility",
+  "effect.bandits_quirk_lib.cold_resistance": "Cold Resistance",
+  "effect.bandits_quirk_lib.heat_resistance": "Heat Resistance",
+  "effect.bandits_quirk_lib.hunger_resistance": "Hunger Resistance",
+  "effect.bandits_quirk_lib.poison_resistance": "Poison Resistance",
+
   "tooltip.bandits_quirk_lib.gene_vial.category": "Category: %s",
   "category.bandits_quirk_lib.cosmetic": "Cosmetic",
   "category.bandits_quirk_lib.resistance": "Resistance",
@@ -29,7 +40,22 @@
   "bandits_quirk_lib:gene.poison_resistance": "Poison Resistance",
   "bandits_quirk_lib:gene.hunger_resistance": "Hunger Resistance",
   "bandits_quirk_lib:gene.glowing_skin": "Glowing Skin",
-  "bandits_quirk_lib:gene.night_vision": "Night Vision"
+  "bandits_quirk_lib:gene.night_vision": "Night Vision",
+  "bandits_quirk_lib:gene.dash_step": "Dash Step",
+  "bandits_quirk_lib:gene.double_jump": "Double Jump",
+  "bandits_quirk_lib:gene.enhanced_strength": "Strength",
+  "bandits_quirk_lib:gene.invisibility": "Invisibility",
+  "bandits_quirk_lib:gene.jump_boost": "Jump Boost",
+  "bandits_quirk_lib:gene.larceny": "Larceny",
+  "bandits_quirk_lib:gene.minor_object_attraction": "Minor Object Attract",
+  "bandits_quirk_lib:gene.long_arms": "Long Arms",
+  "bandits_quirk_lib:gene.long_legs": "Long Legs",
+  "bandits_quirk_lib:gene.slow_fall": "Slow Fall",
+  "bandits_quirk_lib:gene.sprint": "Sprint Speed",
+  "bandits_quirk_lib:gene.step_up": "Step Assist",
+  "bandits_quirk_lib:gene.swim_speed": "Swim Speed",
+  "bandits_quirk_lib:gene.walk_speed": "Walk Speed",
+  "bandits_quirk_lib:gene.zoom": "Zoom"
 }
 
 
