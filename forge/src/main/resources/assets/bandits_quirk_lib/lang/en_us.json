@@ -6,6 +6,7 @@
   "item.bandits_quirk_lib.readout": "Readout",
   "item.bandits_quirk_lib.gene_vial": "Gene Vial",
   "item.bandits_quirk_lib.gene_database": "Gene Database",
+  "item.bandits_quirk_lib.injector": "Injector",
 
   "block.bandits_quirk_lib.research_table_block": "Research Table",
   "block.bandits_quirk_lib.bio_terminal": "Bio Terminal",
@@ -13,6 +14,9 @@
   "block.bandits_quirk_lib.gene_slicer": "Gene Slicer",
   "block.bandits_quirk_lib.sample_refrigerator": "Sample Refrigerator",
   "block.bandits_quirk_lib.bio_printer": "Bio Printer",
+  "block.bandits_quirk_lib.bio_cable": "Cable",
+  "block.bandits_quirk_lib.gene_combiner": "Gene Combiner",
+
 
   "death.attack.exhaustion.player": "too much exhaustion",
 
