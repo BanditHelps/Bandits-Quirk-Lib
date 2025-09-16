@@ -24,6 +24,7 @@ public class AbilityRegister {
     public static final RegistrySupplier<Ability> ENHANCED_PUNCH;
     public static final RegistrySupplier<Ability> ENHANCED_KICK;
     public static final RegistrySupplier<Ability> CHARGED_PUNCH;
+    public static final RegistrySupplier<Ability> AMPULE_SELF_REMOVE;
 
 
     public AbilityRegister() {
@@ -52,5 +53,6 @@ public class AbilityRegister {
         ENHANCED_PUNCH = ABILITIES.register("enhanced_punch", EnhancedPunchAbility::new);
         ENHANCED_KICK = ABILITIES.register("enhanced_kick", EnhancedKickAbility::new);
         CHARGED_PUNCH = ABILITIES.register("charged_punch", ChargedPunchAbility::new);
+        AMPULE_SELF_REMOVE = ABILITIES.register("ampule_self_remove", AmpuleSelfRemove::new);
     }
 }

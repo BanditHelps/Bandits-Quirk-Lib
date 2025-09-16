@@ -1,0 +1,13 @@
+{
+  "name": "Ampule User",
+  "background": "minecraft:textures/block/blue_wool.png",
+  "icon": "minecraft:golden_boots",
+  "gui_display_type": "tree",
+  "abilities": {
+    "Remove": {
+      "type": "bandits_quirk_lib:ampule_self_remove",
+      "hidden": true,
+      "hidden_in_bar": true
+    }
+  }
+}

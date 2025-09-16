@@ -2,7 +2,11 @@
   "block.bandits_quirk_lib.research_table_block": "Research Table",
   "itemGroup.bandits_quirk_lib": "Bandit's Quirk Lib",
   "death.attack.exhaustion.player": "too much exhaustion",
-  "effect.bandits_quirk_lib.pstock_overuse": "Power Overuse"
+  "effect.bandits_quirk_lib.pstock_overuse": "Power Overuse",
+
+  "item.bandits_quirk_lib.trigger_tier1": "Tier 1 Trigger",
+  "item.bandits_quirk_lib.trigger_tier2": "Tier 2 Trigger",
+  "item.bandits_quirk_lib.trigger_tier3": "Tier 3 Trigger"
 }
 
 

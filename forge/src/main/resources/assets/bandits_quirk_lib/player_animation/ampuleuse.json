@@ -1,0 +1,21 @@
+{
+  "name": "ampuleuse",
+  "author": "kritik",
+  "description": "Raise right arm and stab into body",
+  "emote": {
+    "isLoop": false,
+    "beginTick": 0,
+    "endTick": 40,
+    "stopTick": 45,
+    "degrees": true,
+    "moves": [
+      { "tick": 0,  "easing": "linear", "rightArm": { "pitch": 0, "yaw": 0, "roll": 0 } },
+
+      { "tick": 10, "easing": "linear", "rightArm": { "pitch": -70, "yaw": 0,   "roll": 0 } },
+      { "tick": 20, "easing": "linear", "rightArm": { "pitch": -70, "yaw": -40,  "roll": -90 } },
+      { "tick": 25, "easing": "easeIn", "rightArm": { "pitch": -20, "yaw": -40,  "roll": -90 } },
+      { "tick": 30, "easing": "easeIn", "rightArm": { "pitch": -20, "yaw": -40,  "roll": -90 } },
+      { "tick": 40, "easing": "linear", "rightArm": { "pitch": 0, "yaw": 0, "roll": 0 } }
+    ]
+  }
+}
