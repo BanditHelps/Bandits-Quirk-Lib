@@ -1,6 +1,9 @@
 {
   "variants": {
-    "": { "model": "bandits_quirk_lib:block/sample_refrigerator" }
+    "facing=north": { "model": "bandits_quirk_lib:block/sample_refrigerator" },
+    "facing=south": { "model": "bandits_quirk_lib:block/sample_refrigerator", "y": 180 },
+    "facing=west":  { "model": "bandits_quirk_lib:block/sample_refrigerator", "y": 270 },
+    "facing=east":  { "model": "bandits_quirk_lib:block/sample_refrigerator", "y": 90 }
   }
 }
 

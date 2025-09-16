@@ -22,9 +22,9 @@ public class ModBlocks {
     public static final RegistryObject<Block> BIO_TERMINAL = registerBlock("bio_terminal", () -> new BioTerminalBlock(BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(3.0F, 6.0F).sound(SoundType.METAL).noOcclusion()));
     public static final RegistryObject<Block> GENE_SEQUENCER = registerBlock("gene_sequencer", () -> new GeneSequencerBlock(BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(3.0F, 6.0F).sound(SoundType.METAL)));
     public static final RegistryObject<Block> GENE_SLICER = registerBlock("gene_slicer", () -> new GeneSlicerBlock(BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(3.0F, 6.0F).sound(SoundType.METAL)));
-    public static final RegistryObject<Block> SAMPLE_REFRIGERATOR = registerBlock("sample_refrigerator", () -> new SampleRefrigeratorBlock(BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(3.0F, 6.0F).sound(SoundType.METAL)));
+    public static final RegistryObject<Block> SAMPLE_REFRIGERATOR = registerBlock("sample_refrigerator", () -> new SampleRefrigeratorBlock(BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(3.0F, 6.0F).sound(SoundType.METAL).noOcclusion()));
     public static final RegistryObject<Block> BIO_PRINTER = registerBlock("bio_printer", () -> new BioPrinterBlock(BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(3.0F, 6.0F).sound(SoundType.METAL).noOcclusion()));
-    public static final RegistryObject<Block> GENE_COMBINER = registerBlock("gene_combiner", () -> new GeneCombinerBlock(BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(3.0F, 6.0F).sound(SoundType.METAL)));
+    public static final RegistryObject<Block> GENE_COMBINER = registerBlock("gene_combiner", () -> new GeneCombinerBlock(BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(3.0F, 6.0F).sound(SoundType.METAL).noOcclusion()));
     public static final RegistryObject<Block> BIO_CABLE = registerBlock("bio_cable", () -> new BioCableBlock(BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(0.5F, 1.0F).sound(SoundType.METAL)));
 
     private static <T extends Block> RegistryObject<T> registerBlock(String name, Supplier<T> blockSupplier) {

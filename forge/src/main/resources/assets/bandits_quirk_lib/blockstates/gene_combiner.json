@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "facing=north": { "model": "bandits_quirk_lib:block/gene_combiner" },
+    "facing=south": { "model": "bandits_quirk_lib:block/gene_combiner", "y": 180 },
+    "facing=west":  { "model": "bandits_quirk_lib:block/gene_combiner", "y": 270 },
+    "facing=east":  { "model": "bandits_quirk_lib:block/gene_combiner", "y": 90 }
+  }
+}
+
+
