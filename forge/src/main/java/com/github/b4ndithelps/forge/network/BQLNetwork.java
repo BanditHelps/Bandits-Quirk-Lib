@@ -73,6 +73,12 @@ public final class BQLNetwork {
                 .consumerMainThread(ProgramInputC2SPacket::handle)
                 .add();
 
+        CHANNEL.messageBuilder(SwitchProgramC2SPacket.class, index++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(SwitchProgramC2SPacket::encode)
+                .decoder(SwitchProgramC2SPacket::decode)
+                .consumerMainThread(SwitchProgramC2SPacket::handle)
+                .add();
+
         CHANNEL.messageBuilder(DoubleJumpC2SPacket.class, index++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(DoubleJumpC2SPacket::encode)
                 .decoder(DoubleJumpC2SPacket::decode)
@@ -95,6 +101,20 @@ public final class BQLNetwork {
                 .encoder(GenomeSyncPacket::encode)
                 .decoder(GenomeSyncPacket::decode)
                 .consumerMainThread(GenomeSyncPacket::handle)
+                .add();
+
+        // Ref-screen program control (client -> server)
+        CHANNEL.messageBuilder(RefProgramActionC2SPacket.class, index++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(RefProgramActionC2SPacket::encode)
+                .decoder(RefProgramActionC2SPacket::decode)
+                .consumerMainThread(RefProgramActionC2SPacket::handle)
+                .add();
+
+        // Sequencer state updates (server -> clients)
+        CHANNEL.messageBuilder(SequencerStateS2CPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(SequencerStateS2CPacket::encode)
+                .decoder(SequencerStateS2CPacket::decode)
+                .consumerMainThread(SequencerStateS2CPacket::handle)
                 .add();
     }
 }

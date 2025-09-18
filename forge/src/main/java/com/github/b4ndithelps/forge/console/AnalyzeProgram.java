@@ -24,7 +24,22 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
     private enum ViewMode { LIST, READOUT }
     private ViewMode viewMode = ViewMode.LIST;
     private int readoutIndex = -1;
-    // Selection state for READOUT
+
+    // New list-view model, similar to python: combined list of samples
+    private enum SampleStatus { UNANALYZED, ANALYZED }
+    private static final class SampleEntry {
+        final int sequencerIndex;
+        final SampleStatus status;
+        final CompoundTag tag; // sample or readout tag for DNA display
+        final String name;
+        SampleEntry(int sequencerIndex, SampleStatus status, CompoundTag tag, String name) {
+            this.sequencerIndex = sequencerIndex; this.status = status; this.tag = tag; this.name = name;
+        }
+    }
+    private final List<SampleEntry> entries = new ArrayList<>();
+    private int listSelectedIndex = 0;
+
+    // Selection state for READOUT (details) view
     private int selectedSlotIndex = -1; // 0..(visibleSlots-1) over actual gene entries
     private List<Integer> visibleSlotRowIndices = new ArrayList<>(); // rows that have a gene label
     // Animation state for READOUT view (character-by-character)
@@ -51,6 +66,8 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
     @Override
     public void onEnter(ConsoleContext ctx) {
         refresh(ctx);
+        listSelectedIndex = Math.min(listSelectedIndex, Math.max(0, entries.size() - 1));
+        renderList(ctx);
     }
 
     private void refresh(ConsoleContext ctx) {
@@ -60,46 +77,99 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
         var pos = term.getBlockPos();
         java.util.Set<net.minecraft.world.level.block.entity.BlockEntity> connected = CableNetworkUtil.findConnected(level, pos, be -> be instanceof GeneSequencerBlockEntity);
         for (var be : connected) if (be instanceof GeneSequencerBlockEntity seq) cachedSequencers.add(seq);
+        buildSampleEntries();
         viewMode = ViewMode.LIST;
         readoutIndex = -1;
-        list(ctx);
     }
 
-    private void list(ConsoleContext ctx) {
-        var b = screen()
-                .header("Analyze Program")
-                .line("Commands: list | start <n> | status [n] | readout <n> | back | exit", ConsoleText.ColorTag.GRAY)
-                .blank();
+    private void renderList(ConsoleContext ctx) {
+        ProgramScreenBuilder b = screen()
+                .header("Analyze - Genetic Sample Processor")
+                .separator();
+
         if (!statusLine.isEmpty()) {
             b.line(statusLine);
             b.blank();
         }
-        if (cachedSequencers.isEmpty()) {
-            b.line("No connected sequencers.", ConsoleText.ColorTag.GRAY);
+
+        List<String> sampleLines = new ArrayList<>();
+        sampleLines.add(ConsoleText.color("SAMPLES:", ConsoleText.ColorTag.AQUA));
+        sampleLines.add("");
+        if (entries.isEmpty()) {
+            sampleLines.add("  NO SAMPLES AVAILABLE");
+            sampleLines.add("  INSERT SAMPLES TO BEGIN ANALYSIS");
         } else {
-            b.line("Connected Sequencers:", ConsoleText.ColorTag.WHITE);
-            for (int i = 0; i < cachedSequencers.size(); i++) {
-                var s = cachedSequencers.get(i);
-                int pct = s.getMaxProgress() == 0 ? 0 : (s.getProgress() * 100 / s.getMaxProgress());
-                boolean hasOutput = !s.getItem(GeneSequencerBlockEntity.SLOT_OUTPUT).isEmpty();
-                var input = s.getItem(GeneSequencerBlockEntity.SLOT_INPUT);
-                boolean hasValidInput = !input.isEmpty()
-                        && input.getItem() == ModItems.TISSUE_SAMPLE.get()
-                        && input.getTag() != null
-                        && (input.getTag().contains("genes", 9) || input.getTag().contains("GenomeSeed") || input.getTag().contains("Traits"));
-                boolean hasInvalidSample = !input.isEmpty() && !hasValidInput;
-
-                ConsoleText.ColorTag color;
-                if (hasOutput) color = ConsoleText.ColorTag.GREEN;
-                else if (s.isRunning()) color = ConsoleText.ColorTag.YELLOW;
-                else if (hasInvalidSample) color = ConsoleText.ColorTag.RED;
-                else if (hasValidInput) color = ConsoleText.ColorTag.AQUA;
-                else color = ConsoleText.ColorTag.GRAY;
-
-                b.line(i + 1 + ") [" + bar(pct, 20) + "] " + pct + "% " + (s.isRunning() ? "(Running)" : "(Idle)") + (hasOutput ? " - Output Ready" : ""), color);
+            for (int i = 0; i < entries.size(); i++) {
+                SampleEntry e = entries.get(i);
+                String prefix = (i == listSelectedIndex) ? ">> " : "   ";
+                String statusRaw = e.status == SampleStatus.UNANALYZED ? "UNANALYZED" : "ANALYZED";
+                String statusCol = ConsoleText.color(statusRaw, e.status == SampleStatus.UNANALYZED ? ConsoleText.ColorTag.YELLOW : ConsoleText.ColorTag.AQUA);
+                sampleLines.add(prefix + String.format("%-15s ", e.name) + " [" + statusCol + "]");
             }
         }
+        while (sampleLines.size() < 15) sampleLines.add("");
+
+        // Right column DNA visualization if current selection is analyzed
+        List<String> dnaLines = new ArrayList<>();
+        SampleEntry current = (entries.isEmpty() || listSelectedIndex < 0 || listSelectedIndex >= entries.size()) ? null : entries.get(listSelectedIndex);
+        if (current != null && current.status == SampleStatus.ANALYZED) {
+            dnaLines = buildDnaReadoutPlain(current.tag);
+        } else {
+            for (int i = 0; i < 15; i++) dnaLines.add("");
+        }
+
+        int rows = Math.max(sampleLines.size(), dnaLines.size());
+        for (int i = 0; i < rows; i++) {
+            String left = i < sampleLines.size() ? sampleLines.get(i) : "";
+            String right = i < dnaLines.size() ? dnaLines.get(i) : "";
+            // Respect color/alignment tags on left by not stripping tags: use twoColumn for spacing
+            b.line(left + "  " + right);
+        }
+
+        b.blank();
+        // Processing bar if selected item belongs to a running sequencer
+        if (current != null) {
+            var seq = cachedSequencers.get(current.sequencerIndex);
+            if (seq.isRunning()) {
+                int pct = seq.getMaxProgress() == 0 ? 0 : (seq.getProgress() * 100 / seq.getMaxProgress());
+                b.line("Processing sample...", ConsoleText.ColorTag.AQUA);
+                b.progressBar(pct, 30);
+            } else if (current.status == SampleStatus.UNANALYZED) {
+                b.line("Ready.", ConsoleText.ColorTag.GRAY);
+            }
+        }
+
+        b.blank();
+        b.line("Controls:", ConsoleText.ColorTag.GRAY);
+        if (entries.isEmpty()) {
+            b.line("  A/D - Change Tab    Q/Ctrl+C - Exit", ConsoleText.ColorTag.GRAY);
+        } else {
+            b.line("  W/S - Navigate    ENTER - Analyze Sample", ConsoleText.ColorTag.GRAY);
+            b.line("  A/D - Change Tab  Q/Ctrl+C - Exit", ConsoleText.ColorTag.GRAY);
+        }
+
         render(ctx, b.build());
+    }
+
+    private void buildSampleEntries() {
+        entries.clear();
+        int count = 1;
+        for (int i = 0; i < cachedSequencers.size(); i++) {
+            var seq = cachedSequencers.get(i);
+            var out = seq.getItem(GeneSequencerBlockEntity.SLOT_OUTPUT);
+            if (!out.isEmpty() && out.getTag() != null) {
+                entries.add(new SampleEntry(i, SampleStatus.ANALYZED, out.getTag().copy(), String.format("TISSUE-%03d", count++)));
+            }
+        }
+        for (int i = 0; i < cachedSequencers.size(); i++) {
+            var seq = cachedSequencers.get(i);
+            var in = seq.getItem(GeneSequencerBlockEntity.SLOT_INPUT);
+            boolean hasValidInput = !in.isEmpty() && in.getItem() == ModItems.TISSUE_SAMPLE.get() && in.getTag() != null;
+            if (hasValidInput && seq.getItem(GeneSequencerBlockEntity.SLOT_OUTPUT).isEmpty()) {
+                entries.add(new SampleEntry(i, SampleStatus.UNANALYZED, in.getTag().copy(), String.format("TISSUE-%03d", count++)));
+            }
+        }
+        if (listSelectedIndex >= entries.size()) listSelectedIndex = Math.max(0, entries.size() - 1);
     }
 
     private String bar(int pct, int width) {
@@ -114,50 +184,21 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
         switch (name) {
             case "back":
                 if (viewMode == ViewMode.READOUT) {
-                    // Return to last DNA readout screen from details view or selection
                     viewMode = ViewMode.LIST;
                     selectedSlotIndex = -1;
                     ctx.setScreenText("");
-                    list(ctx);
+                    renderList(ctx);
                     return true;
                 }
                 return false;
             case "list":
                 refresh(ctx);
-                return true;
-            case "start":
-                if (args.isEmpty()) { ctx.println("Usage: start <n>"); return true; }
-                int idx = parseIndex(args.get(0));
-                if (!validIndex(idx)) { ctx.println("Invalid index"); return true; }
-                var seq = cachedSequencers.get(idx);
-                var input = seq.getItem(GeneSequencerBlockEntity.SLOT_INPUT);
-                var output = seq.getItem(GeneSequencerBlockEntity.SLOT_OUTPUT);
-                if (!output.isEmpty()) {
-                    statusLine = "[RED]Error: Output slot not empty. Remove product first.";
-                } else if (input.isEmpty()) {
-                    statusLine = "[RED]Error: Insert a tissue_sample in the input slot.";
-                } else if (input.getItem() != ModItems.TISSUE_SAMPLE.get()) {
-                    statusLine = "[RED]Error: Invalid input item. Requires tissue_sample.";
-                } else if (input.getTag() == null || (!input.getTag().contains("genes", 9) && !input.getTag().contains("GenomeSeed") && !input.getTag().contains("Traits"))) {
-                    statusLine = "[RED]Error: Sample missing genetic NBT. Re-extract a valid sample.";
-                } else {
-                    seq.startProcessing();
-                    statusLine = "[GREEN]Sequencer started.";
-                }
-                refresh(ctx);
-                return true;
-            case "status":
-                if (args.isEmpty()) { refresh(ctx); return true; }
-                int sidx = parseIndex(args.get(0));
-                if (!validIndex(sidx)) { ctx.println("Invalid index"); return true; }
-                var s = cachedSequencers.get(sidx);
-                int pct = s.getMaxProgress() == 0 ? 0 : (s.getProgress() * 100 / s.getMaxProgress());
-                ctx.setScreenText("Sequencer " + (sidx + 1) + ":\n[" + bar(pct, 20) + "] " + pct + "%\n" + (s.isRunning() ? "Running" : "Idle"));
+                renderList(ctx);
                 return true;
             case "readout":
-                if (args.isEmpty()) { ctx.println("Usage: readout <n>"); return true; }
+                if (args.isEmpty()) { return false; }
                 int ridx = parseIndex(args.get(0));
-                if (!validIndex(ridx)) { ctx.println("Invalid index"); return true; }
+                if (!validIndex(ridx)) { return false; }
                 var selectedSeq = cachedSequencers.get(ridx);
                 var out = selectedSeq.getItem(GeneSequencerBlockEntity.SLOT_OUTPUT);
                 if (out.isEmpty()) {
@@ -226,6 +267,12 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
                 viewMode = ViewMode.READOUT;
                 readoutIndex = ridx;
                 return true;
+            case "start":
+                // Not used in new UI
+                return false;
+            case "status":
+                // Not used in new UI
+                return false;
             case "exit":
                 ctx.exitProgram();
                 return true;
@@ -238,7 +285,8 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
     public void onTick(ConsoleContext ctx) {
         // Periodically refresh the list/progress to auto-update the screen
         if (viewMode == ViewMode.LIST) {
-            list(ctx);
+            refresh(ctx);
+            renderList(ctx);
         } else if (viewMode == ViewMode.READOUT) {
             if (readoutAnimating && !readoutAnimLines.isEmpty()) {
                 StringBuilder out = new StringBuilder();
@@ -482,34 +530,131 @@ public class AnalyzeProgram extends AbstractConsoleProgram {
 
     @Override
     public boolean onKey(ConsoleContext ctx, String action) {
-        if (viewMode != ViewMode.READOUT || visibleSlotRowIndices.isEmpty()) return false;
-        switch (action) {
-            case "up":
-                if (selectedSlotIndex > 0) selectedSlotIndex--;
-                redrawReadoutWithSelection(ctx);
-                return true;
-            case "down":
-                if (selectedSlotIndex < visibleSlotRowIndices.size() - 1) selectedSlotIndex++;
-                redrawReadoutWithSelection(ctx);
-                return true;
-            case "enter":
-                openSelectedGeneDetails(ctx);
-                return true;
-            case "interrupt":
-                // go back from details to readout if in details view, otherwise back to list
-                if (inDetailsView) {
-                    inDetailsView = false;
+        if (viewMode == ViewMode.LIST) {
+            if (entries.isEmpty()) return false;
+            switch (action) {
+                case "up":
+                    if (listSelectedIndex > 0) listSelectedIndex--;
+                    renderList(ctx);
+                    return true;
+                case "down":
+                    if (listSelectedIndex < entries.size() - 1) listSelectedIndex++;
+                    renderList(ctx);
+                    return true;
+                case "enter":
+                    SampleEntry e = entries.get(listSelectedIndex);
+                    var seq = cachedSequencers.get(e.sequencerIndex);
+                    if (e.status == SampleStatus.UNANALYZED) {
+                        var input = seq.getItem(GeneSequencerBlockEntity.SLOT_INPUT);
+                        var output = seq.getItem(GeneSequencerBlockEntity.SLOT_OUTPUT);
+                        if (!output.isEmpty()) {
+                            statusLine = "[RED]Output not empty.";
+                        } else if (input.isEmpty() || input.getItem() != ModItems.TISSUE_SAMPLE.get() || input.getTag() == null) {
+                            statusLine = "[RED]Insert a valid tissue_sample.";
+                        } else {
+                            seq.startProcessing();
+                            statusLine = "[GREEN]Analysis started.";
+                        }
+                        renderList(ctx);
+                    }
+                    return true;
+                case "interrupt":
+                    ctx.exitProgram();
+                    return true;
+                default:
+                    return false;
+            }
+        } else if (viewMode == ViewMode.READOUT) {
+            if (visibleSlotRowIndices.isEmpty()) return false;
+            switch (action) {
+                case "up":
+                    if (selectedSlotIndex > 0) selectedSlotIndex--;
                     redrawReadoutWithSelection(ctx);
-                } else {
-                    viewMode = ViewMode.LIST;
-                    selectedSlotIndex = -1;
-                    ctx.setScreenText("");
-                    list(ctx);
-                }
-                return true;
-            default:
-                return false;
+                    return true;
+                case "down":
+                    if (selectedSlotIndex < visibleSlotRowIndices.size() - 1) selectedSlotIndex++;
+                    redrawReadoutWithSelection(ctx);
+                    return true;
+                case "enter":
+                    openSelectedGeneDetails(ctx);
+                    return true;
+                case "interrupt":
+                    if (inDetailsView) {
+                        inDetailsView = false;
+                        redrawReadoutWithSelection(ctx);
+                    } else {
+                        viewMode = ViewMode.LIST;
+                        selectedSlotIndex = -1;
+                        ctx.setScreenText("");
+                        renderList(ctx);
+                    }
+                    return true;
+                default:
+                    return false;
+            }
         }
+        return false;
+    }
+
+    private List<String> buildDnaReadoutPlain(CompoundTag tag) {
+        List<String> labels = new ArrayList<>();
+        if (tag != null) {
+            if (tag.contains("genes", 9)) {
+                var list = tag.getList("genes", 10);
+                for (int i = 0; i < list.size() && labels.size() < 6; i++) {
+                    var g = list.getCompound(i);
+                    String id = g.getString("id");
+                    int q = g.getInt("quality");
+                    String dispName = g.contains("name", 8) ? g.getString("name") : compactLabelFromId(id, q);
+                    labels.add(compactTag(dispName));
+                }
+            } else if (tag.contains("Traits", 9)) {
+                var list = tag.getList("Traits", 8);
+                int q = tag.contains("Quality", 3) ? tag.getInt("Quality") : 0;
+                for (int i = 0; i < list.size() && labels.size() < 6; i++) {
+                    String raw = list.getString(i);
+                    String id = "bandits_quirk_lib:legacy." + raw.toLowerCase();
+                    labels.add(compactTag("gene_" + String.format("%04x", Math.abs(id.hashCode()) & 0xFFFF)));
+                }
+            }
+        }
+
+        // Build side-by-side DNA with 6 label slots (3 left, 3 right) across 11 rows
+        String[] dna = new String[]{
+                "A-=-T",
+                "\\    /",
+                " T==A",
+                "/    \\",
+                "C-=-G",
+                "\\    /",
+                " G==C",
+                "/    \\",
+                "T-=-A",
+                "\\    /",
+                " A==T"
+        };
+        int[] leftRows = new int[]{0, 2, 4, 6, 8, 10};
+        int[] rightRows = new int[]{1, 3, 5, 7, 9};
+        String[] leftTexts = new String[leftRows.length];
+        String[] rightTexts = new String[rightRows.length];
+        for (int i = 0; i < Math.min(6, labels.size()); i++) {
+            if (i % 2 == 0) leftTexts[i / 2] = labels.get(i); else rightTexts[i / 2] = labels.get(i);
+        }
+        int labelWidth = 8;
+        String connector = "----";
+        List<String> lines = new ArrayList<>();
+        for (int row = 0; row < dna.length; row++) {
+            String leftLab = "";
+            String rightLab = "";
+            for (int idx = 0; idx < leftRows.length; idx++) if (leftRows[idx] == row) { leftLab = leftTexts[idx] == null ? "" : leftTexts[idx]; break; }
+            for (int idx = 0; idx < rightRows.length; idx++) if (rightRows[idx] == row) { rightLab = rightTexts[idx] == null ? "" : rightTexts[idx]; break; }
+            String leftCol = padLeft(leftLab, labelWidth);
+            String rightCol = padRight(rightLab, labelWidth);
+            String leftConn = leftLab.isEmpty() ? "    " : connector;
+            String rightConn = rightLab.isEmpty() ? "    " : connector;
+            lines.add("  " + leftCol + leftConn + dna[row] + rightConn + rightCol);
+        }
+        return lines;
     }
 
     private void redrawReadoutWithSelection(ConsoleContext ctx) {

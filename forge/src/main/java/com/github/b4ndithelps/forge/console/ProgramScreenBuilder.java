@@ -13,7 +13,8 @@ public final class ProgramScreenBuilder {
 
     public ProgramScreenBuilder header(String title) {
         lines.add(center(color(title, ColorTag.AQUA)));
-        lines.add(center(sep(Math.max(16, Math.min(64, title.length() + 6)))));
+        // Shorter header underline for better fit
+        lines.add(center(sep(Math.max(12, Math.min(36, title.length() + 6)))));
         return this;
     }
 
@@ -43,7 +44,8 @@ public final class ProgramScreenBuilder {
     }
 
     public ProgramScreenBuilder separator() {
-        lines.add(sep(33));
+        // Slightly shorter default separator
+        lines.add(sep(28));
         return this;
     }
 
