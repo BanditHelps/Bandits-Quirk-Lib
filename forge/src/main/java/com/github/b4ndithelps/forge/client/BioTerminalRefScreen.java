@@ -7,6 +7,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.util.Mth;
+import com.github.b4ndithelps.forge.client.refprog.RefAnalyzeProgram;
 
 @SuppressWarnings("removal")
 public class BioTerminalRefScreen extends AbstractContainerScreen<BioTerminalRefMenu> {
@@ -16,7 +17,7 @@ public class BioTerminalRefScreen extends AbstractContainerScreen<BioTerminalRef
     private String programText = "Test 1\nTest 2\nTest 3\nTest 4\nTest 5\nTest 6\nTest 7\nTest 8\nTest 9\nTest 10\nTest 11\nTest 12\n";
 
     // Debug flag to outline the program area using ASCII characters
-    private static final boolean DEBUG_PROGRAM_AREA = true;
+    private static final boolean DEBUG_PROGRAM_AREA = false;
 
     // Scrolling state for the program area
     private int programScrollPixels = 0;
@@ -44,6 +45,9 @@ public class BioTerminalRefScreen extends AbstractContainerScreen<BioTerminalRef
     private final String[] tabs = new String[]{"ANALYZE","CATALOG","SLICE","COMBINE","PRINT"};
     private int activeTabIndex = 0;
 
+    // Client-side program instance for Analyze
+    private RefAnalyzeProgram analyzeProgram;
+
     public BioTerminalRefScreen(BioTerminalRefMenu menu, Inventory inv, Component title) {
         super(menu, inv, title);
         this.imageWidth = 256;
@@ -61,9 +65,23 @@ public class BioTerminalRefScreen extends AbstractContainerScreen<BioTerminalRef
 		// Program Section - All actual logic for the selected tab goes here
 		Rect area = getProgramArea();
 
+        // If on Analyze tab, render the client-side Analyze program into the area
+        if (activeTabIndex == 0) {
+            if (analyzeProgram == null) {
+                analyzeProgram = new com.github.b4ndithelps.forge.client.refprog.RefAnalyzeProgram(this, this.menu.getBlockPos());
+            } else if ((this.minecraft != null && this.minecraft.level != null) && (this.minecraft.level.getGameTime() % 20L == 0L)) {
+                // Refresh connected devices roughly every second
+                analyzeProgram.refreshSequencers();
+            }
+            analyzeProgram.render(graphics, area.x, area.y, area.w, area.h, this.font);
+            // Skip the text scroller when program is active
+            drawProgramAreaDebug(graphics, area);
+            return;
+        }
+
         // Render program text inside a scrollable area
         String text = this.programText == null ? "" : this.programText;
-		var wrapped = this.font.split(Component.literal(text), area.w);
+        var wrapped = this.font.split(Component.literal(text), area.w);
 		int contentHeight = wrapped.size() * this.font.lineHeight;
 		int maxScroll = Math.max(0, contentHeight - area.h);
         this.programScrollPixels = Mth.clamp(this.programScrollPixels, 0, maxScroll);
@@ -90,27 +108,26 @@ public class BioTerminalRefScreen extends AbstractContainerScreen<BioTerminalRef
 			graphics.fill(barTrackX, barY, barTrackX + 2, barY + barH, 0x88FFFFFF);
         }
 
-        // Debug outline for the program area using '-' and '|'
-        if (DEBUG_PROGRAM_AREA) {
-            int dashWidth = Math.max(1, this.font.width("-"));
-			int dashCount = Math.max(1, area.w / dashWidth);
-            String dashes = "-".repeat(dashCount);
-            int debugColor = 0xFFFF55; // yellow
+        // Debug outline for the program area
+        drawProgramAreaDebug(graphics, area);
+    }
 
-            // Top and bottom lines
-			graphics.drawString(this.font, dashes, area.x, area.y, debugColor, false);
-			graphics.drawString(this.font, dashes, area.x, area.y + Math.max(0, area.h - this.font.lineHeight), debugColor, false);
-
-            // Left and right vertical bars
-			int leftX = area.x;
-			int rightX = area.x + Math.max(0, area.w - this.font.width("|"));
-			int vy = area.y;
-			int bottomY = area.y + Math.max(0, area.h - this.font.lineHeight);
-            while (vy <= bottomY) {
-                graphics.drawString(this.font, "|", leftX, vy, debugColor, false);
-                graphics.drawString(this.font, "|", rightX, vy, debugColor, false);
-                vy += this.font.lineHeight;
-            }
+    private void drawProgramAreaDebug(GuiGraphics graphics, Rect area) {
+        if (!DEBUG_PROGRAM_AREA) return;
+        int dashWidth = Math.max(1, this.font.width("-"));
+        int dashCount = Math.max(1, area.w / dashWidth);
+        String dashes = "-".repeat(dashCount);
+        int debugColor = 0xFFFF55; // yellow
+        graphics.drawString(this.font, dashes, area.x, area.y, debugColor, false);
+        graphics.drawString(this.font, dashes, area.x, area.y + Math.max(0, area.h - this.font.lineHeight), debugColor, false);
+        int leftX = area.x;
+        int rightX = area.x + Math.max(0, area.w - this.font.width("|"));
+        int vy = area.y;
+        int bottomY = area.y + Math.max(0, area.h - this.font.lineHeight);
+        while (vy <= bottomY) {
+            graphics.drawString(this.font, "|", leftX, vy, debugColor, false);
+            graphics.drawString(this.font, "|", rightX, vy, debugColor, false);
+            vy += this.font.lineHeight;
         }
     }
 
@@ -139,6 +156,21 @@ public class BioTerminalRefScreen extends AbstractContainerScreen<BioTerminalRef
             return true;
         }
 
+        // Analyze tab interactions
+        if (activeTabIndex == 0 && analyzeProgram != null) {
+            if (keyCode == 87) { // W
+                analyzeProgram.moveSelection(-1);
+                return true;
+            }
+            if (keyCode == 83) { // S
+                analyzeProgram.moveSelection(1);
+                return true;
+            }
+            if (keyCode == 257 || keyCode == 335) { // Enter
+                analyzeProgram.startSelected();
+                return true;
+            }
+        }
 
         return super.keyPressed(keyCode, scanCode, modifiers);
     }

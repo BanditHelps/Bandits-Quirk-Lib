@@ -48,6 +48,13 @@ public class GeneSequencerBlockEntity extends BlockEntity implements MenuProvide
                 be.finishProcessing();
                 be.progress = 0;
                 be.running = false;
+                // Broadcast analyzed completion to clients for ref-screen refresh
+                if (!level.isClientSide) {
+                    com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.send(
+                        net.minecraftforge.network.PacketDistributor.TRACKING_CHUNK.with(() -> ((net.minecraft.server.level.ServerLevel)level).getChunkAt(pos)),
+                        new com.github.b4ndithelps.forge.network.SequencerStateS2CPacket(pos, false, true)
+                    );
+                }
             }
             be.setChanged();
         } else {
