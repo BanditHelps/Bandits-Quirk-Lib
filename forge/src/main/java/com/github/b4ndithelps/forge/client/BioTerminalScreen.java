@@ -3,7 +3,7 @@ package com.github.b4ndithelps.forge.client;
 import com.github.b4ndithelps.forge.blocks.BioTerminalMenu;
 import com.github.b4ndithelps.forge.blocks.BioTerminalBlockEntity;
 import com.github.b4ndithelps.forge.network.BQLNetwork;
-import com.github.b4ndithelps.forge.network.ConsoleCommandC2SPacket;
+import com.github.b4ndithelps.forge.network.SwitchProgramC2SPacket;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
@@ -16,28 +16,43 @@ import net.minecraft.util.Mth;
 @SuppressWarnings("removal")
 public class BioTerminalScreen extends AbstractContainerScreen<BioTerminalMenu> {
     private static final ResourceLocation TEXTURE = new ResourceLocation("bandits_quirk_lib", "textures/gui/bio_terminal.png");
-    private EditBox input;
+    // No text input box anymore; all input is via WASD/Enter and tabs
     private String consoleText = "";
     private String programText = "";
     private int consoleScrollPixels = 0;
     private boolean stickToBottom = true;
     private boolean programCapturesInput = false;
+    // Tabs state
+    private final String[] tabs = new String[]{"ANALYZE","CATALOG","SLICE","COMBINE","PRINT","AMPLIFY"};
+    private int activeTabIndex = 0; // mirrored to server via SwitchProgramC2SPacket
 
     public BioTerminalScreen(BioTerminalMenu menu, Inventory inv, Component title) {
         super(menu, inv, title);
-        this.imageWidth = 240;
+        this.imageWidth = 300;
         this.imageHeight = 166;
     }
 
     @Override
     protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
         graphics.blit(TEXTURE, this.leftPos, this.topPos, 0, 0, this.imageWidth, this.imageHeight);
+        // Draw tabs bar at top
+        int tabsX = this.leftPos + 8;
+        int tabsY = this.topPos + 4;
+        int x = tabsX;
+        for (int i = 0; i < tabs.length; i++) {
+            String label = tabs[i];
+            boolean active = (i == activeTabIndex);
+            int color = active ? 0x55FF55 : 0xAAAAAA;
+            String wrapped = active ? ("[" + label + "]") : (" " + label + " ");
+            graphics.drawString(this.font, wrapped, x, tabsY, color, false);
+            x += this.font.width(wrapped) + 8;
+        }
         int textAreaX = this.leftPos + 8;
-        int textAreaY = this.topPos + 16;
+        int textAreaY = this.topPos + 16 + this.font.lineHeight; // account for tabs
         boolean showProgram = this.programText != null && !this.programText.isEmpty();
         int textAreaWidth = this.imageWidth - 10;
-        int inputHeight = 14;
-        int gapBetween = 8;
+        int inputHeight = 0; // removed text box
+        int gapBetween = 0;
         int bottomMargin = 6;
         int usedTop = textAreaY - this.topPos;
         int textAreaHeight = this.imageHeight - usedTop - gapBetween - inputHeight - bottomMargin;
@@ -154,11 +169,6 @@ public class BioTerminalScreen extends AbstractContainerScreen<BioTerminalMenu> 
     @Override
     protected void init() {
         super.init();
-        this.input = new EditBox(this.font, this.leftPos + 8, this.topPos + this.imageHeight - 22, this.imageWidth - 16, 14, Component.literal("console_input"));
-        this.input.setMaxLength(32767);
-        this.input.setBordered(true);
-        this.input.setFocused(true);
-        this.addRenderableWidget(this.input);
     }
 
     @Override
@@ -166,9 +176,29 @@ public class BioTerminalScreen extends AbstractContainerScreen<BioTerminalMenu> 
         if (this.minecraft.options.keyInventory.matches(keyCode, scanCode)) {
             return true;
         }
+        // Global tab navigation with A/D
+        if (keyCode == 65) { // A
+            changeTab(-1);
+            return true;
+        }
+        if (keyCode == 68) { // D
+            changeTab(1);
+            return true;
+        }
+
         if (!this.programCapturesInput) {
+            if (keyCode == 87) { // W -> up selection for list-style programs
+                sendProgramAction("up");
+                return true;
+            }
+            if (keyCode == 83) { // S -> down selection
+                sendProgramAction("down");
+                return true;
+            }
             if (keyCode == 257 || keyCode == 335) { // Enter
-                submitCommand();
+                if (this.programText != null && !this.programText.isEmpty()) {
+                    sendProgramAction("enter");
+                }
                 return true;
             }
         } else {
@@ -179,40 +209,18 @@ public class BioTerminalScreen extends AbstractContainerScreen<BioTerminalMenu> 
             else if (keyCode == 257 || keyCode == 335) action = "enter"; // Enter
             else if ((modifiers & 0x2) != 0 && keyCode == 67) action = "interrupt"; // Ctrl+C
             if (action != null) {
-                var pos = this.menu.getBlockPos();
-                com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.sendToServer(
-                        new com.github.b4ndithelps.forge.network.ProgramInputC2SPacket(pos, action)
-                );
+                sendProgramAction(action);
                 return true;
             }
         }
 
-        if (keyCode == 265) {
-            BioTerminalBlockEntity be = getTerminalBE();
-            if (be != null) {
-                String prev = be.historyPrev();
-                this.input.setValue(prev);
-                return true;
-            }
-        }
-
-        if (keyCode == 264) {
-            BioTerminalBlockEntity be = getTerminalBE();
-            if (be != null) {
-                String next = be.historyNext();
-                this.input.setValue(next);
-                return true;
-            }
-        }
-        if (!this.programCapturesInput && this.input.keyPressed(keyCode, scanCode, modifiers)) {
-            return true;
-        }
+        // Up/Down arrow keys map to history previously; now unused
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     @Override
     public boolean charTyped(char codePoint, int modifiers) {
-        return this.input.charTyped(codePoint, modifiers) || super.charTyped(codePoint, modifiers);
+        return super.charTyped(codePoint, modifiers);
     }
 
     @Override
@@ -230,8 +238,8 @@ public class BioTerminalScreen extends AbstractContainerScreen<BioTerminalMenu> 
         int textAreaX = this.leftPos + 8;
         int textAreaY = this.topPos + 16;
         int textAreaWidth = this.imageWidth - 10;
-        int inputHeight = 14;
-        int gapBetween = 8;
+        int inputHeight = 0;
+        int gapBetween = 0;
         int bottomMargin = 6;
         int usedTop = textAreaY - this.topPos;
         int textAreaHeight = this.imageHeight - usedTop - gapBetween - inputHeight - bottomMargin;
@@ -262,20 +270,9 @@ public class BioTerminalScreen extends AbstractContainerScreen<BioTerminalMenu> 
         if (be instanceof BioTerminalBlockEntity terminal) {
             this.consoleText = terminal.getConsoleText();
             this.programText = terminal.getProgramScreenTextClient();
-            // Heuristic: when a readout screen is shown, capture input and hide text box
+            // Heuristic: when a readout screen is shown, capture input
             this.programCapturesInput = this.programText != null && !this.programText.isEmpty() && this.programText.contains("[READOUT]");
-            this.input.setVisible(!this.programCapturesInput);
-            this.input.setEditable(!this.programCapturesInput);
         }
-        this.input.tick();
-    }
-
-    private void submitCommand() {
-        String cmd = this.input.getValue();
-        if (cmd == null || cmd.isBlank()) return;
-        BlockPos pos = this.menu.getBlockPos();
-        BQLNetwork.CHANNEL.sendToServer(new ConsoleCommandC2SPacket(pos, cmd));
-        this.input.setValue("");
     }
 
     private BioTerminalBlockEntity getTerminalBE() {
@@ -286,6 +283,33 @@ public class BioTerminalScreen extends AbstractContainerScreen<BioTerminalMenu> 
             return (BioTerminalBlockEntity) be;
         }
         return null;
+    }
+
+    private void changeTab(int delta) {
+        int old = this.activeTabIndex;
+        this.activeTabIndex = (this.activeTabIndex + delta + tabs.length) % tabs.length;
+        if (this.activeTabIndex != old) {
+            // Map tabs to program ids the server understands
+            String id;
+            switch (this.activeTabIndex) {
+                case 0: id = "analyze"; break;
+                case 1: id = "catalog"; break;
+                case 2: id = "slice"; break;
+                case 3: id = "combine"; break;
+                case 4: id = "print"; break;
+                case 5: default: id = ""; break; // Amplify placeholder -> exit program
+            }
+            BlockPos pos = this.menu.getBlockPos();
+            BQLNetwork.CHANNEL.sendToServer(new SwitchProgramC2SPacket(pos, id));
+        }
+    }
+
+    private void sendProgramAction(String action) {
+        if (action == null || action.isEmpty()) return;
+        var pos = this.menu.getBlockPos();
+        com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.sendToServer(
+                new com.github.b4ndithelps.forge.network.ProgramInputC2SPacket(pos, action)
+        );
     }
 
     @Override

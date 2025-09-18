@@ -341,6 +341,31 @@ public class BioTerminalBlockEntity extends BlockEntity implements MenuProvider,
 		this.activeProgram.onEnter(new ConsoleContext(this));
 	}
 
+	public void openProgramById(String id) {
+		if (id == null) id = "";
+		id = id.trim().toLowerCase();
+		switch (id) {
+			case "analyze":
+				this.pushProgram(new com.github.b4ndithelps.forge.console.AnalyzeProgram());
+				break;
+			case "catalog":
+				this.pushProgram(new com.github.b4ndithelps.forge.console.CatalogProgram());
+				break;
+			case "slice":
+				this.pushProgram(new com.github.b4ndithelps.forge.console.SlicerProgram());
+				break;
+			case "combine":
+				this.pushProgram(new com.github.b4ndithelps.forge.console.CombinerProgram());
+				break;
+			case "print":
+				this.pushProgram(new com.github.b4ndithelps.forge.console.PrinterProgram());
+				break;
+			default:
+				// empty string means exit program to show console
+				this.exitCurrentProgram();
+		}
+	}
+
 	public void exitCurrentProgram() {
 		if (this.activeProgram != null) {
 			this.activeProgram.onExit(new ConsoleContext(this));

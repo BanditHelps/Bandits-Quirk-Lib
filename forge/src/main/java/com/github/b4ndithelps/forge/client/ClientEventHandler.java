@@ -57,12 +57,14 @@ public class ClientEventHandler {
         public static void onClientSetup(FMLClientSetupEvent event) {
             event.enqueueWork(() -> {
                 MenuScreens.register(ModMenus.BIO_TERMINAL.get(), BioTerminalScreen::new);
+                MenuScreens.register(ModMenus.BIO_TERMINAL_REF.get(), BioTerminalRefScreen::new);
                 MenuScreens.register(ModMenus.GENE_SEQUENCER.get(), GeneSequencerScreen::new);
                 MenuScreens.register(ModMenus.GENE_SLICER.get(), GeneSlicerScreen::new);
                 MenuScreens.register(ModMenus.BIO_PRINTER.get(), BioPrinterScreen::new);
                 MenuScreens.register(ModMenus.GENE_COMBINER.get(), GeneCombinerScreen::new);
 				// Ensure blocks with transparency render correctly
-				ItemBlockRenderTypes.setRenderLayer(ModBlocks.BIO_TERMINAL.get(), RenderType.cutout());
+                ItemBlockRenderTypes.setRenderLayer(ModBlocks.BIO_TERMINAL.get(), RenderType.cutout());
+                ItemBlockRenderTypes.setRenderLayer(ModBlocks.BIO_TERMINAL_REF.get(), RenderType.cutout());
 				ItemBlockRenderTypes.setRenderLayer(ModBlocks.BIO_PRINTER.get(), RenderType.cutout());
             });
         }

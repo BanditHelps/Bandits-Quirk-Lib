@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "facing=north": { "model": "bandits_quirk_lib:block/bio_terminal" },
+    "facing=south": { "model": "bandits_quirk_lib:block/bio_terminal", "y": 180 },
+    "facing=west":  { "model": "bandits_quirk_lib:block/bio_terminal", "y": 270 },
+    "facing=east":  { "model": "bandits_quirk_lib:block/bio_terminal", "y": 90 }
+  }
+}
+
+
+
+
