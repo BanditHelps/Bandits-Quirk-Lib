@@ -23,11 +23,13 @@ public class RefAnalyzeProgram {
 
     private final List<GeneSequencerBlockEntity> sequencers = new ArrayList<>();
     private int selectedIndex = 0;
+    private long lastSyncRequestGameTime = Long.MIN_VALUE;
 
     public RefAnalyzeProgram(BioTerminalRefScreen screen, BlockPos terminalPos) {
         this.screen = screen;
         this.terminalPos = terminalPos;
         refreshSequencers();
+        requestStatusSync();
     }
 
     public void refreshSequencers() {
@@ -37,6 +39,11 @@ public class RefAnalyzeProgram {
         var connected = CableNetworkUtil.findConnected(mc.level, terminalPos, be -> be instanceof GeneSequencerBlockEntity);
         for (var be : connected) if (be instanceof GeneSequencerBlockEntity g) sequencers.add(g);
         if (selectedIndex >= sequencers.size()) selectedIndex = Math.max(0, sequencers.size() - 1);
+        // Periodically request authoritative status from server so UI reflects pre-existing states
+        long gt = mc.level.getGameTime();
+        if (gt - lastSyncRequestGameTime >= 20L) {
+            requestStatusSync();
+        }
     }
 
     public void moveSelection(int delta) {
@@ -77,9 +84,10 @@ public class RefAnalyzeProgram {
             String status;
             var out = seq.getItem(GeneSequencerBlockEntity.SLOT_OUTPUT);
             boolean analyzed = !out.isEmpty() && out.getTag() != null;
-            // Check cache override
+            // Check cache override for both running and analyzed
             var cache = com.github.b4ndithelps.forge.client.refprog.ClientSequencerStatusCache.get(seq.getBlockPos());
             boolean runningNow = (cache != null) ? cache.running : seq.isRunning();
+            if (cache != null) analyzed = analyzed || cache.analyzed;
             if (runningNow) status = "[RUNNING]";
             else if (analyzed) status = "[ANALYZED]";
             else status = "[READY]";
@@ -186,6 +194,13 @@ public class RefAnalyzeProgram {
             int dnaXStart = x + reservedLabelPx + labelGapPx;
             g.drawString(font, Component.literal(running), dnaXStart, Math.min(curY + 2, y + h - font.lineHeight), 0x55FF55, false);
         }
+    }
+
+    private void requestStatusSync() {
+        var mc = Minecraft.getInstance();
+        if (mc == null || mc.level == null) return;
+        lastSyncRequestGameTime = mc.level.getGameTime();
+        BQLNetwork.CHANNEL.sendToServer(new RefProgramActionC2SPacket(terminalPos, "analyze.sync", null));
     }
 
     private static String compact(String s) {

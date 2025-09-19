@@ -47,6 +47,10 @@ public class BioTerminalRefScreen extends AbstractContainerScreen<BioTerminalRef
 
     // Client-side program instance for Analyze
     private RefAnalyzeProgram analyzeProgram;
+    // Client-side program instance for Catalog
+    private com.github.b4ndithelps.forge.client.refprog.RefCatalogProgram catalogProgram;
+    // Client-side program instance for Slicer
+    private com.github.b4ndithelps.forge.client.refprog.RefSlicerProgram slicerProgram;
 
     public BioTerminalRefScreen(BioTerminalRefMenu menu, Inventory inv, Component title) {
         super(menu, inv, title);
@@ -74,6 +78,34 @@ public class BioTerminalRefScreen extends AbstractContainerScreen<BioTerminalRef
                 analyzeProgram.refreshSequencers();
             }
             analyzeProgram.render(graphics, area.x, area.y, area.w, area.h, this.font);
+            // Skip the text scroller when program is active
+            drawProgramAreaDebug(graphics, area);
+            return;
+        }
+
+        // If on Catalog tab, render the client-side Catalog program into the area
+        if (activeTabIndex == 1) {
+            if (catalogProgram == null) {
+                catalogProgram = new com.github.b4ndithelps.forge.client.refprog.RefCatalogProgram(this, this.menu.getBlockPos());
+            } else if ((this.minecraft != null && this.minecraft.level != null) && (this.minecraft.level.getGameTime() % 20L == 0L)) {
+                // Refresh connected devices roughly every second
+                catalogProgram.refresh();
+            }
+            catalogProgram.render(graphics, area.x, area.y, area.w, area.h, this.font);
+            // Skip the text scroller when program is active
+            drawProgramAreaDebug(graphics, area);
+            return;
+        }
+
+        // If on Slice tab, render the client-side Slicer program into the area
+        if (activeTabIndex == 2) {
+            if (slicerProgram == null) {
+                slicerProgram = new com.github.b4ndithelps.forge.client.refprog.RefSlicerProgram(this, this.menu.getBlockPos());
+            } else if ((this.minecraft != null && this.minecraft.level != null) && (this.minecraft.level.getGameTime() % 20L == 0L)) {
+                // Refresh connected devices roughly every second
+                slicerProgram.refresh();
+            }
+            slicerProgram.render(graphics, area.x, area.y, area.w, area.h, this.font);
             // Skip the text scroller when program is active
             drawProgramAreaDebug(graphics, area);
             return;
@@ -168,6 +200,38 @@ public class BioTerminalRefScreen extends AbstractContainerScreen<BioTerminalRef
             }
             if (keyCode == 257 || keyCode == 335) { // Enter
                 analyzeProgram.startSelected();
+                return true;
+            }
+        }
+
+        // Catalog tab interactions
+        if (activeTabIndex == 1 && catalogProgram != null) {
+            if (keyCode == 87) { // W
+                catalogProgram.moveSelection(-1);
+                return true;
+            }
+            if (keyCode == 83) { // S
+                catalogProgram.moveSelection(1);
+                return true;
+            }
+            if (keyCode == 257 || keyCode == 335) { // Enter
+                catalogProgram.startSelected();
+                return true;
+            }
+        }
+
+        // Slice tab interactions
+        if (activeTabIndex == 2 && slicerProgram != null) {
+            if (keyCode == 87) { // W
+                slicerProgram.moveSelection(-1);
+                return true;
+            }
+            if (keyCode == 83) { // S
+                slicerProgram.moveSelection(1);
+                return true;
+            }
+            if (keyCode == 257 || keyCode == 335) { // Enter
+                slicerProgram.startSelected();
                 return true;
             }
         }
