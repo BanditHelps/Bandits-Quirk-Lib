@@ -7,7 +7,15 @@
     "Remove": {
       "type": "bandits_quirk_lib:ampule_self_remove",
       "hidden": true,
-      "hidden_in_bar": true
+      "hidden_in_bar": true,
+      "conditions": {
+        "enabling" : [
+        {
+          "type": "palladium:interval",
+          "active_ticks": 0,
+          "disabled_ticks": 19
+        }]
+      }
     }
   }
 }

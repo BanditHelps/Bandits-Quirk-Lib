@@ -44,12 +44,6 @@ public final class BQLNetwork {
                 .consumerMainThread(MineHaSlotSyncPacket::handle)
                 .add();
 
-        CHANNEL.messageBuilder(UsingAmpulePacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
-                .encoder(UsingAmpulePacket::encode)
-                .decoder(UsingAmpulePacket::decode)
-                .consumerMainThread(UsingAmpulePacket::handle)
-                .add();
-
         CHANNEL.messageBuilder(PlayerAnimationPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(PlayerAnimationPacket::encode)
                 .decoder(PlayerAnimationPacket::decode)

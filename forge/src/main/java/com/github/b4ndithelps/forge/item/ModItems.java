@@ -20,11 +20,11 @@ public class ModItems {
 
     //  ------------------------------------------------- Triggers -------------------------------------------------
     public static final RegistryObject<Item> TIER1_TRIGGER = ITEMS.register("trigger_tier1",
-            () -> new FactorTrigger(new Item.Properties().stacksTo(1).rarity(Rarity.RARE), 1));
+            () -> new FactorTrigger(new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON), 1));
     public static final RegistryObject<Item> TIER2_TRIGGER = ITEMS.register("trigger_tier2",
             () -> new FactorTrigger(new Item.Properties().stacksTo(1).rarity(Rarity.RARE), 2));
     public static final RegistryObject<Item> TIER3_TRIGGER = ITEMS.register("trigger_tier3",
-            () -> new FactorTrigger(new Item.Properties().stacksTo(1).rarity(Rarity.RARE), 3));
+            () -> new FactorTrigger(new Item.Properties().stacksTo(1).rarity(Rarity.EPIC), 3));
 
 
     public static void register(IEventBus eventBus) {

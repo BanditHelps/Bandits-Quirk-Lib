@@ -2,16 +2,24 @@ package com.github.b4ndithelps.forge.events;
 
 import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
 import com.github.b4ndithelps.forge.abilities.HappenOnceAbility;
+import com.github.b4ndithelps.forge.item.FactorTrigger;
+import com.github.b4ndithelps.forge.network.PlayerAnimationPacket;
 import com.github.b4ndithelps.forge.systems.StaminaHelper;
 import com.github.b4ndithelps.forge.systems.BodyStatusHelper;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.item.ItemTossEvent;
+import net.minecraftforge.event.entity.living.LivingDeathEvent;
+import net.minecraftforge.event.entity.living.LivingDropsEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.living.LivingAttackEvent;
+import net.minecraftforge.event.entity.player.EntityItemPickupEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
@@ -42,8 +50,6 @@ public class PlayerEventHandler {
     @SubscribeEvent
     public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
         if (event.getEntity() instanceof ServerPlayer sp) {
-            // reset for no bugs
-            sp.getPersistentData().remove("usingampule");
 
             BQLNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> sp),
                     com.github.b4ndithelps.forge.network.StaminaSyncPacket.fullSync(sp));
@@ -64,7 +70,71 @@ public class PlayerEventHandler {
         BanditsQuirkLibForge.LOGGER.info("Cleaned up player data");
     }
 
-    
+    @SubscribeEvent
+    public static void onItemToss(ItemTossEvent event) {
+        Player player = event.getPlayer();
+        ItemStack dropped = event.getEntity().getItem();
+
+        if (dropped.getItem() instanceof FactorTrigger) {
+            if (player.level().isClientSide) return;
+            if (!((FactorTrigger) dropped.getItem()).isUsing()) return;
+            BQLNetwork.CHANNEL.send(
+                    PacketDistributor.PLAYER.with(() -> (ServerPlayer) player),
+                    new PlayerAnimationPacket("")
+            );
+            ((FactorTrigger) dropped.getItem()).setUsing(false);
+        }
+    }
+
+//    @SubscribeEvent
+//    public static void onItemPickup(EntityItemPickupEvent event) {
+//        Player player = event.getEntity();
+//        ItemStack dropped = event.getItem().getItem();
+//
+//        if (dropped.getItem() instanceof FactorTrigger) {
+//            if (player.level().isClientSide) return;
+//            if (!((FactorTrigger) dropped.getItem()).isUsing()) return;
+//
+//            ((FactorTrigger) dropped.getItem()).setUsing(false);
+//        }
+//    }
+
+    @SubscribeEvent
+    public static void onPlayerDeathDrops(LivingDropsEvent event) {
+        if (event.getEntity().level().isClientSide) return;
+        if (event.getEntity() instanceof ServerPlayer player) {
+            // reset ampule usage
+            int tier = 0;
+            int factor = 0;
+            float usage = BodyStatusHelper.getCustomFloat(player, "chest", "usedAmpules");
+            if ((usage / 100) % 10 >= 1) {
+                tier++;
+                factor++;
+            }
+            if ((usage / 10) % 10 >= 1) {
+                tier++;
+            }
+            if (usage % 10 >= 1) {
+                tier++;
+            }
+            double quirkFactor = QuirkFactorHelper.getQuirkFactor(player);
+
+            BodyStatusHelper.setCustomFloat(player, "chest", "usedAmpules", 0);
+            BodyStatusHelper.setCustomFloat(player, "chest", "ampuleCd", 0);
+            BodyStatusHelper.setCustomFloat(player, "head", "ampuleAddictionCD", 200+ 100*tier);
+            QuirkFactorHelper.setQuirkFactor(player,  quirkFactor-factor - tier);
+            SuperpowerUtil.removeSuperpower(player, ResourceLocation.parse("bql:ampule_use"));
+
+            // Player died and dropped items
+            for (ItemEntity item : event.getDrops()) {
+                ItemStack stack = item.getItem();
+                if (stack.getItem() instanceof FactorTrigger) {
+                    ((FactorTrigger) stack.getItem()).setUsing(false);
+                }
+            }
+        }
+    }
+
 
     @SubscribeEvent
     public static void onLivingHurt(LivingHurtEvent event) {
@@ -158,8 +228,6 @@ public class PlayerEventHandler {
         }
 
         if (player instanceof ServerPlayer sp) {
-            // reset for no bugs
-            player.getPersistentData().remove("usingampule");
 
             // Send full stamina sync on login to ensure client-side GUI shows correct values
             com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.send(

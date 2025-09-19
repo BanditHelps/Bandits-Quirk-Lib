@@ -23,6 +23,10 @@ public class ModEffects {
     public static final RegistryObject<MobEffect> PSTOCK_OVERUSE =
             MOB_EFFECTS.register("pstock_overuse", PstockOveruseEffect::new);
 
+    public static final RegistryObject<MobEffect> AMPULE_EFFECT =
+            MOB_EFFECTS.register("ampule_use", AmpuleEffect::new);
+
+
     public static void register(IEventBus eventBus) {
         MOB_EFFECTS.register(eventBus);
     }

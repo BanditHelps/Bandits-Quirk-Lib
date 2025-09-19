@@ -23,6 +23,8 @@ import java.util.function.Supplier;
 
 import static dev.kosmx.playerAnim.core.util.Ease.INOUTSINE;
 
+
+// USE THIS TO PLAY PLAYER !MAIN! ANIMATION
 public class PlayerAnimationPacket {
     private final String animation;
 
@@ -47,17 +49,24 @@ public class PlayerAnimationPacket {
                 var animation = (ModifierLayer<IAnimation>)PlayerAnimationAccess.getPlayerAssociatedData(player).get(ResourceLocation.fromNamespaceAndPath(BanditsQuirkLib.MOD_ID, "animation"));
                 if (animation != null) {
 
-                    KeyframeAnimationPlayer freshAnim = new KeyframeAnimationPlayer(
-                            PlayerAnimationRegistry.getAnimation(
-                                    ResourceLocation.fromNamespaceAndPath(BanditsQuirkLib.MOD_ID, msg.animation)
-                            )
-                    ).setFirstPersonMode(FirstPersonMode.THIRD_PERSON_MODEL)
-                            .setFirstPersonConfiguration(new FirstPersonConfiguration(true, false, true, false));
+                    if (msg.animation == "") {
+                        animation.replaceAnimationWithFade(
+                                AbstractFadeModifier.standardFadeIn(10, INOUTSINE),
+                                null
+                        );
+                    } else {
+                        KeyframeAnimationPlayer freshAnim = new KeyframeAnimationPlayer(
+                                PlayerAnimationRegistry.getAnimation(
+                                        ResourceLocation.fromNamespaceAndPath(BanditsQuirkLib.MOD_ID, msg.animation)
+                                )
+                        ).setFirstPersonMode(FirstPersonMode.THIRD_PERSON_MODEL)
+                                .setFirstPersonConfiguration(new FirstPersonConfiguration(true, false, true, false));
 
-                    animation.replaceAnimationWithFade(
-                            AbstractFadeModifier.standardFadeIn(10, INOUTSINE),
-                            freshAnim
-                    );
+                        animation.replaceAnimationWithFade(
+                                AbstractFadeModifier.standardFadeIn(10, INOUTSINE),
+                                freshAnim
+                        );
+                    }
                 }
             }
         });
