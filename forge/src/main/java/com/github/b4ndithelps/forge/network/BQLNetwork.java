@@ -116,6 +116,13 @@ public final class BQLNetwork {
                 .decoder(SequencerStateS2CPacket::decode)
                 .consumerMainThread(SequencerStateS2CPacket::handle)
                 .add();
+
+        // Catalog entries (server -> client)
+        CHANNEL.messageBuilder(CatalogEntriesS2CPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(CatalogEntriesS2CPacket::encode)
+                .decoder(CatalogEntriesS2CPacket::decode)
+                .consumerMainThread(CatalogEntriesS2CPacket::handle)
+                .add();
     }
 }
 

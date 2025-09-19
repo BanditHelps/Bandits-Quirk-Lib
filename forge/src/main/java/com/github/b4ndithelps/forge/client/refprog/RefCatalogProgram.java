@@ -49,6 +49,7 @@ public class RefCatalogProgram {
     public RefCatalogProgram(BioTerminalRefScreen screen, BlockPos terminalPos) {
         this.screen = screen;
         this.terminalPos = terminalPos;
+        requestSync();
         refresh();
     }
 
@@ -57,39 +58,51 @@ public class RefCatalogProgram {
         if (mc.level == null) return;
         entries.clear();
 
-        // Collect vials from connected refrigerators (sample containers)
-        List<SampleRefrigeratorBlockEntity> fridges = new ArrayList<>();
-        var connectedFridges = CableNetworkUtil.findConnected(mc.level, terminalPos, be -> be instanceof SampleRefrigeratorBlockEntity);
-        for (var be : connectedFridges) if (be instanceof SampleRefrigeratorBlockEntity f) fridges.add(f);
+        // Prefer server-authoritative cache so we can see container contents client-side
+        var cached = ClientCatalogCache.get(terminalPos);
+        if (!cached.isEmpty()) {
+            for (var dto : cached) {
+                EntryType t = switch (dto.type) {
+                    case "VIAL" -> EntryType.VIAL;
+                    case "SEQUENCED_SAMPLE" -> EntryType.SEQUENCED_SAMPLE;
+                    default -> EntryType.SECTION;
+                };
+                entries.add(new Entry(t, dto.label, ItemStack.EMPTY, dto.sourceIndex, dto.slotIndex));
+            }
+        } else {
+            // Fallback to local scan (may miss inventory data without block entity sync)
+            List<SampleRefrigeratorBlockEntity> fridges = new ArrayList<>();
+            var connectedFridges = CableNetworkUtil.findConnected(mc.level, terminalPos, be -> be instanceof SampleRefrigeratorBlockEntity);
+            for (var be : connectedFridges) if (be instanceof SampleRefrigeratorBlockEntity f) fridges.add(f);
 
-        if (!fridges.isEmpty()) {
-            entries.add(new Entry(EntryType.SECTION, "[VIALS]", ItemStack.EMPTY, -1, -1));
-            for (int f = 0; f < fridges.size(); f++) {
-                var fridge = fridges.get(f);
-                for (int s = 0; s < SampleRefrigeratorBlockEntity.SLOT_COUNT; s++) {
-                    var st = fridge.getItem(s);
-                    if (st == null || st.isEmpty()) continue;
-                    if (!isGeneVial(st)) continue;
-                    String name = getStackDisplayName(st);
-                    String line = String.format("%s", name);
-                    entries.add(new Entry(EntryType.VIAL, line, st.copy(), f, s));
+            if (!fridges.isEmpty()) {
+                entries.add(new Entry(EntryType.SECTION, "[VIALS]", ItemStack.EMPTY, -1, -1));
+                for (int f = 0; f < fridges.size(); f++) {
+                    var fridge = fridges.get(f);
+                    for (int s = 0; s < SampleRefrigeratorBlockEntity.SLOT_COUNT; s++) {
+                        var st = fridge.getItem(s);
+                        if (st == null || st.isEmpty()) continue;
+                        if (!isGeneVial(st)) continue;
+                        String name = getVialGeneLabel(st);
+                        String line = String.format("%s", name);
+                        entries.add(new Entry(EntryType.VIAL, line, st.copy(), f, s));
+                    }
                 }
             }
-        }
 
-        // Collect sequenced samples from connected sequencers (output slot)
-        List<GeneSequencerBlockEntity> sequencers = new ArrayList<>();
-        var connectedSeq = CableNetworkUtil.findConnected(mc.level, terminalPos, be -> be instanceof GeneSequencerBlockEntity);
-        for (var be : connectedSeq) if (be instanceof GeneSequencerBlockEntity g) sequencers.add(g);
+            List<GeneSequencerBlockEntity> sequencers = new ArrayList<>();
+            var connectedSeq = CableNetworkUtil.findConnected(mc.level, terminalPos, be -> be instanceof GeneSequencerBlockEntity);
+            for (var be : connectedSeq) if (be instanceof GeneSequencerBlockEntity g) sequencers.add(g);
 
-        if (!sequencers.isEmpty()) {
-            entries.add(new Entry(EntryType.SECTION, "[SAMPLES]", ItemStack.EMPTY, -1, -1));
-            for (int i = 0; i < sequencers.size(); i++) {
-                var seq = sequencers.get(i);
-                var out = seq.getItem(GeneSequencerBlockEntity.SLOT_OUTPUT);
-                if (!out.isEmpty()) {
-                    String line = String.format("Sequenced Sample %d", i + 1);
-                    entries.add(new Entry(EntryType.SEQUENCED_SAMPLE, line, out.copy(), i, -1));
+            if (!sequencers.isEmpty()) {
+                entries.add(new Entry(EntryType.SECTION, "[SAMPLES]", ItemStack.EMPTY, -1, -1));
+                for (int i = 0; i < sequencers.size(); i++) {
+                    var seq = sequencers.get(i);
+                    var out = seq.getItem(GeneSequencerBlockEntity.SLOT_OUTPUT);
+                    if (!out.isEmpty()) {
+                        String line = String.format("Sequenced Sample %d", i + 1);
+                        entries.add(new Entry(EntryType.SEQUENCED_SAMPLE, line, out.copy(), i, -1));
+                    }
                 }
             }
         }
@@ -215,8 +228,31 @@ public class RefCatalogProgram {
         return stack.getItem().getDescription().getString();
     }
 
+    private static String getVialGeneLabel(ItemStack vial) {
+        if (vial == null || vial.isEmpty()) return "";
+        var tag = vial.getTag();
+        if (tag != null && tag.contains("gene", 10)) {
+            var gene = tag.getCompound("gene");
+            if (gene.contains("name", 8)) {
+                String name = gene.getString("name");
+                if (name != null && !name.isEmpty()) return name;
+            }
+            if (gene.contains("id", 8)) {
+                String id = gene.getString("id");
+                if (id != null && !id.isEmpty()) return id;
+            }
+        }
+        return getStackDisplayName(vial);
+    }
+
     public int getSelectedIndex() { return selectedIndex; }
     public int size() { return entries.size(); }
+
+    private void requestSync() {
+        com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.sendToServer(
+                new com.github.b4ndithelps.forge.network.RefProgramActionC2SPacket(terminalPos, "catalog.sync", null)
+        );
+    }
 }
 
 

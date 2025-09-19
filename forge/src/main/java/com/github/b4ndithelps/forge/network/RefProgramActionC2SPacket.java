@@ -83,6 +83,46 @@ public class RefProgramActionC2SPacket {
                         );
                     }
                 }
+            } else if ("catalog.sync".equals(this.action)) {
+                // Build catalog entries for connected fridges and sequencers and send to player
+                java.util.ArrayList<com.github.b4ndithelps.forge.client.refprog.ClientCatalogCache.EntryDTO> list = new java.util.ArrayList<>();
+                // Fridges first
+                java.util.ArrayList<com.github.b4ndithelps.forge.blocks.SampleRefrigeratorBlockEntity> fridges = new java.util.ArrayList<>();
+                var connectedFridges = CableNetworkUtil.findConnected(player.level(), this.terminalPos, t -> t instanceof com.github.b4ndithelps.forge.blocks.SampleRefrigeratorBlockEntity);
+                for (var t : connectedFridges) if (t instanceof com.github.b4ndithelps.forge.blocks.SampleRefrigeratorBlockEntity f) fridges.add(f);
+                if (!fridges.isEmpty()) {
+                    list.add(new com.github.b4ndithelps.forge.client.refprog.ClientCatalogCache.EntryDTO("SECTION", "[VIALS]", -1, -1));
+                    for (int f = 0; f < fridges.size(); f++) {
+                        var fridge = fridges.get(f);
+                        for (int s = 0; s < com.github.b4ndithelps.forge.blocks.SampleRefrigeratorBlockEntity.SLOT_COUNT; s++) {
+                            var st = fridge.getItem(s);
+                            if (st == null || st.isEmpty()) continue;
+                            if (!isGeneVial(st)) continue;
+                            String label = labelFromVial(st);
+                            list.add(new com.github.b4ndithelps.forge.client.refprog.ClientCatalogCache.EntryDTO("VIAL", label, f, s));
+                        }
+                    }
+                }
+                // Sequencers outputs
+                java.util.ArrayList<com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity> sequencers = new java.util.ArrayList<>();
+                var connectedSeq = CableNetworkUtil.findConnected(player.level(), this.terminalPos, t -> t instanceof com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity);
+                for (var t : connectedSeq) if (t instanceof com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity g) sequencers.add(g);
+                if (!sequencers.isEmpty()) {
+                    list.add(new com.github.b4ndithelps.forge.client.refprog.ClientCatalogCache.EntryDTO("SECTION", "[SAMPLES]", -1, -1));
+                    for (int i = 0; i < sequencers.size(); i++) {
+                        var seq = sequencers.get(i);
+                        var out = seq.getItem(com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity.SLOT_OUTPUT);
+                        if (!out.isEmpty()) {
+                            String label = "Sequenced Sample " + (i + 1);
+                            list.add(new com.github.b4ndithelps.forge.client.refprog.ClientCatalogCache.EntryDTO("SEQUENCED_SAMPLE", label, i, -1));
+                        }
+                    }
+                }
+                // Send to requesting player
+                com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.send(
+                        net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player),
+                        new com.github.b4ndithelps.forge.network.CatalogEntriesS2CPacket(this.terminalPos, list)
+                );
             } else if (this.action != null && this.action.startsWith("slice.start:") && this.targetPos != null) {
                 // Client requests slicing specific indices from a connected GeneSlicer
                 BlockEntity target = player.level().getBlockEntity(this.targetPos);
@@ -153,6 +193,29 @@ public class RefProgramActionC2SPacket {
             }
         });
         return true;
+    }
+
+    private static boolean isGeneVial(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return false;
+        var item = stack.getItem();
+        return item instanceof com.github.b4ndithelps.forge.item.GeneVialItem
+                || item == ModItems.GENE_VIAL_COSMETIC.get()
+                || item == ModItems.GENE_VIAL_RESISTANCE.get()
+                || item == ModItems.GENE_VIAL_BUILDER.get()
+                || item == ModItems.GENE_VIAL_QUIRK.get();
+    }
+
+    private static String labelFromVial(ItemStack vial) {
+        if (vial == null || vial.isEmpty()) return "";
+        net.minecraft.nbt.CompoundTag tag = vial.getTag();
+        if (tag != null && tag.contains("gene", 10)) {
+            net.minecraft.nbt.CompoundTag g = tag.getCompound("gene");
+            String name = g.contains("name", 8) ? g.getString("name") : null;
+            String id = g.contains("id", 8) ? g.getString("id") : null;
+            if (name != null && !name.isEmpty()) return name;
+            if (id != null && !id.isEmpty()) return id;
+        }
+        return vial.getItem().getDescription().getString();
     }
 }
 
