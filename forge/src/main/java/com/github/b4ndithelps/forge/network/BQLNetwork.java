@@ -43,6 +43,12 @@ public final class BQLNetwork {
                 .decoder(MineHaSlotSyncPacket::decode)
                 .consumerMainThread(MineHaSlotSyncPacket::handle)
                 .add();
+
+        CHANNEL.messageBuilder(BlackScreenNetwork.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(BlackScreenNetwork::encode)
+                .decoder(BlackScreenNetwork::decode)
+                .consumerMainThread(BlackScreenNetwork::handle)
+                .add();
     }
 }
 

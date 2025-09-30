@@ -11,6 +11,7 @@ import com.github.b4ndithelps.forge.fancymenu.ForgeFancyMenuIntegration;
 import com.github.b4ndithelps.forge.network.BQLNetwork;
 import com.github.b4ndithelps.forge.config.ConfigManager;
 import com.github.b4ndithelps.forge.config.ModGameRules;
+import com.github.b4ndithelps.forge.sounds.ModSounds;
 import dev.architectury.platform.forge.EventBuses;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
@@ -49,6 +50,7 @@ public final class BanditsQuirkLibForge {
         ModBlocks.register(modEventBus);
         ModEntities.register(modEventBus);
         ModCreativeTabs.register(modEventBus);
+        ModSounds.SOUND_EVENTS.register(modEventBus);
 
         BQLNetwork.register();
 

@@ -1,0 +1,7 @@
+{
+  "heartbeat": {
+    "sounds": [
+      { "name": "bandits_quirk_lib:heartbeat" }
+    ]
+  }
+}

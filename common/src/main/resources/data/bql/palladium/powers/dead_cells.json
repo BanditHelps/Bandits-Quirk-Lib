@@ -1,0 +1,17 @@
+{
+  "name": "Dead Cells",
+  "background": "minecraft:textures/block/green_wool.png",
+  "icon": "minecraft:zombie_head",
+  "gui_display_type": "tree",
+  "abilities": {
+    "Gene Ability": {
+      "title" : "Passive - Dead Cells",
+      "icon" : "minecraft:zombie_head",
+      "type": "palladium:dummy",
+      "description": "Zombies are neutral towards you.",
+      "hidden": false,
+      "hidden_in_bar": true,
+      "gui_position": [0,0]
+    }
+  }
+}
