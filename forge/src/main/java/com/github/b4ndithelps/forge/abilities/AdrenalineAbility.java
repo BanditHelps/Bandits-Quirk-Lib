@@ -36,6 +36,10 @@ public class AdrenalineAbility extends Ability {
         long ticks = level.getGameTime();
         long lastUseTick = player.getPersistentData().getLong("lastUseTimeAdrenaline");
 
+        if (ticks - lastUseTick < 1200) { // 60 seconds cooldown
+            return;
+        }
+//        player.sendSystemMessage(Component.literal(lastUseTick+""));
         player.getPersistentData().putLong("lastUseTimeAdrenaline", ticks);
         BQLNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new BlackScreenNetwork(player.getUUID()));
         player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 600, 1));

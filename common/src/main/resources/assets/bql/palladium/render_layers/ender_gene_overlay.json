@@ -1,0 +1,21 @@
+{
+  "model_layer": "bql:ender_gene_geo",
+  "texture": {
+    "base": "bql:textures/models/ender_gene_tp.png",
+    "transformers": [
+      {
+        "type": "palladium:alpha_mask",
+        "mask": "bql:textures/models/ender_gene/mask_#MASK.png"
+      }
+    ],
+    "variables": {
+      "MASK": {
+        "type": "palladium:ability_integer_property",
+        "power": "bql:ender_gene",
+        "ability": "enablepls",
+        "property": "value"
+      }
+    },
+    "output": "bql:textures/models/ender_gene_output/base_#MASK.png"
+  }
+}
