@@ -329,7 +329,7 @@ public class PrinterProgram extends AbstractConsoleProgram {
             } else {
                 printer.setItem(BioPrinterBlockEntity.SLOT_OUTPUT, injector);
             }
-            setStatusOk("Printing complete: Injector created (" + genome.size() + " genes)");
+            setStatusOk("Printing complete!");
         } catch (Exception e) {
             setStatusErr("Printing error: " + e.getMessage());
         }

@@ -79,14 +79,18 @@ public class RefSlicerProgram {
             return;
         }
         var slicer = slicers.get(selectedSlicerIndex);
-        // Prefer server-supplied cache for labels to avoid reliance on client BE sync
+        // Prefer server-supplied cache for labels to avoid reliance on client BE sync.
+        // If cache is missing OR empty, fall back to local BE read.
         var cache = com.github.b4ndithelps.forge.client.refprog.ClientSlicerStateCache.get(slicer.getBlockPos());
-        if (cache != null && cache.labels != null) {
+        boolean usedCache = false;
+        if (cache != null && cache.labels != null && !cache.labels.isEmpty()) {
             newLabels.addAll(cache.labels);
             lastRightCacheUpdateSeen = cache.lastUpdateGameTime;
-        } else {
+            usedCache = true;
+        }
+        if (!usedCache) {
             ItemStack input = slicer.getItem(GeneSlicerBlockEntity.SLOT_INPUT);
-            if (!input.isEmpty() && input.getItem() == ModItems.SEQUENCED_SAMPLE.get()) {
+            if (!input.isEmpty()) {
                 CompoundTag tag = input.getTag();
                 if (tag != null && tag.contains("genes", 9)) {
                     var genes = tag.getList("genes", 10);

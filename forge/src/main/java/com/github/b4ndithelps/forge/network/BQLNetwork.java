@@ -137,6 +137,13 @@ public final class BQLNetwork {
                 .decoder(CombinerStateS2CPacket::decode)
                 .consumerMainThread(CombinerStateS2CPacket::handle)
                 .add();
+
+        // Printer result updates (server -> client)
+        CHANNEL.messageBuilder(PrinterStateS2CPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(PrinterStateS2CPacket::encode)
+                .decoder(PrinterStateS2CPacket::decode)
+                .consumerMainThread(PrinterStateS2CPacket::handle)
+                .add();
     }
 }
 

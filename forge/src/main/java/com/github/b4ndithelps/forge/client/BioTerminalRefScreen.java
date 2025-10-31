@@ -53,6 +53,8 @@ public class BioTerminalRefScreen extends AbstractContainerScreen<BioTerminalRef
     private com.github.b4ndithelps.forge.client.refprog.RefSlicerProgram slicerProgram;
     // Client-side program instance for Combiner
     private com.github.b4ndithelps.forge.client.refprog.RefCombinerProgram combinerProgram;
+    // Client-side program instance for Printer
+    private com.github.b4ndithelps.forge.client.refprog.RefPrinterProgram printerProgram;
 
     public BioTerminalRefScreen(BioTerminalRefMenu menu, Inventory inv, Component title) {
         super(menu, inv, title);
@@ -123,6 +125,20 @@ public class BioTerminalRefScreen extends AbstractContainerScreen<BioTerminalRef
                 combinerProgram.refresh();
             }
             combinerProgram.render(graphics, area.x, area.y, area.w, area.h, this.font);
+            // Skip the text scroller when program is active
+            drawProgramAreaDebug(graphics, area);
+            return;
+        }
+
+        // If on Print tab, render the client-side Printer program into the area
+        if (activeTabIndex == 4) {
+            if (printerProgram == null) {
+                printerProgram = new com.github.b4ndithelps.forge.client.refprog.RefPrinterProgram(this, this.menu.getBlockPos());
+            } else if ((this.minecraft != null && this.minecraft.level != null) && (this.minecraft.level.getGameTime() % 20L == 0L)) {
+                // Refresh connected devices roughly every second
+                printerProgram.refresh();
+            }
+            printerProgram.render(graphics, area.x, area.y, area.w, area.h, this.font);
             // Skip the text scroller when program is active
             drawProgramAreaDebug(graphics, area);
             return;
@@ -268,6 +284,22 @@ public class BioTerminalRefScreen extends AbstractContainerScreen<BioTerminalRef
             }
             if (keyCode == 257 || keyCode == 335) { // Enter
                 combinerProgram.startSelected();
+                return true;
+            }
+        }
+
+        // Print tab interactions
+        if (activeTabIndex == 4 && printerProgram != null) {
+            if (keyCode == 87) { // W
+                printerProgram.moveSelection(-1);
+                return true;
+            }
+            if (keyCode == 83) { // S
+                printerProgram.moveSelection(1);
+                return true;
+            }
+            if (keyCode == 257 || keyCode == 335) { // Enter
+                printerProgram.startSelected();
                 return true;
             }
         }
