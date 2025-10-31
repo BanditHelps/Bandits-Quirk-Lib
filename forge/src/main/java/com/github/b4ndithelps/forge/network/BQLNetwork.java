@@ -123,6 +123,13 @@ public final class BQLNetwork {
                 .decoder(CatalogEntriesS2CPacket::decode)
                 .consumerMainThread(CatalogEntriesS2CPacket::handle)
                 .add();
+
+        // Slicer state updates (server -> client)
+        CHANNEL.messageBuilder(SlicerStateS2CPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(SlicerStateS2CPacket::encode)
+                .decoder(SlicerStateS2CPacket::decode)
+                .consumerMainThread(SlicerStateS2CPacket::handle)
+                .add();
     }
 }
 

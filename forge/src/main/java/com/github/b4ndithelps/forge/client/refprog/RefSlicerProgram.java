@@ -31,6 +31,11 @@ public class RefSlicerProgram {
     private final List<GeneSlicerBlockEntity> slicers = new ArrayList<>();
     private int selectedSlicerIndex = 0;
 
+    // Sync cadence
+    private long lastSyncRequestGameTime = Long.MIN_VALUE;
+    // Track when cache changed so we can rebuild labels immediately
+    private long lastRightCacheUpdateSeen = Long.MIN_VALUE;
+
     private enum Pane { LEFT, RIGHT }
     private Pane activePane = Pane.LEFT;
 
@@ -53,6 +58,12 @@ public class RefSlicerProgram {
         for (var be : connected) if (be instanceof GeneSlicerBlockEntity g) slicers.add(g);
         if (selectedSlicerIndex >= slicers.size()) selectedSlicerIndex = Math.max(0, slicers.size() - 1);
         refreshRightPane();
+        // Periodically request authoritative state (running + labels) from server
+        long gt = mc.level.getGameTime();
+        if (gt - lastSyncRequestGameTime >= 20L) {
+            lastSyncRequestGameTime = gt;
+            BQLNetwork.CHANNEL.sendToServer(new RefProgramActionC2SPacket(terminalPos, "slice.sync", null));
+        }
     }
 
     private void refreshRightPane() {
@@ -68,17 +79,24 @@ public class RefSlicerProgram {
             return;
         }
         var slicer = slicers.get(selectedSlicerIndex);
-        ItemStack input = slicer.getItem(GeneSlicerBlockEntity.SLOT_INPUT);
-        if (!input.isEmpty() && input.getItem() == ModItems.SEQUENCED_SAMPLE.get()) {
-            CompoundTag tag = input.getTag();
-            if (tag != null && tag.contains("genes", 9)) {
-                var genes = tag.getList("genes", 10);
-                for (int i = 0; i < genes.size(); i++) {
-                    CompoundTag g = genes.getCompound(i);
-                    String label = g.getString("name");
-                    if (label == null || label.isEmpty()) label = g.getString("id");
-                    if (label == null || label.isEmpty()) label = "gene_" + Integer.toString(i + 1);
-                    newLabels.add(label);
+        // Prefer server-supplied cache for labels to avoid reliance on client BE sync
+        var cache = com.github.b4ndithelps.forge.client.refprog.ClientSlicerStateCache.get(slicer.getBlockPos());
+        if (cache != null && cache.labels != null) {
+            newLabels.addAll(cache.labels);
+            lastRightCacheUpdateSeen = cache.lastUpdateGameTime;
+        } else {
+            ItemStack input = slicer.getItem(GeneSlicerBlockEntity.SLOT_INPUT);
+            if (!input.isEmpty() && input.getItem() == ModItems.SEQUENCED_SAMPLE.get()) {
+                CompoundTag tag = input.getTag();
+                if (tag != null && tag.contains("genes", 9)) {
+                    var genes = tag.getList("genes", 10);
+                    for (int i = 0; i < genes.size(); i++) {
+                        CompoundTag g = genes.getCompound(i);
+                        String label = g.getString("name");
+                        if (label == null || label.isEmpty()) label = g.getString("id");
+                        if (label == null || label.isEmpty()) label = "gene_" + Integer.toString(i + 1);
+                        newLabels.add(label);
+                    }
                 }
             }
         }
@@ -120,12 +138,30 @@ public class RefSlicerProgram {
         // Enter key behaviour per pane
         if (activePane == Pane.LEFT) {
             // Enter the gene selection pane
+            if (!slicers.isEmpty()) {
+                var slicer = slicers.get(selectedSlicerIndex);
+                boolean runningNow = slicer.isRunning();
+                var cache = com.github.b4ndithelps.forge.client.refprog.ClientSlicerStateCache.get(slicer.getBlockPos());
+                if (cache != null) runningNow = cache.running;
+                if (runningNow) return; // lock controls while running
+            }
             activePane = Pane.RIGHT;
             rightCursorIndex = 0;
             return;
         }
         // RIGHT pane
         int genes = geneLabels.size();
+        // Prevent interactions while running; allow only Back
+        if (!slicers.isEmpty()) {
+            var slicer = slicers.get(selectedSlicerIndex);
+            boolean runningNow = slicer.isRunning();
+            var cache = com.github.b4ndithelps.forge.client.refprog.ClientSlicerStateCache.get(slicer.getBlockPos());
+            if (cache != null) runningNow = cache.running;
+            if (runningNow) {
+                if (rightCursorIndex == genes + 1) { activePane = Pane.LEFT; }
+                return;
+            }
+        }
         if (rightCursorIndex < genes) {
             // Toggle selection
             if (selectedGeneIndices.contains(rightCursorIndex)) selectedGeneIndices.remove(rightCursorIndex);
@@ -159,6 +195,14 @@ public class RefSlicerProgram {
     }
 
     public void render(GuiGraphics g, int x, int y, int w, int h, Font font) {
+        // If cache for the selected slicer was updated, rebuild labels immediately
+        if (!slicers.isEmpty() && selectedSlicerIndex >= 0 && selectedSlicerIndex < slicers.size()) {
+            var slicer = slicers.get(selectedSlicerIndex);
+            var cache = com.github.b4ndithelps.forge.client.refprog.ClientSlicerStateCache.get(slicer.getBlockPos());
+            if (cache != null && cache.lastUpdateGameTime != lastRightCacheUpdateSeen) {
+                refreshRightPane();
+            }
+        }
         int leftW = (int)Math.floor(w * 0.42);
         int rightW = w - leftW - 2;
         int leftX = x;
@@ -176,8 +220,11 @@ public class RefSlicerProgram {
             for (int i = 0; i < slicers.size(); i++) {
                 boolean sel = (activePane == Pane.LEFT && i == selectedSlicerIndex);
                 var slicer = slicers.get(i);
-                int pct = slicer.getMaxProgress() == 0 ? 0 : (slicer.getProgress() * 100 / slicer.getMaxProgress());
-                String status = slicer.isRunning() ? ("[" + pct + "%]") : "[IDLE]";
+                // Prefer running state from cache if available
+                boolean runningNow = slicer.isRunning();
+                var cache = com.github.b4ndithelps.forge.client.refprog.ClientSlicerStateCache.get(slicer.getBlockPos());
+                if (cache != null) runningNow = cache.running;
+                String status = runningNow ? "[RUNNING]" : "[IDLE]";
                 String line = (sel ? ">> " : "   ") + "Slicer " + (i + 1) + " " + status;
                 g.drawString(font, Component.literal(line), leftX, curY, sel ? 0x55FF55 : 0xFFFFFF, false);
                 curY += font.lineHeight;

@@ -274,6 +274,9 @@ public class RefProgramActionC2SPacket {
                     boolean ok = connected.stream().anyMatch(t -> t.getBlockPos().equals(this.targetPos));
                     if (!ok) return; // not connected
 
+                    // Do not allow starting while running
+                    if (slicer.isRunning()) return;
+
                     // Parse comma-separated 0-based indices after prefix
                     String payload = this.action.substring("slice.start:".length());
                     java.util.LinkedHashSet<Integer> indices = new java.util.LinkedHashSet<>();
@@ -290,7 +293,7 @@ public class RefProgramActionC2SPacket {
                     if (tag == null || !tag.contains("genes", 9)) return;
                     var genes = tag.getList("genes", 10);
 
-                    // Ensure free outputs available
+                    // Determine current free slots to limit immediate planned outputs
                     int free = 0;
                     for (int i = 0; i < GeneSlicerBlockEntity.SLOT_OUTPUT_COUNT; i++)
                         if (slicer.getItem(GeneSlicerBlockEntity.SLOT_OUTPUT_START + i).isEmpty()) free++;
@@ -316,21 +319,59 @@ public class RefProgramActionC2SPacket {
                         if (tag.contains("entity_name", 8)) vtag.putString("entity_name", tag.getString("entity_name"));
                         outputs.add(vial);
                     }
-                    // Place vials
-                    int placed = 0;
-                    outer: for (ItemStack vial : outputs) {
-                        for (int i = 0; i < GeneSlicerBlockEntity.SLOT_OUTPUT_COUNT; i++) {
-                            int slot = GeneSlicerBlockEntity.SLOT_OUTPUT_START + i;
-                            if (slicer.getItem(slot).isEmpty()) { slicer.setItem(slot, vial); placed++; break; }
+                    if (outputs.isEmpty()) return;
+                    // Remove genes from input descending immediately so they disappear from UI
+                    java.util.ArrayList<Integer> sorted = new java.util.ArrayList<>(toSlice);
+                    sorted.sort(java.util.Comparator.reverseOrder());
+                    for (int idx : sorted) { if (idx >= 0 && idx < genes.size()) genes.remove(idx); }
+                    // If no genes remain, delete the sequenced sample from input
+                    if (genes.isEmpty()) {
+                        input = ItemStack.EMPTY;
+                    }
+                    slicer.setItem(GeneSlicerBlockEntity.SLOT_INPUT, input);
+                    // Queue outputs to be placed when processing completes and start running
+                    slicer.enqueueOutputs(outputs);
+                    // Immediately notify the requesting player of new labels and running state
+                    java.util.ArrayList<String> labels = new java.util.ArrayList<>();
+                    if (!input.isEmpty() && input.getTag() != null && input.getTag().contains("genes", 9)) {
+                        var newList = input.getTag().getList("genes", 10);
+                        for (int i = 0; i < newList.size(); i++) {
+                            CompoundTag g = newList.getCompound(i);
+                            String label = g.getString("name");
+                            if (label == null || label.isEmpty()) label = g.getString("id");
+                            if (label == null || label.isEmpty()) label = "gene_" + Integer.toString(i + 1);
+                            labels.add(label);
                         }
                     }
-                    if (placed > 0) {
-                        // Remove genes from input descending
-                        java.util.ArrayList<Integer> sorted = new java.util.ArrayList<>(toSlice);
-                        sorted.sort(java.util.Comparator.reverseOrder());
-                        for (int idx : sorted) { if (idx >= 0 && idx < genes.size()) genes.remove(idx); }
-                        slicer.setItem(GeneSlicerBlockEntity.SLOT_INPUT, input);
-                        slicer.startProcessing(); // show short progress animation
+                    com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.send(
+                            net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player),
+                            new com.github.b4ndithelps.forge.network.SlicerStateS2CPacket(this.targetPos, true, labels)
+                    );
+                }
+            } else if ("slice.sync".equals(this.action)) {
+                // Send current running state and input labels for connected slicers to the requesting player
+                var connected = CableNetworkUtil.findConnected(player.level(), this.terminalPos, t -> t instanceof GeneSlicerBlockEntity);
+                for (var t : connected) {
+                    if (t instanceof GeneSlicerBlockEntity s) {
+                        java.util.ArrayList<String> labels = new java.util.ArrayList<>();
+                        ItemStack in = s.getItem(GeneSlicerBlockEntity.SLOT_INPUT);
+                        if (!in.isEmpty() && in.getItem() == ModItems.SEQUENCED_SAMPLE.get()) {
+                            CompoundTag tag = in.getTag();
+                            if (tag != null && tag.contains("genes", 9)) {
+                                var list = tag.getList("genes", 10);
+                                for (int i = 0; i < list.size(); i++) {
+                                    CompoundTag g = list.getCompound(i);
+                                    String label = g.getString("name");
+                                    if (label == null || label.isEmpty()) label = g.getString("id");
+                                    if (label == null || label.isEmpty()) label = "gene_" + Integer.toString(i + 1);
+                                    labels.add(label);
+                                }
+                            }
+                        }
+                        com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.send(
+                                net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player),
+                                new com.github.b4ndithelps.forge.network.SlicerStateS2CPacket(s.getBlockPos(), s.isRunning(), labels)
+                        );
                     }
                 }
             }

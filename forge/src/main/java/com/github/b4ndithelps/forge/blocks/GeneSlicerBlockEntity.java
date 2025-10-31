@@ -33,6 +33,7 @@ public class GeneSlicerBlockEntity extends BlockEntity implements MenuProvider, 
     private int progress = 0;
     private int maxProgress = 200;
     private boolean running = false;
+    private final java.util.ArrayList<ItemStack> pendingOutputs = new java.util.ArrayList<>();
 
     public GeneSlicerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.GENE_SLICER.get(), pos, state);
@@ -44,11 +45,63 @@ public class GeneSlicerBlockEntity extends BlockEntity implements MenuProvider, 
         be.data.set(0, be.progress);
         be.data.set(1, be.maxProgress);
         if (be.progress >= be.maxProgress) {
-            // Program is expected to populate outputs; we simply stop running here.
+            // On completion, place any pending outputs into free slots
+            if (!be.pendingOutputs.isEmpty()) {
+                java.util.ArrayList<ItemStack> remaining = new java.util.ArrayList<>();
+                for (ItemStack vial : be.pendingOutputs) {
+                    boolean placed = false;
+                    for (int i = 0; i < SLOT_OUTPUT_COUNT; i++) {
+                        int slot = SLOT_OUTPUT_START + i;
+                        if (be.getItem(slot).isEmpty()) { be.setItem(slot, vial); placed = true; break; }
+                    }
+                    if (!placed) remaining.add(vial);
+                }
+                be.pendingOutputs.clear();
+                be.pendingOutputs.addAll(remaining);
+            }
             be.progress = 0;
-            be.running = false;
+            // If we still have unplaced outputs due to full inventory, keep running briefly to retry next tick
+            if (be.pendingOutputs.isEmpty()) {
+                be.running = false;
+            } else {
+                // Continue running until outputs can be placed; avoid immediate 0-duration loop by bumping max
+                be.maxProgress = Math.max(5, be.maxProgress);
+            }
+            // Broadcast completion so client-side ref screen updates immediately
+            if (!level.isClientSide) {
+                java.util.ArrayList<String> labels = new java.util.ArrayList<>();
+                ItemStack in = be.getItem(SLOT_INPUT);
+                if (!in.isEmpty() && in.getItem() == com.github.b4ndithelps.forge.item.ModItems.SEQUENCED_SAMPLE.get()) {
+                    net.minecraft.nbt.CompoundTag tag = in.getTag();
+                    if (tag != null && tag.contains("genes", 9)) {
+                        var list = tag.getList("genes", 10);
+                        for (int i = 0; i < list.size(); i++) {
+                            net.minecraft.nbt.CompoundTag g = list.getCompound(i);
+                            String label = g.getString("name");
+                            if (label == null || label.isEmpty()) label = g.getString("id");
+                            if (label == null || label.isEmpty()) label = "gene_" + Integer.toString(i + 1);
+                            labels.add(label);
+                        }
+                    }
+                }
+                com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.send(
+                        net.minecraftforge.network.PacketDistributor.TRACKING_CHUNK.with(() -> ((net.minecraft.server.level.ServerLevel)level).getChunkAt(pos)),
+                        new com.github.b4ndithelps.forge.network.SlicerStateS2CPacket(pos, false, labels)
+                );
+            }
         }
         be.setChanged();
+    }
+
+    /** Queue outputs to be placed when processing completes. Also starts processing. */
+    public void enqueueOutputs(java.util.List<ItemStack> outputs) {
+        this.pendingOutputs.clear();
+        if (outputs != null) this.pendingOutputs.addAll(outputs);
+        this.progress = 0;
+        this.data.set(0, 0);
+        this.data.set(1, this.maxProgress);
+        this.running = true;
+        setChanged();
     }
 
     // Control API for BioTerminal/programs
@@ -66,6 +119,11 @@ public class GeneSlicerBlockEntity extends BlockEntity implements MenuProvider, 
         tag.putInt("Progress", this.progress);
         tag.putInt("MaxProgress", this.maxProgress);
         tag.putBoolean("Running", this.running);
+        if (!this.pendingOutputs.isEmpty()) {
+            net.minecraft.nbt.ListTag list = new net.minecraft.nbt.ListTag();
+            for (ItemStack st : this.pendingOutputs) list.add(st.save(new net.minecraft.nbt.CompoundTag()));
+            tag.put("PendingOutputs", list);
+        }
     }
 
     @Override
@@ -75,6 +133,13 @@ public class GeneSlicerBlockEntity extends BlockEntity implements MenuProvider, 
         this.progress = tag.getInt("Progress");
         this.maxProgress = tag.contains("MaxProgress") ? tag.getInt("MaxProgress") : 200;
         this.running = tag.contains("Running") && tag.getBoolean("Running");
+        this.pendingOutputs.clear();
+        if (tag.contains("PendingOutputs", 9)) {
+            net.minecraft.nbt.ListTag list = tag.getList("PendingOutputs", 10);
+            for (int i = 0; i < list.size(); i++) {
+                this.pendingOutputs.add(ItemStack.of(list.getCompound(i)));
+            }
+        }
     }
 
     @Override
