@@ -31,6 +31,9 @@ public class CatalogEntriesS2CPacket {
             buf.writeVarInt(e.max);
             buf.writeVarInt(e.sourceIndex);
             buf.writeVarInt(e.slotIndex);
+            // Optional source position
+            buf.writeBoolean(e.sourcePos != null);
+            if (e.sourcePos != null) buf.writeBlockPos(e.sourcePos);
         }
     }
 
@@ -48,7 +51,10 @@ public class CatalogEntriesS2CPacket {
             int max = buf.readVarInt();
             int sourceIndex = buf.readVarInt();
             int slotIndex = buf.readVarInt();
-            list.add(new ClientCatalogCache.EntryDTO(type, label, geneId, quality, known, progress, max, sourceIndex, slotIndex));
+            BlockPos sourcePos = null;
+            boolean hasPos = buf.readBoolean();
+            if (hasPos) sourcePos = buf.readBlockPos();
+            list.add(new ClientCatalogCache.EntryDTO(type, label, geneId, quality, known, progress, max, sourceIndex, slotIndex, sourcePos));
         }
         return new CatalogEntriesS2CPacket(term, list);
     }

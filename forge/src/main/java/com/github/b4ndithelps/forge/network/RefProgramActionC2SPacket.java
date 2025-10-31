@@ -60,6 +60,13 @@ public class RefProgramActionC2SPacket {
                     var connected = CableNetworkUtil.findConnected(player.level(), this.terminalPos, t -> t instanceof GeneSequencerBlockEntity);
                     boolean ok = connected.stream().anyMatch(t -> t.getBlockPos().equals(this.targetPos));
                     if (ok) {
+                        // Enforce start preconditions: not running, has tissue sample input, and output is empty
+                        if (seq.isRunning()) return; // already running
+                        ItemStack in = seq.getItem(GeneSequencerBlockEntity.SLOT_INPUT);
+                        if (in.isEmpty() || in.getItem() != ModItems.TISSUE_SAMPLE.get()) return; // no valid input
+                        ItemStack out = seq.getItem(GeneSequencerBlockEntity.SLOT_OUTPUT);
+                        if (out != null && !out.isEmpty()) return; // output occupied
+
                         seq.startProcessing();
                         // Notify clients immediately that it is running
                         com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.send(
@@ -149,7 +156,7 @@ public class RefProgramActionC2SPacket {
                                 if (!known && gid != null && !gid.isEmpty() && player.level().getBlockEntity(this.terminalPos) instanceof com.github.b4ndithelps.forge.blocks.BioTerminalRefBlockEntity term3) {
                                     for (var t : term3.getIdentificationTasks()) if (!t.complete && samePath(gid, t.geneId)) { prog = t.progress; max = Math.max(1, t.max); break; }
                                 }
-                                list.add(new com.github.b4ndithelps.forge.client.refprog.ClientCatalogCache.EntryDTO("SEQUENCED_GENE", label, gid, quality, known, prog, max, i, gi));
+                                list.add(new com.github.b4ndithelps.forge.client.refprog.ClientCatalogCache.EntryDTO("SEQUENCED_GENE", label, gid, quality, known, prog, max, i, gi, seq.getBlockPos()));
                             }
                         }
                     }
@@ -248,7 +255,7 @@ public class RefProgramActionC2SPacket {
                                             for (var t : term.getIdentificationTasks()) if (!t.complete && samePath(egid, t.geneId)) { prog = t.progress; max = Math.max(1, t.max); break; }
                                         }
                                         String label = g.contains("name", 8) ? g.getString("name") : (egid == null ? "" : egid);
-                                        list.add(new com.github.b4ndithelps.forge.client.refprog.ClientCatalogCache.EntryDTO("SEQUENCED_GENE", label, egid, eq, isKnown, prog, max, i, gi));
+                                        list.add(new com.github.b4ndithelps.forge.client.refprog.ClientCatalogCache.EntryDTO("SEQUENCED_GENE", label, egid, eq, isKnown, prog, max, i, gi, seq.getBlockPos()));
                                     }
                                 }
                             }

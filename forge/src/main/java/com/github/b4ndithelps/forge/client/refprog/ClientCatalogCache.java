@@ -23,6 +23,7 @@ public final class ClientCatalogCache {
         public final int max; // >=1 when identifying, else 0
         public final int sourceIndex;
         public final int slotIndex;
+        public final BlockPos sourcePos; // optional: for SEQUENCED_GENE rows, the sequencer position
 
         public EntryDTO(String type, String label, String geneId, int quality, boolean known, int progress, int max, int sourceIndex, int slotIndex) {
             this.type = type;
@@ -34,6 +35,20 @@ public final class ClientCatalogCache {
             this.max = max;
             this.sourceIndex = sourceIndex;
             this.slotIndex = slotIndex;
+            this.sourcePos = null;
+        }
+
+        public EntryDTO(String type, String label, String geneId, int quality, boolean known, int progress, int max, int sourceIndex, int slotIndex, BlockPos sourcePos) {
+            this.type = type;
+            this.label = label;
+            this.geneId = geneId == null ? "" : geneId;
+            this.quality = quality;
+            this.known = known;
+            this.progress = progress;
+            this.max = max;
+            this.sourceIndex = sourceIndex;
+            this.slotIndex = slotIndex;
+            this.sourcePos = sourcePos;
         }
     }
 

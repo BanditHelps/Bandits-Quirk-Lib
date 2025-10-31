@@ -24,6 +24,7 @@ public class RefAnalyzeProgram {
     private final List<GeneSequencerBlockEntity> sequencers = new ArrayList<>();
     private int selectedIndex = 0;
     private long lastSyncRequestGameTime = Long.MIN_VALUE;
+    private long lastCatalogSyncGameTime = Long.MIN_VALUE;
 
     public RefAnalyzeProgram(BioTerminalRefScreen screen, BlockPos terminalPos) {
         this.screen = screen;
@@ -54,10 +55,22 @@ public class RefAnalyzeProgram {
     public void startSelected() {
         if (sequencers.isEmpty()) return;
         var target = sequencers.get(selectedIndex);
+        // Prevent starting if already running
+        var cache = com.github.b4ndithelps.forge.client.refprog.ClientSequencerStatusCache.get(target.getBlockPos());
+        boolean runningNow = (cache != null) ? cache.running : target.isRunning();
+        if (runningNow) return;
+        // Prevent starting without a sample in input
+        var in = target.getItem(GeneSequencerBlockEntity.SLOT_INPUT);
+        if (in.isEmpty() || in.getItem() != com.github.b4ndithelps.forge.item.ModItems.TISSUE_SAMPLE.get()) return;
+        // Prevent starting if output is occupied (already analyzed result present)
+        var out = target.getItem(GeneSequencerBlockEntity.SLOT_OUTPUT);
+        if (!out.isEmpty()) return;
         BQLNetwork.CHANNEL.sendToServer(new RefProgramActionC2SPacket(terminalPos, "analyze.start", target.getBlockPos()));
     }
 
     public void render(net.minecraft.client.gui.GuiGraphics g, int x, int y, int w, int h, net.minecraft.client.gui.Font font) {
+        // Periodically refresh connections and request sync so UI reflects latest server state
+        refreshSequencers();
         // Split area: 60% left list, 40% right DNA panel
         // Split area: left list and right DNA panel
         int leftW = (int)Math.floor(w * 0.58);
@@ -144,9 +157,10 @@ public class RefAnalyzeProgram {
                         " A===T"
                 };
 
-        // Try to show up to 4 gene labels if analyzed; left-only placement
+        // Try to show up to 4 gene labels if analyzed; prefer live BE output, fallback to catalog cache
         String[] left = new String[]{"", "", "", "", "", ""};
         String[] right = new String[]{"", "", "", "", "", ""};
+        boolean haveLabels = false;
         var out = seq.getItem(GeneSequencerBlockEntity.SLOT_OUTPUT);
         if (!out.isEmpty() && out.getTag() != null) {
             var tag = out.getTag();
@@ -157,8 +171,28 @@ public class RefAnalyzeProgram {
                     var gTag = list.getCompound(i);
                     String label = gTag.getString("name");
                     if (label == null || label.isEmpty()) label = gTag.getString("id");
-                    // Place only on left side, stack down rows 0..3
                     left[i] = compact(label);
+                }
+                haveLabels = true;
+            }
+        }
+        if (!haveLabels) {
+            // If server told us it's analyzed, request a catalog sync and read labels from catalog cache
+            var cache = com.github.b4ndithelps.forge.client.refprog.ClientSequencerStatusCache.get(seq.getBlockPos());
+            var mcLocal = Minecraft.getInstance();
+            long gt = (mcLocal.level == null) ? 0L : mcLocal.level.getGameTime();
+            if (cache != null && cache.analyzed && gt - lastCatalogSyncGameTime >= 10L) {
+                lastCatalogSyncGameTime = gt;
+                BQLNetwork.CHANNEL.sendToServer(new RefProgramActionC2SPacket(terminalPos, "catalog.sync", null));
+            }
+            var entries = com.github.b4ndithelps.forge.client.refprog.ClientCatalogCache.get(terminalPos);
+            if (entries != null && !entries.isEmpty()) {
+                int placed = 0;
+                for (var e : entries) {
+                    if ("SEQUENCED_GENE".equals(e.type) && e.sourcePos != null && e.sourcePos.equals(seq.getBlockPos())) {
+                        if (placed < 4) left[placed++] = compact(e.label);
+                        if (placed >= 4) break;
+                    }
                 }
             }
         }
@@ -188,11 +222,15 @@ public class RefAnalyzeProgram {
         }
 
         // Optional: show a tiny running indicator
-        if (seq.isRunning()) {
+        {
+            var cache = com.github.b4ndithelps.forge.client.refprog.ClientSequencerStatusCache.get(seq.getBlockPos());
+            boolean runningNow = (cache != null) ? cache.running : seq.isRunning();
+            if (runningNow) {
             String running = "[RUNNING]";
             reservedLabelPx = font.width("W".repeat(labelWidth));
             int dnaXStart = x + reservedLabelPx + labelGapPx;
             g.drawString(font, Component.literal(running), dnaXStart, Math.min(curY + 2, y + h - font.lineHeight), 0x55FF55, false);
+            }
         }
     }
 
