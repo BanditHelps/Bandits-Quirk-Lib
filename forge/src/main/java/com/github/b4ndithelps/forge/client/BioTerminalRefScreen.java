@@ -51,6 +51,8 @@ public class BioTerminalRefScreen extends AbstractContainerScreen<BioTerminalRef
     private com.github.b4ndithelps.forge.client.refprog.RefCatalogProgram catalogProgram;
     // Client-side program instance for Slicer
     private com.github.b4ndithelps.forge.client.refprog.RefSlicerProgram slicerProgram;
+    // Client-side program instance for Combiner
+    private com.github.b4ndithelps.forge.client.refprog.RefCombinerProgram combinerProgram;
 
     public BioTerminalRefScreen(BioTerminalRefMenu menu, Inventory inv, Component title) {
         super(menu, inv, title);
@@ -107,6 +109,20 @@ public class BioTerminalRefScreen extends AbstractContainerScreen<BioTerminalRef
                 slicerProgram.refresh();
             }
             slicerProgram.render(graphics, area.x, area.y, area.w, area.h, this.font);
+            // Skip the text scroller when program is active
+            drawProgramAreaDebug(graphics, area);
+            return;
+        }
+
+        // If on Combine tab, render the client-side Combiner program into the area
+        if (activeTabIndex == 3) {
+            if (combinerProgram == null) {
+                combinerProgram = new com.github.b4ndithelps.forge.client.refprog.RefCombinerProgram(this, this.menu.getBlockPos());
+            } else if ((this.minecraft != null && this.minecraft.level != null) && (this.minecraft.level.getGameTime() % 20L == 0L)) {
+                // Refresh connected devices roughly every second
+                combinerProgram.refresh();
+            }
+            combinerProgram.render(graphics, area.x, area.y, area.w, area.h, this.font);
             // Skip the text scroller when program is active
             drawProgramAreaDebug(graphics, area);
             return;
@@ -236,6 +252,22 @@ public class BioTerminalRefScreen extends AbstractContainerScreen<BioTerminalRef
             }
             if (keyCode == 257 || keyCode == 335) { // Enter
                 slicerProgram.startSelected();
+                return true;
+            }
+        }
+
+        // Combine tab interactions
+        if (activeTabIndex == 3 && combinerProgram != null) {
+            if (keyCode == 87) { // W
+                combinerProgram.moveSelection(-1);
+                return true;
+            }
+            if (keyCode == 83) { // S
+                combinerProgram.moveSelection(1);
+                return true;
+            }
+            if (keyCode == 257 || keyCode == 335) { // Enter
+                combinerProgram.startSelected();
                 return true;
             }
         }

@@ -130,6 +130,13 @@ public final class BQLNetwork {
                 .decoder(SlicerStateS2CPacket::decode)
                 .consumerMainThread(SlicerStateS2CPacket::handle)
                 .add();
+
+        // Combiner result updates (server -> client)
+        CHANNEL.messageBuilder(CombinerStateS2CPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(CombinerStateS2CPacket::encode)
+                .decoder(CombinerStateS2CPacket::decode)
+                .consumerMainThread(CombinerStateS2CPacket::handle)
+                .add();
     }
 }
 

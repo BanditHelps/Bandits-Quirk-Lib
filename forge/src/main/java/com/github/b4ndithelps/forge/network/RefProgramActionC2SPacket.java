@@ -374,6 +374,208 @@ public class RefProgramActionC2SPacket {
                         );
                     }
                 }
+            } else if (this.action != null && this.action.startsWith("comb.start:") && this.targetPos != null) {
+                // Client requests combining selected vials from connected refrigerators into a target GeneCombiner
+                BlockEntity target = player.level().getBlockEntity(this.targetPos);
+                if (!(target instanceof com.github.b4ndithelps.forge.blocks.GeneCombinerBlockEntity comb)) return;
+
+                // Validate combiner is connected to terminal
+                var connected = CableNetworkUtil.findConnected(player.level(), this.terminalPos, t -> t instanceof com.github.b4ndithelps.forge.blocks.GeneCombinerBlockEntity);
+                boolean ok = connected.stream().anyMatch(t -> t.getBlockPos().equals(this.targetPos));
+                if (!ok) return;
+
+                // Output must be empty before starting
+                if (!comb.getItem(com.github.b4ndithelps.forge.blocks.GeneCombinerBlockEntity.SLOT_OUTPUT).isEmpty()) return;
+
+                // Determine current free inputs
+                int free = 0;
+                for (int i = 0; i < com.github.b4ndithelps.forge.blocks.GeneCombinerBlockEntity.SLOT_INPUT_COUNT; i++)
+                    if (comb.getItem(i).isEmpty()) free++;
+                if (free <= 0) return;
+
+                // Build fridge list (same ordering used by catalog.sync so indices align)
+                java.util.ArrayList<com.github.b4ndithelps.forge.blocks.SampleRefrigeratorBlockEntity> fridges = new java.util.ArrayList<>();
+                var connectedFridges = CableNetworkUtil.findConnected(player.level(), this.terminalPos, t -> t instanceof com.github.b4ndithelps.forge.blocks.SampleRefrigeratorBlockEntity);
+                for (var t : connectedFridges) if (t instanceof com.github.b4ndithelps.forge.blocks.SampleRefrigeratorBlockEntity f) fridges.add(f);
+
+                // Parse selections: "f-s,f-s,..."
+                String payload = this.action.substring("comb.start:".length());
+                java.util.LinkedHashSet<int[]> picks = new java.util.LinkedHashSet<>();
+                if (!payload.isEmpty()) {
+                    for (String token : payload.split(",")) {
+                        int dash = token.indexOf('-');
+                        if (dash <= 0) continue;
+                        try {
+                            int fi = Integer.parseInt(token.substring(0, dash).trim());
+                            int si = Integer.parseInt(token.substring(dash + 1).trim());
+                            picks.add(new int[]{fi, si});
+                        } catch (Exception ignored) {}
+                    }
+                }
+                if (picks.isEmpty()) return;
+
+                // Move up to free inputs
+                for (int[] ref : picks) {
+                    if (free <= 0) break;
+                    int fi = ref[0], si = ref[1];
+                    if (fi < 0 || fi >= fridges.size()) continue;
+                    var fridge = fridges.get(fi);
+                    if (si < 0 || si >= com.github.b4ndithelps.forge.blocks.SampleRefrigeratorBlockEntity.SLOT_COUNT) continue;
+                    ItemStack st = fridge.getItem(si);
+                    if (st.isEmpty() || !isGeneVial(st)) continue;
+                    // find target input slot
+                    int tgt = -1;
+                    for (int i = 0; i < com.github.b4ndithelps.forge.blocks.GeneCombinerBlockEntity.SLOT_INPUT_COUNT; i++)
+                        if (comb.getItem(i).isEmpty()) { tgt = i; break; }
+                    if (tgt < 0) break;
+                    fridge.setItem(si, ItemStack.EMPTY);
+                    comb.setItem(tgt, st);
+                    free--;
+                }
+
+                // Gather provided ingredients from current inputs
+                java.util.ArrayList<com.github.b4ndithelps.genetics.GeneCombinationService.GeneIngredient> provided = new java.util.ArrayList<>();
+                for (int i = 0; i < com.github.b4ndithelps.forge.blocks.GeneCombinerBlockEntity.SLOT_INPUT_COUNT; i++) {
+                    ItemStack st = comb.getItem(i);
+                    if (st.isEmpty()) continue;
+                    CompoundTag tag = st.getTag();
+                    if (tag != null && tag.contains("gene", 10)) {
+                        CompoundTag g = tag.getCompound("gene");
+                        String id = g.getString("id");
+                        int q = g.contains("quality", 3) ? g.getInt("quality") : 0;
+                        try {
+                            provided.add(new com.github.b4ndithelps.genetics.GeneCombinationService.GeneIngredient(new net.minecraft.resources.ResourceLocation(id), q));
+                        } catch (Exception ignored) {}
+                    }
+                }
+                if (provided.isEmpty()) return;
+
+                // Determine resulting gene by matching recipe
+                com.github.b4ndithelps.genetics.Gene result = null;
+                try {
+                    for (com.github.b4ndithelps.genetics.Gene g : com.github.b4ndithelps.genetics.GeneRegistry.all()) {
+                        if (!g.isCombinable() || g.getCombinationRecipe() == null) continue;
+                        boolean matches = false;
+                        try {
+                            var server = player.getServer();
+                            matches = com.github.b4ndithelps.genetics.GeneCombinationService.matchesRecipe(server, g, provided);
+                        } catch (Exception ignored) {}
+                        if (matches) { result = g; break; }
+                    }
+                } catch (Exception ignored) {}
+
+                // Consume inputs
+                for (int i = 0; i < com.github.b4ndithelps.forge.blocks.GeneCombinerBlockEntity.SLOT_INPUT_COUNT; i++) comb.setItem(i, ItemStack.EMPTY);
+
+                ItemStack output;
+                if (result != null) {
+                    ItemStack vial;
+                    switch (result.getCategory()) {
+                        case cosmetic -> vial = new ItemStack(com.github.b4ndithelps.forge.item.ModItems.GENE_VIAL_COSMETIC.get());
+                        case resistance -> vial = new ItemStack(com.github.b4ndithelps.forge.item.ModItems.GENE_VIAL_RESISTANCE.get());
+                        case builder -> vial = new ItemStack(com.github.b4ndithelps.forge.item.ModItems.GENE_VIAL_BUILDER.get());
+                        case quirk -> vial = new ItemStack(com.github.b4ndithelps.forge.item.ModItems.GENE_VIAL_QUIRK.get());
+                        default -> vial = new ItemStack(com.github.b4ndithelps.forge.item.ModItems.GENE_VIAL_BUILDER.get());
+                    }
+                    CompoundTag gene = new CompoundTag();
+                    gene.putString("id", result.getId().toString());
+                    int q = 0; for (var ing : provided) q = Math.max(q, ing.quality);
+                    gene.putInt("quality", Math.max(result.getQualityMin(), Math.min(result.getQualityMax(), q)));
+                    gene.putString("name", compactLabelFromId(result.getId().toString(), q));
+                    CompoundTag vtag = vial.getOrCreateTag();
+                    vtag.put("gene", gene);
+                    output = vial;
+                } else {
+                    output = new ItemStack(com.github.b4ndithelps.forge.item.ModItems.FAILED_SAMPLE.get());
+                }
+
+                // Place in output or first free input slot
+                if (comb.getItem(com.github.b4ndithelps.forge.blocks.GeneCombinerBlockEntity.SLOT_OUTPUT).isEmpty()) {
+                    comb.setItem(com.github.b4ndithelps.forge.blocks.GeneCombinerBlockEntity.SLOT_OUTPUT, output);
+                } else {
+                    for (int i = 0; i < com.github.b4ndithelps.forge.blocks.GeneCombinerBlockEntity.SLOT_INPUT_COUNT; i++) {
+                        if (comb.getItem(i).isEmpty()) { comb.setItem(i, output); break; }
+                    }
+                }
+
+                // Send feedback to the requesting player
+                boolean success = (result != null);
+                String message = success ? "Combination complete" : "Combination failed";
+                com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.send(
+                        net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player),
+                        new com.github.b4ndithelps.forge.network.CombinerStateS2CPacket(this.targetPos, success, message)
+                );
+
+                // Immediately send updated catalog entries so client vial list refreshes
+                java.util.ArrayList<com.github.b4ndithelps.forge.client.refprog.ClientCatalogCache.EntryDTO> list = new java.util.ArrayList<>();
+                // Fridges section
+                java.util.ArrayList<com.github.b4ndithelps.forge.blocks.SampleRefrigeratorBlockEntity> frList = new java.util.ArrayList<>();
+                var connFr = CableNetworkUtil.findConnected(player.level(), this.terminalPos, t -> t instanceof com.github.b4ndithelps.forge.blocks.SampleRefrigeratorBlockEntity);
+                for (var t : connFr) if (t instanceof com.github.b4ndithelps.forge.blocks.SampleRefrigeratorBlockEntity f) frList.add(f);
+                if (!frList.isEmpty()) {
+                    list.add(new com.github.b4ndithelps.forge.client.refprog.ClientCatalogCache.EntryDTO("SECTION", "[VIALS]", "", -1, false, 0, 0, -1, -1));
+                    for (int f = 0; f < frList.size(); f++) {
+                        var fridge = frList.get(f);
+                        for (int s = 0; s < com.github.b4ndithelps.forge.blocks.SampleRefrigeratorBlockEntity.SLOT_COUNT; s++) {
+                            var st = fridge.getItem(s);
+                            if (st == null || st.isEmpty()) continue;
+                            if (!isGeneVial(st)) continue;
+                            net.minecraft.nbt.CompoundTag tag = st.getTag();
+                            String gid = ""; int quality = -1;
+                            if (tag != null && tag.contains("gene", 10)) {
+                                var g = tag.getCompound("gene");
+                                gid = g.contains("id", 8) ? g.getString("id") : "";
+                                quality = g.contains("quality", 3) ? g.getInt("quality") : -1;
+                            }
+                            boolean known = false;
+                            if (player.level().getBlockEntity(this.terminalPos) instanceof com.github.b4ndithelps.forge.blocks.BioTerminalRefBlockEntity term && gid != null && !gid.isEmpty()) {
+                                net.minecraft.resources.ResourceLocation rl = net.minecraft.resources.ResourceLocation.tryParse(gid);
+                                if (rl != null) { try { known = term.isGeneKnown(rl); } catch (Exception ignored) {} }
+                            }
+                            String label = labelFromVial(st);
+                            int prog = 0, max = 0;
+                            if (!known && gid != null && !gid.isEmpty() && player.level().getBlockEntity(this.terminalPos) instanceof com.github.b4ndithelps.forge.blocks.BioTerminalRefBlockEntity term2) {
+                                for (var t : term2.getIdentificationTasks()) if (!t.complete && samePath(gid, t.geneId)) { prog = t.progress; max = Math.max(1, t.max); break; }
+                            }
+                            list.add(new com.github.b4ndithelps.forge.client.refprog.ClientCatalogCache.EntryDTO("VIAL", label, gid, quality, known, prog, max, f, s));
+                        }
+                    }
+                }
+                // Sequencers section
+                java.util.ArrayList<com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity> seql = new java.util.ArrayList<>();
+                var connSeq = CableNetworkUtil.findConnected(player.level(), this.terminalPos, t -> t instanceof com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity);
+                for (var t : connSeq) if (t instanceof com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity g2) seql.add(g2);
+                if (!seql.isEmpty()) {
+                    list.add(new com.github.b4ndithelps.forge.client.refprog.ClientCatalogCache.EntryDTO("SECTION", "[SAMPLES]", "", -1, false, 0, 0, -1, -1));
+                    for (int i = 0; i < seql.size(); i++) {
+                        var seq = seql.get(i);
+                        var out = seq.getItem(com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity.SLOT_OUTPUT);
+                        if (!out.isEmpty() && out.getTag() != null && out.getTag().contains("genes", 9)) {
+                            var listTag = out.getTag().getList("genes", 10);
+                            for (int gi = 0; gi < listTag.size(); gi++) {
+                                var g = listTag.getCompound(gi);
+                                String gid = g.getString("id");
+                                int q = g.contains("quality", 3) ? g.getInt("quality") : -1;
+                                boolean known = false; int prog = 0, max = 0;
+                                if (gid != null && !gid.isEmpty()) {
+                                    net.minecraft.resources.ResourceLocation rlEg = net.minecraft.resources.ResourceLocation.tryParse(gid);
+                                    if (rlEg != null) {
+                                        if (player.level().getBlockEntity(this.terminalPos) instanceof com.github.b4ndithelps.forge.blocks.BioTerminalRefBlockEntity term) {
+                                            try { known = term.isGeneKnown(rlEg); } catch (Exception ignored) {}
+                                            for (var t : term.getIdentificationTasks()) if (!t.complete && samePath(gid, t.geneId)) { prog = t.progress; max = Math.max(1, t.max); break; }
+                                        }
+                                    }
+                                }
+                                String label = g.contains("name", 8) ? g.getString("name") : (gid == null ? "" : gid);
+                                list.add(new com.github.b4ndithelps.forge.client.refprog.ClientCatalogCache.EntryDTO("SEQUENCED_GENE", label, gid, q, known, prog, max, i, gi, seq.getBlockPos()));
+                            }
+                        }
+                    }
+                }
+                com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.send(
+                        net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player),
+                        new com.github.b4ndithelps.forge.network.CatalogEntriesS2CPacket(this.terminalPos, list)
+                );
             }
         });
         return true;
@@ -414,6 +616,10 @@ public class RefProgramActionC2SPacket {
         String pa = ia >= 0 ? a.substring(ia + 1) : a;
         String pb = ib >= 0 ? b.substring(ib + 1) : b;
         return pa.equals(pb);
+    }
+
+    private static String compactLabelFromId(String id, int quality) {
+        return "gene_" + String.format("%04x", Math.abs((id + "_" + quality).hashCode()) & 0xFFFF);
     }
 }
 
