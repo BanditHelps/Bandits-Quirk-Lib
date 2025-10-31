@@ -171,7 +171,7 @@ public class RefSlicerProgram {
 
         // LEFT: slicers list
         if (slicers.isEmpty()) {
-            g.drawString(font, Component.literal("No connected slicers."), leftX, curY, 0xAAAAAA, false);
+            g.drawString(font, Component.literal("No detected slicers."), leftX, curY, 0xAAAAAA, false);
         } else {
             for (int i = 0; i < slicers.size(); i++) {
                 boolean sel = (activePane == Pane.LEFT && i == selectedSlicerIndex);

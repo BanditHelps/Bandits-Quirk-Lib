@@ -8,6 +8,7 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import com.github.b4ndithelps.forge.blocks.BioTerminalBlockEntity;
+import com.github.b4ndithelps.forge.blocks.BioTerminalRefBlockEntity;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -99,6 +100,22 @@ public class GeneDatabaseItem extends Item {
                     insert.setCount(1);
                     terminal.setItem(BioTerminalBlockEntity.SLOT_DISK, insert);
                     terminal.setChanged();
+                    if (!level.isClientSide) {
+                        held.shrink(1);
+                        level.sendBlockUpdated(pos, level.getBlockState(pos), level.getBlockState(pos), 3);
+                    }
+                    return InteractionResult.sidedSuccess(level.isClientSide);
+                }
+            }
+        } else if (be instanceof BioTerminalRefBlockEntity refTerm) {
+            ItemStack slot = refTerm.getItem(BioTerminalRefBlockEntity.SLOT_DISK);
+            if (slot.isEmpty()) {
+                ItemStack held = context.getItemInHand();
+                if (!held.isEmpty() && held.getItem() instanceof GeneDatabaseItem) {
+                    ItemStack insert = held.copy();
+                    insert.setCount(1);
+                    refTerm.setItem(BioTerminalRefBlockEntity.SLOT_DISK, insert);
+                    refTerm.setChanged();
                     if (!level.isClientSide) {
                         held.shrink(1);
                         level.sendBlockUpdated(pos, level.getBlockState(pos), level.getBlockState(pos), 3);

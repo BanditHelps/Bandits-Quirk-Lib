@@ -28,19 +28,29 @@ public class RefCatalogProgram {
     private final List<Entry> entries = new ArrayList<>();
     private int selectedIndex = 0;
 
-    private enum EntryType { VIAL, SEQUENCED_SAMPLE, SECTION }
+    private enum EntryType { VIAL, SEQUENCED_SAMPLE, SEQUENCED_GENE, SECTION }
 
     private static final class Entry {
         final EntryType type;
         final String label; // display label in list
         final ItemStack stack; // optional for VIAL/SAMPLE
+        final String geneId; // empty for SECTION/SAMPLE rows without specific gene
+        final int quality; // -1 if not applicable
+        final boolean known;
+        final int progress; // 0..max if identifying
+        final int max;
         final int sourceIndex; // fridge or sequencer index (0-based), -1 if N/A
         final int slotIndex;   // slot within fridge if applicable, -1 otherwise
 
-        Entry(EntryType type, String label, ItemStack stack, int sourceIndex, int slotIndex) {
+        Entry(EntryType type, String label, ItemStack stack, String geneId, int quality, boolean known, int progress, int max, int sourceIndex, int slotIndex) {
             this.type = type;
             this.label = label;
             this.stack = stack;
+            this.geneId = geneId == null ? "" : geneId;
+            this.quality = quality;
+            this.known = known;
+            this.progress = progress;
+            this.max = max;
             this.sourceIndex = sourceIndex;
             this.slotIndex = slotIndex;
         }
@@ -65,9 +75,10 @@ public class RefCatalogProgram {
                 EntryType t = switch (dto.type) {
                     case "VIAL" -> EntryType.VIAL;
                     case "SEQUENCED_SAMPLE" -> EntryType.SEQUENCED_SAMPLE;
+                    case "SEQUENCED_GENE" -> EntryType.SEQUENCED_GENE;
                     default -> EntryType.SECTION;
                 };
-                entries.add(new Entry(t, dto.label, ItemStack.EMPTY, dto.sourceIndex, dto.slotIndex));
+                entries.add(new Entry(t, dto.label, ItemStack.EMPTY, dto.geneId, dto.quality, dto.known, dto.progress, dto.max, dto.sourceIndex, dto.slotIndex));
             }
         } else {
             // Fallback to local scan (may miss inventory data without block entity sync)
@@ -76,7 +87,7 @@ public class RefCatalogProgram {
             for (var be : connectedFridges) if (be instanceof SampleRefrigeratorBlockEntity f) fridges.add(f);
 
             if (!fridges.isEmpty()) {
-                entries.add(new Entry(EntryType.SECTION, "[VIALS]", ItemStack.EMPTY, -1, -1));
+                entries.add(new Entry(EntryType.SECTION, "[VIALS]", ItemStack.EMPTY, "", -1, false, 0, 0, -1, -1));
                 for (int f = 0; f < fridges.size(); f++) {
                     var fridge = fridges.get(f);
                     for (int s = 0; s < SampleRefrigeratorBlockEntity.SLOT_COUNT; s++) {
@@ -85,7 +96,7 @@ public class RefCatalogProgram {
                         if (!isGeneVial(st)) continue;
                         String name = getVialGeneLabel(st);
                         String line = String.format("%s", name);
-                        entries.add(new Entry(EntryType.VIAL, line, st.copy(), f, s));
+                        entries.add(new Entry(EntryType.VIAL, line, st.copy(), getVialGeneId(st), getVialQuality(st), false, 0, 0, f, s));
                     }
                 }
             }
@@ -95,13 +106,18 @@ public class RefCatalogProgram {
             for (var be : connectedSeq) if (be instanceof GeneSequencerBlockEntity g) sequencers.add(g);
 
             if (!sequencers.isEmpty()) {
-                entries.add(new Entry(EntryType.SECTION, "[SAMPLES]", ItemStack.EMPTY, -1, -1));
+                entries.add(new Entry(EntryType.SECTION, "[SAMPLES]", ItemStack.EMPTY, "", -1, false, 0, 0, -1, -1));
                 for (int i = 0; i < sequencers.size(); i++) {
                     var seq = sequencers.get(i);
                     var out = seq.getItem(GeneSequencerBlockEntity.SLOT_OUTPUT);
-                    if (!out.isEmpty()) {
-                        String line = String.format("Sequenced Sample %d", i + 1);
-                        entries.add(new Entry(EntryType.SEQUENCED_SAMPLE, line, out.copy(), i, -1));
+                    if (!out.isEmpty() && out.getTag() != null && out.getTag().contains("genes", 9)) {
+                        var list = out.getTag().getList("genes", 10);
+                        for (int gi = 0; gi < list.size(); gi++) {
+                            var gTag = list.getCompound(gi);
+                            String label = gTag.contains("name", 8) ? gTag.getString("name") : gTag.getString("id");
+                            int q = gTag.contains("quality", 3) ? gTag.getInt("quality") : -1;
+                            entries.add(new Entry(EntryType.SEQUENCED_GENE, label, ItemStack.EMPTY, gTag.getString("id"), q, false, 0, 0, i, gi));
+                        }
                     }
                 }
             }
@@ -132,7 +148,19 @@ public class RefCatalogProgram {
     }
 
     public void startSelected() {
-        // No action for now; reserved for future interactions
+        if (entries.isEmpty()) return;
+        var sel = entries.get(selectedIndex);
+        if (sel.type == EntryType.SECTION || sel.geneId == null || sel.geneId.isEmpty()) return;
+        if (sel.known) return;
+        // Client debug log
+        try { net.minecraft.client.Minecraft.getInstance().player.sendSystemMessage(Component.literal("[Catalog] Request identify: " + sel.geneId)); } catch (Throwable ignored) {}
+        int q = sel.quality >= 0 ? sel.quality : 50;
+        String action = "catalog.identify:" + sel.geneId + ":" + q;
+        com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.sendToServer(
+                new com.github.b4ndithelps.forge.network.RefProgramActionC2SPacket(terminalPos, action, null)
+        );
+        // Immediately request a sync so progress appears quickly
+        requestSync();
     }
 
     public void render(GuiGraphics g, int x, int y, int w, int h, Font font) {
@@ -143,8 +171,20 @@ public class RefCatalogProgram {
         int infoX = x + leftW + 2;
         int infoY = y;
 
-        // Header
+        // Header and DB indicator
         g.drawString(font, Component.literal("[CATALOG]"), listX, listY, 0x55FF55, false);
+        // Show database status on the right of header
+        boolean hasDb = false;
+        var mc = Minecraft.getInstance();
+        if (mc != null && mc.level != null) {
+            var be = mc.level.getBlockEntity(terminalPos);
+            if (be instanceof com.github.b4ndithelps.forge.blocks.BioTerminalRefBlockEntity term) {
+                hasDb = term.hasDatabase();
+            }
+        }
+        String dbText = hasDb ? "[DB: inserted]" : "[DB: missing]";
+        int dbX = listX + Math.max(0, leftW - font.width(dbText));
+        g.drawString(font, Component.literal(dbText), dbX, listY, hasDb ? 0x55FF55 : 0xFF5555, false);
         int curY = listY + font.lineHeight + 2;
 
         if (entries.isEmpty()) {
@@ -158,7 +198,13 @@ public class RefCatalogProgram {
                     boolean sel = (i == selectedIndex);
                     String prefix = sel ? ">> " : "   ";
                     int color = sel ? 0x55FF55 : 0xFFFFFF;
-                    g.drawString(font, Component.literal(prefix + e.label), listX, curY, color, false);
+                    String suffix = "";
+                    if (e.known) suffix = " [KNOWN]";
+                    else if (e.max > 0) {
+                        int pct = Math.max(0, Math.min(100, (int)Math.round(e.progress * 100.0 / Math.max(1, e.max))));
+                        suffix = " [ID " + pct + "%]";
+                    }
+                    g.drawString(font, Component.literal(prefix + e.label + suffix), listX, curY, color, false);
                 }
                 curY += font.lineHeight;
                 if (curY > y + h - font.lineHeight) break;
@@ -182,18 +228,34 @@ public class RefCatalogProgram {
         var sel = entries.get(selectedIndex);
         if (sel.type == EntryType.SECTION) return;
 
-        // All information is unknown for now, per requirements
-        g.drawString(font, Component.literal("Name: unknown"), x, curY, 0xFFFFFF, false); curY += font.lineHeight;
-        g.drawString(font, Component.literal("Gene ID: unknown"), x, curY, 0xAAAAAA, false); curY += font.lineHeight;
-        g.drawString(font, Component.literal("Category: Unknown"), x, curY, 0xAAAAAA, false); curY += font.lineHeight;
-        g.drawString(font, Component.literal("Quality: unknown"), x, curY, 0xFFFF55, false); curY += font.lineHeight;
+        boolean known = sel.known;
+        String dispId = (sel.geneId == null || sel.geneId.isEmpty()) ? "unknown" : sel.geneId;
+        g.drawString(font, Component.literal("Name: " + (known ? dispId : "unknown")), x, curY, 0xFFFFFF, false); curY += font.lineHeight;
+        g.drawString(font, Component.literal("Gene ID: " + dispId), x, curY, 0xAAAAAA, false); curY += font.lineHeight;
+        g.drawString(font, Component.literal("Category: " + (known ? "Visible" : "Unknown")), x, curY, 0xAAAAAA, false); curY += font.lineHeight;
+        g.drawString(font, Component.literal("Quality: " + ((known && sel.quality >= 0) ? (sel.quality + "%") : "unknown")), x, curY, 0xFFFF55, false); curY += font.lineHeight;
+        if (!known && sel.max > 0) {
+            int pct = Math.max(0, Math.min(100, (int)Math.round(sel.progress * 100.0 / Math.max(1, sel.max))));
+            g.drawString(font, Component.literal("Identifying: " + pct + "%"), x, curY, 0x55FF55, false); curY += font.lineHeight;
+        }
+        if (!known) {
+            var mc = Minecraft.getInstance();
+            boolean hasDb = false;
+            if (mc != null && mc.level != null) {
+                var be = mc.level.getBlockEntity(terminalPos);
+                if (be instanceof com.github.b4ndithelps.forge.blocks.BioTerminalRefBlockEntity term) hasDb = term.hasDatabase();
+            }
+            if (!hasDb) {
+                g.drawString(font, Component.literal("Insert a Gene Database to identify genes."), x, curY, 0xFF5555, false); curY += font.lineHeight;
+            }
+        }
         curY += 2;
 
         // Show source location basics for context
         if (sel.type == EntryType.VIAL) {
             String src = String.format("Source: Fridge %d, Slot %d", sel.sourceIndex + 1, sel.slotIndex + 1);
             g.drawString(font, Component.literal(src), x, curY, 0xAAAAAA, false);
-        } else if (sel.type == EntryType.SEQUENCED_SAMPLE) {
+        } else if (sel.type == EntryType.SEQUENCED_SAMPLE || sel.type == EntryType.SEQUENCED_GENE) {
             String src = String.format("Source: Sequencer %d", sel.sourceIndex + 1);
             g.drawString(font, Component.literal(src), x, curY, 0xAAAAAA, false);
         }
@@ -245,10 +307,30 @@ public class RefCatalogProgram {
         return getStackDisplayName(vial);
     }
 
+    private static String getVialGeneId(ItemStack vial) {
+        if (vial == null || vial.isEmpty()) return "";
+        var tag = vial.getTag();
+        if (tag != null && tag.contains("gene", 10)) {
+            var gene = tag.getCompound("gene");
+            if (gene.contains("id", 8)) return gene.getString("id");
+        }
+        return "";
+    }
+
+    private static int getVialQuality(ItemStack vial) {
+        if (vial == null || vial.isEmpty()) return -1;
+        var tag = vial.getTag();
+        if (tag != null && tag.contains("gene", 10)) {
+            var gene = tag.getCompound("gene");
+            if (gene.contains("quality", 3)) return gene.getInt("quality");
+        }
+        return -1;
+    }
+
     public int getSelectedIndex() { return selectedIndex; }
     public int size() { return entries.size(); }
 
-    private void requestSync() {
+    public void requestSync() {
         com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.sendToServer(
                 new com.github.b4ndithelps.forge.network.RefProgramActionC2SPacket(terminalPos, "catalog.sync", null)
         );

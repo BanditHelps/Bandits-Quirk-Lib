@@ -14,14 +14,24 @@ public final class ClientCatalogCache {
     private ClientCatalogCache() {}
 
     public static final class EntryDTO {
-        public final String type; // "VIAL", "SEQUENCED_SAMPLE", or "SECTION"
+        public final String type; // "VIAL", "SEQUENCED_SAMPLE", "SEQUENCED_GENE", or "SECTION"
         public final String label;
+        public final String geneId; // may be empty for SECTION/SAMPLE rows
+        public final int quality; // -1 if unknown/not applicable
+        public final boolean known; // whether gene is known according to attached DB
+        public final int progress; // 0..max
+        public final int max; // >=1 when identifying, else 0
         public final int sourceIndex;
         public final int slotIndex;
 
-        public EntryDTO(String type, String label, int sourceIndex, int slotIndex) {
+        public EntryDTO(String type, String label, String geneId, int quality, boolean known, int progress, int max, int sourceIndex, int slotIndex) {
             this.type = type;
             this.label = label;
+            this.geneId = geneId == null ? "" : geneId;
+            this.quality = quality;
+            this.known = known;
+            this.progress = progress;
+            this.max = max;
             this.sourceIndex = sourceIndex;
             this.slotIndex = slotIndex;
         }

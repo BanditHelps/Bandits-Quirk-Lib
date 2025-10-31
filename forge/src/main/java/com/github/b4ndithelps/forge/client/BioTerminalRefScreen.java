@@ -89,6 +89,7 @@ public class BioTerminalRefScreen extends AbstractContainerScreen<BioTerminalRef
                 catalogProgram = new com.github.b4ndithelps.forge.client.refprog.RefCatalogProgram(this, this.menu.getBlockPos());
             } else if ((this.minecraft != null && this.minecraft.level != null) && (this.minecraft.level.getGameTime() % 20L == 0L)) {
                 // Refresh connected devices roughly every second
+                catalogProgram.requestSync();
                 catalogProgram.refresh();
             }
             catalogProgram.render(graphics, area.x, area.y, area.w, area.h, this.font);
