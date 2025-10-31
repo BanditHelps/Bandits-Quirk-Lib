@@ -31,18 +31,6 @@ public final class BQLNetwork {
                 .consumerMainThread(ZoomStatePacket::handle)
                 .add();
 
-        CHANNEL.messageBuilder(ConsoleSyncS2CPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
-                .encoder(ConsoleSyncS2CPacket::encode)
-                .decoder(ConsoleSyncS2CPacket::decode)
-                .consumerMainThread(ConsoleSyncS2CPacket::handle)
-                .add();
-
-        CHANNEL.messageBuilder(ConsoleHistorySyncS2CPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
-                .encoder(ConsoleHistorySyncS2CPacket::encode)
-                .decoder(ConsoleHistorySyncS2CPacket::decode)
-                .consumerMainThread(ConsoleHistorySyncS2CPacket::handle)
-                .add();
-
         CHANNEL.messageBuilder(BodyStatusSyncPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(BodyStatusSyncPacket::encode)
                 .decoder(BodyStatusSyncPacket::decode)
@@ -61,24 +49,6 @@ public final class BQLNetwork {
                 .consumerMainThread(MineHaSlotSyncPacket::handle)
                 .add();
 
-        CHANNEL.messageBuilder(ConsoleCommandC2SPacket.class, index++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(ConsoleCommandC2SPacket::encode)
-                .decoder(ConsoleCommandC2SPacket::decode)
-                .consumerMainThread(ConsoleCommandC2SPacket::handle)
-                .add();
-
-        CHANNEL.messageBuilder(ProgramInputC2SPacket.class, index++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(ProgramInputC2SPacket::encode)
-                .decoder(ProgramInputC2SPacket::decode)
-                .consumerMainThread(ProgramInputC2SPacket::handle)
-                .add();
-
-        CHANNEL.messageBuilder(SwitchProgramC2SPacket.class, index++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(SwitchProgramC2SPacket::encode)
-                .decoder(SwitchProgramC2SPacket::decode)
-                .consumerMainThread(SwitchProgramC2SPacket::handle)
-                .add();
-
         CHANNEL.messageBuilder(DoubleJumpC2SPacket.class, index++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(DoubleJumpC2SPacket::encode)
                 .decoder(DoubleJumpC2SPacket::decode)
@@ -89,12 +59,6 @@ public final class BQLNetwork {
                 .encoder(DoubleJumpS2CPacket::encode)
                 .decoder(DoubleJumpS2CPacket::decode)
                 .consumerMainThread(DoubleJumpS2CPacket::handle)
-                .add();
-
-        CHANNEL.messageBuilder(ProgramScreenSyncS2CPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
-                .encoder(ProgramScreenSyncS2CPacket::encode)
-                .decoder(ProgramScreenSyncS2CPacket::decode)
-                .consumerMainThread(ProgramScreenSyncS2CPacket::handle)
                 .add();
 
         CHANNEL.messageBuilder(GenomeSyncPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)

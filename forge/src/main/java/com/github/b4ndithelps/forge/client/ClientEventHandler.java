@@ -6,11 +6,9 @@ import com.github.b4ndithelps.forge.entities.ModEntities;
 import com.github.b4ndithelps.forge.entities.WindProjectileEntity;
 import com.github.b4ndithelps.util.FileManager;
 import com.github.b4ndithelps.forge.blocks.ModMenus;
-import com.github.b4ndithelps.forge.client.BioTerminalScreen;
 import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.TitleScreen;
-import net.minecraft.client.renderer.entity.ArrowRenderer;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.resources.ResourceLocation;
@@ -56,14 +54,12 @@ public class ClientEventHandler {
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event) {
             event.enqueueWork(() -> {
-                MenuScreens.register(ModMenus.BIO_TERMINAL.get(), BioTerminalScreen::new);
                 MenuScreens.register(ModMenus.BIO_TERMINAL_REF.get(), BioTerminalRefScreen::new);
                 MenuScreens.register(ModMenus.GENE_SEQUENCER.get(), GeneSequencerScreen::new);
                 MenuScreens.register(ModMenus.GENE_SLICER.get(), GeneSlicerScreen::new);
                 MenuScreens.register(ModMenus.BIO_PRINTER.get(), BioPrinterScreen::new);
                 MenuScreens.register(ModMenus.GENE_COMBINER.get(), GeneCombinerScreen::new);
 				// Ensure blocks with transparency render correctly
-                ItemBlockRenderTypes.setRenderLayer(ModBlocks.BIO_TERMINAL.get(), RenderType.cutout());
                 ItemBlockRenderTypes.setRenderLayer(ModBlocks.BIO_TERMINAL_REF.get(), RenderType.cutout());
 				ItemBlockRenderTypes.setRenderLayer(ModBlocks.BIO_PRINTER.get(), RenderType.cutout());
             });
