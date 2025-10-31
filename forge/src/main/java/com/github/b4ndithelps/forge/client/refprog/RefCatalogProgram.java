@@ -11,7 +11,10 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
+import com.github.b4ndithelps.genetics.GeneRegistry;
+import com.github.b4ndithelps.genetics.Gene;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +30,9 @@ public class RefCatalogProgram {
 
     private final List<Entry> entries = new ArrayList<>();
     private int selectedIndex = 0;
+
+    private static final class Tip { final int x, y, w, h; final Component text; Tip(int x,int y,int w,int h, Component text){ this.x=x; this.y=y; this.w=w; this.h=h; this.text=text; } }
+    private final List<Tip> tooltips = new ArrayList<>();
 
     private enum EntryType { VIAL, SEQUENCED_SAMPLE, SEQUENCED_GENE, SECTION }
 
@@ -164,6 +170,7 @@ public class RefCatalogProgram {
     }
 
     public void render(GuiGraphics g, int x, int y, int w, int h, Font font) {
+        tooltips.clear();
         int leftW = (int)Math.floor(w * 0.58);
         int rightW = w - leftW - 2;
         int listX = x;
@@ -229,35 +236,42 @@ public class RefCatalogProgram {
         if (sel.type == EntryType.SECTION) return;
 
         boolean known = sel.known;
-        String dispId = (sel.geneId == null || sel.geneId.isEmpty()) ? "unknown" : sel.geneId;
-        g.drawString(font, Component.literal("Name: " + (known ? dispId : "unknown")), x, curY, 0xFFFFFF, false); curY += font.lineHeight;
-        g.drawString(font, Component.literal("Gene ID: " + dispId), x, curY, 0xAAAAAA, false); curY += font.lineHeight;
-        g.drawString(font, Component.literal("Category: " + (known ? "Visible" : "Unknown")), x, curY, 0xAAAAAA, false); curY += font.lineHeight;
-        g.drawString(font, Component.literal("Quality: " + ((known && sel.quality >= 0) ? (sel.quality + "%") : "unknown")), x, curY, 0xFFFF55, false); curY += font.lineHeight;
+        String translatedName = (known && sel.geneId != null && !sel.geneId.isEmpty()) ? Component.translatable(sel.geneId).getString() : "unknown";
+        drawClipped(g, font, "Name: " + translatedName, x, curY, 0xFFFFFF, w); curY += font.lineHeight;
+        if (known && sel.geneId != null && !sel.geneId.isEmpty()) { drawClipped(g, font, "Gene ID: " + sel.geneId, x, curY, 0xAAAAAA, w); curY += font.lineHeight; }
+        Component cat = getCategoryComponent(sel);
+        drawClipped(g, font, "Category: " + (cat != null ? cat.getString() : "Unknown"), x, curY, 0xAAAAAA, w); curY += font.lineHeight;
+        drawClipped(g, font, "Quality: " + ((known && sel.quality >= 0) ? (sel.quality + "%") : "unknown"), x, curY, 0xFFFF55, w); curY += font.lineHeight;
         if (!known && sel.max > 0) {
             int pct = Math.max(0, Math.min(100, (int)Math.round(sel.progress * 100.0 / Math.max(1, sel.max))));
-            g.drawString(font, Component.literal("Identifying: " + pct + "%"), x, curY, 0x55FF55, false); curY += font.lineHeight;
+            drawClipped(g, font, "Identifying: " + pct + "%", x, curY, 0x55FF55, w); curY += font.lineHeight;
         }
-        if (!known) {
-            var mc = Minecraft.getInstance();
-            boolean hasDb = false;
-            if (mc != null && mc.level != null) {
-                var be = mc.level.getBlockEntity(terminalPos);
-                if (be instanceof com.github.b4ndithelps.forge.blocks.BioTerminalRefBlockEntity term) hasDb = term.hasDatabase();
-            }
-            if (!hasDb) {
-                g.drawString(font, Component.literal("Insert a Gene Database to identify genes."), x, curY, 0xFF5555, false); curY += font.lineHeight;
-            }
-        }
-        curY += 2;
+    }
 
-        // Show source location basics for context
-        if (sel.type == EntryType.VIAL) {
-            String src = String.format("Source: Fridge %d, Slot %d", sel.sourceIndex + 1, sel.slotIndex + 1);
-            g.drawString(font, Component.literal(src), x, curY, 0xAAAAAA, false);
-        } else if (sel.type == EntryType.SEQUENCED_SAMPLE || sel.type == EntryType.SEQUENCED_GENE) {
-            String src = String.format("Source: Sequencer %d", sel.sourceIndex + 1);
-            g.drawString(font, Component.literal(src), x, curY, 0xAAAAAA, false);
+    private void drawClipped(GuiGraphics g, Font font, String text, int x, int y, int color, int maxWidth) {
+        int available = Math.max(0, maxWidth - 2);
+        if (font.width(text) <= available) {
+            g.drawString(font, Component.literal(text), x, y, color, false);
+            return;
+        }
+        String ellipsis = "...";
+        int ellipsisWidth = font.width(ellipsis);
+        int target = Math.max(0, available - ellipsisWidth);
+        String clipped = text;
+        while (!clipped.isEmpty() && font.width(clipped) > target) {
+            clipped = clipped.substring(0, clipped.length() - 1);
+        }
+        g.drawString(font, Component.literal(clipped + ellipsis), x, y, color, false);
+        tooltips.add(new Tip(x, y, available, font.lineHeight, Component.literal(text)));
+    }
+
+    public void renderTooltips(GuiGraphics g, int mouseX, int mouseY, Font font) {
+        for (var tip : tooltips) {
+            boolean inside = mouseX >= tip.x && mouseX <= tip.x + tip.w && mouseY >= tip.y && mouseY <= tip.y + tip.h;
+            if (inside) {
+                g.renderTooltip(font, tip.text, mouseX, mouseY);
+                return;
+            }
         }
     }
 
@@ -334,6 +348,51 @@ public class RefCatalogProgram {
         com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.sendToServer(
                 new com.github.b4ndithelps.forge.network.RefProgramActionC2SPacket(terminalPos, "catalog.sync", null)
         );
+    }
+
+    private Component getCategoryComponent(Entry sel) {
+        // Prefer gene registry by id (works for sequenced entries and vials with id)
+        if (sel.geneId != null && !sel.geneId.isEmpty()) {
+            try {
+                var gene = GeneRegistry.get(new ResourceLocation(sel.geneId));
+                if (gene != null) {
+                    String key = switch (gene.getCategory()) {
+                        case cosmetic -> "category.bandits_quirk_lib.cosmetic";
+                        case resistance -> "category.bandits_quirk_lib.resistance";
+                        case builder -> "category.bandits_quirk_lib.builder";
+                        case quirk -> "category.bandits_quirk_lib.quirk";
+                    };
+                    return Component.translatable(key);
+                }
+            } catch (Exception ignored) {}
+        }
+
+        // Fallback: for vials, derive from the vial item type category
+        if (sel.type == EntryType.VIAL) {
+            ItemStack st = sel.stack;
+            if (st == null || st.isEmpty()) {
+                var mc = Minecraft.getInstance();
+                if (mc != null && mc.level != null && sel.sourceIndex >= 0 && sel.slotIndex >= 0) {
+                    List<SampleRefrigeratorBlockEntity> fridges = new ArrayList<>();
+                    var connectedFridges = CableNetworkUtil.findConnected(mc.level, terminalPos, be -> be instanceof SampleRefrigeratorBlockEntity);
+                    for (var be : connectedFridges) if (be instanceof SampleRefrigeratorBlockEntity f) fridges.add(f);
+                    if (sel.sourceIndex >= 0 && sel.sourceIndex < fridges.size()) {
+                        var fridge = fridges.get(sel.sourceIndex);
+                        if (fridge != null) st = fridge.getItem(sel.slotIndex);
+                    }
+                }
+            }
+            if (st != null && !st.isEmpty() && st.getItem() instanceof GeneVialItem vialItem) {
+                String key = switch (vialItem.getCategory()) {
+                    case COSMETIC -> "category.bandits_quirk_lib.cosmetic";
+                    case RESISTANCE -> "category.bandits_quirk_lib.resistance";
+                    case BUILDER -> "category.bandits_quirk_lib.builder";
+                    case QUIRK -> "category.bandits_quirk_lib.quirk";
+                };
+                return Component.translatable(key);
+            }
+        }
+        return null;
     }
 }
 

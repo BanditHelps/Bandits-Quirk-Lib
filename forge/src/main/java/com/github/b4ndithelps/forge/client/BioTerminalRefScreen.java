@@ -172,7 +172,10 @@ public class BioTerminalRefScreen extends AbstractContainerScreen<BioTerminalRef
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         this.renderBackground(graphics);
         super.render(graphics, mouseX, mouseY, partialTick);
-        // intentionally blank: no text/content yet
+        // Program tooltips (rendered above everything)
+        if (activeTabIndex == 1 && catalogProgram != null) {
+            catalogProgram.renderTooltips(graphics, mouseX, mouseY, this.font);
+        }
     }
 
     // Handle when the WASD keys are pressed, and move the appropriate section
