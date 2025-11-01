@@ -108,6 +108,13 @@ public final class BQLNetwork {
                 .decoder(PrinterStateS2CPacket::decode)
                 .consumerMainThread(PrinterStateS2CPacket::handle)
                 .add();
+
+        // Open gene graph (server -> client)
+        CHANNEL.messageBuilder(OpenGeneGraphS2CPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(OpenGeneGraphS2CPacket::encode)
+                .decoder(OpenGeneGraphS2CPacket::decode)
+                .consumerMainThread(OpenGeneGraphS2CPacket::handle)
+                .add();
     }
 }
 

@@ -1,6 +1,10 @@
 package com.github.b4ndithelps.forge.commands;
 
 import com.github.b4ndithelps.forge.systems.GenomeHelper;
+import com.github.b4ndithelps.forge.network.BQLNetwork;
+import com.github.b4ndithelps.forge.network.OpenGeneGraphS2CPacket;
+import net.minecraftforge.network.PacketDistributor;
+import com.github.b4ndithelps.genetics.GeneCombinationService;
 import com.github.b4ndithelps.genetics.Gene;
 import com.github.b4ndithelps.genetics.GeneRegistry;
 import com.github.b4ndithelps.forge.item.ModItems;
@@ -54,6 +58,16 @@ public class GenomeCommand {
         dispatcher.register(
             Commands.literal("genome")
                 .requires(src -> src.hasPermission(2))
+                .then(Commands.literal("graph")
+                    .executes(ctx -> {
+                        var src = ctx.getSource();
+                        var player = src.getPlayerOrException();
+                        var server = src.getServer();
+                        java.util.List<net.minecraft.resources.ResourceLocation> builderOrder = com.github.b4ndithelps.genetics.GeneCombinationService.getOrCreateBuilderGenes(server);
+                        BQLNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new OpenGeneGraphS2CPacket(builderOrder));
+                        src.sendSuccess(() -> net.minecraft.network.chat.Component.literal("Opening gene graph..."), false);
+                        return 1;
+                    }))
                 .then(Commands.literal("list")
                     .then(Commands.argument("player", EntityArgument.player())
                         .executes(ctx -> {
