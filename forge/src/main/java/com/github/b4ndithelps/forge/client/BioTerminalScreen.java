@@ -1,16 +1,16 @@
 package com.github.b4ndithelps.forge.client;
 
-import com.github.b4ndithelps.forge.blocks.BioTerminalRefMenu;
+import com.github.b4ndithelps.forge.blocks.BioTerminalMenu;
+import com.github.b4ndithelps.forge.client.programs.*;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.util.Mth;
-import com.github.b4ndithelps.forge.client.refprog.RefAnalyzeProgram;
 
 @SuppressWarnings("removal")
-public class BioTerminalRefScreen extends AbstractContainerScreen<BioTerminalRefMenu> {
+public class BioTerminalScreen extends AbstractContainerScreen<BioTerminalMenu> {
     private static final ResourceLocation TEXTURE = new ResourceLocation("bandits_quirk_lib", "textures/gui/bio_terminal.png");
 
     // Display the current active program as text
@@ -46,17 +46,17 @@ public class BioTerminalRefScreen extends AbstractContainerScreen<BioTerminalRef
     private int activeTabIndex = 0;
 
     // Client-side program instance for Analyze
-    private RefAnalyzeProgram analyzeProgram;
+    private AnalyzeProgram analyzeProgram;
     // Client-side program instance for Catalog
-    private com.github.b4ndithelps.forge.client.refprog.RefCatalogProgram catalogProgram;
+    private CatalogProgram catalogProgram;
     // Client-side program instance for Slicer
-    private com.github.b4ndithelps.forge.client.refprog.RefSlicerProgram slicerProgram;
+    private SlicerProgram slicerProgram;
     // Client-side program instance for Combiner
-    private com.github.b4ndithelps.forge.client.refprog.RefCombinerProgram combinerProgram;
+    private CombinerProgram combinerProgram;
     // Client-side program instance for Printer
-    private com.github.b4ndithelps.forge.client.refprog.RefPrinterProgram printerProgram;
+    private PrinterProgram printerProgram;
 
-    public BioTerminalRefScreen(BioTerminalRefMenu menu, Inventory inv, Component title) {
+    public BioTerminalScreen(BioTerminalMenu menu, Inventory inv, Component title) {
         super(menu, inv, title);
         this.imageWidth = 256;
         this.imageHeight = 166;
@@ -76,7 +76,7 @@ public class BioTerminalRefScreen extends AbstractContainerScreen<BioTerminalRef
         // If on Analyze tab, render the client-side Analyze program into the area
         if (activeTabIndex == 0) {
             if (analyzeProgram == null) {
-                analyzeProgram = new com.github.b4ndithelps.forge.client.refprog.RefAnalyzeProgram(this, this.menu.getBlockPos());
+                analyzeProgram = new AnalyzeProgram(this, this.menu.getBlockPos());
             } else if ((this.minecraft != null && this.minecraft.level != null) && (this.minecraft.level.getGameTime() % 20L == 0L)) {
                 // Refresh connected devices roughly every second
                 analyzeProgram.refreshSequencers();
@@ -90,7 +90,7 @@ public class BioTerminalRefScreen extends AbstractContainerScreen<BioTerminalRef
         // If on Catalog tab, render the client-side Catalog program into the area
         if (activeTabIndex == 1) {
             if (catalogProgram == null) {
-                catalogProgram = new com.github.b4ndithelps.forge.client.refprog.RefCatalogProgram(this, this.menu.getBlockPos());
+                catalogProgram = new CatalogProgram(this, this.menu.getBlockPos());
             } else if ((this.minecraft != null && this.minecraft.level != null) && (this.minecraft.level.getGameTime() % 20L == 0L)) {
                 // Refresh connected devices roughly every second
                 catalogProgram.requestSync();
@@ -105,7 +105,7 @@ public class BioTerminalRefScreen extends AbstractContainerScreen<BioTerminalRef
         // If on Slice tab, render the client-side Slicer program into the area
         if (activeTabIndex == 2) {
             if (slicerProgram == null) {
-                slicerProgram = new com.github.b4ndithelps.forge.client.refprog.RefSlicerProgram(this, this.menu.getBlockPos());
+                slicerProgram = new SlicerProgram(this, this.menu.getBlockPos());
             } else if ((this.minecraft != null && this.minecraft.level != null) && (this.minecraft.level.getGameTime() % 20L == 0L)) {
                 // Refresh connected devices roughly every second
                 slicerProgram.refresh();
@@ -119,7 +119,7 @@ public class BioTerminalRefScreen extends AbstractContainerScreen<BioTerminalRef
         // If on Combine tab, render the client-side Combiner program into the area
         if (activeTabIndex == 3) {
             if (combinerProgram == null) {
-                combinerProgram = new com.github.b4ndithelps.forge.client.refprog.RefCombinerProgram(this, this.menu.getBlockPos());
+                combinerProgram = new CombinerProgram(this, this.menu.getBlockPos());
             } else if ((this.minecraft != null && this.minecraft.level != null) && (this.minecraft.level.getGameTime() % 20L == 0L)) {
                 // Refresh connected devices roughly every second
                 combinerProgram.refresh();
@@ -133,7 +133,7 @@ public class BioTerminalRefScreen extends AbstractContainerScreen<BioTerminalRef
         // If on Print tab, render the client-side Printer program into the area
         if (activeTabIndex == 4) {
             if (printerProgram == null) {
-                printerProgram = new com.github.b4ndithelps.forge.client.refprog.RefPrinterProgram(this, this.menu.getBlockPos());
+                printerProgram = new PrinterProgram(this, this.menu.getBlockPos());
             } else if ((this.minecraft != null && this.minecraft.level != null) && (this.minecraft.level.getGameTime() % 20L == 0L)) {
                 // Refresh connected devices roughly every second
                 printerProgram.refresh();

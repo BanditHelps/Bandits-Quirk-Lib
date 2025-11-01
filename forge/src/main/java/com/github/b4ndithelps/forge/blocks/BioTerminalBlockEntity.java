@@ -21,7 +21,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.MenuProvider;
 
-public class BioTerminalRefBlockEntity extends BlockEntity implements MenuProvider, net.minecraft.world.WorldlyContainer {
+public class BioTerminalBlockEntity extends BlockEntity implements MenuProvider, net.minecraft.world.WorldlyContainer {
     public static final int SLOT_DISK = 0;
     private final NonNullList<ItemStack> items = NonNullList.withSize(1, ItemStack.EMPTY);
     private final ContainerData data = new SimpleContainerData(1);
@@ -38,11 +38,11 @@ public class BioTerminalRefBlockEntity extends BlockEntity implements MenuProvid
         public boolean complete = false;
     }
 
-    public BioTerminalRefBlockEntity(BlockPos pos, BlockState state) {
-        super(ModBlockEntities.BIO_TERMINAL_REF.get(), pos, state);
+    public BioTerminalBlockEntity(BlockPos pos, BlockState state) {
+        super(ModBlockEntities.BIO_TERMINAL.get(), pos, state);
     }
 
-    public static void serverTick(Level level, BlockPos pos, BlockState state, BioTerminalRefBlockEntity be) {
+    public static void serverTick(Level level, BlockPos pos, BlockState state, BioTerminalBlockEntity be) {
         if (level.isClientSide) return;
         // Advance identification tasks while DB present
         int running = 0;
@@ -70,7 +70,7 @@ public class BioTerminalRefBlockEntity extends BlockEntity implements MenuProvid
 
     @Override
     public AbstractContainerMenu createMenu(int id, Inventory inv, Player player) {
-        return new BioTerminalRefMenu(id, inv, this, data);
+        return new BioTerminalMenu(id, inv, this, data);
     }
 
     // --- Disk helpers ---

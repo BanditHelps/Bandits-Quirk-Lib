@@ -1,9 +1,8 @@
-package com.github.b4ndithelps.forge.client.refprog;
+package com.github.b4ndithelps.forge.client.programs;
 
-import com.github.b4ndithelps.forge.blocks.BioTerminalRefBlockEntity;
 import com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity;
 import com.github.b4ndithelps.forge.blocks.util.CableNetworkUtil;
-import com.github.b4ndithelps.forge.client.BioTerminalRefScreen;
+import com.github.b4ndithelps.forge.client.BioTerminalScreen;
 import com.github.b4ndithelps.forge.network.BQLNetwork;
 import com.github.b4ndithelps.forge.network.RefProgramActionC2SPacket;
 import net.minecraft.client.Minecraft;
@@ -17,8 +16,8 @@ import java.util.List;
  * Client-side analyze program for the ref screen: left-side list of connected sequencers,
  * right-side DNA visualization for the selected sequencer (if analyzed output is present).
  */
-public class RefAnalyzeProgram {
-    private final BioTerminalRefScreen screen;
+public class AnalyzeProgram {
+    private final BioTerminalScreen screen;
     private final BlockPos terminalPos;
 
     private final List<GeneSequencerBlockEntity> sequencers = new ArrayList<>();
@@ -26,7 +25,7 @@ public class RefAnalyzeProgram {
     private long lastSyncRequestGameTime = Long.MIN_VALUE;
     private long lastCatalogSyncGameTime = Long.MIN_VALUE;
 
-    public RefAnalyzeProgram(BioTerminalRefScreen screen, BlockPos terminalPos) {
+    public AnalyzeProgram(BioTerminalScreen screen, BlockPos terminalPos) {
         this.screen = screen;
         this.terminalPos = terminalPos;
         refreshSequencers();
@@ -56,7 +55,7 @@ public class RefAnalyzeProgram {
         if (sequencers.isEmpty()) return;
         var target = sequencers.get(selectedIndex);
         // Prevent starting if already running
-        var cache = com.github.b4ndithelps.forge.client.refprog.ClientSequencerStatusCache.get(target.getBlockPos());
+        var cache = com.github.b4ndithelps.forge.client.programs.ClientSequencerStatusCache.get(target.getBlockPos());
         boolean runningNow = (cache != null) ? cache.running : target.isRunning();
         if (runningNow) return;
         // Prevent starting without a sample in input
@@ -98,7 +97,7 @@ public class RefAnalyzeProgram {
             var out = seq.getItem(GeneSequencerBlockEntity.SLOT_OUTPUT);
             boolean analyzed = !out.isEmpty() && out.getTag() != null;
             // Check cache override for both running and analyzed
-            var cache = com.github.b4ndithelps.forge.client.refprog.ClientSequencerStatusCache.get(seq.getBlockPos());
+            var cache = com.github.b4ndithelps.forge.client.programs.ClientSequencerStatusCache.get(seq.getBlockPos());
             boolean runningNow = (cache != null) ? cache.running : seq.isRunning();
             if (cache != null) analyzed = analyzed || cache.analyzed;
             if (runningNow) status = "[RUNNING]";
@@ -178,14 +177,14 @@ public class RefAnalyzeProgram {
         }
         if (!haveLabels) {
             // If server told us it's analyzed, request a catalog sync and read labels from catalog cache
-            var cache = com.github.b4ndithelps.forge.client.refprog.ClientSequencerStatusCache.get(seq.getBlockPos());
+            var cache = com.github.b4ndithelps.forge.client.programs.ClientSequencerStatusCache.get(seq.getBlockPos());
             var mcLocal = Minecraft.getInstance();
             long gt = (mcLocal.level == null) ? 0L : mcLocal.level.getGameTime();
             if (cache != null && cache.analyzed && gt - lastCatalogSyncGameTime >= 10L) {
                 lastCatalogSyncGameTime = gt;
                 BQLNetwork.CHANNEL.sendToServer(new RefProgramActionC2SPacket(terminalPos, "catalog.sync", null));
             }
-            var entries = com.github.b4ndithelps.forge.client.refprog.ClientCatalogCache.get(terminalPos);
+            var entries = com.github.b4ndithelps.forge.client.programs.ClientCatalogCache.get(terminalPos);
             if (entries != null && !entries.isEmpty()) {
                 int placed = 0;
                 for (var e : entries) {
@@ -223,7 +222,7 @@ public class RefAnalyzeProgram {
 
         // Optional: show a tiny running indicator
         {
-            var cache = com.github.b4ndithelps.forge.client.refprog.ClientSequencerStatusCache.get(seq.getBlockPos());
+            var cache = com.github.b4ndithelps.forge.client.programs.ClientSequencerStatusCache.get(seq.getBlockPos());
             boolean runningNow = (cache != null) ? cache.running : seq.isRunning();
             if (runningNow) {
             String running = "[RUNNING]";

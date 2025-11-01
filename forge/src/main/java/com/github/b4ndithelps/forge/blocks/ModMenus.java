@@ -11,8 +11,8 @@ import net.minecraftforge.registries.RegistryObject;
 public class ModMenus {
     public static final DeferredRegister<MenuType<?>> MENUS = DeferredRegister.create(ForgeRegistries.MENU_TYPES, BanditsQuirkLib.MOD_ID);
 
-    public static final RegistryObject<MenuType<BioTerminalRefMenu>> BIO_TERMINAL_REF = MENUS.register("bio_terminal_ref",
-            () -> IForgeMenuType.create((id, inv, buf) -> new BioTerminalRefMenu(id, inv, buf)));
+    public static final RegistryObject<MenuType<BioTerminalMenu>> BIO_TERMINAL = MENUS.register("bio_terminal",
+            () -> IForgeMenuType.create((id, inv, buf) -> new BioTerminalMenu(id, inv, buf)));
 
     public static final RegistryObject<MenuType<GeneSequencerMenu>> GENE_SEQUENCER = MENUS.register("gene_sequencer",
             () -> IForgeMenuType.create((id, inv, buf) -> new GeneSequencerMenu(id, inv, buf)));

@@ -1,6 +1,8 @@
 package com.github.b4ndithelps.forge.network;
 
-import com.github.b4ndithelps.forge.client.refprog.ClientCatalogCache;
+import com.github.b4ndithelps.forge.client.BioTerminalScreen;
+import com.github.b4ndithelps.forge.client.programs.CatalogProgram;
+import com.github.b4ndithelps.forge.client.programs.ClientCatalogCache;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.network.NetworkEvent;
@@ -66,12 +68,12 @@ public class CatalogEntriesS2CPacket {
             // Proactively refresh the catalog screen if it's open so progress appears immediately
             try {
                 var mc = net.minecraft.client.Minecraft.getInstance();
-                if (mc != null && mc.screen instanceof com.github.b4ndithelps.forge.client.BioTerminalRefScreen scr) {
+                if (mc != null && mc.screen instanceof BioTerminalScreen scr) {
                     // Only refresh if catalog tab is active
-                    java.lang.reflect.Field f = com.github.b4ndithelps.forge.client.BioTerminalRefScreen.class.getDeclaredField("catalogProgram");
+                    java.lang.reflect.Field f = BioTerminalScreen.class.getDeclaredField("catalogProgram");
                     f.setAccessible(true);
                     Object prog = f.get(scr);
-                    if (prog instanceof com.github.b4ndithelps.forge.client.refprog.RefCatalogProgram cat) {
+                    if (prog instanceof CatalogProgram cat) {
                         cat.refresh();
                     }
                 }

@@ -10,8 +10,8 @@ import net.minecraftforge.registries.RegistryObject;
 public class ModBlockEntities {
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES = DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES, BanditsQuirkLib.MOD_ID);
 
-    public static final RegistryObject<BlockEntityType<BioTerminalRefBlockEntity>> BIO_TERMINAL_REF = BLOCK_ENTITIES.register("bio_terminal_ref",
-            () -> BlockEntityType.Builder.of(BioTerminalRefBlockEntity::new, ModBlocks.BIO_TERMINAL_REF.get()).build(null));
+    public static final RegistryObject<BlockEntityType<BioTerminalBlockEntity>> BIO_TERMINAL = BLOCK_ENTITIES.register("bio_terminal",
+            () -> BlockEntityType.Builder.of(BioTerminalBlockEntity::new, ModBlocks.BIO_TERMINAL.get()).build(null));
 
     public static final RegistryObject<BlockEntityType<GeneSequencerBlockEntity>> GENE_SEQUENCER = BLOCK_ENTITIES.register("gene_sequencer",
             () -> BlockEntityType.Builder.of(GeneSequencerBlockEntity::new, ModBlocks.GENE_SEQUENCER.get()).build(null));

@@ -1,15 +1,12 @@
-package com.github.b4ndithelps.forge.client.refprog;
+package com.github.b4ndithelps.forge.client.programs;
 
 import net.minecraft.core.BlockPos;
 
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Lightweight client cache for Gene Combiner last result message and status.
- */
-public final class ClientCombinerStateCache {
-    private ClientCombinerStateCache() {}
+public final class ClientPrinterStateCache {
+    private ClientPrinterStateCache() {}
 
     public static final class Entry {
         public boolean success;

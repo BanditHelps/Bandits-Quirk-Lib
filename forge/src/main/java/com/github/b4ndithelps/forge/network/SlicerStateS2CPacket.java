@@ -43,7 +43,7 @@ public class SlicerStateS2CPacket {
         NetworkEvent.Context ctx = contextSupplier.get();
         ctx.enqueueWork(() -> {
             long gt = (Minecraft.getInstance().level == null) ? 0L : Minecraft.getInstance().level.getGameTime();
-            com.github.b4ndithelps.forge.client.refprog.ClientSlicerStateCache.update(pos, labels, running, gt);
+            com.github.b4ndithelps.forge.client.programs.ClientSlicerStateCache.update(pos, labels, running, gt);
         });
         return true;
     }

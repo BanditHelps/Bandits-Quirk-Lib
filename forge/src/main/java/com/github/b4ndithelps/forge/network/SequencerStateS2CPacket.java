@@ -38,7 +38,7 @@ public class SequencerStateS2CPacket {
         NetworkEvent.Context ctx = contextSupplier.get();
         ctx.enqueueWork(() -> {
             // Update client-side cache for ref programs
-            com.github.b4ndithelps.forge.client.refprog.ClientSequencerStatusCache.update(pos, running, analyzed, Minecraft.getInstance().level == null ? 0L : Minecraft.getInstance().level.getGameTime());
+            com.github.b4ndithelps.forge.client.programs.ClientSequencerStatusCache.update(pos, running, analyzed, Minecraft.getInstance().level == null ? 0L : Minecraft.getInstance().level.getGameTime());
         });
         return true;
     }

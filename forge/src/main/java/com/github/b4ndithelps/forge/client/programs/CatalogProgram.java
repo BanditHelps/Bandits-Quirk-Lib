@@ -1,9 +1,10 @@
-package com.github.b4ndithelps.forge.client.refprog;
+package com.github.b4ndithelps.forge.client.programs;
 
+import com.github.b4ndithelps.forge.blocks.BioTerminalBlockEntity;
 import com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity;
 import com.github.b4ndithelps.forge.blocks.SampleRefrigeratorBlockEntity;
 import com.github.b4ndithelps.forge.blocks.util.CableNetworkUtil;
-import com.github.b4ndithelps.forge.client.BioTerminalRefScreen;
+import com.github.b4ndithelps.forge.client.BioTerminalScreen;
 import com.github.b4ndithelps.forge.item.GeneVialItem;
 import com.github.b4ndithelps.forge.item.ModItems;
 import net.minecraft.client.Minecraft;
@@ -14,7 +15,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import com.github.b4ndithelps.genetics.GeneRegistry;
-import com.github.b4ndithelps.genetics.Gene;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,8 +24,8 @@ import java.util.List;
  * Left: list all gene vials in connected sample containers and sequenced samples.
  * Right: details of the currently selected entry (all fields shown as unknown for now).
  */
-public class RefCatalogProgram {
-    private final BioTerminalRefScreen screen;
+public class CatalogProgram {
+    private final BioTerminalScreen screen;
     private final BlockPos terminalPos;
 
     private final List<Entry> entries = new ArrayList<>();
@@ -62,7 +62,7 @@ public class RefCatalogProgram {
         }
     }
 
-    public RefCatalogProgram(BioTerminalRefScreen screen, BlockPos terminalPos) {
+    public CatalogProgram(BioTerminalScreen screen, BlockPos terminalPos) {
         this.screen = screen;
         this.terminalPos = terminalPos;
         requestSync();
@@ -185,7 +185,7 @@ public class RefCatalogProgram {
         var mc = Minecraft.getInstance();
         if (mc != null && mc.level != null) {
             var be = mc.level.getBlockEntity(terminalPos);
-            if (be instanceof com.github.b4ndithelps.forge.blocks.BioTerminalRefBlockEntity term) {
+            if (be instanceof BioTerminalBlockEntity term) {
                 hasDb = term.hasDatabase();
             }
         }

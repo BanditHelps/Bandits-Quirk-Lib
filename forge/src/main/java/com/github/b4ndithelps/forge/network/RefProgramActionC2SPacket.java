@@ -1,11 +1,10 @@
 package com.github.b4ndithelps.forge.network;
 
-import com.github.b4ndithelps.forge.blocks.BioTerminalRefBlockEntity;
+import com.github.b4ndithelps.forge.blocks.BioTerminalBlockEntity;
 import com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity;
 import com.github.b4ndithelps.forge.blocks.GeneSlicerBlockEntity;
 import com.github.b4ndithelps.forge.item.ModItems;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import com.github.b4ndithelps.forge.blocks.util.CableNetworkUtil;
 import net.minecraft.core.BlockPos;
@@ -51,7 +50,7 @@ public class RefProgramActionC2SPacket {
             ServerPlayer player = ctx.getSender();
             if (player == null || player.level() == null) return;
             BlockEntity be = player.level().getBlockEntity(this.terminalPos);
-            if (!(be instanceof BioTerminalRefBlockEntity)) return;
+            if (!(be instanceof BioTerminalBlockEntity)) return;
 
             if ("analyze.start".equals(this.action) && this.targetPos != null) {
                 BlockEntity target = player.level().getBlockEntity(this.targetPos);
@@ -92,13 +91,13 @@ public class RefProgramActionC2SPacket {
                 }
             } else if ("catalog.sync".equals(this.action)) {
                 // Build catalog entries for connected fridges and sequencers and send to player
-                java.util.ArrayList<com.github.b4ndithelps.forge.client.refprog.ClientCatalogCache.EntryDTO> list = new java.util.ArrayList<>();
+                java.util.ArrayList<com.github.b4ndithelps.forge.client.programs.ClientCatalogCache.EntryDTO> list = new java.util.ArrayList<>();
                 // Fridges first
                 java.util.ArrayList<com.github.b4ndithelps.forge.blocks.SampleRefrigeratorBlockEntity> fridges = new java.util.ArrayList<>();
                 var connectedFridges = CableNetworkUtil.findConnected(player.level(), this.terminalPos, t -> t instanceof com.github.b4ndithelps.forge.blocks.SampleRefrigeratorBlockEntity);
                 for (var t : connectedFridges) if (t instanceof com.github.b4ndithelps.forge.blocks.SampleRefrigeratorBlockEntity f) fridges.add(f);
                 if (!fridges.isEmpty()) {
-                    list.add(new com.github.b4ndithelps.forge.client.refprog.ClientCatalogCache.EntryDTO("SECTION", "[VIALS]", "", -1, false, 0, 0, -1, -1));
+                    list.add(new com.github.b4ndithelps.forge.client.programs.ClientCatalogCache.EntryDTO("SECTION", "[VIALS]", "", -1, false, 0, 0, -1, -1));
                     for (int f = 0; f < fridges.size(); f++) {
                         var fridge = fridges.get(f);
                         for (int s = 0; s < com.github.b4ndithelps.forge.blocks.SampleRefrigeratorBlockEntity.SLOT_COUNT; s++) {
@@ -114,7 +113,7 @@ public class RefProgramActionC2SPacket {
                                 quality = g.contains("quality", 3) ? g.getInt("quality") : -1;
                             }
                             boolean known = false;
-                            if (player.level().getBlockEntity(this.terminalPos) instanceof com.github.b4ndithelps.forge.blocks.BioTerminalRefBlockEntity term && gid != null && !gid.isEmpty()) {
+                            if (player.level().getBlockEntity(this.terminalPos) instanceof BioTerminalBlockEntity term && gid != null && !gid.isEmpty()) {
                                 net.minecraft.resources.ResourceLocation rl = net.minecraft.resources.ResourceLocation.tryParse(gid);
                                 if (rl != null) {
                                     try { known = term.isGeneKnown(rl); } catch (Exception ignored) {}
@@ -122,10 +121,10 @@ public class RefProgramActionC2SPacket {
                             }
                             String label = labelFromVial(st);
                             int prog = 0, max = 0;
-                            if (!known && gid != null && !gid.isEmpty() && player.level().getBlockEntity(this.terminalPos) instanceof com.github.b4ndithelps.forge.blocks.BioTerminalRefBlockEntity term2) {
+                            if (!known && gid != null && !gid.isEmpty() && player.level().getBlockEntity(this.terminalPos) instanceof BioTerminalBlockEntity term2) {
                                 for (var t : term2.getIdentificationTasks()) if (!t.complete && samePath(gid, t.geneId)) { prog = t.progress; max = Math.max(1, t.max); break; }
                             }
-                            list.add(new com.github.b4ndithelps.forge.client.refprog.ClientCatalogCache.EntryDTO("VIAL", label, gid, quality, known, prog, max, f, s));
+                            list.add(new com.github.b4ndithelps.forge.client.programs.ClientCatalogCache.EntryDTO("VIAL", label, gid, quality, known, prog, max, f, s));
                         }
                     }
                 }
@@ -134,7 +133,7 @@ public class RefProgramActionC2SPacket {
                 var connectedSeq = CableNetworkUtil.findConnected(player.level(), this.terminalPos, t -> t instanceof com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity);
                 for (var t : connectedSeq) if (t instanceof com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity g) sequencers.add(g);
                 if (!sequencers.isEmpty()) {
-                    list.add(new com.github.b4ndithelps.forge.client.refprog.ClientCatalogCache.EntryDTO("SECTION", "[SAMPLES]", "", -1, false, 0, 0, -1, -1));
+                    list.add(new com.github.b4ndithelps.forge.client.programs.ClientCatalogCache.EntryDTO("SECTION", "[SAMPLES]", "", -1, false, 0, 0, -1, -1));
                     for (int i = 0; i < sequencers.size(); i++) {
                         var seq = sequencers.get(i);
                         var out = seq.getItem(com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity.SLOT_OUTPUT);
@@ -145,7 +144,7 @@ public class RefProgramActionC2SPacket {
                                 String gid = g.getString("id");
                                 int quality = g.contains("quality", 3) ? g.getInt("quality") : -1;
                                 boolean known = false;
-                                if (player.level().getBlockEntity(this.terminalPos) instanceof com.github.b4ndithelps.forge.blocks.BioTerminalRefBlockEntity term && gid != null && !gid.isEmpty()) {
+                                if (player.level().getBlockEntity(this.terminalPos) instanceof BioTerminalBlockEntity term && gid != null && !gid.isEmpty()) {
                                     net.minecraft.resources.ResourceLocation rl = net.minecraft.resources.ResourceLocation.tryParse(gid);
                                     if (rl != null) {
                                         try { known = term.isGeneKnown(rl); } catch (Exception ignored) {}
@@ -153,10 +152,10 @@ public class RefProgramActionC2SPacket {
                                 }
                                 String label = g.contains("name", 8) ? g.getString("name") : (gid == null ? "" : gid);
                                 int prog = 0, max = 0;
-                                if (!known && gid != null && !gid.isEmpty() && player.level().getBlockEntity(this.terminalPos) instanceof com.github.b4ndithelps.forge.blocks.BioTerminalRefBlockEntity term3) {
+                                if (!known && gid != null && !gid.isEmpty() && player.level().getBlockEntity(this.terminalPos) instanceof BioTerminalBlockEntity term3) {
                                     for (var t : term3.getIdentificationTasks()) if (!t.complete && samePath(gid, t.geneId)) { prog = t.progress; max = Math.max(1, t.max); break; }
                                 }
-                                list.add(new com.github.b4ndithelps.forge.client.refprog.ClientCatalogCache.EntryDTO("SEQUENCED_GENE", label, gid, quality, known, prog, max, i, gi, seq.getBlockPos()));
+                                list.add(new com.github.b4ndithelps.forge.client.programs.ClientCatalogCache.EntryDTO("SEQUENCED_GENE", label, gid, quality, known, prog, max, i, gi, seq.getBlockPos()));
                             }
                         }
                     }
@@ -190,7 +189,7 @@ public class RefProgramActionC2SPacket {
                     } catch (Exception ignored) {}
                 }
                 var beRef = player.level().getBlockEntity(this.terminalPos);
-                if (gid != null && beRef instanceof com.github.b4ndithelps.forge.blocks.BioTerminalRefBlockEntity term) {
+                if (gid != null && beRef instanceof BioTerminalBlockEntity term) {
                     // Diagnostic details
                     boolean hasDb = term.hasDatabase();
                     boolean wasKnown = false;
@@ -202,13 +201,13 @@ public class RefProgramActionC2SPacket {
                     // Immediately sync catalog so client sees queued/progress state
                     if (started) {
                         // Reuse the sync builder to send back to this player only
-                        java.util.ArrayList<com.github.b4ndithelps.forge.client.refprog.ClientCatalogCache.EntryDTO> list = new java.util.ArrayList<>();
+                        java.util.ArrayList<com.github.b4ndithelps.forge.client.programs.ClientCatalogCache.EntryDTO> list = new java.util.ArrayList<>();
                         // Fridges
                         java.util.ArrayList<com.github.b4ndithelps.forge.blocks.SampleRefrigeratorBlockEntity> fridges = new java.util.ArrayList<>();
                         var connectedFridges = CableNetworkUtil.findConnected(player.level(), this.terminalPos, t -> t instanceof com.github.b4ndithelps.forge.blocks.SampleRefrigeratorBlockEntity);
                         for (var t : connectedFridges) if (t instanceof com.github.b4ndithelps.forge.blocks.SampleRefrigeratorBlockEntity f) fridges.add(f);
                         if (!fridges.isEmpty()) {
-                            list.add(new com.github.b4ndithelps.forge.client.refprog.ClientCatalogCache.EntryDTO("SECTION", "[VIALS]", "", -1, false, 0, 0, -1, -1));
+                            list.add(new com.github.b4ndithelps.forge.client.programs.ClientCatalogCache.EntryDTO("SECTION", "[VIALS]", "", -1, false, 0, 0, -1, -1));
                             for (int f = 0; f < fridges.size(); f++) {
                                 var fridge = fridges.get(f);
                                 for (int s = 0; s < com.github.b4ndithelps.forge.blocks.SampleRefrigeratorBlockEntity.SLOT_COUNT; s++) {
@@ -229,7 +228,7 @@ public class RefProgramActionC2SPacket {
                                         for (var t : term.getIdentificationTasks()) if (!t.complete && samePath(egid, t.geneId)) { prog = t.progress; max = Math.max(1, t.max); break; }
                                     }
                                     String label = labelFromVial(st);
-                                    list.add(new com.github.b4ndithelps.forge.client.refprog.ClientCatalogCache.EntryDTO("VIAL", label, egid, eq, isKnown, prog, max, f, s));
+                                    list.add(new com.github.b4ndithelps.forge.client.programs.ClientCatalogCache.EntryDTO("VIAL", label, egid, eq, isKnown, prog, max, f, s));
                                 }
                             }
                         }
@@ -238,7 +237,7 @@ public class RefProgramActionC2SPacket {
                         var connectedSeq = CableNetworkUtil.findConnected(player.level(), this.terminalPos, t -> t instanceof com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity);
                         for (var t : connectedSeq) if (t instanceof com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity g2) sequencers.add(g2);
                         if (!sequencers.isEmpty()) {
-                            list.add(new com.github.b4ndithelps.forge.client.refprog.ClientCatalogCache.EntryDTO("SECTION", "[SAMPLES]", "", -1, false, 0, 0, -1, -1));
+                            list.add(new com.github.b4ndithelps.forge.client.programs.ClientCatalogCache.EntryDTO("SECTION", "[SAMPLES]", "", -1, false, 0, 0, -1, -1));
                             for (int i = 0; i < sequencers.size(); i++) {
                                 var seq = sequencers.get(i);
                                 var out = seq.getItem(com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity.SLOT_OUTPUT);
@@ -255,7 +254,7 @@ public class RefProgramActionC2SPacket {
                                             for (var t : term.getIdentificationTasks()) if (!t.complete && samePath(egid, t.geneId)) { prog = t.progress; max = Math.max(1, t.max); break; }
                                         }
                                         String label = g.contains("name", 8) ? g.getString("name") : (egid == null ? "" : egid);
-                                        list.add(new com.github.b4ndithelps.forge.client.refprog.ClientCatalogCache.EntryDTO("SEQUENCED_GENE", label, egid, eq, isKnown, prog, max, i, gi, seq.getBlockPos()));
+                                        list.add(new com.github.b4ndithelps.forge.client.programs.ClientCatalogCache.EntryDTO("SEQUENCED_GENE", label, egid, eq, isKnown, prog, max, i, gi, seq.getBlockPos()));
                                     }
                                 }
                             }
@@ -507,13 +506,13 @@ public class RefProgramActionC2SPacket {
                 );
 
                 // Immediately send updated catalog entries so client vial list refreshes
-                java.util.ArrayList<com.github.b4ndithelps.forge.client.refprog.ClientCatalogCache.EntryDTO> list = new java.util.ArrayList<>();
+                java.util.ArrayList<com.github.b4ndithelps.forge.client.programs.ClientCatalogCache.EntryDTO> list = new java.util.ArrayList<>();
                 // Fridges section
                 java.util.ArrayList<com.github.b4ndithelps.forge.blocks.SampleRefrigeratorBlockEntity> frList = new java.util.ArrayList<>();
                 var connFr = CableNetworkUtil.findConnected(player.level(), this.terminalPos, t -> t instanceof com.github.b4ndithelps.forge.blocks.SampleRefrigeratorBlockEntity);
                 for (var t : connFr) if (t instanceof com.github.b4ndithelps.forge.blocks.SampleRefrigeratorBlockEntity f) frList.add(f);
                 if (!frList.isEmpty()) {
-                    list.add(new com.github.b4ndithelps.forge.client.refprog.ClientCatalogCache.EntryDTO("SECTION", "[VIALS]", "", -1, false, 0, 0, -1, -1));
+                    list.add(new com.github.b4ndithelps.forge.client.programs.ClientCatalogCache.EntryDTO("SECTION", "[VIALS]", "", -1, false, 0, 0, -1, -1));
                     for (int f = 0; f < frList.size(); f++) {
                         var fridge = frList.get(f);
                         for (int s = 0; s < com.github.b4ndithelps.forge.blocks.SampleRefrigeratorBlockEntity.SLOT_COUNT; s++) {
@@ -528,16 +527,16 @@ public class RefProgramActionC2SPacket {
                                 quality = g.contains("quality", 3) ? g.getInt("quality") : -1;
                             }
                             boolean known = false;
-                            if (player.level().getBlockEntity(this.terminalPos) instanceof com.github.b4ndithelps.forge.blocks.BioTerminalRefBlockEntity term && gid != null && !gid.isEmpty()) {
+                            if (player.level().getBlockEntity(this.terminalPos) instanceof BioTerminalBlockEntity term && gid != null && !gid.isEmpty()) {
                                 net.minecraft.resources.ResourceLocation rl = net.minecraft.resources.ResourceLocation.tryParse(gid);
                                 if (rl != null) { try { known = term.isGeneKnown(rl); } catch (Exception ignored) {} }
                             }
                             String label = labelFromVial(st);
                             int prog = 0, max = 0;
-                            if (!known && gid != null && !gid.isEmpty() && player.level().getBlockEntity(this.terminalPos) instanceof com.github.b4ndithelps.forge.blocks.BioTerminalRefBlockEntity term2) {
+                            if (!known && gid != null && !gid.isEmpty() && player.level().getBlockEntity(this.terminalPos) instanceof BioTerminalBlockEntity term2) {
                                 for (var t : term2.getIdentificationTasks()) if (!t.complete && samePath(gid, t.geneId)) { prog = t.progress; max = Math.max(1, t.max); break; }
                             }
-                            list.add(new com.github.b4ndithelps.forge.client.refprog.ClientCatalogCache.EntryDTO("VIAL", label, gid, quality, known, prog, max, f, s));
+                            list.add(new com.github.b4ndithelps.forge.client.programs.ClientCatalogCache.EntryDTO("VIAL", label, gid, quality, known, prog, max, f, s));
                         }
                     }
                 }
@@ -546,7 +545,7 @@ public class RefProgramActionC2SPacket {
                 var connSeq = CableNetworkUtil.findConnected(player.level(), this.terminalPos, t -> t instanceof com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity);
                 for (var t : connSeq) if (t instanceof com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity g2) seql.add(g2);
                 if (!seql.isEmpty()) {
-                    list.add(new com.github.b4ndithelps.forge.client.refprog.ClientCatalogCache.EntryDTO("SECTION", "[SAMPLES]", "", -1, false, 0, 0, -1, -1));
+                    list.add(new com.github.b4ndithelps.forge.client.programs.ClientCatalogCache.EntryDTO("SECTION", "[SAMPLES]", "", -1, false, 0, 0, -1, -1));
                     for (int i = 0; i < seql.size(); i++) {
                         var seq = seql.get(i);
                         var out = seq.getItem(com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity.SLOT_OUTPUT);
@@ -560,14 +559,14 @@ public class RefProgramActionC2SPacket {
                                 if (gid != null && !gid.isEmpty()) {
                                     net.minecraft.resources.ResourceLocation rlEg = net.minecraft.resources.ResourceLocation.tryParse(gid);
                                     if (rlEg != null) {
-                                        if (player.level().getBlockEntity(this.terminalPos) instanceof com.github.b4ndithelps.forge.blocks.BioTerminalRefBlockEntity term) {
+                                        if (player.level().getBlockEntity(this.terminalPos) instanceof BioTerminalBlockEntity term) {
                                             try { known = term.isGeneKnown(rlEg); } catch (Exception ignored) {}
                                             for (var t : term.getIdentificationTasks()) if (!t.complete && samePath(gid, t.geneId)) { prog = t.progress; max = Math.max(1, t.max); break; }
                                         }
                                     }
                                 }
                                 String label = g.contains("name", 8) ? g.getString("name") : (gid == null ? "" : gid);
-                                list.add(new com.github.b4ndithelps.forge.client.refprog.ClientCatalogCache.EntryDTO("SEQUENCED_GENE", label, gid, q, known, prog, max, i, gi, seq.getBlockPos()));
+                                list.add(new com.github.b4ndithelps.forge.client.programs.ClientCatalogCache.EntryDTO("SEQUENCED_GENE", label, gid, q, known, prog, max, i, gi, seq.getBlockPos()));
                             }
                         }
                     }
@@ -677,12 +676,12 @@ public class RefProgramActionC2SPacket {
                 );
 
                 // Send updated catalog entries to refresh vials list
-                java.util.ArrayList<com.github.b4ndithelps.forge.client.refprog.ClientCatalogCache.EntryDTO> list = new java.util.ArrayList<>();
+                java.util.ArrayList<com.github.b4ndithelps.forge.client.programs.ClientCatalogCache.EntryDTO> list = new java.util.ArrayList<>();
                 java.util.ArrayList<com.github.b4ndithelps.forge.blocks.SampleRefrigeratorBlockEntity> frList = new java.util.ArrayList<>();
                 var connFr = CableNetworkUtil.findConnected(player.level(), this.terminalPos, t -> t instanceof com.github.b4ndithelps.forge.blocks.SampleRefrigeratorBlockEntity);
                 for (var t : connFr) if (t instanceof com.github.b4ndithelps.forge.blocks.SampleRefrigeratorBlockEntity f) frList.add(f);
                 if (!frList.isEmpty()) {
-                    list.add(new com.github.b4ndithelps.forge.client.refprog.ClientCatalogCache.EntryDTO("SECTION", "[VIALS]", "", -1, false, 0, 0, -1, -1));
+                    list.add(new com.github.b4ndithelps.forge.client.programs.ClientCatalogCache.EntryDTO("SECTION", "[VIALS]", "", -1, false, 0, 0, -1, -1));
                     for (int f = 0; f < frList.size(); f++) {
                         var fridge = frList.get(f);
                         for (int s = 0; s < com.github.b4ndithelps.forge.blocks.SampleRefrigeratorBlockEntity.SLOT_COUNT; s++) {
@@ -697,16 +696,16 @@ public class RefProgramActionC2SPacket {
                                 quality = g.contains("quality", 3) ? g.getInt("quality") : -1;
                             }
                             boolean known = false;
-                            if (player.level().getBlockEntity(this.terminalPos) instanceof com.github.b4ndithelps.forge.blocks.BioTerminalRefBlockEntity term && gid != null && !gid.isEmpty()) {
+                            if (player.level().getBlockEntity(this.terminalPos) instanceof BioTerminalBlockEntity term && gid != null && !gid.isEmpty()) {
                                 net.minecraft.resources.ResourceLocation rl = net.minecraft.resources.ResourceLocation.tryParse(gid);
                                 if (rl != null) { try { known = term.isGeneKnown(rl); } catch (Exception ignored) {} }
                             }
                             String label = labelFromVial(st);
                             int prog = 0, max = 0;
-                            if (!known && gid != null && !gid.isEmpty() && player.level().getBlockEntity(this.terminalPos) instanceof com.github.b4ndithelps.forge.blocks.BioTerminalRefBlockEntity term2) {
+                            if (!known && gid != null && !gid.isEmpty() && player.level().getBlockEntity(this.terminalPos) instanceof BioTerminalBlockEntity term2) {
                                 for (var t : term2.getIdentificationTasks()) if (!t.complete && samePath(gid, t.geneId)) { prog = t.progress; max = Math.max(1, t.max); break; }
                             }
-                            list.add(new com.github.b4ndithelps.forge.client.refprog.ClientCatalogCache.EntryDTO("VIAL", label, gid, quality, known, prog, max, f, s));
+                            list.add(new com.github.b4ndithelps.forge.client.programs.ClientCatalogCache.EntryDTO("VIAL", label, gid, quality, known, prog, max, f, s));
                         }
                     }
                 }
@@ -714,7 +713,7 @@ public class RefProgramActionC2SPacket {
                 var connSeq = CableNetworkUtil.findConnected(player.level(), this.terminalPos, t -> t instanceof com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity);
                 for (var t : connSeq) if (t instanceof com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity g2) seql.add(g2);
                 if (!seql.isEmpty()) {
-                    list.add(new com.github.b4ndithelps.forge.client.refprog.ClientCatalogCache.EntryDTO("SECTION", "[SAMPLES]", "", -1, false, 0, 0, -1, -1));
+                    list.add(new com.github.b4ndithelps.forge.client.programs.ClientCatalogCache.EntryDTO("SECTION", "[SAMPLES]", "", -1, false, 0, 0, -1, -1));
                     for (int i = 0; i < seql.size(); i++) {
                         var seq = seql.get(i);
                         var out = seq.getItem(com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity.SLOT_OUTPUT);
@@ -728,14 +727,14 @@ public class RefProgramActionC2SPacket {
                                 if (gid != null && !gid.isEmpty()) {
                                     net.minecraft.resources.ResourceLocation rlEg = net.minecraft.resources.ResourceLocation.tryParse(gid);
                                     if (rlEg != null) {
-                                        if (player.level().getBlockEntity(this.terminalPos) instanceof com.github.b4ndithelps.forge.blocks.BioTerminalRefBlockEntity term) {
+                                        if (player.level().getBlockEntity(this.terminalPos) instanceof BioTerminalBlockEntity term) {
                                             try { known = term.isGeneKnown(rlEg); } catch (Exception ignored) {}
                                             for (var t : term.getIdentificationTasks()) if (!t.complete && samePath(gid, t.geneId)) { prog = t.progress; max = Math.max(1, t.max); break; }
                                         }
                                     }
                                 }
                                 String label = g.contains("name", 8) ? g.getString("name") : (gid == null ? "" : gid);
-                                list.add(new com.github.b4ndithelps.forge.client.refprog.ClientCatalogCache.EntryDTO("SEQUENCED_GENE", label, gid, q, known, prog, max, i, gi, seq.getBlockPos()));
+                                list.add(new com.github.b4ndithelps.forge.client.programs.ClientCatalogCache.EntryDTO("SEQUENCED_GENE", label, gid, q, known, prog, max, i, gi, seq.getBlockPos()));
                             }
                         }
                     }

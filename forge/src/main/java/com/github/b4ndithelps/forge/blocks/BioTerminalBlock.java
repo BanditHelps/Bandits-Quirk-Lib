@@ -26,10 +26,10 @@ import net.minecraftforge.network.NetworkHooks;
 
 import com.github.b4ndithelps.forge.item.GeneDatabaseItem;
 
-public class BioTerminalRefBlock extends Block implements EntityBlock {
+public class BioTerminalBlock extends Block implements EntityBlock {
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
 
-    public BioTerminalRefBlock(Properties properties) {
+    public BioTerminalBlock(Properties properties) {
         super(properties);
         this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH));
     }
@@ -58,7 +58,7 @@ public class BioTerminalRefBlock extends Block implements EntityBlock {
     public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
         if (!level.isClientSide) {
             BlockEntity be = level.getBlockEntity(pos);
-            if (be instanceof BioTerminalRefBlockEntity terminal) {
+            if (be instanceof BioTerminalBlockEntity terminal) {
                 // Sneak extract/insert DB like main terminal
                 if (player.isCrouching()) {
                     ItemStack held = player.getItemInHand(hand);
@@ -90,7 +90,7 @@ public class BioTerminalRefBlock extends Block implements EntityBlock {
         }
         if (!level.isClientSide && player instanceof ServerPlayer serverPlayer) {
             BlockEntity be = level.getBlockEntity(pos);
-            if (be instanceof BioTerminalRefBlockEntity provider) {
+            if (be instanceof BioTerminalBlockEntity provider) {
                 NetworkHooks.openScreen(serverPlayer, provider, pos);
                 return InteractionResult.CONSUME;
             }
@@ -100,13 +100,13 @@ public class BioTerminalRefBlock extends Block implements EntityBlock {
 
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
-        return new BioTerminalRefBlockEntity(pos, state);
+        return new BioTerminalBlockEntity(pos, state);
     }
 
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
         return level.isClientSide ? null : (lvl, p, st, be) -> {
-            if (be instanceof BioTerminalRefBlockEntity terminal) BioTerminalRefBlockEntity.serverTick(lvl, p, st, terminal);
+            if (be instanceof BioTerminalBlockEntity terminal) BioTerminalBlockEntity.serverTick(lvl, p, st, terminal);
         };
     }
 }

@@ -88,7 +88,7 @@ public class BioCableBlock extends Block {
     private boolean isDevice(BlockState state) {
         if (state == null) return false;
         Block b = state.getBlock();
-        return b instanceof BioTerminalRefBlock
+        return b instanceof BioTerminalBlock
                 || b instanceof GeneSequencerBlock
                 || b instanceof GeneSlicerBlock
                 || b instanceof SampleRefrigeratorBlock

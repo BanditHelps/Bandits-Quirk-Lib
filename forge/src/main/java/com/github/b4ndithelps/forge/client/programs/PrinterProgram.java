@@ -1,9 +1,9 @@
-package com.github.b4ndithelps.forge.client.refprog;
+package com.github.b4ndithelps.forge.client.programs;
 
-import com.github.b4ndithelps.forge.blocks.GeneCombinerBlockEntity;
+import com.github.b4ndithelps.forge.blocks.BioPrinterBlockEntity;
 import com.github.b4ndithelps.forge.blocks.SampleRefrigeratorBlockEntity;
 import com.github.b4ndithelps.forge.blocks.util.CableNetworkUtil;
-import com.github.b4ndithelps.forge.client.BioTerminalRefScreen;
+import com.github.b4ndithelps.forge.client.BioTerminalScreen;
 import com.github.b4ndithelps.forge.item.GeneVialItem;
 import com.github.b4ndithelps.forge.item.ModItems;
 import com.github.b4ndithelps.forge.network.BQLNetwork;
@@ -22,22 +22,21 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Client-side combiner program for the ref screen.
- * Left: list of connected Gene Combiners.
+ * Client-side printer program for the ref screen.
+ * Left: list of connected Bio Printers.
  * Right: list of available gene vials from connected refrigerators with selection and a start action.
  */
-public class RefCombinerProgram {
-    private final BioTerminalRefScreen screen;
+public class PrinterProgram {
+    private final BioTerminalScreen screen;
     private final BlockPos terminalPos;
 
-    private final List<GeneCombinerBlockEntity> combiners = new ArrayList<>();
-    private int selectedCombinerIndex = 0;
+    private final List<BioPrinterBlockEntity> printers = new ArrayList<>();
+    private int selectedPrinterIndex = 0;
 
-    // Right pane model built from ClientCatalogCache
     private static final class VialEntry {
         final String label;
-        final int fridgeIndex; // index into connected fridges list (server cache order)
-        final int slotIndex;   // slot within that fridge
+        final int fridgeIndex;
+        final int slotIndex;
         VialEntry(String label, int fridgeIndex, int slotIndex) {
             this.label = label;
             this.fridgeIndex = fridgeIndex;
@@ -46,15 +45,14 @@ public class RefCombinerProgram {
     }
     private final List<VialEntry> vialEntries = new ArrayList<>();
     private final Set<Integer> selectedVialIndices = new HashSet<>();
-    private int rightCursorIndex = 0; // 0..entries + (start+back)
+    private int rightCursorIndex = 0; // rows: entries + start + back
 
     private enum Pane { LEFT, RIGHT }
     private Pane activePane = Pane.LEFT;
 
-    // Sync cadence for catalog entries reuse
     private long lastCatalogSyncRequestGameTime = Long.MIN_VALUE;
 
-    public RefCombinerProgram(BioTerminalRefScreen screen, BlockPos terminalPos) {
+    public PrinterProgram(BioTerminalScreen screen, BlockPos terminalPos) {
         this.screen = screen;
         this.terminalPos = terminalPos;
         refresh();
@@ -63,17 +61,13 @@ public class RefCombinerProgram {
     public void refresh() {
         var mc = Minecraft.getInstance();
         if (mc == null || mc.level == null) return;
+        printers.clear();
+        var connected = CableNetworkUtil.findConnected(mc.level, terminalPos, be -> be instanceof BioPrinterBlockEntity);
+        for (var be : connected) if (be instanceof BioPrinterBlockEntity p) printers.add(p);
+        if (selectedPrinterIndex >= printers.size()) selectedPrinterIndex = Math.max(0, printers.size() - 1);
 
-        // Refresh left: connected combiners
-        combiners.clear();
-        var connected = CableNetworkUtil.findConnected(mc.level, terminalPos, be -> be instanceof GeneCombinerBlockEntity);
-        for (var be : connected) if (be instanceof GeneCombinerBlockEntity g) combiners.add(g);
-        if (selectedCombinerIndex >= combiners.size()) selectedCombinerIndex = Math.max(0, combiners.size() - 1);
-
-        // Refresh right: available vials from client catalog cache (server-authoritative)
         rebuildVialEntries();
 
-        // Periodically request catalog sync so entries stay fresh
         long gt = mc.level.getGameTime();
         if (gt - lastCatalogSyncRequestGameTime >= 20L) {
             lastCatalogSyncRequestGameTime = gt;
@@ -84,17 +78,11 @@ public class RefCombinerProgram {
     private void rebuildVialEntries() {
         int prevCursor = rightCursorIndex;
         java.util.Set<Integer> prevSelected = new java.util.HashSet<>(selectedVialIndices);
-
         List<VialEntry> list = new ArrayList<>();
         var cached = ClientCatalogCache.get(terminalPos);
         if (!cached.isEmpty()) {
-            for (var dto : cached) {
-                if ("VIAL".equals(dto.type)) {
-                    list.add(new VialEntry(dto.label, dto.sourceIndex, dto.slotIndex));
-                }
-            }
+            for (var dto : cached) if ("VIAL".equals(dto.type)) list.add(new VialEntry(dto.label, dto.sourceIndex, dto.slotIndex));
         } else {
-            // Fallback: local scan (may be incomplete without BE sync)
             var mc = Minecraft.getInstance();
             if (mc != null && mc.level != null) {
                 List<SampleRefrigeratorBlockEntity> fridges = new ArrayList<>();
@@ -106,16 +94,13 @@ public class RefCombinerProgram {
                         ItemStack st = fridge.getItem(s);
                         if (st == null || st.isEmpty()) continue;
                         if (!isGeneVial(st)) continue;
-                        String label = labelFromVial(st);
-                        list.add(new VialEntry(label, f, s));
+                        list.add(new VialEntry(labelFromVial(st), f, s));
                     }
                 }
             }
         }
-
         vialEntries.clear();
         vialEntries.addAll(list);
-
         selectedVialIndices.clear();
         for (Integer idx : prevSelected) if (idx != null && idx >= 0 && idx < vialEntries.size()) selectedVialIndices.add(idx);
         int rows = getRightRowCount();
@@ -124,9 +109,8 @@ public class RefCombinerProgram {
 
     public void moveSelection(int delta) {
         if (activePane == Pane.LEFT) {
-            if (combiners.isEmpty()) return;
-            selectedCombinerIndex = (selectedCombinerIndex + delta + combiners.size()) % combiners.size();
-            // Reset right pane selection when changing combiner
+            if (printers.isEmpty()) return;
+            selectedPrinterIndex = (selectedPrinterIndex + delta + printers.size()) % printers.size();
             selectedVialIndices.clear();
             rightCursorIndex = 0;
         } else {
@@ -136,35 +120,25 @@ public class RefCombinerProgram {
         }
     }
 
-    private int getRightRowCount() {
-        // vials + [Start] + [Back]
-        return vialEntries.size() + 2;
-    }
+    private int getRightRowCount() { return vialEntries.size() + 2; }
 
     public void startSelected() {
         if (activePane == Pane.LEFT) {
-            if (combiners.isEmpty()) return;
+            if (printers.isEmpty()) return;
             activePane = Pane.RIGHT;
             rightCursorIndex = 0;
             return;
         }
-
         int entries = vialEntries.size();
         if (rightCursorIndex < entries) {
-            // Toggle selection, limit to combiner input capacity
-            int maxPick = GeneCombinerBlockEntity.SLOT_INPUT_COUNT;
-            if (selectedVialIndices.contains(rightCursorIndex)) {
-                selectedVialIndices.remove(rightCursorIndex);
-            } else {
-                if (selectedVialIndices.size() < maxPick) selectedVialIndices.add(rightCursorIndex);
-            }
+            int maxPick = BioPrinterBlockEntity.SLOT_INPUT_COUNT;
+            if (selectedVialIndices.contains(rightCursorIndex)) selectedVialIndices.remove(rightCursorIndex);
+            else if (selectedVialIndices.size() < maxPick) selectedVialIndices.add(rightCursorIndex);
             return;
         }
         if (rightCursorIndex == entries) {
-            // Start combining
-            if (combiners.isEmpty() || selectedVialIndices.isEmpty()) return;
-            var target = combiners.get(selectedCombinerIndex);
-            // Build "f-s" comma-separated list (fridgeIndex-slotIndex)
+            if (printers.isEmpty() || selectedVialIndices.isEmpty()) return;
+            var target = printers.get(selectedPrinterIndex);
             StringBuilder sb = new StringBuilder();
             boolean first = true;
             for (Integer idx : selectedVialIndices) {
@@ -175,23 +149,18 @@ public class RefCombinerProgram {
                 first = false;
             }
             if (sb.length() == 0) return;
-            String action = "comb.start:" + sb;
+            String action = "print.start:" + sb;
             BQLNetwork.CHANNEL.sendToServer(new RefProgramActionC2SPacket(terminalPos, action, target.getBlockPos()));
-            // Immediately request catalog sync to refresh list
+            // Request updated catalog and optimistically remove the used vials
             BQLNetwork.CHANNEL.sendToServer(new RefProgramActionC2SPacket(terminalPos, "catalog.sync", null));
-            // Optimistically remove selected entries locally and clear selection
             java.util.ArrayList<Integer> sorted = new java.util.ArrayList<>(selectedVialIndices);
             sorted.sort(java.util.Comparator.reverseOrder());
-            for (int idx : sorted) {
-                if (idx >= 0 && idx < vialEntries.size()) vialEntries.remove(idx);
-            }
+            for (int idx : sorted) if (idx >= 0 && idx < vialEntries.size()) vialEntries.remove(idx);
             selectedVialIndices.clear();
             rightCursorIndex = Math.min(rightCursorIndex, Math.max(0, getRightRowCount() - 1));
             return;
         }
-        if (rightCursorIndex == entries + 1) {
-            activePane = Pane.LEFT;
-        }
+        if (rightCursorIndex == entries + 1) { activePane = Pane.LEFT; }
     }
 
     public void render(GuiGraphics g, int x, int y, int w, int h, Font font) {
@@ -201,37 +170,32 @@ public class RefCombinerProgram {
         int rightX = x + leftW + 2;
         int curY = y;
 
-        // Header
-        g.drawString(font, Component.literal("[COMBINE]"), leftX, curY, 0x55FF55, false);
+        g.drawString(font, Component.literal("[PRINT]"), leftX, curY, 0x55FF55, false);
         curY += font.lineHeight + 2;
 
-        // LEFT: combiners list
-        if (combiners.isEmpty()) {
-            g.drawString(font, Component.literal("No detected combiners."), leftX, curY, 0xAAAAAA, false);
+        // Left list: printers
+        if (printers.isEmpty()) {
+            g.drawString(font, Component.literal("No detected printers."), leftX, curY, 0xAAAAAA, false);
         } else {
-            for (int i = 0; i < combiners.size(); i++) {
-                boolean sel = (activePane == Pane.LEFT && i == selectedCombinerIndex);
-                var comb = combiners.get(i);
-                String line = (sel ? ">> " : "   ") + "Combiner " + (i + 1);
+            for (int i = 0; i < printers.size(); i++) {
+                boolean sel = (activePane == Pane.LEFT && i == selectedPrinterIndex);
+                String line = (sel ? ">> " : "   ") + "Printer " + (i + 1);
                 g.drawString(font, Component.literal(line), leftX, curY, sel ? 0x55FF55 : 0xFFFFFF, false);
                 curY += font.lineHeight;
                 if (curY > y + h - font.lineHeight) break;
             }
         }
 
-        // Vertical separator
-        int sepX = rightX - 2;
-        g.fill(sepX, y, sepX + 1, y + h, 0x33555555);
+        int sepX = rightX - 2; g.fill(sepX, y, sepX + 1, y + h, 0x33555555);
 
-        // RIGHT: vial list and actions
         int ry = y;
         g.drawString(font, Component.literal("Available Vials"), rightX, ry, 0xA0FFFFFF, false);
         ry += font.lineHeight + 2;
 
-        // Feedback line (success/failure) from server cache
-        if (!combiners.isEmpty() && selectedCombinerIndex >= 0 && selectedCombinerIndex < combiners.size()) {
-            var comb = combiners.get(selectedCombinerIndex);
-            var entry = com.github.b4ndithelps.forge.client.refprog.ClientCombinerStateCache.get(comb.getBlockPos());
+        // Feedback (success/failure)
+        if (!printers.isEmpty() && selectedPrinterIndex >= 0 && selectedPrinterIndex < printers.size()) {
+            var printer = printers.get(selectedPrinterIndex);
+            var entry = com.github.b4ndithelps.forge.client.programs.ClientPrinterStateCache.get(printer.getBlockPos());
             if (entry != null && entry.message != null && !entry.message.isEmpty()) {
                 int color = entry.success ? 0x55FF55 : 0xFFAA00;
                 g.drawString(font, Component.literal(entry.message), rightX, ry, color, false);
@@ -249,7 +213,7 @@ public class RefCombinerProgram {
             return;
         }
 
-        int cap = GeneCombinerBlockEntity.SLOT_INPUT_COUNT;
+        int cap = BioPrinterBlockEntity.SLOT_INPUT_COUNT;
         for (int i = 0; i < vialEntries.size(); i++) {
             boolean cursor = (activePane == Pane.RIGHT && rightCursorIndex == i);
             boolean picked = selectedVialIndices.contains(i);
@@ -261,11 +225,10 @@ public class RefCombinerProgram {
             if (ry > y + h - font.lineHeight) break;
         }
 
-        // Action rows
         if (ry <= y + h - font.lineHeight) {
             boolean cursor = (activePane == Pane.RIGHT && rightCursorIndex == vialEntries.size());
-            String action = ">> Start combine (" + selectedVialIndices.size() + "/" + cap + ")";
-            String idle = "   Start combine (" + selectedVialIndices.size() + "/" + cap + ")";
+            String action = ">> Start printing (" + selectedVialIndices.size() + "/" + cap + ")";
+            String idle = "   Start printing (" + selectedVialIndices.size() + "/" + cap + ")";
             g.drawString(font, Component.literal(cursor ? action : idle), rightX, ry, cursor ? 0x55FF55 : 0xFFFFFF, false);
             ry += font.lineHeight;
         }
@@ -303,28 +266,6 @@ public class RefCombinerProgram {
         String t = s.replaceAll("[^A-Za-z0-9_()]+", "");
         if (t.length() > 16) return t.substring(0, 16);
         return t;
-    }
-
-    private static String describeCombiner(GeneCombinerBlockEntity c) {
-        List<String> labels = new ArrayList<>();
-        for (int i = 0; i < GeneCombinerBlockEntity.SLOT_INPUT_COUNT; i++) {
-            ItemStack st = c.getItem(i);
-            labels.add(st.isEmpty() ? "-" : shortLabel(st));
-        }
-        String out = c.getItem(GeneCombinerBlockEntity.SLOT_OUTPUT).isEmpty() ? "<empty>" : shortLabel(c.getItem(GeneCombinerBlockEntity.SLOT_OUTPUT));
-        return "[In: " + String.join(", ", labels) + "] [Out: " + out + "]";
-    }
-
-    private static String shortLabel(ItemStack vial) {
-        if (vial == null || vial.isEmpty()) return "-";
-        CompoundTag tag = vial.getTag();
-        if (tag != null && tag.contains("gene", 10)) {
-            CompoundTag g = tag.getCompound("gene");
-            String name = g.contains("name", 8) ? g.getString("name") : "gene";
-            Integer q = g.contains("quality", 3) ? g.getInt("quality") : null;
-            return q == null ? name : (name + " (" + q + "%)");
-        }
-        return vial.getHoverName().getString();
     }
 }
 

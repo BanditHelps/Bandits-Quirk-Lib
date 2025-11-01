@@ -11,7 +11,6 @@
 
   "block.bandits_quirk_lib.research_table_block": "Research Table",
   "block.bandits_quirk_lib.bio_terminal": "Bio Terminal",
-  "block.bandits_quirk_lib.bio_terminal_ref": "Bio Terminal (Refactored)",
   "block.bandits_quirk_lib.gene_sequencer": "Gene Sequencer",
   "block.bandits_quirk_lib.gene_slicer": "Gene Slicer",
   "block.bandits_quirk_lib.sample_refrigerator": "Sample Refrigerator",

@@ -1,4 +1,4 @@
-package com.github.b4ndithelps.forge.client.refprog;
+package com.github.b4ndithelps.forge.client.programs;
 
 import net.minecraft.core.BlockPos;
 

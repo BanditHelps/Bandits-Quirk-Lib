@@ -18,7 +18,7 @@ public class ModCreativeTabs {
             .icon(() -> new ItemStack(ModBlocks.RESEARCH_TABLE_BLOCK.get()))
             .displayItems((parameters, output) -> {
                 output.accept(ModBlocks.RESEARCH_TABLE_BLOCK.get());
-                output.accept(ModBlocks.BIO_TERMINAL_REF.get());
+                output.accept(ModBlocks.BIO_TERMINAL.get());
                 output.accept(ModBlocks.GENE_SEQUENCER.get());
                 output.accept(ModBlocks.GENE_SLICER.get());
                 output.accept(ModBlocks.SAMPLE_REFRIGERATOR.get());
