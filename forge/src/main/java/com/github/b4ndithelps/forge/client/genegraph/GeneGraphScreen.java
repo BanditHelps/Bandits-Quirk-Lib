@@ -3,7 +3,6 @@ package com.github.b4ndithelps.forge.client.genegraph;
 import com.github.b4ndithelps.genetics.Gene;
 import com.github.b4ndithelps.genetics.GeneCombinationRecipe;
 import com.github.b4ndithelps.genetics.GeneRegistry;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -158,7 +157,8 @@ public class GeneGraphScreen extends Screen {
         // Title
         g.drawString(this.font, this.title, panelX + 8, panelY + 6, COLOR_TEXT);
 
-        // Graph
+        // Graph (clip to panel bounds)
+        g.enableScissor(panelX, panelY, panelX + panelW, panelY + panelH);
         g.pose().pushPose();
         g.pose().translate(panX, panY, 0);
         g.pose().scale(zoom, zoom, 1f);
@@ -229,6 +229,7 @@ public class GeneGraphScreen extends Screen {
         }
 
         g.pose().popPose();
+        g.disableScissor();
 
         super.render(g, mouseX, mouseY, partialTick);
     }
