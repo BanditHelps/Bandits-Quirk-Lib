@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "VIV",
+    "IDG",
+    "III"
+  ],
+  "key": {
+    "I": {
+      "item": "minecraft:iron_block"
+    },
+    "D": {
+      "item": "minecraft:diamond"
+    },
+    "G": {
+      "item": "minecraft:glass_pane"
+    },
+    "V": {
+      "item": "palladium:vibranium_circuit"
+    }
+  },
+  "result": {
+    "item": "bandits_quirk_lib:bio_printer",
+    "count": 1
+  }
+}

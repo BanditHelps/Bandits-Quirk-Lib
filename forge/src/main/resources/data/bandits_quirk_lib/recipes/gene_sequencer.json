@@ -1,0 +1,29 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "QR ",
+    "ISI",
+    "ITI"
+  ],
+  "key": {
+    "I": {
+      "item": "minecraft:iron_block"
+    },
+    "Q": {
+      "item": "palladium:quartz_circuit"
+    },
+    "R": {
+      "item": "minecraft:redstone_lamp"
+    },
+    "S": {
+      "item": "minecraft:spyglass"
+    },
+    "T": {
+      "item": "bandits_quirk_lib:tissue_extractor"
+    }
+  },
+  "result": {
+    "item": "bandits_quirk_lib:gene_sequencer",
+    "count": 1
+  }
+}

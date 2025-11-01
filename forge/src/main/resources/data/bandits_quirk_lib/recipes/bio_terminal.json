@@ -1,0 +1,29 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "ICI",
+    "QGQ",
+    "IVI"
+  ],
+  "key": {
+    "I": {
+      "item": "minecraft:iron_block"
+    },
+    "Q": {
+      "item": "palladium:quartz_circuit"
+    },
+    "C": {
+      "item": "minecraft:lightning_rod"
+    },
+    "G": {
+      "item": "minecraft:glass_pane"
+    },
+    "V": {
+      "item": "palladium:vibranium_circuit"
+    }
+  },
+  "result": {
+    "item": "bandits_quirk_lib:bio_terminal",
+    "count": 1
+  }
+}
