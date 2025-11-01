@@ -1,5 +1,6 @@
 package com.github.b4ndithelps.forge.blocks;
 
+import com.github.b4ndithelps.forge.item.ModItems;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.Container;
 import net.minecraft.world.SimpleContainer;
@@ -19,7 +20,12 @@ public class GeneSlicerMenu extends AbstractContainerMenu {
         this.addDataSlots(data);
 
         // Input on the left
-        this.addSlot(new Slot(be, GeneSlicerBlockEntity.SLOT_INPUT, 26, 35));
+        this.addSlot(new Slot(be, GeneSlicerBlockEntity.SLOT_INPUT, 26, 35) {
+            @Override
+            public boolean mayPlace(ItemStack stack) {
+                return stack.getItem() == ModItems.SEQUENCED_SAMPLE.get();
+            }
+        });
 
         // 6 outputs arranged 3x2 on the right starting at x=98, y=26
         int startX = 98;
@@ -27,7 +33,12 @@ public class GeneSlicerMenu extends AbstractContainerMenu {
         int idx = GeneSlicerBlockEntity.SLOT_OUTPUT_START;
         for (int row = 0; row < 2; row++) {
             for (int col = 0; col < 3; col++) {
-                this.addSlot(new Slot(be, idx++, startX + col * 18, startY + row * 18));
+                this.addSlot(new Slot(be, idx++, startX + col * 18, startY + row * 18) {
+                    @Override
+                    public boolean mayPlace(ItemStack stack) {
+                        return false;
+                    }
+                });
             }
         }
 
@@ -76,7 +87,42 @@ public class GeneSlicerMenu extends AbstractContainerMenu {
 
     @Override
     public ItemStack quickMoveStack(Player player, int index) {
-        return ItemStack.EMPTY;
+        ItemStack itemStack = ItemStack.EMPTY;
+        Slot slot = this.slots.get(index);
+        if (slot != null && slot.hasItem()) {
+            ItemStack stackInSlot = slot.getItem();
+            itemStack = stackInSlot.copy();
+
+            int containerEnd = 7;
+            int playerStart = containerEnd;
+            int playerEnd = this.slots.size();
+
+            if (index < containerEnd) {
+                // Machine to player
+                if (!this.moveItemStackTo(stackInSlot, playerStart, playerEnd, true)) {
+                    return ItemStack.EMPTY;
+                }
+            } else {
+                // Player to the machine, only accepting sequenced samples
+                if (stackInSlot.getItem() == ModItems.SEQUENCED_SAMPLE.get()) {
+                    if (!this.moveItemStackTo(stackInSlot,
+                            GeneSlicerBlockEntity.SLOT_INPUT,
+                            GeneSlicerBlockEntity.SLOT_INPUT + 1,
+                            false)) {
+                        return ItemStack.EMPTY;
+                    }
+                } else {
+                    return ItemStack.EMPTY;
+                }
+            }
+
+            if (stackInSlot.isEmpty()) {
+                slot.set(ItemStack.EMPTY);
+            } else {
+                slot.setChanged();
+            }
+        }
+        return itemStack;
     }
 
     @Override

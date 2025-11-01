@@ -1,5 +1,6 @@
 package com.github.b4ndithelps.forge.blocks;
 
+import com.github.b4ndithelps.forge.item.ModItems;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.Container;
 import net.minecraft.world.SimpleContainer;
@@ -18,9 +19,21 @@ public class GeneSequencerMenu extends AbstractContainerMenu {
         this.data = data;
         this.addDataSlots(data);
 
-        // Slots: input (0), output (1)
-        this.addSlot(new Slot(be, GeneSequencerBlockEntity.SLOT_INPUT, 44, 35));
-        this.addSlot(new Slot(be, GeneSequencerBlockEntity.SLOT_OUTPUT, 98, 35));
+        // Make sure the input only allows tissue samples
+        this.addSlot(new Slot(be, GeneSequencerBlockEntity.SLOT_INPUT, 44, 35) {
+            @Override
+            public boolean mayPlace(ItemStack stack) {
+                return stack.getItem() == ModItems.TISSUE_SAMPLE.get();
+            }
+        });
+
+        // Don't let players put anything in the output slot
+        this.addSlot(new Slot(be, GeneSequencerBlockEntity.SLOT_OUTPUT, 98, 35) {
+            @Override
+            public boolean mayPlace(ItemStack stack) {
+                return false;
+            }
+        });
 
         // Player inventory
         addPlayerInventory(playerInv);
@@ -59,7 +72,43 @@ public class GeneSequencerMenu extends AbstractContainerMenu {
 
     @Override
     public ItemStack quickMoveStack(Player player, int index) {
-        return ItemStack.EMPTY; // TODO: shift-click logic later
+        ItemStack itemStack = ItemStack.EMPTY;
+        Slot slot = this.slots.get(index);
+        if (slot != null && slot.hasItem()) {
+            ItemStack stackInSlot = slot.getItem();
+            itemStack = stackInSlot.copy();
+
+            int containerEnd = 2;
+            int playerStart = containerEnd;
+            int playerEnd = this.slots.size();
+
+            if (index < containerEnd) {
+                // Machine to the player
+                if (!this.moveItemStackTo(stackInSlot, playerStart, playerEnd, true)) {
+                    return ItemStack.EMPTY;
+                }
+            } else {
+                // Player to the machine (only accept the tissue item)
+                if (stackInSlot.getItem() == ModItems.TISSUE_SAMPLE.get()) {
+                    if (!this.moveItemStackTo(stackInSlot,
+                            GeneSequencerBlockEntity.SLOT_INPUT,
+                            GeneSequencerBlockEntity.SLOT_INPUT + 1,
+                            false)) {
+                        return ItemStack.EMPTY;
+                    }
+                } else {
+                    return ItemStack.EMPTY;
+                }
+            }
+
+            if (stackInSlot.isEmpty()) {
+                slot.set(ItemStack.EMPTY);
+            } else {
+                slot.setChanged();
+            }
+        }
+
+        return itemStack;
     }
 
     @Override
