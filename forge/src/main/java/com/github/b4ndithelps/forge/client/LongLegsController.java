@@ -16,7 +16,6 @@ public final class LongLegsController {
 
     public static boolean shouldRenderLongLegs(Player player) {
         if (player == null) return false;
-        if (player.isCrouching()) return true; // debug force
         return hasGene(player, LONG_LEGS_GENE_ID) || hasGene(player, LONG_LEGS_GENE_ID_ALT);
     }
 

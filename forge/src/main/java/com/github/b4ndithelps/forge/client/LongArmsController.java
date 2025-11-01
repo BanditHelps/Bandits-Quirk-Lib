@@ -18,8 +18,6 @@ public final class LongArmsController {
 
     public static boolean shouldRenderLongArms(Player player) {
         if (player == null) return false;
-        // Allow crouch to force-enable for debugging
-        if (player.isCrouching()) return true;
         return hasGene(player, LONG_ARMS_GENE_ID) || hasGene(player, LONG_ARMS_GENE_ID_ALT);
     }
 
