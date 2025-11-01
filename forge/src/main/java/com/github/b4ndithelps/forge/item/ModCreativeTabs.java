@@ -28,7 +28,6 @@ public class ModCreativeTabs {
                 output.accept(ModItems.TISSUE_EXTRACTOR.get());
                 output.accept(ModItems.TISSUE_SAMPLE.get());
                 output.accept(ModItems.SEQUENCED_SAMPLE.get());
-                output.accept(ModItems.READOUT.get());
                 output.accept(ModItems.GENE_VIAL_COSMETIC.get());
                 output.accept(ModItems.GENE_VIAL_RESISTANCE.get());
                 output.accept(ModItems.GENE_VIAL_BUILDER.get());

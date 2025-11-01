@@ -7,6 +7,7 @@
   "item.bandits_quirk_lib.gene_vial": "Gene Vial",
   "item.bandits_quirk_lib.gene_database": "Gene Database",
   "item.bandits_quirk_lib.injector": "Injector",
+  "item.bandits_quirk_lib.injector.desc": "Right Click to add to your existing genome",
 
   "block.bandits_quirk_lib.research_table_block": "Research Table",
   "block.bandits_quirk_lib.bio_terminal": "Bio Terminal",
