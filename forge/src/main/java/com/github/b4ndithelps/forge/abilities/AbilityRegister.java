@@ -33,6 +33,7 @@ public class AbilityRegister {
     public static final RegistrySupplier<Ability> LARCENY;
     public static final RegistrySupplier<Ability> GENE_QUALITY_SCALING_ATTRIBUTE;
     public static final RegistrySupplier<Ability> DASHSTEP;
+	public static final RegistrySupplier<Ability> BLACKWHIP_RESTRAIN;
 
 
     public AbilityRegister() {
@@ -70,6 +71,7 @@ public class AbilityRegister {
         LARCENY = ABILITIES.register("larceny", LarcenyAbility::new);
         GENE_QUALITY_SCALING_ATTRIBUTE = ABILITIES.register("gene_quality_scaling_attribute", GeneQualityScalingAttributeAbility::new);
         DASHSTEP = ABILITIES.register("dashstep", DashstepAbility::new);
+		BLACKWHIP_RESTRAIN = ABILITIES.register("blackwhip_restrain", BlackwhipRestrainAbility::new);
 
     }
 }

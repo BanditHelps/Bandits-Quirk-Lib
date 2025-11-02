@@ -109,6 +109,31 @@
         ]
       }
     },
+    "blackwhip_restrain": {
+      "type": "bandits_quirk_lib:blackwhip_restrain",
+      "icon": "minecraft:lead",
+      "title": "Restrain",
+      "bar_color": "light_gray",
+      "hidden": false,
+      "hidden_in_bar": false,
+      "list_index": 5,
+      "stamina_first_cost": 0,
+      "stamina_interval_cost": 0,
+      "stamina_interval": 20,
+      "range": 16,
+      "restrain_ticks": 100,
+      "miss_retract_ticks": 8,
+      "whip_curve": 0.6,
+      "whip_particle_size": 1,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:held",
+            "key_type": "key_bind"
+          }
+        ]
+      }
+    },
     "grow_status": {
       "type": "bandits_quirk_lib:body_status_modifier",
       "title": "Grow",
