@@ -115,6 +115,13 @@ public final class BQLNetwork {
                 .decoder(OpenGeneGraphS2CPacket::decode)
                 .consumerMainThread(OpenGeneGraphS2CPacket::handle)
                 .add();
+
+        // Blackwhip visual updates (server -> clients)
+        CHANNEL.messageBuilder(BlackwhipStatePacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(BlackwhipStatePacket::encode)
+                .decoder(BlackwhipStatePacket::decode)
+                .consumerMainThread(BlackwhipStatePacket::handle)
+                .add();
     }
 }
 

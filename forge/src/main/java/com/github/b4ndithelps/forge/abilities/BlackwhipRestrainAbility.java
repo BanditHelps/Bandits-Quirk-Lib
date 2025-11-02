@@ -1,6 +1,8 @@
 package com.github.b4ndithelps.forge.abilities;
 
 import com.github.b4ndithelps.forge.effects.ModEffects;
+import com.github.b4ndithelps.forge.network.BQLNetwork;
+import com.github.b4ndithelps.forge.network.BlackwhipStatePacket;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
@@ -23,6 +25,7 @@ import net.threetag.palladium.util.property.PropertyManager;
 
 import java.util.List;
 import java.util.UUID;
+import net.minecraftforge.network.PacketDistributor;
 
 /**
  * Blackwhip Restrain: Shoots a green-blue tendril in the look direction.
@@ -93,8 +96,15 @@ public class BlackwhipRestrainAbility extends Ability {
  			entry.setUniqueProperty(TICKS_LEFT, duration);
  			entry.setUniqueProperty(TARGET_UUID, target.getUUID().toString());
 
- 			// Audio feedback on successful tether
+			// Audio feedback on successful tether
 			player.level().playSound(null, player.blockPosition(), SoundEvents.ENDER_DRAGON_SHOOT, SoundSource.PLAYERS, 0.5f, 1.4f);
+
+			// Notify clients to render the whip
+			BQLNetwork.CHANNEL.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player),
+					new BlackwhipStatePacket(
+							player.getId(), true, true, target.getId(),
+							entry.getProperty(TICKS_LEFT), entry.getProperty(MISS_RETRACT_TICKS),
+							range, entry.getProperty(WHIP_CURVE), entry.getProperty(WHIP_PARTICLE_SIZE)));
  		} else {
  			// Miss: play retract visuals for a short time
  			playWhipMiss(player, entry, range);
@@ -107,8 +117,6 @@ public class BlackwhipRestrainAbility extends Ability {
  		if (!(entity instanceof ServerPlayer player)) return;
  		if (!entry.getProperty(IS_ACTIVE)) return;
 
- 		ServerLevel level = player.serverLevel();
-
  		String uuidStr = entry.getProperty(TARGET_UUID);
  		boolean restraining = entry.getProperty(IS_RESTRAINING);
  		int ticksLeft = entry.getProperty(TICKS_LEFT);
@@ -117,52 +125,62 @@ public class BlackwhipRestrainAbility extends Ability {
  			LivingEntity target = findEntityByUuid(player, uuidStr);
  			if (target == null || !target.isAlive()) {
  				// Target lost or dead: stop
- 				finish(entry);
+				// tell clients to stop rendering
+				BQLNetwork.CHANNEL.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player),
+						new BlackwhipStatePacket(player.getId(), false, false, -1, 0, entry.getProperty(MISS_RETRACT_TICKS),
+								entry.getProperty(RANGE), entry.getProperty(WHIP_CURVE), entry.getProperty(WHIP_PARTICLE_SIZE)));
+				finish(entry);
  				return;
  			}
-
-
-			// Keep the tether visuals each tick from player's hand to target
-			Vec3 hand = getHandPosition(player);
-			spawnWhipParticles(level, hand, getAttachPoint(target), entry.getProperty(WHIP_CURVE), entry.getProperty(WHIP_PARTICLE_SIZE));
-
-			// Wrapped helical effect around the restrained target
-			spawnWrappedEffect(level, target, entry.getProperty(WHIP_PARTICLE_SIZE));
 
  			// Refresh restrain a little to keep effect consistent (not extending duration)
  			if (ticksLeft % 20 == 0) {
  				target.addEffect(new MobEffectInstance(ModEffects.STUN_EFFECT.get(), 25, 0, false, false));
  			}
 
- 			if (ticksLeft <= 0) {
- 				finish(entry);
- 				return;
- 			}
+			if (ticksLeft <= 0) {
+				// Duration ended: clear effect immediately and stop visuals
+				if (target != null) {
+					target.removeEffect(ModEffects.STUN_EFFECT.get());
+				}
+				BQLNetwork.CHANNEL.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player),
+						new BlackwhipStatePacket(player.getId(), false, false, -1, 0, entry.getProperty(MISS_RETRACT_TICKS),
+								entry.getProperty(RANGE), entry.getProperty(WHIP_CURVE), entry.getProperty(WHIP_PARTICLE_SIZE)));
+				finish(entry);
+				return;
+			}
 
  			entry.setUniqueProperty(TICKS_LEFT, ticksLeft - 1);
  		} else {
- 			// Miss retract animation: TICKS_LEFT counts down visual frames
+			// Miss retract animation: TICKS_LEFT counts down visual frames (client handles visuals)
  			if (ticksLeft <= 0) {
- 				finish(entry);
+				// finish visuals on clients
+				BQLNetwork.CHANNEL.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player),
+						new BlackwhipStatePacket(player.getId(), false, false, -1, 0, entry.getProperty(MISS_RETRACT_TICKS),
+								entry.getProperty(RANGE), entry.getProperty(WHIP_CURVE), entry.getProperty(WHIP_PARTICLE_SIZE)));
+				finish(entry);
  				return;
  			}
-
- 			float range = Math.max(1.0F, entry.getProperty(RANGE));
- 			Vec3 start = player.getEyePosition();
- 			Vec3 end = start.add(player.getLookAngle().scale(range));
-
- 			// Shorten the whip over time for retract effect
- 			float retractRatio = Math.max(0.0F, Math.min(1.0F, (float) ticksLeft / Math.max(1, entry.getProperty(MISS_RETRACT_TICKS))));
- 			Vec3 currentEnd = start.add(end.subtract(start).scale(retractRatio));
-
- 			spawnWhipParticles(level, start, currentEnd, entry.getProperty(WHIP_CURVE), entry.getProperty(WHIP_PARTICLE_SIZE));
  			entry.setUniqueProperty(TICKS_LEFT, ticksLeft - 1);
  		}
  	}
 
  	@Override
  	public void lastTick(LivingEntity entity, AbilityInstance entry, IPowerHolder holder, boolean enabled) {
- 		finish(entry);
+		// If deactivated by player, release target and stop visuals
+		if (entity instanceof ServerPlayer player) {
+			String uuidStr = entry.getProperty(TARGET_UUID);
+			if (entry.getProperty(IS_RESTRAINING) && !uuidStr.isEmpty()) {
+				LivingEntity target = findEntityByUuid(player, uuidStr);
+				if (target != null) {
+					target.removeEffect(ModEffects.STUN_EFFECT.get());
+				}
+			}
+			BQLNetwork.CHANNEL.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player),
+					new BlackwhipStatePacket(player.getId(), false, false, -1, 0, entry.getProperty(MISS_RETRACT_TICKS),
+							entry.getProperty(RANGE), entry.getProperty(WHIP_CURVE), entry.getProperty(WHIP_PARTICLE_SIZE)));
+		}
+		finish(entry);
  	}
 
  	private void finish(AbilityInstance entry) {
@@ -172,7 +190,7 @@ public class BlackwhipRestrainAbility extends Ability {
  		entry.setUniqueProperty(TARGET_UUID, "");
  	}
 
- 	private void playWhipMiss(ServerPlayer player, AbilityInstance entry, float range) {
+	private void playWhipMiss(ServerPlayer player, AbilityInstance entry, float range) {
  		entry.setUniqueProperty(IS_RESTRAINING, false);
  		entry.setUniqueProperty(TICKS_LEFT, Math.max(1, entry.getProperty(MISS_RETRACT_TICKS)));
  		entry.setUniqueProperty(TARGET_UUID, "");
@@ -180,11 +198,12 @@ public class BlackwhipRestrainAbility extends Ability {
  		// Sound and initial burst
 		player.level().playSound(null, player.blockPosition(), SoundEvents.FISHING_BOBBER_THROW, SoundSource.PLAYERS, 0.7f, 1.2f);
 
- 		// Show the fully extended whip for one frame on miss
- 		ServerLevel level = player.serverLevel();
- 		Vec3 start = player.getEyePosition();
- 		Vec3 end = start.add(player.getLookAngle().scale(range));
- 		spawnWhipParticles(level, start, end, entry.getProperty(WHIP_CURVE), entry.getProperty(WHIP_PARTICLE_SIZE));
+		// Notify clients of miss visualization
+		BQLNetwork.CHANNEL.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player),
+				new BlackwhipStatePacket(
+						player.getId(), true, false, -1,
+						entry.getProperty(TICKS_LEFT), entry.getProperty(MISS_RETRACT_TICKS),
+						range, entry.getProperty(WHIP_CURVE), entry.getProperty(WHIP_PARTICLE_SIZE)));
  	}
 
  	private void applyRestrain(LivingEntity target, int duration) {
