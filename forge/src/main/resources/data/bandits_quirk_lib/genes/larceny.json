@@ -8,7 +8,13 @@
   "mobs": [
     "minecraft:player",
     "minecraft:zombie"
-  ]
+  ],
+  "combination": {
+    "requires": [
+      { "id": "bandits_quirk_lib:gene.minor_object_attraction", "min_quality": 50 }
+    ],
+    "builder": { "count": 1, "min_quality": 50 }
+  }
 }
 
 

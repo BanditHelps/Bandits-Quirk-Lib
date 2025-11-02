@@ -53,6 +53,10 @@ public class GeneGraphScreen extends Screen {
     private int modalX, modalY, modalW, modalH;
     private int closeL, closeT, closeR, closeB;
 
+    // Edge interaction state
+    private Edge selectedEdge = null;
+    private Edge hoveredEdge = null;
+
     private static final class Node {
         final ResourceLocation id;
         final Gene gene;
@@ -114,6 +118,14 @@ public class GeneGraphScreen extends Screen {
             incoming.computeIfAbsent(e.to(), k -> new ArrayList<>()).add(e.from());
         }
 
+        // build degree counts
+        Map<ResourceLocation, Integer> inCount = new HashMap<>();
+        Map<ResourceLocation, Integer> outCount = new HashMap<>();
+        for (Edge e : edges) {
+            inCount.put(e.to(), inCount.getOrDefault(e.to(), 0) + 1);
+            outCount.put(e.from(), outCount.getOrDefault(e.from(), 0) + 1);
+        }
+
         for (Node n : nodes.values()) {
             n.depth = computeDepth(n.id, incoming, depthMemo, visiting);
         }
@@ -125,11 +137,65 @@ public class GeneGraphScreen extends Screen {
 
         for (int d = 0; d <= maxDepth; d++) {
             List<Node> col = byDepth.getOrDefault(d, List.of());
-            col.sort(Comparator.comparing(a -> a.id.toString()));
+            // Order within column by barycenter of incoming neighbors (reduces crossings and vertical stacking)
+            Map<ResourceLocation, Integer> prevIndex = new HashMap<>();
+            List<Node> prev = byDepth.getOrDefault(d - 1, List.of());
+            for (int i2 = 0; i2 < prev.size(); i2++) prevIndex.put(prev.get(i2).id, i2);
+            col.sort((a, bNode) -> {
+                float aScore = 0f, bScore = 0f; int aCnt = 0, bCnt = 0;
+                for (Edge e : edges) {
+                    if (e.to().equals(a.id)) { Integer idx = prevIndex.get(e.from()); if (idx != null) { aScore += idx; aCnt++; } }
+                    if (e.to().equals(bNode.id)) { Integer idx = prevIndex.get(e.from()); if (idx != null) { bScore += idx; bCnt++; } }
+                }
+                float aB = aCnt > 0 ? aScore / aCnt : Float.MAX_VALUE;
+                float bB = bCnt > 0 ? bScore / bCnt : Float.MAX_VALUE;
+                if (aB == bB) return a.id.toString().compareTo(bNode.id.toString());
+                return Float.compare(aB, bB);
+            });
+
+            int baseX = PADDING + d * (NODE_WIDTH + COL_GAP);
+            int subGap = Math.max(30, COL_GAP / 4); // keep within this column's width
+
             for (int i = 0; i < col.size(); i++) {
                 Node n = col.get(i);
-                n.x = PADDING + d * (NODE_WIDTH + COL_GAP);
+                int in = inCount.getOrDefault(n.id, 0);
+                int out = outCount.getOrDefault(n.id, 0);
+                // Sub-columns by role to reduce edge stacking
+                int sub;
+                if (in == 0 && out == 0) sub = 3;         // isolated far right
+                else if (in == 0 && out > 0) sub = 0;      // pure source left
+                else if (in > 0 && out > 0) sub = 1;       // both center-left
+                else /* in > 0 && out == 0 */ sub = 2;     // pure sink center-right
+
+                n.x = baseX + sub * subGap;
                 n.y = PADDING + i * (NODE_HEIGHT + ROW_GAP);
+            }
+
+            // Ensure the incoming corridor has clearance from this column's left edges
+            if (d > 0) {
+                // Find the maximal lane midX for edges targeting this column
+                int maxMidX = Integer.MIN_VALUE;
+                for (Edge e : edges) {
+                    Node src = nodes.get(e.from());
+                    Node dst = nodes.get(e.to());
+                    if (dst != null && dst.depth == d && src != null && src.depth == d - 1) {
+                        int ax = Math.round(src.x + NODE_WIDTH);
+                        int bx = Math.round(dst.x);
+                        int mid = (ax + bx) / 2;
+                        if (mid > maxMidX) maxMidX = mid;
+                    }
+                }
+                if (maxMidX != Integer.MIN_VALUE) {
+                    // Compute current minimum left edge in this column
+                    int minLeft = Integer.MAX_VALUE;
+                    for (Node n : col) minLeft = Math.min(minLeft, Math.round(n.x));
+                    int CLEAR = 8; // pixels of clearance between lane and any node left edge
+                    int requiredLeft = maxMidX + CLEAR;
+                    if (minLeft < requiredLeft) {
+                        float delta = requiredLeft - minLeft;
+                        for (Node n : col) n.x += delta;
+                    }
+                }
             }
         }
     }
@@ -169,8 +235,15 @@ public class GeneGraphScreen extends Screen {
         g.pose().translate(panX, panY, 0);
         g.pose().scale(zoom, zoom, 1f);
 
-        // Edges first
+        // Edge routing: unique vertical lanes, source/target port offsets, and label offsets
+        java.util.Map<Edge, Integer> outYOffset = computeOutgoingYOffsetByEdge();
+        java.util.Map<Edge, Integer> inYOffset = computeIncomingYOffsetByEdge();
+        java.util.Map<Edge, Integer> midXByEdge = computeMidXByEdge();
+        java.util.Map<Edge, Integer> labelYOffsetByEdge = computeLabelYOffsetByEdge(midXByEdge);
+
+        // non-highlighted edges
         for (Edge e : edges) {
+            if (e.equals(selectedEdge) || e.equals(hoveredEdge)) continue;
             Node a = nodes.get(e.from());
             Node b = nodes.get(e.to());
             if (a == null || b == null) continue;
@@ -178,32 +251,15 @@ public class GeneGraphScreen extends Screen {
             int ay = Math.round(a.y + NODE_HEIGHT / 2f);
             int bx = Math.round(b.x);
             int by = Math.round(b.y + NODE_HEIGHT / 2f);
-            int midX = (ax + bx) / 2;
-            // L-shape: a -> midX, then vertical to by, then -> b
-            thickHLine(g, ax, midX, ay, COLOR_EDGE);
-            thickVLine(g, ay, by, midX, COLOR_EDGE);
-            thickHLine(g, midX, bx, by, COLOR_EDGE);
-
-            // Edge label for min quality if applicable
-            if (e.minQ() > 0) {
-                String label = "\u2265" + e.minQ() + "%"; // ≥Q%
-                int textW = this.font.width(label);
-                int lx = midX + 4;
-                int ly = by - 8 - this.font.lineHeight / 2;
-                // small pill background for readability
-                int padX = 3, padY = 2;
-                int bgL = lx - padX - 1;
-                int bgT = ly - padY;
-                int bgR = lx + textW + padX + 1;
-                int bgB = ly + this.font.lineHeight + padY - 2;
-                g.fill(bgL, bgT, bgR, bgB, 0xCC0E1117);
-                hLine(g, bgL, bgR, bgT, 0xFF2A3140);
-                hLine(g, bgL, bgR, bgB, 0xFF2A3140);
-                vLine(g, bgT, bgB, bgL, 0xFF2A3140);
-                vLine(g, bgT, bgB, bgR, 0xFF2A3140);
-                g.drawString(this.font, label, lx, ly, 0xFFBFD7FF, false);
-            }
+            int midX = midXByEdge.getOrDefault(e, (ax + bx) / 2);
+            int color = mix(COLOR_EDGE, colorForEdge(e), 0.35f) & 0xCCFFFFFF;
+            int sOff = outYOffset.getOrDefault(e, 0);
+            int tOff = inYOffset.getOrDefault(e, 0);
+            drawEdgeWithLabel(g, e, ax, ay, bx, by, midX, sOff, tOff, labelYOffsetByEdge.getOrDefault(e, 0), color, false);
         }
+        // hovered then selected on top
+        if (hoveredEdge != null) drawEdgeTop(g, hoveredEdge, midXByEdge, outYOffset, inYOffset, labelYOffsetByEdge, 0xFFE8D38A);
+        if (selectedEdge != null) drawEdgeTop(g, selectedEdge, midXByEdge, outYOffset, inYOffset, labelYOffsetByEdge, 0xFFFFD36A);
 
         // Nodes
         for (Node n : nodes.values()) {
@@ -340,6 +396,165 @@ public class GeneGraphScreen extends Screen {
         g.fill(x - 1, y1, x + 2, y2, color);
     }
 
+    private void drawEdgeTop(GuiGraphics g,
+                              Edge e,
+                              java.util.Map<Edge, Integer> midXByEdge,
+                              java.util.Map<Edge, Integer> outYOffset,
+                              java.util.Map<Edge, Integer> inYOffset,
+                              java.util.Map<Edge, Integer> labelYOffsetByEdge,
+                              int accent) {
+        Node a = nodes.get(e.from());
+        Node b = nodes.get(e.to());
+        if (a == null || b == null) return;
+        int ax = Math.round(a.x + NODE_WIDTH);
+        int ay = Math.round(a.y + NODE_HEIGHT / 2f);
+        int bx = Math.round(b.x);
+        int by = Math.round(b.y + NODE_HEIGHT / 2f);
+        int midX = midXByEdge.getOrDefault(e, (ax + bx) / 2);
+        int edgeCol = mix(COLOR_EDGE, accent, 0.65f);
+        int sOff = outYOffset.getOrDefault(e, 0);
+        int tOff = inYOffset.getOrDefault(e, 0);
+        drawEdgeWithLabel(g, e, ax, ay, bx, by, midX, sOff, tOff, labelYOffsetByEdge.getOrDefault(e, 0), edgeCol, true);
+    }
+
+    private void drawEdgeWithLabel(GuiGraphics g,
+                                   Edge e,
+                                   int ax, int ay,
+                                   int bx, int by,
+                                   int midX,
+                                   int sOff,
+                                   int tOff,
+                                   int labelYOffset,
+                                   int color,
+                                   boolean strong) {
+        // Source stub
+        if (strong) thickVLine(g, ay, ay + sOff, ax, color); else vLine(g, ay, ay + sOff, ax, color);
+        int sy = ay + sOff;
+        // Horizontal to lane
+        if (strong) thickHLine(g, ax, midX, sy, color); else hLine(g, ax, midX, sy, color);
+        // Vertical lane to near target
+        int tyOff = by + tOff;
+        if (strong) thickVLine(g, sy, tyOff, midX, color); else vLine(g, sy, tyOff, midX, color);
+        // Horizontal to target x at offset
+        if (strong) thickHLine(g, midX, bx, tyOff, color); else hLine(g, midX, bx, tyOff, color);
+        // Target stub
+        if (strong) thickVLine(g, tyOff, by, bx, color); else vLine(g, tyOff, by, bx, color);
+
+        if (e.minQ() > 0) {
+            String label = "\u2265" + e.minQ() + "%";
+            int textW = this.font.width(label);
+            int lx = midX + 4;
+            int ly = (by + tOff) - 8 - this.font.lineHeight / 2 + labelYOffset;
+            int padX = 3, padY = 2;
+            int bgL = lx - padX - 1;
+            int bgT = ly - padY;
+            int bgR = lx + textW + padX + 1;
+            int bgB = ly + this.font.lineHeight + padY - 2;
+            g.fill(bgL, bgT, bgR, bgB, 0xCC0E1117);
+            hLine(g, bgL, bgR, bgT, 0xFF2A3140);
+            hLine(g, bgL, bgR, bgB, 0xFF2A3140);
+            vLine(g, bgT, bgB, bgL, 0xFF2A3140);
+            vLine(g, bgT, bgB, bgR, 0xFF2A3140);
+            g.drawString(this.font, label, lx, ly, 0xFFBFD7FF, false);
+        }
+    }
+
+    private java.util.Map<Edge, Integer> computeMidXByEdge() {
+        java.util.Map<Edge, Integer> midXByEdge = new java.util.HashMap<>();
+        // Group edges by their base corridor (rounded mid between source/right and target/left)
+        java.util.Map<Integer, java.util.List<Edge>> byCorridor = new java.util.HashMap<>();
+        for (Edge e : edges) {
+            Node a = nodes.get(e.from());
+            Node b = nodes.get(e.to());
+            if (a == null || b == null) continue;
+            int ax = Math.round(a.x + NODE_WIDTH);
+            int bx = Math.round(b.x);
+            int baseMid = Math.round((ax + bx) / 2f);
+            byCorridor.computeIfAbsent(baseMid, k -> new java.util.ArrayList<>()).add(e);
+        }
+        final int MID_SEP = 14; // separation between parallel lanes in the same corridor
+        for (var entry : byCorridor.entrySet()) {
+            int baseMid = entry.getKey();
+            java.util.List<Edge> list = entry.getValue();
+            // sort by the average of source/target y to keep lanes stable and reduce crossings
+            list.sort(java.util.Comparator.comparingInt(e -> {
+                Node a = nodes.get(e.from());
+                Node b = nodes.get(e.to());
+                int ay = Math.round(a.y + NODE_HEIGHT / 2f);
+                int by = Math.round(b.y + NODE_HEIGHT / 2f);
+                return (ay + by) / 2;
+            }));
+            int n = list.size();
+            int start = -((n - 1) * MID_SEP) / 2;
+            for (int i = 0; i < n; i++) {
+                midXByEdge.put(list.get(i), baseMid + start + i * MID_SEP);
+            }
+        }
+        return midXByEdge;
+    }
+
+    private java.util.Map<Edge, Integer> computeLabelYOffsetByEdge(java.util.Map<Edge, Integer> midXByEdge) {
+        java.util.Map<Edge, Integer> offsets = new java.util.HashMap<>();
+        java.util.Map<ResourceLocation, java.util.List<Edge>> byTarget = new java.util.HashMap<>();
+        for (Edge e : edges) byTarget.computeIfAbsent(e.to(), k -> new java.util.ArrayList<>()).add(e);
+        final int LABEL_SEP = 8;
+        for (var entry : byTarget.entrySet()) {
+            java.util.List<Edge> list = entry.getValue();
+            list.sort(java.util.Comparator.comparingInt(e -> Math.round(nodes.get(e.from()).y + NODE_HEIGHT / 2f)));
+            for (int i = 0; i < list.size(); i++) {
+                offsets.put(list.get(i), ((i % 3) - 1) * LABEL_SEP); // cycle -sep, 0, +sep
+            }
+        }
+        return offsets;
+    }
+
+    private java.util.Map<Edge, Integer> computeOutgoingYOffsetByEdge() {
+        java.util.Map<Edge, Integer> off = new java.util.HashMap<>();
+        java.util.Map<ResourceLocation, java.util.List<Edge>> bySource = new java.util.HashMap<>();
+        for (Edge e : edges) bySource.computeIfAbsent(e.from(), k -> new java.util.ArrayList<>()).add(e);
+        final int PORT_SEP = 6;
+        int maxOff = (NODE_HEIGHT / 2) - 3;
+        for (var entry : bySource.entrySet()) {
+            java.util.List<Edge> list = entry.getValue();
+            list.sort(java.util.Comparator.comparingInt(e -> Math.round(nodes.get(e.to()).y + NODE_HEIGHT / 2f)));
+            int n = list.size();
+            int start = -((n - 1) * PORT_SEP) / 2;
+            for (int i = 0; i < n; i++) {
+                int v = start + i * PORT_SEP;
+                if (v < -maxOff) v = -maxOff; else if (v > maxOff) v = maxOff;
+                off.put(list.get(i), v);
+            }
+        }
+        return off;
+    }
+
+    private java.util.Map<Edge, Integer> computeIncomingYOffsetByEdge() {
+        java.util.Map<Edge, Integer> off = new java.util.HashMap<>();
+        java.util.Map<ResourceLocation, java.util.List<Edge>> byTarget = new java.util.HashMap<>();
+        for (Edge e : edges) byTarget.computeIfAbsent(e.to(), k -> new java.util.ArrayList<>()).add(e);
+        final int PORT_SEP = 6;
+        int maxOff = (NODE_HEIGHT / 2) - 3;
+        for (var entry : byTarget.entrySet()) {
+            java.util.List<Edge> list = entry.getValue();
+            list.sort(java.util.Comparator.comparingInt(e -> Math.round(nodes.get(e.from()).y + NODE_HEIGHT / 2f)));
+            int n = list.size();
+            int start = -((n - 1) * PORT_SEP) / 2;
+            for (int i = 0; i < n; i++) {
+                int v = start + i * PORT_SEP;
+                if (v < -maxOff) v = -maxOff; else if (v > maxOff) v = maxOff;
+                off.put(list.get(i), v);
+            }
+        }
+        return off;
+    }
+
+    private int colorForEdge(Edge e) {
+        int h = e.from().hashCode() * 31 + e.to().hashCode();
+        int r = 160 + ((h >> 0) & 0x3F);
+        int gC = 160 + ((h >> 6) & 0x3F);
+        int b = 160 + ((h >> 12) & 0x3F);
+        return (0xFF << 24) | (r << 16) | (gC << 8) | b;
+    }
     private Node nodeAt(double mouseX, double mouseY) {
         float gx = (float)((mouseX - panX) / zoom);
         float gy = (float)((mouseY - panY) / zoom);
@@ -347,6 +562,59 @@ public class GeneGraphScreen extends Screen {
             if (gx >= n.x && gx <= n.x + NODE_WIDTH && gy >= n.y && gy <= n.y + NODE_HEIGHT) return n;
         }
         return null;
+    }
+
+    private Edge edgeAt(double mouseX, double mouseY) {
+        float gx = (float)((mouseX - panX) / zoom);
+        float gy = (float)((mouseY - panY) / zoom);
+        java.util.Map<Edge, Integer> midXByEdge = computeMidXByEdge();
+        java.util.Map<Edge, Integer> outYOffset = computeOutgoingYOffsetByEdge();
+        java.util.Map<Edge, Integer> inYOffset = computeIncomingYOffsetByEdge();
+        final float tol = 3.5f;
+        for (Edge e : edges) {
+            Node a = nodes.get(e.from());
+            Node b = nodes.get(e.to());
+            if (a == null || b == null) continue;
+            float ax = a.x + NODE_WIDTH;
+            float ay = a.y + NODE_HEIGHT / 2f;
+            float bx = b.x;
+            float by = b.y + NODE_HEIGHT / 2f;
+            float mx = midXByEdge.getOrDefault(e, Math.round((ax + bx) / 2f));
+            float sy = ay + outYOffset.getOrDefault(e, 0);
+            float ty = by + inYOffset.getOrDefault(e, 0);
+            if (nearSegment(gx, gy, ax, ay, ax, sy, tol)) return e; // source stub
+            if (nearSegment(gx, gy, ax, sy, mx, sy, tol)) return e; // to lane
+            if (nearSegment(gx, gy, mx, sy, mx, ty, tol)) return e; // lane
+            if (nearSegment(gx, gy, mx, ty, bx, ty, tol)) return e; // to target x
+            if (nearSegment(gx, gy, bx, ty, bx, by, tol)) return e; // target stub
+        }
+        return null;
+    }
+
+    private boolean nearSegment(float px, float py, float x1, float y1, float x2, float y2, float tol) {
+        if (Math.abs(y1 - y2) < 1e-3) {
+            float minx = Math.min(x1, x2), maxx = Math.max(x1, x2);
+            if (px >= minx - tol && px <= maxx + tol && Math.abs(py - y1) <= tol) return true;
+            return false;
+        }
+        if (Math.abs(x1 - x2) < 1e-3) {
+            float miny = Math.min(y1, y2), maxy = Math.max(y1, y2);
+            if (py >= miny - tol && py <= maxy + tol && Math.abs(px - x1) <= tol) return true;
+            return false;
+        }
+        float vx = x2 - x1, vy = y2 - y1;
+        float wx = px - x1, wy = py - y1;
+        float c1 = vx * wx + vy * wy;
+        if (c1 <= 0) return (wx * wx + wy * wy) <= tol * tol;
+        float c2 = vx * vx + vy * vy;
+        if (c2 <= c1) {
+            float dx = px - x2, dy = py - y2;
+            return (dx * dx + dy * dy) <= tol * tol;
+        }
+        float b = c1 / c2;
+        float projx = x1 + b * vx, projy = y1 + b * vy;
+        float dx = px - projx, dy = py - projy;
+        return (dx * dx + dy * dy) <= tol * tol;
     }
 
     private Gene.Category safeCat(Gene g) {
@@ -383,11 +651,17 @@ public class GeneGraphScreen extends Screen {
         }
 
         if (button == 0) {
+            Edge edgeHit = edgeAt(mouseX, mouseY);
+            if (edgeHit != null) {
+                selectedEdge = edgeHit;
+                return true;
+            }
             Node hit = nodeAt(mouseX, mouseY);
             if (hit != null) {
                 openGene = hit.gene;
                 return true;
             }
+            selectedEdge = null;
         }
         this.dragging = true;
         this.lastMouseX = mouseX;
@@ -417,6 +691,7 @@ public class GeneGraphScreen extends Screen {
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
         if (openGene != null) return true;
+        hoveredEdge = edgeAt(mouseX, mouseY);
         float old = this.zoom;
         this.zoom = clamp(this.zoom + (float)delta * 0.1f, 0.5f, 2.0f);
         // optional: zoom towards cursor (simple implementation)
@@ -428,6 +703,13 @@ public class GeneGraphScreen extends Screen {
             panY = (float)mouseY - cy * scale;
         }
         return true;
+    }
+
+    @Override
+    public void mouseMoved(double mouseX, double mouseY) {
+        if (openGene != null) return;
+        hoveredEdge = edgeAt(mouseX, mouseY);
+        super.mouseMoved(mouseX, mouseY);
     }
 
     private static float clamp(float v, float lo, float hi) { return v < lo ? lo : (v > hi ? hi : v); }
