@@ -40,6 +40,7 @@ public class BlackwhipRestrainAbility extends Ability {
 	public static final PalladiumProperty<Float> RANGE = new FloatProperty("range").configurable("Maximum reach of the whip");
 	public static final PalladiumProperty<Integer> RESTRAIN_TICKS = new IntegerProperty("restrain_ticks").configurable("Duration (ticks) to restrain the target on hit");
 	public static final PalladiumProperty<Integer> MISS_RETRACT_TICKS = new IntegerProperty("miss_retract_ticks").configurable("How many ticks the retract animation lasts on a miss");
+	public static final PalladiumProperty<Integer> TRAVEL_TICKS = new IntegerProperty("travel_ticks").configurable("Ticks the whip takes to reach a hit target");
 	public static final PalladiumProperty<Float> WHIP_CURVE = new FloatProperty("whip_curve").configurable("How much the whip arcs (visual only)");
 	public static final PalladiumProperty<Float> WHIP_PARTICLE_SIZE = new FloatProperty("whip_particle_size").configurable("Dust particle size for the whip visuals");
 
@@ -54,6 +55,7 @@ public class BlackwhipRestrainAbility extends Ability {
 		this.withProperty(RANGE, 16.0F)
  				.withProperty(RESTRAIN_TICKS, 100)
  				.withProperty(MISS_RETRACT_TICKS, 8)
+				.withProperty(TRAVEL_TICKS, 6)
  				.withProperty(WHIP_CURVE, 0.6F)
  				.withProperty(WHIP_PARTICLE_SIZE, 1.0F);
 	}
@@ -88,22 +90,20 @@ public class BlackwhipRestrainAbility extends Ability {
  				return;
  			}
 
- 			// Apply restrain effect and store state
- 			int duration = Math.max(1, entry.getProperty(RESTRAIN_TICKS));
- 			applyRestrain(target, duration);
+			// Begin travel toward the target; do not restrain yet
+			int travel = Math.max(1, entry.getProperty(TRAVEL_TICKS));
+			entry.setUniqueProperty(IS_RESTRAINING, false);
+			entry.setUniqueProperty(TICKS_LEFT, travel);
+			entry.setUniqueProperty(TARGET_UUID, target.getUUID().toString());
 
- 			entry.setUniqueProperty(IS_RESTRAINING, true);
- 			entry.setUniqueProperty(TICKS_LEFT, duration);
- 			entry.setUniqueProperty(TARGET_UUID, target.getUUID().toString());
-
-			// Audio feedback on successful tether
+			// Audio feedback on whip throw
 			player.level().playSound(null, player.blockPosition(), SoundEvents.ENDER_DRAGON_SHOOT, SoundSource.PLAYERS, 0.5f, 1.4f);
 
-			// Notify clients to render the whip
+			// Notify clients to render traveling whip toward target
 			BQLNetwork.CHANNEL.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player),
 					new BlackwhipStatePacket(
-							player.getId(), true, true, target.getId(),
-							entry.getProperty(TICKS_LEFT), entry.getProperty(MISS_RETRACT_TICKS),
+							player.getId(), true, false, target.getId(),
+							travel, travel,
 							range, entry.getProperty(WHIP_CURVE), entry.getProperty(WHIP_PARTICLE_SIZE)));
  		} else {
  			// Miss: play retract visuals for a short time
@@ -121,7 +121,7 @@ public class BlackwhipRestrainAbility extends Ability {
  		boolean restraining = entry.getProperty(IS_RESTRAINING);
  		int ticksLeft = entry.getProperty(TICKS_LEFT);
 
- 		if (restraining && !uuidStr.isEmpty()) {
+		if (restraining && !uuidStr.isEmpty()) {
  			LivingEntity target = findEntityByUuid(player, uuidStr);
  			if (target == null || !target.isAlive()) {
  				// Target lost or dead: stop
@@ -150,8 +150,31 @@ public class BlackwhipRestrainAbility extends Ability {
 				return;
 			}
 
- 			entry.setUniqueProperty(TICKS_LEFT, ticksLeft - 1);
- 		} else {
+			entry.setUniqueProperty(TICKS_LEFT, ticksLeft - 1);
+		} else if (!restraining && !uuidStr.isEmpty()) {
+			// Traveling toward a target
+			LivingEntity target = findEntityByUuid(player, uuidStr);
+			if (target == null || !target.isAlive()) {
+				BQLNetwork.CHANNEL.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player),
+						new BlackwhipStatePacket(player.getId(), false, false, -1, 0, entry.getProperty(TRAVEL_TICKS),
+								entry.getProperty(RANGE), entry.getProperty(WHIP_CURVE), entry.getProperty(WHIP_PARTICLE_SIZE)));
+				finish(entry);
+				return;
+			}
+
+			if (ticksLeft <= 0) {
+				int duration = Math.max(1, entry.getProperty(RESTRAIN_TICKS));
+				applyRestrain(target, duration);
+				entry.setUniqueProperty(IS_RESTRAINING, true);
+				entry.setUniqueProperty(TICKS_LEFT, duration);
+				BQLNetwork.CHANNEL.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player),
+						new BlackwhipStatePacket(player.getId(), true, true, target.getId(),
+								duration, entry.getProperty(MISS_RETRACT_TICKS),
+								entry.getProperty(RANGE), entry.getProperty(WHIP_CURVE), entry.getProperty(WHIP_PARTICLE_SIZE)));
+				return;
+			}
+			entry.setUniqueProperty(TICKS_LEFT, ticksLeft - 1);
+		} else {
 			// Miss retract animation: TICKS_LEFT counts down visual frames (client handles visuals)
  			if (ticksLeft <= 0) {
 				// finish visuals on clients

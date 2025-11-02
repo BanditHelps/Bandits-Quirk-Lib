@@ -35,6 +35,7 @@ public final class BlackwhipRenderHandler {
         public float range;
         public float curve;
         public float thickness;
+        public long lastGameTimeDecrement = -1L;
 
         public ClientWhipState(int sourcePlayerId) {
             this.sourcePlayerId = sourcePlayerId;
@@ -54,6 +55,7 @@ public final class BlackwhipRenderHandler {
         state.range = range;
         state.curve = curve;
         state.thickness = thickness;
+        state.lastGameTimeDecrement = -1L;
         if (!active) {
             // allow quick cleanup on next render
             state.ticksLeft = 0;
@@ -75,6 +77,7 @@ public final class BlackwhipRenderHandler {
         // Cleanup for players no longer present or inactive
         PLAYER_TO_WHIP.entrySet().removeIf(e -> level.getEntity(e.getKey()) == null || !e.getValue().active);
 
+        long gameTime = level.getGameTime();
         for (ClientWhipState state : PLAYER_TO_WHIP.values()) {
             if (!state.active) continue;
             Entity src = level.getEntity(state.sourcePlayerId);
@@ -89,6 +92,17 @@ public final class BlackwhipRenderHandler {
                 Entity target = level.getEntity(state.targetEntityId);
                 if (target == null || !target.isAlive()) continue;
                 end = getAttachPoint(target, partial);
+            } else if (!state.restraining && state.targetEntityId >= 0) {
+                // Traveling toward a target: extend toward the target based on progress
+                Entity target = level.getEntity(state.targetEntityId);
+                if (target == null || !target.isAlive()) continue;
+                Vec3 eye = player.getEyePosition(partial);
+                Vec3 toTarget = getAttachPoint(target, partial).subtract(eye);
+                float total = Math.max(1, state.missRetractTicks);
+                float progress = 1.0F - Math.max(0F, Math.min(1F, (float) state.ticksLeft / total));
+                // ensure minimal visible extension to avoid first-frame pop
+                if (progress < 0.05F) progress = 0.05F;
+                end = eye.add(toTarget.scale(progress));
             } else {
                 // Miss: extend and retract along look vector
                 Vec3 look = player.getViewVector(partial);
@@ -115,11 +129,12 @@ public final class BlackwhipRenderHandler {
 			// Inner core on top (narrower, very dark blue-black) — pull slightly toward camera
 			drawRibbonSolid(poseStack, buffer, cameraPos, points, base * 0.54F, 0xFF0A0F11, -0.0007F);
 
-            // Decrement ticks for miss visualization locally
-            if (!state.restraining) {
+            // Decrement once per game tick to match server tick rate
+            if (!state.restraining && state.lastGameTimeDecrement != gameTime) {
+                state.lastGameTimeDecrement = gameTime;
                 state.ticksLeft -= 1;
-                if (state.ticksLeft <= 0) {
-                    state.active = false;
+                if (state.ticksLeft <= 0 && state.targetEntityId < 0) {
+                    state.active = false; // end local-only miss retract
                 }
             }
         }
