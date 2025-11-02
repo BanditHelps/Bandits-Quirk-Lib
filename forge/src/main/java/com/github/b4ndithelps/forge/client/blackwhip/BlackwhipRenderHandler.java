@@ -98,17 +98,22 @@ public final class BlackwhipRenderHandler {
                 end = eye.add(fullEnd.subtract(eye).scale(ratio));
             }
 
-            // Build points along a simple arcing curve between start and end
+			// Build points along a simple arcing curve between start and end
             double len = end.subtract(start).length();
             int segments = Math.max(20, (int)Math.min(96, len * 6.0));
             List<Vec3> points = buildCurve(start, end, state.curve, segments);
-            // Draw a ribbon (quad strip) facing camera with gradient + taper
-            drawRibbonGradient(poseStack, buffer, cameraPos, points,
-                    Math.max(0.02F, state.thickness * 0.065F),
-                    0xFF19F2D9, // start teal
-                    0xFF21E58F, // mid greenish
-                    0xFF33F2FF  // end aqua
-            );
+			// Two-pass ribbon: outer teal glow, inner dark core
+			float base = Math.max(0.02F, state.thickness * 0.065F);
+			// Outer glow first (slightly wider, semi-transparent) — push slightly away from camera to avoid coplanar artifacts
+			drawRibbonGradient(poseStack, buffer, cameraPos, points,
+					base * 1.25F,
+					0xB319E8DB, // start teal with alpha
+					0xB321E59A, // mid greenish-teal
+					0xB333F2FF, // end aqua
+					0.0015F
+			);
+			// Inner core on top (narrower, very dark blue-black) — pull slightly toward camera
+			drawRibbonSolid(poseStack, buffer, cameraPos, points, base * 0.54F, 0xFF0A0F11, -0.0007F);
 
             // Decrement ticks for miss visualization locally
             if (!state.restraining) {
@@ -156,7 +161,8 @@ public final class BlackwhipRenderHandler {
 
     private static void drawRibbonGradient(PoseStack poseStack, MultiBufferSource buffer, Vec3 cameraPos,
                                            List<Vec3> points, float baseHalfWidth,
-                                           int startColor, int midColor, int endColor) {
+                                           int startColor, int midColor, int endColor,
+                                           float depthBias) {
         if (points.size() < 2) return;
 
         VertexConsumer consumer = buffer.getBuffer(RenderType.leash());
@@ -186,6 +192,7 @@ public final class BlackwhipRenderHandler {
             float halfWidth = (float)(baseHalfWidth * (0.85 + 0.15 * (1.0 - t)));
             Vec3 left = normal.scale(halfWidth);
             Vec3 right = normal.scale(-halfWidth);
+            Vec3 bias = camForward.scale(depthBias);
 
             int argb = lerpGradient(t, startColor, midColor, endColor);
             float a = ((argb >> 24) & 0xFF) / 255f;
@@ -193,13 +200,55 @@ public final class BlackwhipRenderHandler {
             float g = ((argb >> 8) & 0xFF) / 255f;
             float b = (argb & 0xFF) / 255f;
 
-            consumer.vertex(last.pose(), (float) (p.x + left.x), (float) (p.y + left.y), (float) (p.z + left.z))
+            consumer.vertex(last.pose(), (float) (p.x + left.x + bias.x), (float) (p.y + left.y + bias.y), (float) (p.z + left.z + bias.z))
                     .color(r, g, b, a).uv2(light).endVertex();
-            consumer.vertex(last.pose(), (float) (p.x + right.x), (float) (p.y + right.y), (float) (p.z + right.z))
+            consumer.vertex(last.pose(), (float) (p.x + right.x + bias.x), (float) (p.y + right.y + bias.y), (float) (p.z + right.z + bias.z))
                     .color(r, g, b, a).uv2(light).endVertex();
         }
         poseStack.popPose();
     }
+
+    private static void drawRibbonSolid(PoseStack poseStack, MultiBufferSource buffer, Vec3 cameraPos,
+                                       List<Vec3> points, float halfWidth, int argb, float depthBias) {
+		if (points.size() < 2) return;
+
+		VertexConsumer consumer = buffer.getBuffer(RenderType.leash());
+		int light = LightTexture.FULL_BRIGHT;
+
+		poseStack.pushPose();
+		com.mojang.blaze3d.vertex.PoseStack.Pose last = poseStack.last();
+
+		EntityRenderDispatcher erd = Minecraft.getInstance().getEntityRenderDispatcher();
+		Vec3 camForward = Vec3.directionFromRotation(erd.camera.getXRot(), erd.camera.getYRot());
+
+		float a = ((argb >> 24) & 0xFF) / 255f;
+		float r = ((argb >> 16) & 0xFF) / 255f;
+		float g = ((argb >> 8) & 0xFF) / 255f;
+		float b = (argb & 0xFF) / 255f;
+
+        final int n = points.size();
+		for (int i = 0; i < n; i++) {
+			Vec3 p = points.get(i).subtract(cameraPos);
+			Vec3 tangent;
+			if (i == 0) tangent = points.get(i + 1).subtract(points.get(i));
+			else if (i == n - 1) tangent = points.get(i).subtract(points.get(i - 1));
+			else tangent = points.get(i + 1).subtract(points.get(i - 1));
+			if (tangent.lengthSqr() < 1e-6) tangent = new Vec3(0, 1, 0);
+
+			Vec3 normal = camForward.cross(tangent).normalize();
+			if (normal.lengthSqr() < 1e-6) normal = new Vec3(0, 1, 0);
+            Vec3 left = normal.scale(halfWidth);
+            Vec3 right = normal.scale(-halfWidth);
+            Vec3 bias = camForward.scale(depthBias);
+
+            consumer.vertex(last.pose(), (float) (p.x + left.x + bias.x), (float) (p.y + left.y + bias.y), (float) (p.z + left.z + bias.z))
+					.color(r, g, b, a).uv2(light).endVertex();
+            consumer.vertex(last.pose(), (float) (p.x + right.x + bias.x), (float) (p.y + right.y + bias.y), (float) (p.z + right.z + bias.z))
+					.color(r, g, b, a).uv2(light).endVertex();
+		}
+
+		poseStack.popPose();
+	}
 
     private static int lerpGradient(double t, int start, int mid, int end) {
         if (t < 0.5) {
