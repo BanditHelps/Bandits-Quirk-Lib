@@ -34,6 +34,12 @@ public class AbilityRegister {
     public static final RegistrySupplier<Ability> GENE_QUALITY_SCALING_ATTRIBUTE;
     public static final RegistrySupplier<Ability> DASHSTEP;
 	public static final RegistrySupplier<Ability> BLACKWHIP_RESTRAIN;
+	public static final RegistrySupplier<Ability> BLACKWHIP_TAG;
+	public static final RegistrySupplier<Ability> BLACKWHIP_RESTRAIN_TAGGED;
+	public static final RegistrySupplier<Ability> BLACKWHIP_LIFT;
+	public static final RegistrySupplier<Ability> BLACKWHIP_SLAM;
+	public static final RegistrySupplier<Ability> BLACKWHIP_LASH;
+	public static final RegistrySupplier<Ability> BLACKWHIP_ZIP;
 
 
     public AbilityRegister() {
@@ -72,6 +78,12 @@ public class AbilityRegister {
         GENE_QUALITY_SCALING_ATTRIBUTE = ABILITIES.register("gene_quality_scaling_attribute", GeneQualityScalingAttributeAbility::new);
         DASHSTEP = ABILITIES.register("dashstep", DashstepAbility::new);
 		BLACKWHIP_RESTRAIN = ABILITIES.register("blackwhip_restrain", BlackwhipRestrainAbility::new);
+		BLACKWHIP_TAG = ABILITIES.register("blackwhip_tag", BlackwhipTagAbility::new);
+		BLACKWHIP_RESTRAIN_TAGGED = ABILITIES.register("blackwhip_restrain_tagged", BlackwhipRestrainTaggedAbility::new);
+		BLACKWHIP_LIFT = ABILITIES.register("blackwhip_lift", BlackwhipLiftAbility::new);
+		BLACKWHIP_SLAM = ABILITIES.register("blackwhip_slam", BlackwhipSlamAbility::new);
+		BLACKWHIP_LASH = ABILITIES.register("blackwhip_lash", BlackwhipLashAbility::new);
+		BLACKWHIP_ZIP = ABILITIES.register("blackwhip_zip", BlackwhipZipAbility::new);
 
     }
 }

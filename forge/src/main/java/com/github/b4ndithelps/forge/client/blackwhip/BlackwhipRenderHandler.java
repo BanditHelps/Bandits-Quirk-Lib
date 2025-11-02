@@ -43,6 +43,16 @@ public final class BlackwhipRenderHandler {
     }
 
     private static final Map<Integer, ClientWhipState> PLAYER_TO_WHIP = new HashMap<>();
+    private static final class ClientMultiTethers {
+        public final int sourcePlayerId;
+        public boolean active;
+        public float curve;
+        public float thickness;
+        public java.util.List<Integer> targetEntityIds = new java.util.ArrayList<>();
+
+        public ClientMultiTethers(int sourcePlayerId) { this.sourcePlayerId = sourcePlayerId; }
+    }
+    private static final Map<Integer, ClientMultiTethers> PLAYER_TO_MULTI = new HashMap<>();
 
     public static void applyPacket(int sourcePlayerId, boolean active, boolean restraining, int targetEntityId,
                                    int ticksLeft, int missRetractTicks, float range, float curve, float thickness) {
@@ -62,6 +72,19 @@ public final class BlackwhipRenderHandler {
         }
     }
 
+    public static void applyTethersPacket(int sourcePlayerId, boolean active, float curve, float thickness, java.util.List<Integer> targetIds) {
+        ClientMultiTethers multi = PLAYER_TO_MULTI.computeIfAbsent(sourcePlayerId, ClientMultiTethers::new);
+        multi.active = active;
+        multi.curve = curve;
+        multi.thickness = thickness;
+        multi.targetEntityIds.clear();
+        if (active && targetIds != null) multi.targetEntityIds.addAll(targetIds);
+        if (!active || multi.targetEntityIds.isEmpty()) {
+            // mark inactive for cleanup
+            multi.active = false;
+        }
+    }
+
     @SubscribeEvent
     public static void onRenderLevel(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES) return;
@@ -76,6 +99,7 @@ public final class BlackwhipRenderHandler {
 
         // Cleanup for players no longer present or inactive
         PLAYER_TO_WHIP.entrySet().removeIf(e -> level.getEntity(e.getKey()) == null || !e.getValue().active);
+        PLAYER_TO_MULTI.entrySet().removeIf(e -> level.getEntity(e.getKey()) == null || !e.getValue().active);
 
         long gameTime = level.getGameTime();
         for (ClientWhipState state : PLAYER_TO_WHIP.values()) {
@@ -136,6 +160,33 @@ public final class BlackwhipRenderHandler {
                 if (state.ticksLeft <= 0 && state.targetEntityId < 0) {
                     state.active = false; // end local-only miss retract
                 }
+            }
+        }
+
+        // Render multi tethers
+        for (ClientMultiTethers multi : PLAYER_TO_MULTI.values()) {
+            if (!multi.active) continue;
+            Entity src = level.getEntity(multi.sourcePlayerId);
+            if (!(src instanceof Player player)) continue;
+
+            Vec3 start = getHandPosition(player, partial);
+            for (Integer targetId : multi.targetEntityIds) {
+                Entity target = level.getEntity(targetId);
+                if (!(target != null && target.isAlive())) continue;
+                Vec3 end = getAttachPoint(target, partial);
+
+                double len = end.subtract(start).length();
+                int segments = Math.max(20, (int)Math.min(96, len * 6.0));
+                List<Vec3> points = buildCurve(start, end, multi.curve, segments);
+
+                float base = Math.max(0.02F, multi.thickness * 0.065F);
+                drawRibbonGradient(poseStack, buffer, cameraPos, points,
+                        base * 1.25F,
+                        0xB319E8DB,
+                        0xB321E59A,
+                        0xB333F2FF,
+                        0.0015F);
+                drawRibbonSolid(poseStack, buffer, cameraPos, points, base * 0.54F, 0xFF0A0F11, -0.0007F);
             }
         }
     }

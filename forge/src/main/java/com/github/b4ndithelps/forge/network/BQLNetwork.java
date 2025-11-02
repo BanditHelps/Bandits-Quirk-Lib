@@ -122,6 +122,13 @@ public final class BQLNetwork {
                 .decoder(BlackwhipStatePacket::decode)
                 .consumerMainThread(BlackwhipStatePacket::handle)
                 .add();
+
+        // Blackwhip persistent multi-tethers (server -> clients)
+        CHANNEL.messageBuilder(BlackwhipTethersPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(BlackwhipTethersPacket::encode)
+                .decoder(BlackwhipTethersPacket::decode)
+                .consumerMainThread(BlackwhipTethersPacket::handle)
+                .add();
     }
 }
 
