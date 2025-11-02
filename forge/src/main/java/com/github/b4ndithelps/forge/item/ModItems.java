@@ -20,6 +20,8 @@ public class ModItems {
             () -> new GeneVialItem(new Item.Properties().stacksTo(1), GeneVialItem.Category.RESISTANCE));
     public static final RegistryObject<Item> GENE_VIAL_BUILDER = ITEMS.register("gene_vial_builder",
             () -> new GeneVialItem(new Item.Properties().stacksTo(1), GeneVialItem.Category.BUILDER));
+    public static final RegistryObject<Item> GENE_VIAL_LOWEND = ITEMS.register("gene_vial_lowend",
+            () -> new GeneVialItem(new Item.Properties().stacksTo(1), GeneVialItem.Category.LOWEND));
     public static final RegistryObject<Item> GENE_VIAL_QUIRK = ITEMS.register("gene_vial_quirk",
             () -> new GeneVialItem(new Item.Properties().stacksTo(1), GeneVialItem.Category.QUIRK));
 

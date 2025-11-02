@@ -194,6 +194,7 @@ public class GenomeCommand {
             case resistance -> ModItems.GENE_VIAL_RESISTANCE.get();
             case builder -> ModItems.GENE_VIAL_BUILDER.get();
             case cosmetic -> ModItems.GENE_VIAL_COSMETIC.get();
+            case lowend -> ModItems.GENE_VIAL_LOWEND.get();
             case quirk -> ModItems.GENE_VIAL_QUIRK.get();
         };
         ItemStack vial = new ItemStack(vialItem);

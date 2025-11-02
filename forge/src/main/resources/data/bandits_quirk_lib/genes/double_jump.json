@@ -1,6 +1,6 @@
 {
   "id": "bandits_quirk_lib:gene.double_jump",
-  "category": "builder",
+  "category": "lowend",
   "rarity": "uncommon",
   "quality_range": [20, 80],
   "combinable": true,

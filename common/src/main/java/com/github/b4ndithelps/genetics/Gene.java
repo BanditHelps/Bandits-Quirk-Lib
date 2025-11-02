@@ -5,7 +5,7 @@ import net.minecraft.resources.ResourceLocation;
 import java.util.List;
 
 public final class Gene {
-    public enum Category { resistance, cosmetic, builder, quirk }
+    public enum Category { resistance, cosmetic, builder, lowend, quirk }
     public enum Rarity { common, uncommon, rare, very_rare }
 
     private final ResourceLocation id;

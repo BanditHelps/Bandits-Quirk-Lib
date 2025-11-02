@@ -1,6 +1,6 @@
 {
   "id": "bandits_quirk_lib:gene.enhanced_strength",
-  "category": "builder",
+  "category": "lowend",
   "rarity": "uncommon",
   "quality_range": [10, 100],
   "combinable": true,

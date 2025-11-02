@@ -34,6 +34,7 @@ public class GeneGraphScreen extends Screen {
     private static final int COLOR_COSMETIC = 0xFFE3F2FD;
     private static final int COLOR_RESISTANCE = 0xFFE8F5E9;
     private static final int COLOR_BUILDER = 0xFFFFFDE7;
+    private static final int COLOR_LOWEND = 0xFFE6CCFF;
     private static final int COLOR_QUIRK = 0xFFFCE4EC;
     private static final int COLOR_UNKNOWN = 0xFFECEFF1;
 
@@ -46,6 +47,11 @@ public class GeneGraphScreen extends Screen {
 
     private final Map<ResourceLocation, Node> nodes = new HashMap<>();
     private final List<Edge> edges = new ArrayList<>();
+
+    // Modal details state
+    private Gene openGene = null;
+    private int modalX, modalY, modalW, modalH;
+    private int closeL, closeT, closeR, closeB;
 
     private static final class Node {
         final ResourceLocation id;
@@ -209,6 +215,7 @@ public class GeneGraphScreen extends Screen {
                 case cosmetic -> COLOR_COSMETIC;
                 case resistance -> COLOR_RESISTANCE;
                 case builder -> COLOR_BUILDER;
+                case lowend -> COLOR_LOWEND;
                 case quirk -> COLOR_QUIRK;
                 default -> COLOR_UNKNOWN;
             };
@@ -232,6 +239,87 @@ public class GeneGraphScreen extends Screen {
         g.disableScissor();
 
         super.render(g, mouseX, mouseY, partialTick);
+
+        // Modal gene details overlay
+        if (openGene != null) {
+            // dim backdrop slightly
+            g.fill(0, 0, this.width, this.height, 0x990F1115);
+
+            // layout
+            modalW = Math.min(360, this.width - 48);
+            int innerPad = 10;
+            Component titleC = Component.literal(labelOf(openGene.getId()));
+            Component catC = Component.literal("Category: " + String.valueOf(openGene.getCategory()));
+            Component rarC = Component.literal("Rarity: " + String.valueOf(openGene.getRarity()));
+            Component combC = Component.literal("Combinable: " + (openGene.isCombinable() ? "Yes" : "No"));
+            Component qualC = Component.literal("Quality: " + openGene.getQualityMin() + " - " + openGene.getQualityMax());
+            List<Component> header = List.of(catC, rarC, combC, qualC);
+
+            int contentW = modalW - innerPad * 2;
+            List<net.minecraft.util.FormattedCharSequence> descLines = this.font.split(Component.literal(openGene.getDescription()), contentW);
+
+            int lineH = this.font.lineHeight;
+            int titleH = lineH + 2;
+            int headerH = header.size() * lineH + 6;
+            int descH = Math.max(lineH, descLines.size() * lineH);
+            modalH = 16 + titleH + headerH + descH + innerPad * 2;
+            modalH = Math.min(modalH, this.height - 48); // cap at screen height minus margins
+            modalX = (this.width - modalW) / 2;
+            modalY = (this.height - modalH) / 2;
+
+            // panel styled to match graph panel
+            int gradTop = mix(COLOR_PANEL, 0xFF202531, 0.10f);
+            int gradBot = mix(COLOR_PANEL, 0xFF0B0E14, 0.18f);
+            g.fillGradient(modalX, modalY, modalX + modalW, modalY + modalH, gradTop, gradBot);
+            hLine(g, modalX, modalX + modalW, modalY, COLOR_EDGE);
+            hLine(g, modalX, modalX + modalW, modalY + modalH, COLOR_EDGE);
+            vLine(g, modalY, modalY + modalH, modalX, COLOR_EDGE);
+            vLine(g, modalY, modalY + modalH, modalX + modalW, COLOR_EDGE);
+
+            // close button (X)
+            int closeSize = 12;
+            closeR = modalX + modalW - innerPad;
+            closeL = closeR - closeSize;
+            closeT = modalY + innerPad;
+            closeB = closeT + closeSize;
+            int btnBg = 0x663A4458;
+            g.fill(closeL, closeT, closeR, closeB, btnBg);
+            hLine(g, closeL, closeR, closeT, COLOR_EDGE);
+            hLine(g, closeL, closeR, closeB, COLOR_EDGE);
+            vLine(g, closeT, closeB, closeL, COLOR_EDGE);
+            vLine(g, closeT, closeB, closeR, COLOR_EDGE);
+            String xStr = "x";
+            int xW = this.font.width(xStr);
+            int xX = closeL + (closeSize - xW) / 2;
+            int xY = closeT + (closeSize - this.font.lineHeight) / 2 + 1;
+            g.drawString(this.font, xStr, xX, xY, COLOR_TEXT, false);
+
+            // title
+            int tx = modalX + innerPad;
+            int ty = modalY + innerPad;
+            g.drawString(this.font, titleC, tx, ty, COLOR_TEXT, false);
+            ty += titleH;
+            // underline
+            hLine(g, modalX + innerPad, modalX + modalW - innerPad, ty - 2, 0xFF3A4458);
+
+            // header rows
+            int secondary = 0xFFBFD7FF;
+            for (Component c : header) {
+                g.drawString(this.font, c, tx, ty, secondary, false);
+                ty += lineH;
+            }
+            ty += 4;
+
+            // description label and text
+            g.drawString(this.font, Component.literal("Description:"), tx, ty, COLOR_TEXT, false);
+            ty += lineH;
+            int descBottom = Math.min(ty + descH, modalY + modalH - innerPad);
+            int drawLines = Math.max(0, (descBottom - ty) / lineH);
+            for (int i = 0; i < drawLines && i < descLines.size(); i++) {
+                g.drawString(this.font, descLines.get(i), tx, ty, secondary);
+                ty += lineH;
+            }
+        }
     }
 
     private void hLine(GuiGraphics g, int x1, int x2, int y, int color) {
@@ -250,6 +338,15 @@ public class GeneGraphScreen extends Screen {
     private void thickVLine(GuiGraphics g, int y1, int y2, int x, int color) {
         if (y2 < y1) { int t = y1; y1 = y2; y2 = t; }
         g.fill(x - 1, y1, x + 2, y2, color);
+    }
+
+    private Node nodeAt(double mouseX, double mouseY) {
+        float gx = (float)((mouseX - panX) / zoom);
+        float gy = (float)((mouseY - panY) / zoom);
+        for (Node n : nodes.values()) {
+            if (gx >= n.x && gx <= n.x + NODE_WIDTH && gy >= n.y && gy <= n.y + NODE_HEIGHT) return n;
+        }
+        return null;
     }
 
     private Gene.Category safeCat(Gene g) {
@@ -274,6 +371,24 @@ public class GeneGraphScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        // If modal is open, handle close button only
+        if (openGene != null) {
+            if (button == 0) {
+                if (mouseX >= closeL && mouseX <= closeR && mouseY >= closeT && mouseY <= closeB) {
+                    openGene = null;
+                    return true;
+                }
+            }
+            return true; // consume clicks while modal open
+        }
+
+        if (button == 0) {
+            Node hit = nodeAt(mouseX, mouseY);
+            if (hit != null) {
+                openGene = hit.gene;
+                return true;
+            }
+        }
         this.dragging = true;
         this.lastMouseX = mouseX;
         this.lastMouseY = mouseY;
@@ -288,6 +403,7 @@ public class GeneGraphScreen extends Screen {
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dx, double dy) {
+        if (openGene != null) return true;
         if (this.dragging) {
             this.panX += (float)(mouseX - lastMouseX);
             this.panY += (float)(mouseY - lastMouseY);
@@ -300,6 +416,7 @@ public class GeneGraphScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+        if (openGene != null) return true;
         float old = this.zoom;
         this.zoom = clamp(this.zoom + (float)delta * 0.1f, 0.5f, 2.0f);
         // optional: zoom towards cursor (simple implementation)

@@ -30,6 +30,7 @@ public class ModCreativeTabs {
                 output.accept(ModItems.SEQUENCED_SAMPLE.get());
                 output.accept(ModItems.GENE_VIAL_COSMETIC.get());
                 output.accept(ModItems.GENE_VIAL_RESISTANCE.get());
+                output.accept(ModItems.GENE_VIAL_LOWEND.get());
                 output.accept(ModItems.GENE_VIAL_BUILDER.get());
                 output.accept(ModItems.GENE_VIAL_QUIRK.get());
                 output.accept(ModItems.GENE_DATABASE.get());

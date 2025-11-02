@@ -45,6 +45,7 @@ public final class GeneGraphGenerator {
                 cls = cat == null ? "unknown" : switch (cat) {
                     case cosmetic -> "cosmetic";
                     case resistance -> "resistance";
+                    case lowend -> "lowend";
                     case builder -> "builder";
                     case quirk -> "quirk";
                 };

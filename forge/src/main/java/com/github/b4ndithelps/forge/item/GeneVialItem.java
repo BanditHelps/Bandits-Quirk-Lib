@@ -15,6 +15,7 @@ public class GeneVialItem extends Item {
         COSMETIC,
         RESISTANCE,
         BUILDER,
+        LOWEND,
         QUIRK
     }
 
@@ -34,6 +35,7 @@ public class GeneVialItem extends Item {
             case COSMETIC -> ChatFormatting.AQUA;
             case RESISTANCE -> ChatFormatting.DARK_GREEN;
             case BUILDER -> ChatFormatting.GOLD;
+            case LOWEND -> ChatFormatting.LIGHT_PURPLE;
             case QUIRK -> ChatFormatting.RED;
         };
         Component base = Component.translatable("item.bandits_quirk_lib.gene_vial").withStyle(color);
@@ -60,6 +62,7 @@ public class GeneVialItem extends Item {
             case COSMETIC -> Component.translatable("category.bandits_quirk_lib.cosmetic");
             case RESISTANCE -> Component.translatable("category.bandits_quirk_lib.resistance");
             case BUILDER -> Component.translatable("category.bandits_quirk_lib.builder");
+            case LOWEND -> Component.translatable("category.bandits_quirk_lib.lowend");
             case QUIRK -> Component.translatable("category.bandits_quirk_lib.quirk");
         };
         tooltip.add(Component.translatable("tooltip.bandits_quirk_lib.gene_vial.category", catText).withStyle(ChatFormatting.GRAY));

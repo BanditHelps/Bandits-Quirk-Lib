@@ -360,6 +360,7 @@ public class CatalogProgram {
                         case cosmetic -> "category.bandits_quirk_lib.cosmetic";
                         case resistance -> "category.bandits_quirk_lib.resistance";
                         case builder -> "category.bandits_quirk_lib.builder";
+                        case lowend -> "category.bandits_quirk_lib.lowend";
                         case quirk -> "category.bandits_quirk_lib.quirk";
                     };
                     return Component.translatable(key);
@@ -387,6 +388,7 @@ public class CatalogProgram {
                     case COSMETIC -> "category.bandits_quirk_lib.cosmetic";
                     case RESISTANCE -> "category.bandits_quirk_lib.resistance";
                     case BUILDER -> "category.bandits_quirk_lib.builder";
+                    case LOWEND -> "category.bandits_quirk_lib.lowend";
                     case QUIRK -> "category.bandits_quirk_lib.quirk";
                 };
                 return Component.translatable(key);
