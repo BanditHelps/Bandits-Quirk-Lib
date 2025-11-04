@@ -102,6 +102,7 @@ public final class BlackwhipRenderHandler {
         PLAYER_TO_MULTI.entrySet().removeIf(e -> level.getEntity(e.getKey()) == null || !e.getValue().active);
 
         long gameTime = level.getGameTime();
+        double time = gameTime + partial;
         for (ClientWhipState state : PLAYER_TO_WHIP.values()) {
             if (!state.active) continue;
             Entity src = level.getEntity(state.sourcePlayerId);
@@ -142,16 +143,19 @@ public final class BlackwhipRenderHandler {
             List<Vec3> points = buildCurve(start, end, state.curve, segments);
 			// Two-pass ribbon: outer teal glow, inner dark core
 			float base = Math.max(0.02F, state.thickness * 0.065F);
+			float noiseAmp = Math.min(base * 0.75F, 0.08F);
 			// Outer glow first (slightly wider, semi-transparent) — push slightly away from camera to avoid coplanar artifacts
 			drawRibbonGradient(poseStack, buffer, cameraPos, points,
 					base * 1.25F,
 					0xB319E8DB, // start teal with alpha
 					0xB321E59A, // mid greenish-teal
 					0xB333F2FF, // end aqua
-					0.0015F
+					0.0015F,
+					noiseAmp,
+					time
 			);
 			// Inner core on top (narrower, very dark blue-black) — pull slightly toward camera
-			drawRibbonSolid(poseStack, buffer, cameraPos, points, base * 0.54F, 0xFF0A0F11, -0.0007F);
+			drawRibbonSolid(poseStack, buffer, cameraPos, points, base * 0.54F, 0xFF0A0F11, -0.0007F, noiseAmp, time);
 
             // Decrement once per game tick to match server tick rate
             if (!state.restraining && state.lastGameTimeDecrement != gameTime) {
@@ -180,13 +184,16 @@ public final class BlackwhipRenderHandler {
                 List<Vec3> points = buildCurve(start, end, multi.curve, segments);
 
                 float base = Math.max(0.02F, multi.thickness * 0.065F);
+                float noiseAmp = Math.min(base * 0.75F, 0.08F);
                 drawRibbonGradient(poseStack, buffer, cameraPos, points,
                         base * 1.25F,
                         0xB319E8DB,
                         0xB321E59A,
                         0xB333F2FF,
-                        0.0015F);
-                drawRibbonSolid(poseStack, buffer, cameraPos, points, base * 0.54F, 0xFF0A0F11, -0.0007F);
+                        0.0015F,
+                        noiseAmp,
+                        time);
+                drawRibbonSolid(poseStack, buffer, cameraPos, points, base * 0.54F, 0xFF0A0F11, -0.0007F, noiseAmp, time);
             }
         }
     }
@@ -228,7 +235,7 @@ public final class BlackwhipRenderHandler {
     private static void drawRibbonGradient(PoseStack poseStack, MultiBufferSource buffer, Vec3 cameraPos,
                                            List<Vec3> points, float baseHalfWidth,
                                            int startColor, int midColor, int endColor,
-                                           float depthBias) {
+                                           float depthBias, float noiseAmplitude, double time) {
         if (points.size() < 2) return;
 
         VertexConsumer consumer = buffer.getBuffer(RenderType.leash());
@@ -251,6 +258,10 @@ public final class BlackwhipRenderHandler {
             else tangent = points.get(i + 1).subtract(points.get(i - 1));
             if (tangent.lengthSqr() < 1e-6) tangent = new Vec3(0, 1, 0);
 
+            // Apply small animated noise offset independent of camera
+            Vec3 noise = computeRibbonNoise(tangent, t, time, noiseAmplitude);
+            p = p.add(noise);
+
             Vec3 normal = camForward.cross(tangent).normalize();
             if (normal.lengthSqr() < 1e-6) normal = new Vec3(0, 1, 0);
 
@@ -266,16 +277,29 @@ public final class BlackwhipRenderHandler {
             float g = ((argb >> 8) & 0xFF) / 255f;
             float b = (argb & 0xFF) / 255f;
 
+            // Speckle the color to simulate texture without assets
+            final float speckleStrength = 0.22f;
+            float nL = speckleNoise(t, -1.0, time);
+            float nR = speckleNoise(t,  1.0, time);
+            float shadeL = (nL - 0.5f) * 2.0f * speckleStrength;
+            float shadeR = (nR - 0.5f) * 2.0f * speckleStrength;
+            float rL = clamp01(r * (1.0f + shadeL));
+            float gL = clamp01(g * (1.0f + shadeL));
+            float bL = clamp01(b * (1.0f + shadeL));
+            float rR = clamp01(r * (1.0f + shadeR));
+            float gR = clamp01(g * (1.0f + shadeR));
+            float bR = clamp01(b * (1.0f + shadeR));
+
             consumer.vertex(last.pose(), (float) (p.x + left.x + bias.x), (float) (p.y + left.y + bias.y), (float) (p.z + left.z + bias.z))
-                    .color(r, g, b, a).uv2(light).endVertex();
+                    .color(rL, gL, bL, a).uv2(light).endVertex();
             consumer.vertex(last.pose(), (float) (p.x + right.x + bias.x), (float) (p.y + right.y + bias.y), (float) (p.z + right.z + bias.z))
-                    .color(r, g, b, a).uv2(light).endVertex();
+                    .color(rR, gR, bR, a).uv2(light).endVertex();
         }
         poseStack.popPose();
     }
 
     private static void drawRibbonSolid(PoseStack poseStack, MultiBufferSource buffer, Vec3 cameraPos,
-                                       List<Vec3> points, float halfWidth, int argb, float depthBias) {
+                                       List<Vec3> points, float halfWidth, int argb, float depthBias, float noiseAmplitude, double time) {
 		if (points.size() < 2) return;
 
 		VertexConsumer consumer = buffer.getBuffer(RenderType.leash());
@@ -301,20 +325,82 @@ public final class BlackwhipRenderHandler {
 			else tangent = points.get(i + 1).subtract(points.get(i - 1));
 			if (tangent.lengthSqr() < 1e-6) tangent = new Vec3(0, 1, 0);
 
+			// Apply small animated noise offset independent of camera
+			double t = i / (double)(n - 1);
+			Vec3 noise = computeRibbonNoise(tangent, t, time, noiseAmplitude);
+			p = p.add(noise);
+
 			Vec3 normal = camForward.cross(tangent).normalize();
 			if (normal.lengthSqr() < 1e-6) normal = new Vec3(0, 1, 0);
             Vec3 left = normal.scale(halfWidth);
             Vec3 right = normal.scale(-halfWidth);
             Vec3 bias = camForward.scale(depthBias);
 
-            consumer.vertex(last.pose(), (float) (p.x + left.x + bias.x), (float) (p.y + left.y + bias.y), (float) (p.z + left.z + bias.z))
-					.color(r, g, b, a).uv2(light).endVertex();
-            consumer.vertex(last.pose(), (float) (p.x + right.x + bias.x), (float) (p.y + right.y + bias.y), (float) (p.z + right.z + bias.z))
-					.color(r, g, b, a).uv2(light).endVertex();
+			// Speckle the color to simulate texture
+			final float speckleStrength = 0.18f;
+			final float alphaDropStrength = 0.45f; // let glow peek through on bright flecks
+			float nL = speckleNoise(t, -1.0, time);
+			float nR = speckleNoise(t,  1.0, time);
+			float shadeL = (nL - 0.5f) * 2.0f * speckleStrength;
+			float shadeR = (nR - 0.5f) * 2.0f * speckleStrength;
+			float rL = clamp01(r * (1.0f + shadeL));
+			float gL = clamp01(g * (1.0f + shadeL));
+			float bL = clamp01(b * (1.0f + shadeL));
+			float rR = clamp01(r * (1.0f + shadeR));
+			float gR = clamp01(g * (1.0f + shadeR));
+			float bR = clamp01(b * (1.0f + shadeR));
+
+			// Drop alpha slightly on brighter speckles to reveal blue glow beneath
+			float baseA = a * 0.9f;
+			float alphaDropL = Math.max(0f, (nL - 0.5f) * 2.0f);
+			float alphaDropR = Math.max(0f, (nR - 0.5f) * 2.0f);
+			float aL = clamp01(baseA * (1.0f - alphaDropStrength * alphaDropL));
+			float aR = clamp01(baseA * (1.0f - alphaDropStrength * alphaDropR));
+
+			consumer.vertex(last.pose(), (float) (p.x + left.x + bias.x), (float) (p.y + left.y + bias.y), (float) (p.z + left.z + bias.z))
+					.color(rL, gL, bL, aL).uv2(light).endVertex();
+			consumer.vertex(last.pose(), (float) (p.x + right.x + bias.x), (float) (p.y + right.y + bias.y), (float) (p.z + right.z + bias.z))
+					.color(rR, gR, bR, aR).uv2(light).endVertex();
 		}
 
 		poseStack.popPose();
 	}
+
+    private static Vec3 computeRibbonNoise(Vec3 tangent, double t, double time, float amplitude) {
+        if (amplitude <= 0.0f) return Vec3.ZERO;
+        Vec3 tan = tangent.normalize();
+        Vec3 up = new Vec3(0, 1, 0);
+        Vec3 n1 = tan.cross(up);
+        if (n1.lengthSqr() < 1.0e-6) n1 = tan.cross(new Vec3(1, 0, 0));
+        n1 = n1.normalize();
+        Vec3 n2 = tan.cross(n1).normalize();
+
+        // Slow temporal motion so texture remains readable
+        double speed1 = 0.7;
+        double speed2 = 0.95;
+        double k1 = 10.0;
+        double k2 = 17.0;
+
+        double a1 = Math.sin(time * speed1 + t * k1) * amplitude;
+        double a2 = Math.cos(time * speed2 + t * k2) * (amplitude * 0.7);
+        return n1.scale(a1).add(n2.scale(a2));
+    }
+
+    private static float speckleNoise(double x, double y, double time) {
+        // Two-octave, cheap procedural noise in [0,1]
+        double v1 = Math.sin(x * 13.11 + time * 0.83) * Math.cos(y * 11.73 - time * 1.07);
+        double v2 = Math.sin(x * 31.33 - time * 1.71) * Math.cos(y * 27.59 + time * 0.61);
+        double v = 0.5 * (v1 * 0.5 + 0.5) + 0.5 * (v2 * 0.5 + 0.5);
+        if (v < 0.0) v = 0.0;
+        if (v > 1.0) v = 1.0;
+        return (float)v;
+    }
+
+    private static float clamp01(float v) {
+        if (v < 0f) return 0f;
+        if (v > 1f) return 1f;
+        return v;
+    }
 
     private static int lerpGradient(double t, int start, int mid, int end) {
         if (t < 0.5) {

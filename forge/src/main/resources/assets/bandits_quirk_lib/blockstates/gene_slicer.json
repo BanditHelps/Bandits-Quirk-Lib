@@ -1,7 +1,5 @@
 {
-  "variants": {
-    "": { "model": "bandits_quirk_lib:block/gene_slicer" }
-  }
+	"variants": {
+		"": { "model": "bandits_quirk_lib:block/gene_slicer" }
+	}
 }
-
-
