@@ -35,6 +35,7 @@ public final class BlackwhipRenderHandler {
         public float range;
         public float curve;
         public float thickness;
+        public int initialTravelTicks;
         public long lastGameTimeDecrement = -1L;
 
         public ClientWhipState(int sourcePlayerId) {
@@ -65,6 +66,10 @@ public final class BlackwhipRenderHandler {
         state.range = range;
         state.curve = curve;
         state.thickness = thickness;
+        if (active && !restraining && targetEntityId >= 0) {
+            // capture initial travel duration to drive smooth progress on client
+            state.initialTravelTicks = ticksLeft;
+        }
         state.lastGameTimeDecrement = -1L;
         if (!active) {
             // allow quick cleanup on next render
@@ -123,8 +128,9 @@ public final class BlackwhipRenderHandler {
                 if (target == null || !target.isAlive()) continue;
                 Vec3 eye = player.getEyePosition(partial);
                 Vec3 toTarget = getAttachPoint(target, partial).subtract(eye);
-                float total = Math.max(1, state.missRetractTicks);
-                float progress = 1.0F - Math.max(0F, Math.min(1F, (float) state.ticksLeft / total));
+                float total = state.initialTravelTicks > 0 ? state.initialTravelTicks : Math.max(1, state.missRetractTicks);
+                float u = 1.0F - Math.max(0F, Math.min(1F, (float) state.ticksLeft / total));
+                float progress = easeInOutCubic(u);
                 // ensure minimal visible extension to avoid first-frame pop
                 if (progress < 0.05F) progress = 0.05F;
                 end = eye.add(toTarget.scale(progress));
@@ -400,6 +406,12 @@ public final class BlackwhipRenderHandler {
         if (v < 0f) return 0f;
         if (v > 1f) return 1f;
         return v;
+    }
+
+    private static float easeInOutCubic(float t) {
+        if (t < 0.5f) return 4f * t * t * t;
+        t -= 1f;
+        return 1f + 4f * t * t * t;
     }
 
     private static int lerpGradient(double t, int start, int mid, int end) {

@@ -55,7 +55,7 @@ public class BlackwhipRestrainAbility extends Ability {
 		this.withProperty(RANGE, 16.0F)
  				.withProperty(RESTRAIN_TICKS, 100)
  				.withProperty(MISS_RETRACT_TICKS, 8)
-				.withProperty(TRAVEL_TICKS, 6)
+				.withProperty(TRAVEL_TICKS, 10)
  				.withProperty(WHIP_CURVE, 0.6F)
  				.withProperty(WHIP_PARTICLE_SIZE, 1.0F);
 	}
