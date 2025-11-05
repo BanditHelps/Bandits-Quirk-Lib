@@ -442,8 +442,14 @@ public final class BlackwhipRenderHandler {
 
             // Sphere center, radius and forward apex point on sphere (yaw-only orientation)
             float r = Math.max(0.25f, bubble.radius);
-            Vec3 center = eye.add(fwdYaw.scale(Math.max(0.2f, bubble.forwardOffset)));
-            Vec3 apex = center.add(fwdYaw.scale(r));
+            // Scale the whole sphere toward the player if the apex is farther than desired
+            float desiredApex = 1.5f; // target distance from eyes to apex
+            float sumDist = bubble.forwardOffset + r;
+            float scaleTowardPlayer = sumDist > desiredApex ? (desiredApex / sumDist) : 1.0f;
+            float forwardEff = bubble.forwardOffset * scaleTowardPlayer;
+            float rEff = r * scaleTowardPlayer;
+            Vec3 center = eye.add(fwdYaw.scale(Math.max(0.2f, forwardEff)));
+            Vec3 apex = center.add(fwdYaw.scale(rEff));
 
             int n = Math.max(1, bubble.tentacleCount);
             double baseArc = (2.0 * Math.PI) / n; // azimuth distribution around forward axis
@@ -471,7 +477,7 @@ public final class BlackwhipRenderHandler {
                     double thetaStart = Math.PI - (0.45 + 0.10 * Math.sin(i * 1.37));
                     Vec3 backDir = fwdYaw.scale(Math.cos(thetaStart)).add(equatorDir.scale(Math.sin(thetaStart))).normalize();
                     // Slightly outside the sphere to create an outward arch from the back
-                    Vec3 backContact = center.add(backDir.scale(r * 1.10));
+                    Vec3 backContact = center.add(backDir.scale(rEff * 1.08));
                     double len = backContact.subtract(anchor).length();
                     int seg = Math.max(14, (int)Math.min(48, len * 6.0));
                     points.addAll(buildCurve(anchor, backContact, bubble.curve, seg));
@@ -480,21 +486,24 @@ public final class BlackwhipRenderHandler {
                 // Section 2: sweep along the same meridian from backContact toward the front apex (theta → 0)
                 {
                     double thetaStart = Math.PI - (0.45 + 0.10 * Math.sin(i * 1.37));
-                    int seg = Math.max(32, (int)(r * 60));
+                    int seg = Math.max(32, (int)(rEff * 60));
                     for (int s = 1; s <= seg; s++) {
                         double t = s / (double)seg; // 0..1
                         double theta = (1.0 - t) * thetaStart; // end at 0 (apex)
                         Vec3 p = center.add(
-                                fwdYaw.scale(Math.cos(theta) * r)
-                                        .add(equatorDir.scale(Math.sin(theta) * r))
+                                fwdYaw.scale(Math.cos(theta) * rEff)
+                                        .add(equatorDir.scale(Math.sin(theta) * rEff))
                         );
                         points.add(p);
                     }
                 }
 
                 // Draw
-                float base = Math.max(0.02F, bubble.thickness * 0.065F);
-                float noiseAmp = Math.min(base * 0.75F, Math.max(0.01F, bubble.jaggedness));
+                // Slight per-tentacle thickness variation and reduced wiggle
+                java.util.Random rng = new java.util.Random(bubble.seed + (long)i * 31L);
+                float thicknessJitter = 0.9f + (float)rng.nextDouble() * 0.2f; // 0.9..1.1
+                float base = Math.max(0.02F, bubble.thickness * 0.065F * thicknessJitter);
+                float noiseAmp = Math.min(base * 0.75F, Math.max(0.01F, bubble.jaggedness)) * 0.65F;
                 drawRibbonGradient(poseStack, buffer, camera, points,
                         base * 1.30F,
                         0xB319E8DB,
