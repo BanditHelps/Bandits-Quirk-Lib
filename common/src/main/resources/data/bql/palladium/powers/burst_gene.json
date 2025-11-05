@@ -53,12 +53,12 @@
       "description": "Big boo boom",
       "hidden": false,
       "hidden_in_bar": false,
-      "gui_position": [0,0],
+      "gui_position": [0,-1],
       "list_index": 1,
       "conditions": {
         "enabling": [
           {
-            "type": "palladium:held",
+            "type": "bandits_quirk_lib:held_with_cooldown",
             "cooldown": 100,
             "key_type": "key_bind",
             "needs_empty_hand": false
@@ -75,6 +75,8 @@
     "ExplosionProg": {
       "type": "palladium:repeating_animation_timer",
       "start_value": 1,
+      "hidden": true,
+      "hidden_in_bar": true,
       "max_value": 30,
       "conditions": {
         "enabling": [
@@ -109,6 +111,8 @@
     },
     "CoreExplosion End": {
         "type": "bandits_quirk_lib:super_burst_explosion_gene",
+        "hidden": true,
+        "hidden_in_bar": true,
         "conditions": {
           "enabling": [
             {

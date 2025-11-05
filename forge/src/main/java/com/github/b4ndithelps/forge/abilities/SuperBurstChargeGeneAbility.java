@@ -60,7 +60,7 @@ public class SuperBurstChargeGeneAbility extends Ability {
             return;
         }
 
-        player.addEffect(new MobEffectInstance(ModEffects.STUN_EFFECT.get(), 80, 244));
+        player.addEffect(new MobEffectInstance(ModEffects.STUN_EFFECT.get(), 80, 244, true, false));
 
         float charge = BodyStatusHelper.getCustomFloat(player, "chest", "super_burst_charge");
         float factor = (float) (QuirkFactorHelper.getQuirkFactor(player)+1) * charge/20;
@@ -114,7 +114,7 @@ public class SuperBurstChargeGeneAbility extends Ability {
         ActionBarHelper.sendPercentageDisplay(
                 player,
                 "Super Burst Charge",
-                chargePercent,
+                chargePercent/4.0f,
                 ChatFormatting.GRAY,
                 color,
                 chargePercent >= 400.0f ? "MAX" : "Charging"
