@@ -14,10 +14,7 @@ import net.minecraftforge.network.PacketDistributor;
 import net.threetag.palladium.power.IPowerHolder;
 import net.threetag.palladium.power.ability.Ability;
 import net.threetag.palladium.power.ability.AbilityInstance;
-import net.threetag.palladium.util.property.IntegerProperty;
-import net.threetag.palladium.util.property.FloatProperty;
-import net.threetag.palladium.util.property.PalladiumProperty;
-import net.threetag.palladium.util.property.PropertyManager;
+import net.threetag.palladium.util.property.*;
 
 import java.util.List;
 
@@ -30,17 +27,17 @@ public class BlackwhipTagAbility extends Ability {
 	public static final PalladiumProperty<Float> WHIP_CURVE = new FloatProperty("whip_curve").configurable("How much the whip arcs (visual only)");
 	public static final PalladiumProperty<Float> WHIP_PARTICLE_SIZE = new FloatProperty("whip_particle_size").configurable("Dust particle size for the whip visuals");
 	public static final PalladiumProperty<Integer> TAG_EXPIRE_TICKS = new IntegerProperty("tag_expire_ticks").configurable("How long a tag remains usable");
-	public static final PalladiumProperty<Boolean> PERSISTENT_TETHERS = new net.threetag.palladium.util.property.BooleanProperty("persistent_tethers").configurable("Render persistent tethers to tagged targets");
+	public static final PalladiumProperty<Boolean> PERSISTENT_TETHERS = new BooleanProperty("persistent_tethers").configurable("Render persistent tethers to tagged targets");
 	public static final PalladiumProperty<Integer> MAX_PERSISTENT_TETHERS = new IntegerProperty("max_persistent_tethers").configurable("Max number of persistent tethers to keep (0 = unlimited)");
 
-	public static final PalladiumProperty<Boolean> IS_ACTIVE = new net.threetag.palladium.util.property.BooleanProperty("is_active");
-	public static final PalladiumProperty<String> TARGET_UUID = new net.threetag.palladium.util.property.StringProperty("target_uuid");
+	public static final PalladiumProperty<Boolean> IS_ACTIVE = new BooleanProperty("is_active");
+	public static final PalladiumProperty<String> TARGET_UUID = new StringProperty("target_uuid");
 	public static final PalladiumProperty<Integer> TICKS_LEFT = new IntegerProperty("ticks_left");
 
 	public BlackwhipTagAbility() {
 		super();
 		this.withProperty(RANGE, 18.0F)
-				.withProperty(TRAVEL_TICKS, 6)
+				.withProperty(TRAVEL_TICKS, 10)
 				.withProperty(MISS_RETRACT_TICKS, 8)
 				.withProperty(WHIP_CURVE, 0.6F)
 				.withProperty(WHIP_PARTICLE_SIZE, 1.0F)

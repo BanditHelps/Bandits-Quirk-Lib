@@ -21,6 +21,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class BlackwhipTags {
 
+	public static final String PLAYER_DEPLOYED_TAG = "bandits_quirk_lib.blackwhip_active";
+
 	public static final class TagEntry {
 		public final long createdTick;
 		public final int entityId;
@@ -41,6 +43,7 @@ public final class BlackwhipTags {
         if (player == null || target == null || player.level().isClientSide) return;
         PLAYER_TAGS.computeIfAbsent(player.getUUID(), k -> new ConcurrentHashMap<>())
                 .put(target.getId(), new TagEntry(player.level().getGameTime(), target.getId(), Math.max(1, expireTicks)));
+        updateActiveTag(player);
     }
 
     public static void addTag(ServerPlayer player, LivingEntity target, int expireTicks, int maxTags) {
@@ -55,12 +58,31 @@ public final class BlackwhipTags {
                 for (int i = 0; i < toRemove && i < all.size(); i++) map.remove(all.get(i).getKey());
             }
         }
+        updateActiveTag(player);
     }
 
 	public static void clearTags(ServerPlayer player) {
 		if (player == null) return;
         PLAYER_TAGS.remove(player.getUUID());
         syncToClients(player); // clear visuals
+        updateActiveTag(player);
+	}
+
+	public static boolean removeTag(ServerPlayer player, int entityId) {
+		if (player == null) return false;
+		Map<Integer, TagEntry> map = PLAYER_TAGS.get(player.getUUID());
+		if (map == null || map.isEmpty()) return false;
+		boolean removed = map.remove(entityId) != null;
+		if (map.isEmpty()) PLAYER_TAGS.remove(player.getUUID());
+		if (removed) {
+			syncToClients(player);
+			updateActiveTag(player);
+		}
+		return removed;
+	}
+
+	public static boolean removeTag(ServerPlayer player, LivingEntity target) {
+		return target != null && removeTag(player, target.getId());
 	}
 
 	public static List<LivingEntity> getTaggedEntities(ServerPlayer player, int maxDistance) {
@@ -80,6 +102,7 @@ public final class BlackwhipTags {
 			}
 		}
 		if (map.isEmpty()) PLAYER_TAGS.remove(player.getUUID());
+        updateActiveTag(player);
 		return out;
 	}
 
@@ -104,6 +127,7 @@ public final class BlackwhipTags {
         if (map.isEmpty()) PLAYER_TAGS.remove(player.getUUID());
         // sync visuals after consumption
         syncToClients(player);
+        updateActiveTag(player);
 		return out;
 	}
 
@@ -132,7 +156,26 @@ public final class BlackwhipTags {
         boolean active = !ids.isEmpty();
         BQLNetwork.CHANNEL.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player),
                 new BlackwhipTethersPacket(player.getId(), active, curve, thickness, ids));
+        updateActiveTag(player);
     }
+
+	public static boolean isWhipDeployed(ServerPlayer player) {
+		cleanupExpired(player);
+		Map<Integer, TagEntry> map = PLAYER_TAGS.get(player.getUUID());
+		return map != null && !map.isEmpty();
+	}
+
+	private static void updateActiveTag(ServerPlayer player) {
+		if (player == null) return;
+		cleanupExpired(player);
+		Map<Integer, TagEntry> map = PLAYER_TAGS.get(player.getUUID());
+		boolean hasAny = map != null && !map.isEmpty();
+		if (hasAny) {
+			if (!player.getTags().contains(PLAYER_DEPLOYED_TAG)) player.addTag(PLAYER_DEPLOYED_TAG);
+		} else {
+			if (player.getTags().contains(PLAYER_DEPLOYED_TAG)) player.removeTag(PLAYER_DEPLOYED_TAG);
+		}
+	}
 }
 
 

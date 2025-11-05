@@ -40,6 +40,8 @@ public class AbilityRegister {
 	public static final RegistrySupplier<Ability> BLACKWHIP_SLAM;
 	public static final RegistrySupplier<Ability> BLACKWHIP_LASH;
 	public static final RegistrySupplier<Ability> BLACKWHIP_ZIP;
+	public static final RegistrySupplier<Ability> BLACKWHIP_PUPPET;
+	public static final RegistrySupplier<Ability> BLACKWHIP_DETACH;
 
 
     public AbilityRegister() {
@@ -84,6 +86,8 @@ public class AbilityRegister {
 		BLACKWHIP_SLAM = ABILITIES.register("blackwhip_slam", BlackwhipSlamAbility::new);
 		BLACKWHIP_LASH = ABILITIES.register("blackwhip_lash", BlackwhipLashAbility::new);
 		BLACKWHIP_ZIP = ABILITIES.register("blackwhip_zip", BlackwhipZipAbility::new);
+		BLACKWHIP_PUPPET = ABILITIES.register("blackwhip_puppet", BlackwhipPuppetAbility::new);
+		BLACKWHIP_DETACH = ABILITIES.register("blackwhip_detach", BlackwhipDetachAbility::new);
 
     }
 }

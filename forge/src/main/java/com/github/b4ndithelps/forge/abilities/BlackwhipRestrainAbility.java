@@ -165,6 +165,8 @@ public class BlackwhipRestrainAbility extends Ability {
 			if (ticksLeft <= 0) {
 				int duration = Math.max(1, entry.getProperty(RESTRAIN_TICKS));
 				applyRestrain(target, duration);
+				// Add a tag for the duration so other abilities (like puppet) can interact while attached
+				com.github.b4ndithelps.forge.systems.BlackwhipTags.addTag(player, target, duration);
 				entry.setUniqueProperty(IS_RESTRAINING, true);
 				entry.setUniqueProperty(TICKS_LEFT, duration);
 				BQLNetwork.CHANNEL.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player),
