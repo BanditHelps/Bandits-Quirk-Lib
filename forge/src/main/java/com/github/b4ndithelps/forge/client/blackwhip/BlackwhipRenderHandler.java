@@ -44,6 +44,19 @@ public final class BlackwhipRenderHandler {
     }
 
     private static final Map<Integer, ClientWhipState> PLAYER_TO_WHIP = new HashMap<>();
+    private static final class ClientBlockWhipState {
+        public final int sourcePlayerId;
+        public boolean active;
+        public Vec3 target;
+        public int ticksLeft;
+        public int initialTravelTicks;
+        public float curve;
+        public float thickness;
+        public long lastGameTimeDecrement = -1L;
+        public double maxLen = 0.0; // fixed rope length captured after arrival
+        public ClientBlockWhipState(int sourcePlayerId) { this.sourcePlayerId = sourcePlayerId; }
+    }
+    private static final Map<Integer, ClientBlockWhipState> PLAYER_TO_BLOCK_WHIP = new HashMap<>();
     private static final class ClientMultiTethers {
         public final int sourcePlayerId;
         public boolean active;
@@ -120,6 +133,19 @@ public final class BlackwhipRenderHandler {
         }
     }
 
+    public static void applyBlockPacket(int sourcePlayerId, boolean active, double x, double y, double z,
+                                        int travelTicks, float curve, float thickness) {
+        ClientBlockWhipState s = PLAYER_TO_BLOCK_WHIP.computeIfAbsent(sourcePlayerId, ClientBlockWhipState::new);
+        s.active = active;
+        s.target = new Vec3(x, y, z);
+        s.ticksLeft = Math.max(0, travelTicks);
+        s.initialTravelTicks = Math.max(1, travelTicks);
+        s.curve = curve;
+        s.thickness = thickness;
+        s.lastGameTimeDecrement = -1L;
+        if (!active) s.ticksLeft = 0;
+    }
+
     public static void applyTethersPacket(int sourcePlayerId, boolean active, float curve, float thickness, java.util.List<Integer> targetIds) {
         ClientMultiTethers multi = PLAYER_TO_MULTI.computeIfAbsent(sourcePlayerId, ClientMultiTethers::new);
         multi.active = active;
@@ -147,6 +173,7 @@ public final class BlackwhipRenderHandler {
 
         // Cleanup for players no longer present or inactive
         PLAYER_TO_WHIP.entrySet().removeIf(e -> level.getEntity(e.getKey()) == null || !e.getValue().active);
+        PLAYER_TO_BLOCK_WHIP.entrySet().removeIf(e -> level.getEntity(e.getKey()) == null || !e.getValue().active);
         PLAYER_TO_MULTI.entrySet().removeIf(e -> level.getEntity(e.getKey()) == null || !e.getValue().active);
         PLAYER_TO_AURA.entrySet().removeIf(e -> level.getEntity(e.getKey()) == null || (!e.getValue().active && e.getValue().visibility <= 0f));
 
@@ -215,6 +242,50 @@ public final class BlackwhipRenderHandler {
                 if (state.ticksLeft <= 0 && state.targetEntityId < 0) {
                     state.active = false; // end local-only miss retract
                 }
+            }
+        }
+
+        // Render block-anchored whips (travel animation only)
+        for (ClientBlockWhipState state : PLAYER_TO_BLOCK_WHIP.values()) {
+            if (!state.active) continue;
+            Entity src = level.getEntity(state.sourcePlayerId);
+            if (!(src instanceof Player player)) continue;
+
+            Vec3 start = getHandPosition(player, partial);
+            Vec3 eye = player.getEyePosition(partial);
+            Vec3 toTarget = state.target.subtract(eye);
+            float total = state.initialTravelTicks > 0 ? state.initialTravelTicks : 1;
+            float u = 1.0F - Math.max(0F, Math.min(1F, (float) state.ticksLeft / total));
+            float progress = easeInOutCubic(u);
+            if (progress < 0.05F) progress = 0.05F;
+            Vec3 end = eye.add(toTarget.scale(progress));
+
+            // After arrival, clamp the rope to fixed length captured at arrival to prevent visual stretching
+            if (state.ticksLeft <= 0) {
+                if (state.maxLen <= 0.0) {
+                    state.maxLen = state.target.distanceTo(start);
+                }
+                Vec3 fromAnchorToHand = start.subtract(state.target);
+                double dist = fromAnchorToHand.length();
+                if (dist > state.maxLen && dist > 1.0e-6) {
+                    end = state.target.add(fromAnchorToHand.scale(state.maxLen / dist));
+                } else {
+                    end = start;
+                }
+            }
+
+            double len = end.subtract(start).length();
+            int segments = Math.max(20, (int)Math.min(96, len * 6.0));
+            List<Vec3> points = buildCurve(start, end, state.curve, segments);
+            float base = Math.max(0.02F, state.thickness * 0.065F);
+            float noiseAmp = Math.min(base * 0.75F, 0.08F);
+            drawRibbonGradient(poseStack, buffer, cameraPos, points,
+                    base * 1.25F, 0xB319E8DB, 0xB321E59A, 0xB333F2FF, 0.0015F, noiseAmp, time, 1.0f);
+            drawRibbonSolid(poseStack, buffer, cameraPos, points, base * 0.54F, 0xFF0A0F11, -0.0007F, noiseAmp, time, 1.0f);
+
+            if (state.lastGameTimeDecrement != gameTime) {
+                state.lastGameTimeDecrement = gameTime;
+                if (state.ticksLeft > 0) state.ticksLeft -= 1; // stop at 0 to keep anchored visual
             }
         }
 

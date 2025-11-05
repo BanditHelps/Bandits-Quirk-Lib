@@ -295,6 +295,25 @@
           }
         ]
       }
+    },
+    "blackwhip_zip": {
+      "type": "bandits_quirk_lib:blackwhip_zip",
+      "icon": "minecraft:string",
+      "title": "Zip",
+      "hidden": false,
+      "hidden_in_bar": false,
+      "list_index": 5,
+      "range": 24.0,
+      "pull_speed": 1.2,
+      "max_ticks": 0,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:action",
+            "key_type": "key_bind"
+          }
+        ]
+      }
     }
   }
 }

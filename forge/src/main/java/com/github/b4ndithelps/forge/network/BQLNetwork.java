@@ -61,6 +61,12 @@ public final class BQLNetwork {
                 .consumerMainThread(DoubleJumpS2CPacket::handle)
                 .add();
 
+        CHANNEL.messageBuilder(PlayerVelocityS2CPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(PlayerVelocityS2CPacket::encode)
+                .decoder(PlayerVelocityS2CPacket::decode)
+                .consumerMainThread(PlayerVelocityS2CPacket::handle)
+                .add();
+
         CHANNEL.messageBuilder(GenomeSyncPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(GenomeSyncPacket::encode)
                 .decoder(GenomeSyncPacket::decode)
@@ -128,6 +134,13 @@ public final class BQLNetwork {
                 .encoder(BlackwhipTethersPacket::encode)
                 .decoder(BlackwhipTethersPacket::decode)
                 .consumerMainThread(BlackwhipTethersPacket::handle)
+                .add();
+
+        // Blackwhip block anchor visuals (server -> clients)
+        CHANNEL.messageBuilder(BlackwhipBlockWhipPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(BlackwhipBlockWhipPacket::encode)
+                .decoder(BlackwhipBlockWhipPacket::decode)
+                .consumerMainThread(BlackwhipBlockWhipPacket::handle)
                 .add();
 
         // Blackwhip aura visuals (server -> clients)
