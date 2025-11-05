@@ -43,6 +43,7 @@ public class AbilityRegister {
 	public static final RegistrySupplier<Ability> BLACKWHIP_PUPPET;
 	public static final RegistrySupplier<Ability> BLACKWHIP_DETACH;
 	public static final RegistrySupplier<Ability> BLACKWHIP_AUTO_REFRESH;
+    public static final RegistrySupplier<Ability> BLACKWHIP_AURA;
 
 
     public AbilityRegister() {
@@ -90,6 +91,7 @@ public class AbilityRegister {
 		BLACKWHIP_PUPPET = ABILITIES.register("blackwhip_puppet", BlackwhipPuppetAbility::new);
 		BLACKWHIP_DETACH = ABILITIES.register("blackwhip_detach", BlackwhipDetachAbility::new);
 		BLACKWHIP_AUTO_REFRESH = ABILITIES.register("blackwhip_auto_refresh", BlackwhipAutoRefreshAbility::new);
+        BLACKWHIP_AURA = ABILITIES.register("blackwhip_aura", BlackwhipAuraAbility::new);
 
     }
 }

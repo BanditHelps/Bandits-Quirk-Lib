@@ -55,6 +55,42 @@ public final class BlackwhipRenderHandler {
     }
     private static final Map<Integer, ClientMultiTethers> PLAYER_TO_MULTI = new HashMap<>();
 
+    // Aura state per player
+    private static final class ClientAuraState {
+        public final int sourcePlayerId;
+        public boolean active;
+        public int tentacleCount;
+        public float length;
+        public float curve;
+        public float thickness;
+        public float jaggedness;
+        public float orbitSpeed;
+        public long seed;
+        // Cached anchor offsets in player-local space (back area), built from seed
+        public java.util.List<Vec3> localAnchors = new java.util.ArrayList<>();
+
+        public ClientAuraState(int sourcePlayerId) { this.sourcePlayerId = sourcePlayerId; }
+    }
+    private static final Map<Integer, ClientAuraState> PLAYER_TO_AURA = new HashMap<>();
+
+    public static void applyAuraPacket(int sourcePlayerId, boolean active, int tentacleCount, float length, float curve, float thickness, float jaggedness, float orbitSpeed, long seed) {
+        ClientAuraState s = PLAYER_TO_AURA.computeIfAbsent(sourcePlayerId, ClientAuraState::new);
+        s.active = active;
+        if (!active) {
+            s.tentacleCount = 0;
+            s.localAnchors.clear();
+            return;
+        }
+        s.tentacleCount = Math.max(1, tentacleCount);
+        s.length = Math.max(0.5f, length);
+        s.curve = Math.max(0.0f, curve);
+        s.thickness = Math.max(0.05f, thickness);
+        s.jaggedness = Math.max(0.0f, jaggedness);
+        s.orbitSpeed = Math.max(0.0f, orbitSpeed);
+        s.seed = seed;
+        rebuildAuraAnchors(s);
+    }
+
     public static void applyPacket(int sourcePlayerId, boolean active, boolean restraining, int targetEntityId,
                                    int ticksLeft, int missRetractTicks, float range, float curve, float thickness) {
         ClientWhipState state = PLAYER_TO_WHIP.computeIfAbsent(sourcePlayerId, ClientWhipState::new);
@@ -105,6 +141,7 @@ public final class BlackwhipRenderHandler {
         // Cleanup for players no longer present or inactive
         PLAYER_TO_WHIP.entrySet().removeIf(e -> level.getEntity(e.getKey()) == null || !e.getValue().active);
         PLAYER_TO_MULTI.entrySet().removeIf(e -> level.getEntity(e.getKey()) == null || !e.getValue().active);
+        PLAYER_TO_AURA.entrySet().removeIf(e -> level.getEntity(e.getKey()) == null || !e.getValue().active);
 
         long gameTime = level.getGameTime();
         double time = gameTime + partial;
@@ -202,6 +239,135 @@ public final class BlackwhipRenderHandler {
                 drawRibbonSolid(poseStack, buffer, cameraPos, points, base * 0.54F, 0xFF0A0F11, -0.0007F, noiseAmp, time);
             }
         }
+
+        // Render aura tentacles
+        for (ClientAuraState aura : PLAYER_TO_AURA.values()) {
+            if (!aura.active) continue;
+            Entity src = level.getEntity(aura.sourcePlayerId);
+            if (!(src instanceof Player player)) continue;
+
+            if (aura.localAnchors.size() != aura.tentacleCount) {
+                rebuildAuraAnchors(aura);
+            }
+
+            Vec3 playerPos = player.getPosition(partial);
+            Vec3 camera = cameraPos;
+            // Build basis from player look; back is opposite of look
+            Vec3 look = player.getViewVector(partial).normalize();
+            Vec3 back = look.scale(-1.0);
+            Vec3 up = new Vec3(0, 1, 0);
+            Vec3 right = up.cross(back);
+            if (right.lengthSqr() < 1.0e-6) right = new Vec3(1, 0, 0);
+            right = right.normalize();
+            up = back.cross(right).normalize();
+
+            time = gameTime + partial;
+
+			for (int i = 0; i < aura.localAnchors.size(); i++) {
+                Vec3 local = aura.localAnchors.get(i);
+                // Transform local anchor to world space with a slight breathing motion
+				double phase = 0.7 * i + time * 0.03 * Math.max(0.1, aura.orbitSpeed);
+				double breathe = 0.05 * Math.sin(phase);
+				double bob = 0.06 * Math.sin(time * 0.04 * Math.max(0.1, aura.orbitSpeed) + i * 0.9);
+				Vec3 backBase = playerPos.add(0, player.getBbHeight() * 0.55, 0);
+                Vec3 anchor = backBase
+                        .add(back.scale(0.32 + breathe))
+                        .add(right.scale(local.x))
+						.add(up.scale(local.y + bob))
+                        .add(back.scale(local.z));
+
+                java.util.List<Vec3> pts = buildAuraTentacle(anchor, back, right, up, aura, i, time);
+
+                float base = Math.max(0.02F, aura.thickness * 0.06F);
+                float noiseAmp = Math.min(base * 0.9F, Math.max(0.02F, aura.jaggedness));
+                drawRibbonGradient(poseStack, buffer, camera, pts,
+                        base * 1.35F,
+                        0xB319E8DB,
+                        0xB321E59A,
+                        0xB333F2FF,
+                        0.0015F,
+                        noiseAmp,
+                        time);
+                drawRibbonSolid(poseStack, buffer, camera, pts, base * 0.6F, 0xFF0A0F11, -0.0007F, noiseAmp, time);
+            }
+        }
+    }
+
+    private static void rebuildAuraAnchors(ClientAuraState s) {
+        s.localAnchors.clear();
+        java.util.Random rng = new java.util.Random(s.seed);
+        // Scatter anchors across an oval region on the upper back
+        for (int i = 0; i < s.tentacleCount; i++) {
+            double a = 2 * Math.PI * (i / Math.max(1.0, (double) s.tentacleCount)) + rng.nextDouble() * 0.9;
+            double rx = 0.35 + rng.nextDouble() * 0.15; // horizontal spread
+            double ry = 0.25 + rng.nextDouble() * 0.10; // vertical spread
+            double x = Math.cos(a) * rx * 0.45; // straddle spine
+            double y = 0.25 + (rng.nextDouble() - 0.3) * ry; // shoulder blades area
+            double z = 0.05 + rng.nextDouble() * 0.12; // slight embed into back
+            s.localAnchors.add(new Vec3(x, y, z));
+        }
+    }
+
+    private static java.util.List<Vec3> buildAuraTentacle(Vec3 anchor, Vec3 back, Vec3 right, Vec3 up, ClientAuraState aura, int index, double time) {
+        // Downward-curving, side-biased tendril with gentle bobbing and shoulder-peek arc
+        Vec3 down = up.scale(-1.0);
+        java.util.Random rng = new java.util.Random(aura.seed + index * 31L);
+        double sideBias = (rng.nextDouble() - 0.5) * 0.7; // left/right variation
+        // Outward from the back with an initial lift to peek over the shoulder
+        Vec3 outward = back.scale(0.8).add(up.scale(0.35)).add(right.scale(sideBias)).normalize();
+        Vec3 dir0 = back.scale(0.55).add(up.scale(0.35)).add(right.scale(sideBias * 0.4)).normalize();
+
+        // Per-tentacle radial spread direction around the player to diversify endpoints
+        Vec3 forward = back.scale(-1.0);
+        double theta = (2.0 * Math.PI * (index / Math.max(1.0, (double) aura.tentacleCount))) + (rng.nextDouble() * 0.5 - 0.25);
+        Vec3 ringDir = right.scale(Math.cos(theta)).add(forward.scale(Math.sin(theta))).normalize();
+        double spread = 0.45 + 0.55 * rng.nextDouble();
+
+        double lengthBase = aura.length;
+        double length = lengthBase * (0.85 + 0.3 * rng.nextDouble()); // vary end positions
+        int segments = Math.max(16, (int) Math.min(64, length * 8.0));
+        java.util.List<Vec3> pts = new java.util.ArrayList<>(segments + 1);
+        pts.add(anchor);
+
+        // Build a wavy, somewhat jagged spline using simple forward marching with noisy offsets
+        Vec3 p = anchor;
+        Vec3 t = dir0;
+        double wobbleSpeed1 = 0.35 * Math.max(0.1, aura.orbitSpeed);
+        double wobbleSpeed2 = 0.55 * Math.max(0.1, aura.orbitSpeed);
+        double droop = 0.8 + 0.4 * rng.nextDouble(); // different downward strength per tentacle
+        for (int i = 1; i <= segments; i++) {
+            double u = i / (double) segments;
+            // taper step size so tips move faster visually
+            double step = (length / segments) * (0.85 + 0.3 * u);
+
+            // Local orthonormals for noise directions
+            Vec3 n1 = t.cross(up);
+            if (n1.lengthSqr() < 1.0e-6) n1 = t.cross(right);
+            n1 = n1.normalize();
+            Vec3 n2 = t.cross(n1).normalize();
+
+            // Two-band wobble + small jagged spikes
+            double w1 = Math.sin(time * wobbleSpeed1 + u * 9.0 + index * 0.7) * aura.jaggedness;
+            double w2 = Math.cos(time * wobbleSpeed2 + u * 15.0 + index * 1.3) * (aura.jaggedness * 0.6);
+            double spike = (rng.nextDouble() - 0.5) * aura.jaggedness * 0.25;
+            Vec3 offset = n1.scale(w1).add(n2.scale(w2)).add(n1.cross(n2).normalize().scale(spike));
+
+            // Bend toward a downward arc using curve parameter; add shoulder-peek near base
+            Vec3 baseBend = down.scale(droop * aura.curve).add(right.scale(sideBias * 0.7 * aura.curve));
+            double uLift = Math.pow(1.0 - u, 1.5);
+            double uBack = Math.pow(1.0 - u, 1.2);
+            Vec3 shoulderPeek = up.scale(0.9 * aura.curve * uLift)
+                    .add(back.scale(0.35 * aura.curve * uBack));
+            double uDrift = Math.pow(u, 1.25);
+            Vec3 radial = ringDir.scale(spread * aura.curve * uDrift);
+            Vec3 bend = baseBend.add(shoulderPeek).add(radial);
+            Vec3 desired = t.add(bend.scale(0.8 * (1.0 - u))).normalize();
+            t = desired;
+
+            p = p.add(t.scale(step)).add(offset.scale(0.5 * (1.0 - u))); // less jagged at tip
+            pts.add(p);
+        }
+        return pts;
     }
 
     private static List<Vec3> buildCurve(Vec3 start, Vec3 end, float curveAmount, int segments) {

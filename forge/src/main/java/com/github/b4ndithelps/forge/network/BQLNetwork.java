@@ -129,6 +129,13 @@ public final class BQLNetwork {
                 .decoder(BlackwhipTethersPacket::decode)
                 .consumerMainThread(BlackwhipTethersPacket::handle)
                 .add();
+
+        // Blackwhip aura visuals (server -> clients)
+        CHANNEL.messageBuilder(BlackwhipAuraPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(BlackwhipAuraPacket::encode)
+                .decoder(BlackwhipAuraPacket::decode)
+                .consumerMainThread(BlackwhipAuraPacket::handle)
+                .add();
     }
 }
 
