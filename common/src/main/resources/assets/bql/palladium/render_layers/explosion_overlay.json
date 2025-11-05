@@ -1,0 +1,15 @@
+{
+  "model_layer": "bql:ender_gene_geo",
+  "texture": {
+    "base": "bql:textures/models/explosion_overlay/texture#MASK.png",
+    "variables": {
+      "MASK": {
+        "type": "palladium:ability_integer_property",
+        "power": "bql:burst_gene",
+        "ability": "ExplosionProg",
+        "property": "value"
+      }
+    },
+    "output": "bql:textures/models/explosion_overlay/texture#MASK.png"
+  }
+}

@@ -49,6 +49,12 @@ public final class BQLNetwork {
                 .decoder(BlackScreenNetwork::decode)
                 .consumerMainThread(BlackScreenNetwork::handle)
                 .add();
+
+        CHANNEL.messageBuilder(PlayerAnimationPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(PlayerAnimationPacket::encode)
+                .decoder(PlayerAnimationPacket::decode)
+                .consumerMainThread(PlayerAnimationPacket::handle)
+                .add();
     }
 }
 

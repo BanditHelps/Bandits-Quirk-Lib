@@ -1,7 +1,6 @@
 package com.github.b4ndithelps.forge;
 
 import com.github.b4ndithelps.forge.abilities.AbilityRegister;
-import com.github.b4ndithelps.forge.capabilities.CapabilityRegistration;
 import com.github.b4ndithelps.forge.conditions.CustomConditionSerializers;
 import com.github.b4ndithelps.forge.effects.ModEffects;
 import com.github.b4ndithelps.forge.blocks.ModBlocks;
@@ -12,6 +11,7 @@ import com.github.b4ndithelps.forge.network.BQLNetwork;
 import com.github.b4ndithelps.forge.config.ConfigManager;
 import com.github.b4ndithelps.forge.config.ModGameRules;
 import com.github.b4ndithelps.forge.sounds.ModSounds;
+import com.github.b4ndithelps.forge.particle.ModParticles;
 import dev.architectury.platform.forge.EventBuses;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
@@ -51,6 +51,7 @@ public final class BanditsQuirkLibForge {
         ModEntities.register(modEventBus);
         ModCreativeTabs.register(modEventBus);
         ModSounds.SOUND_EVENTS.register(modEventBus);
+        ModParticles.register(modEventBus);
 
         BQLNetwork.register();
 

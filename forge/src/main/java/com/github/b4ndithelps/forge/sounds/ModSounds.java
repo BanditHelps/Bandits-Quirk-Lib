@@ -13,4 +13,7 @@ public class ModSounds {
     public static final RegistryObject<SoundEvent> HEARTBEAT =
             SOUND_EVENTS.register("heartbeat",
                     () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(BanditsQuirkLib.MOD_ID, "heartbeat")));
+    public static final RegistryObject<SoundEvent> EXPLOSION_CHARGE =
+            SOUND_EVENTS.register("explosion_charge",
+                    () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(BanditsQuirkLib.MOD_ID, "explosion_charge")));
 }

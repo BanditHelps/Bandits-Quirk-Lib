@@ -1,0 +1,125 @@
+{
+  "name": "Burst Gene",
+  "background": "minecraft:textures/block/yellow_wool.png",
+  "icon": "minecraft:gunpowder",
+  "gui_display_type": "tree",
+  "abilities": {
+    "Burst Front": {
+      "title" : "Active - Burst",
+      "icon" : "minecraft:gunpowder",
+      "type": "palladium:command",
+      "description": "Allows you to explode, dealing damage to nearby entities ( Causes self damage )",
+      "hidden": false,
+      "list_index": 0,
+      "hidden_in_bar": false,
+      "gui_position": [0,0],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:activation",
+            "cooldown": 100,
+            "ticks": 1,
+            "key_type": "key_bind",
+            "needs_empty_hand": false
+          }
+        ]
+      },
+      "commands": [
+        "body @s set float chest burst_charge 25"
+      ]
+    },
+    "Burst Backend": {
+      "type": "bandits_quirk_lib:burst_gene",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "gui_position": [0,0],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:not",
+            "conditions": [{
+              "type": "palladium:ability_enabled",
+              "power": "null",
+              "ability": "Burst Front"
+            }]
+          }
+        ]
+      }
+    },
+    "Super Burst": {
+      "title" : "Active - Core Explosion",
+      "icon" : "minecraft:tnt",
+      "type": "bandits_quirk_lib:super_burst_charge_gene",
+      "description": "Big boo boom",
+      "hidden": false,
+      "hidden_in_bar": false,
+      "gui_position": [0,0],
+      "list_index": 1,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:held",
+            "cooldown": 100,
+            "key_type": "key_bind",
+            "needs_empty_hand": false
+          }
+        ]
+      }
+    },
+    "Super Burst End Effect": {
+      "type": "palladium:render_layer",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "render_layer": "bql:explosion_overlay"
+    },
+    "ExplosionProg": {
+      "type": "palladium:repeating_animation_timer",
+      "start_value": 1,
+      "max_value": 30,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "bandits_quirk_lib:burst_render"
+          }
+        ]
+      }
+    },
+    "HideLayers": {
+      "type": "palladium:hide_body_part",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "body_parts": [
+        "head_overlay",
+        "chest_overlay",
+        "right_arm_overlay",
+        "left_arm_overlay",
+        "right_leg_overlay",
+        "left_leg_overlay"
+      ],
+      "affects_first_person": true,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:ability_enabled",
+            "power": "null",
+            "ability": "ExplosionProg"
+          }
+        ]
+      }
+    },
+    "CoreExplosion End": {
+        "type": "bandits_quirk_lib:super_burst_explosion_gene",
+        "conditions": {
+          "enabling": [
+            {
+              "type": "palladium:animation_timer_ability",
+              "power": "null",
+              "ability": "ExplosionProg",
+              "min": 30,
+              "max": 30
+            }
+          ]
+        }
+    }
+  }
+}

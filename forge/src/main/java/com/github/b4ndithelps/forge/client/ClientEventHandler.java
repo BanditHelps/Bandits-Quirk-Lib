@@ -7,6 +7,7 @@ import com.github.b4ndithelps.forge.entities.WindProjectileEntity;
 import com.github.b4ndithelps.util.FileManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.entity.ArrowRenderer;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
