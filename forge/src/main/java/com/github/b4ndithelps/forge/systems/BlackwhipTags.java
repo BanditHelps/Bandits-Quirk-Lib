@@ -88,7 +88,7 @@ public final class BlackwhipTags {
 	public static List<LivingEntity> getTaggedEntities(ServerPlayer player, int maxDistance) {
 		Map<Integer, TagEntry> map = PLAYER_TAGS.get(player.getUUID());
 		if (map == null || map.isEmpty()) return java.util.Collections.emptyList();
-		cleanupExpired(player);
+		boolean mapModified = cleanupExpired(player);
 		ServerLevel level = (ServerLevel) player.level();
 		List<LivingEntity> out = new ArrayList<>();
 		for (Map.Entry<Integer, TagEntry> e : new ArrayList<>(map.entrySet())) {
@@ -99,9 +99,11 @@ public final class BlackwhipTags {
 				}
 			} else {
 				map.remove(e.getKey());
+				mapModified = true;
 			}
 		}
 		if (map.isEmpty()) PLAYER_TAGS.remove(player.getUUID());
+		if (mapModified) syncToClients(player);
         updateActiveTag(player);
 		return out;
 	}
@@ -131,18 +133,35 @@ public final class BlackwhipTags {
 		return out;
 	}
 
-	private static void cleanupExpired(ServerPlayer player) {
+	private static boolean cleanupExpired(ServerPlayer player) {
 		Map<Integer, TagEntry> map = PLAYER_TAGS.get(player.getUUID());
-		if (map == null) return;
+		if (map == null) return false;
+		boolean changed = false;
 		long gt = player.level().getGameTime();
 		for (Map.Entry<Integer, TagEntry> e : new ArrayList<>(map.entrySet())) {
 			TagEntry te = e.getValue();
 			if (gt - te.createdTick > te.expireTicks) {
 				map.remove(e.getKey());
+				changed = true;
 			}
 		}
 		if (map.isEmpty()) PLAYER_TAGS.remove(player.getUUID());
+		return changed;
 	}
+
+    /**
+     * Server-side periodic maintenance for a player's Blackwhip tags.
+     * Cleans up expired entries and pushes a client sync if anything changed.
+     */
+    public static void tick(ServerPlayer player) {
+        if (player == null || player.level().isClientSide) return;
+        boolean changed = cleanupExpired(player);
+        if (changed) {
+            syncToClients(player);
+        } else {
+            updateActiveTag(player);
+        }
+    }
 
     public static void syncToClients(ServerPlayer player) {
         // default visual parameters if not provided by ability
@@ -160,7 +179,8 @@ public final class BlackwhipTags {
     }
 
 	public static boolean isWhipDeployed(ServerPlayer player) {
-		cleanupExpired(player);
+		boolean changed = cleanupExpired(player);
+		if (changed) syncToClients(player);
 		Map<Integer, TagEntry> map = PLAYER_TAGS.get(player.getUUID());
 		return map != null && !map.isEmpty();
 	}
@@ -177,5 +197,3 @@ public final class BlackwhipTags {
 		}
 	}
 }
-
-
