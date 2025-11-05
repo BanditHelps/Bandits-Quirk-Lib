@@ -260,18 +260,9 @@ public final class BlackwhipRenderHandler {
             if (progress < 0.05F) progress = 0.05F;
             Vec3 end = eye.add(toTarget.scale(progress));
 
-            // After arrival, clamp the rope to fixed length captured at arrival to prevent visual stretching
+            // After arrival, always render the full rope from hand to the fixed anchor
             if (state.ticksLeft <= 0) {
-                if (state.maxLen <= 0.0) {
-                    state.maxLen = state.target.distanceTo(start);
-                }
-                Vec3 fromAnchorToHand = start.subtract(state.target);
-                double dist = fromAnchorToHand.length();
-                if (dist > state.maxLen && dist > 1.0e-6) {
-                    end = state.target.add(fromAnchorToHand.scale(state.maxLen / dist));
-                } else {
-                    end = start;
-                }
+                end = state.target;
             }
 
             double len = end.subtract(start).length();
