@@ -125,30 +125,24 @@ public class BlackwhipZipAbility extends Ability {
 			double dist = toPlayer.length();
 			if (dist > maxLen) {
 				Vec3 dir = toPlayer.scale(1.0 / dist);
-				// Remove outward radial velocity so motion becomes tangential (swing-like)
-				Vec3 vNow = player.getDeltaMovement();
-				double vOut = vNow.dot(dir);
-				if (vOut > 0) {
-					vNow = vNow.subtract(dir.scale(vOut));
-				}
-				// Spring toward the boundary with damping
-				double overshoot = dist - maxLen;
-				double stiffness = 1.4; // firm tug
-				double damping = 0.08;  // stabilize
-				Vec3 spring = dir.scale(-overshoot * stiffness);
-				Vec3 newVel = vNow.scale(1.0 - damping).add(spring);
-				player.setDeltaMovement(newVel);
-				player.hasImpulse = true;
-				player.fallDistance = 0.0F;
-				// Hard clamp position to exact rope boundary to prevent growth
+				// Hard clamp to rope length to enforce non-extendable constraint
 				Vec3 boundary = anchor.add(dir.scale(maxLen));
 				player.setPos(boundary.x, boundary.y, boundary.z);
-				// Send client immediate velocity so the tug is felt locally
+				// Project velocity onto tangent (remove all radial component) for pendulum-like motion
+				Vec3 v = player.getDeltaMovement();
+				double vRad = v.dot(dir);
+				Vec3 vTangential = v.subtract(dir.scale(vRad));
+				// Slight tangential damping to reduce jitter while keeping swing
+				double tangentialDamping = 0.0001;
+				Vec3 newVelocity = vTangential.scale(1.0 - tangentialDamping);
+				player.setDeltaMovement(newVelocity);
+				player.hasImpulse = true;
+				player.fallDistance = 0.0F;
+				// Sync client velocity for immediate local feel
 				BQLNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player),
-						new com.github.b4ndithelps.forge.network.PlayerVelocityS2CPacket(newVel.x, newVel.y, newVel.z, 0.0f));
+						new com.github.b4ndithelps.forge.network.PlayerVelocityS2CPacket(newVelocity.x, newVelocity.y, newVelocity.z, 0.0f));
 
 				if (Boolean.TRUE.equals(entry.getProperty(DEBUG)) && player.level() instanceof net.minecraft.server.level.ServerLevel sl) {
-					boundary = anchor.add(dir.scale(maxLen));
 					sl.sendParticles(ParticleTypes.CRIT, boundary.x, boundary.y, boundary.z, 6, 0.03, 0.03, 0.03, 0.0);
 				}
 			}
