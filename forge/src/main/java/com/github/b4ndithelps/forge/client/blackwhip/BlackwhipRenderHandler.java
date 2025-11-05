@@ -59,6 +59,8 @@ public final class BlackwhipRenderHandler {
     private static final class ClientAuraState {
         public final int sourcePlayerId;
         public boolean active;
+        public boolean targetVisible;
+        public float visibility; // 0..1 fade
         public int tentacleCount;
         public float length;
         public float curve;
@@ -68,6 +70,9 @@ public final class BlackwhipRenderHandler {
         public long seed;
         // Cached anchor offsets in player-local space (back area), built from seed
         public java.util.List<Vec3> localAnchors = new java.util.ArrayList<>();
+        // Smoothed world velocity and last world position for movement-based lag
+        public Vec3 lastWorldPos;
+        public Vec3 smoothedVel = Vec3.ZERO;
 
         public ClientAuraState(int sourcePlayerId) { this.sourcePlayerId = sourcePlayerId; }
     }
@@ -75,20 +80,22 @@ public final class BlackwhipRenderHandler {
 
     public static void applyAuraPacket(int sourcePlayerId, boolean active, int tentacleCount, float length, float curve, float thickness, float jaggedness, float orbitSpeed, long seed) {
         ClientAuraState s = PLAYER_TO_AURA.computeIfAbsent(sourcePlayerId, ClientAuraState::new);
-        s.active = active;
-        if (!active) {
-            s.tentacleCount = 0;
-            s.localAnchors.clear();
-            return;
+        if (active) {
+            s.active = true;
+            s.targetVisible = true;
+            s.tentacleCount = Math.max(1, tentacleCount);
+            s.length = Math.max(0.5f, length);
+            s.curve = Math.max(0.0f, curve);
+            s.thickness = Math.max(0.05f, thickness);
+            s.jaggedness = Math.max(0.0f, jaggedness);
+            s.orbitSpeed = Math.max(0.0f, orbitSpeed);
+            s.seed = seed;
+            if (s.localAnchors.size() != s.tentacleCount) rebuildAuraAnchors(s);
+        } else {
+            // begin fade-out; keep active until visibility reaches 0
+            s.targetVisible = false;
+            if (!s.active) s.active = true;
         }
-        s.tentacleCount = Math.max(1, tentacleCount);
-        s.length = Math.max(0.5f, length);
-        s.curve = Math.max(0.0f, curve);
-        s.thickness = Math.max(0.05f, thickness);
-        s.jaggedness = Math.max(0.0f, jaggedness);
-        s.orbitSpeed = Math.max(0.0f, orbitSpeed);
-        s.seed = seed;
-        rebuildAuraAnchors(s);
     }
 
     public static void applyPacket(int sourcePlayerId, boolean active, boolean restraining, int targetEntityId,
@@ -141,7 +148,7 @@ public final class BlackwhipRenderHandler {
         // Cleanup for players no longer present or inactive
         PLAYER_TO_WHIP.entrySet().removeIf(e -> level.getEntity(e.getKey()) == null || !e.getValue().active);
         PLAYER_TO_MULTI.entrySet().removeIf(e -> level.getEntity(e.getKey()) == null || !e.getValue().active);
-        PLAYER_TO_AURA.entrySet().removeIf(e -> level.getEntity(e.getKey()) == null || !e.getValue().active);
+        PLAYER_TO_AURA.entrySet().removeIf(e -> level.getEntity(e.getKey()) == null || (!e.getValue().active && e.getValue().visibility <= 0f));
 
         long gameTime = level.getGameTime();
         double time = gameTime + partial;
@@ -188,17 +195,18 @@ public final class BlackwhipRenderHandler {
 			float base = Math.max(0.02F, state.thickness * 0.065F);
 			float noiseAmp = Math.min(base * 0.75F, 0.08F);
 			// Outer glow first (slightly wider, semi-transparent) — push slightly away from camera to avoid coplanar artifacts
-			drawRibbonGradient(poseStack, buffer, cameraPos, points,
+            drawRibbonGradient(poseStack, buffer, cameraPos, points,
 					base * 1.25F,
 					0xB319E8DB, // start teal with alpha
 					0xB321E59A, // mid greenish-teal
 					0xB333F2FF, // end aqua
 					0.0015F,
-					noiseAmp,
-					time
+                    noiseAmp,
+                    time,
+                    1.0f
 			);
 			// Inner core on top (narrower, very dark blue-black) — pull slightly toward camera
-			drawRibbonSolid(poseStack, buffer, cameraPos, points, base * 0.54F, 0xFF0A0F11, -0.0007F, noiseAmp, time);
+            drawRibbonSolid(poseStack, buffer, cameraPos, points, base * 0.54F, 0xFF0A0F11, -0.0007F, noiseAmp, time, 1.0f);
 
             // Decrement once per game tick to match server tick rate
             if (!state.restraining && state.lastGameTimeDecrement != gameTime) {
@@ -235,14 +243,15 @@ public final class BlackwhipRenderHandler {
                         0xB333F2FF,
                         0.0015F,
                         noiseAmp,
-                        time);
-                drawRibbonSolid(poseStack, buffer, cameraPos, points, base * 0.54F, 0xFF0A0F11, -0.0007F, noiseAmp, time);
+                        time,
+                        1.0f);
+                drawRibbonSolid(poseStack, buffer, cameraPos, points, base * 0.54F, 0xFF0A0F11, -0.0007F, noiseAmp, time, 1.0f);
             }
         }
 
         // Render aura tentacles
         for (ClientAuraState aura : PLAYER_TO_AURA.values()) {
-            if (!aura.active) continue;
+            if (!aura.active && aura.visibility <= 0f) continue;
             Entity src = level.getEntity(aura.sourcePlayerId);
             if (!(src instanceof Player player)) continue;
 
@@ -252,16 +261,38 @@ public final class BlackwhipRenderHandler {
 
             Vec3 playerPos = player.getPosition(partial);
             Vec3 camera = cameraPos;
-            // Build basis from player look; back is opposite of look
-            Vec3 look = player.getViewVector(partial).normalize();
-            Vec3 back = look.scale(-1.0);
+            // Build basis from player yaw only (ignore pitch) to keep anchors off-screen when looking down
             Vec3 up = new Vec3(0, 1, 0);
-            Vec3 right = up.cross(back);
+            Vec3 fwdYaw = Vec3.directionFromRotation(0, player.getYRot()).normalize();
+            Vec3 back = fwdYaw.scale(-1.0);
+            Vec3 right = back.cross(up);
             if (right.lengthSqr() < 1.0e-6) right = new Vec3(1, 0, 0);
             right = right.normalize();
-            up = back.cross(right).normalize();
 
             time = gameTime + partial;
+
+            // Update fade-in/out
+            float fadeSpeed = 0.15f;
+            if (aura.targetVisible) {
+                if (aura.visibility < 1f) aura.visibility = Math.min(1f, aura.visibility + fadeSpeed);
+            } else {
+                if (aura.visibility > 0f) aura.visibility = Math.max(0f, aura.visibility - fadeSpeed);
+                if (aura.visibility <= 0f) {
+                    aura.active = false; // allow cleanup on next pass
+                }
+            }
+            if (aura.visibility <= 0f) continue;
+
+            // Update smoothed player velocity for aura physics using tick positions (cape-like)
+            Vec3 posNow = player.position();
+            Vec3 posPrevTick = new Vec3(player.xo, player.yo, player.zo);
+            Vec3 rawVel = posNow.subtract(posPrevTick); // blocks per tick
+            if (rawVel.lengthSqr() < 1.0e-6) {
+                // fallback to delta movement if tick pos hasn't changed yet
+                rawVel = player.getDeltaMovement();
+            }
+            double alpha = 0.35; // smoothing factor per frame
+            aura.smoothedVel = aura.smoothedVel.scale(1.0 - alpha).add(rawVel.scale(alpha));
 
 			for (int i = 0; i < aura.localAnchors.size(); i++) {
                 Vec3 local = aura.localAnchors.get(i);
@@ -269,26 +300,29 @@ public final class BlackwhipRenderHandler {
 				double phase = 0.7 * i + time * 0.03 * Math.max(0.1, aura.orbitSpeed);
 				double breathe = 0.05 * Math.sin(phase);
 				double bob = 0.06 * Math.sin(time * 0.04 * Math.max(0.1, aura.orbitSpeed) + i * 0.9);
-				Vec3 backBase = playerPos.add(0, player.getBbHeight() * 0.55, 0);
+                Vec3 backBase = playerPos.add(0, player.getBbHeight() * 0.50, 0);
                 Vec3 anchor = backBase
-                        .add(back.scale(0.32 + breathe))
+                        .add(back.scale(0.15 + breathe))
                         .add(right.scale(local.x))
-						.add(up.scale(local.y + bob))
+                        .add(up.scale(local.y + bob))
+                        .add(aura.smoothedVel.scale(-0.25))
                         .add(back.scale(local.z));
 
-                java.util.List<Vec3> pts = buildAuraTentacle(anchor, back, right, up, aura, i, time);
+                java.util.List<Vec3> pts = buildAuraTentacle(anchor, back, right, up, aura, i, time, aura.smoothedVel);
 
                 float base = Math.max(0.02F, aura.thickness * 0.06F);
                 float noiseAmp = Math.min(base * 0.9F, Math.max(0.02F, aura.jaggedness));
-                drawRibbonGradient(poseStack, buffer, camera, pts,
-                        base * 1.35F,
+            float widthScale = 0.2f + 0.8f * aura.visibility;
+            drawRibbonGradient(poseStack, buffer, camera, pts,
+                        (base * widthScale) * 1.35F,
                         0xB319E8DB,
                         0xB321E59A,
                         0xB333F2FF,
                         0.0015F,
                         noiseAmp,
-                        time);
-                drawRibbonSolid(poseStack, buffer, camera, pts, base * 0.6F, 0xFF0A0F11, -0.0007F, noiseAmp, time);
+                        time,
+                        aura.visibility);
+                drawRibbonSolid(poseStack, buffer, camera, pts, (base * widthScale) * 0.6F, 0xFF0A0F11, -0.0007F, noiseAmp, time, aura.visibility);
             }
         }
     }
@@ -308,7 +342,7 @@ public final class BlackwhipRenderHandler {
         }
     }
 
-    private static java.util.List<Vec3> buildAuraTentacle(Vec3 anchor, Vec3 back, Vec3 right, Vec3 up, ClientAuraState aura, int index, double time) {
+    private static java.util.List<Vec3> buildAuraTentacle(Vec3 anchor, Vec3 back, Vec3 right, Vec3 up, ClientAuraState aura, int index, double time, Vec3 playerVel) {
         // Downward-curving, side-biased tendril with gentle bobbing and shoulder-peek arc
         Vec3 down = up.scale(-1.0);
         java.util.Random rng = new java.util.Random(aura.seed + index * 31L);
@@ -360,8 +394,18 @@ public final class BlackwhipRenderHandler {
                     .add(back.scale(0.35 * aura.curve * uBack));
             double uDrift = Math.pow(u, 1.25);
             Vec3 radial = ringDir.scale(spread * aura.curve * uDrift);
-            Vec3 bend = baseBend.add(shoulderPeek).add(radial);
-            Vec3 desired = t.add(bend.scale(0.8 * (1.0 - u))).normalize();
+            // Movement lag (cape-like): oppose player velocity, stronger toward tip
+            double vR = playerVel.dot(right);
+            double vU = playerVel.dot(up);
+            double vB = playerVel.dot(back);
+            Vec3 lag = right.scale(-vR * 3.0).add(up.scale(-vU * 4.0)).add(back.scale(-vB * 3.5));
+            double lagScale = Math.pow(u, 1.15);
+            if (playerVel.y < 0) {
+                // Extra upward lag when falling
+                lag = lag.add(up.scale(Math.min(3.0, -playerVel.y * 6.0) * (0.4 + 0.6 * u)));
+            }
+            Vec3 bend = baseBend.add(shoulderPeek).add(radial).add(lag.scale(lagScale));
+            Vec3 desired = t.add(bend.scale(1.15 * (1.0 - u))).normalize();
             t = desired;
 
             p = p.add(t.scale(step)).add(offset.scale(0.5 * (1.0 - u))); // less jagged at tip
@@ -407,7 +451,7 @@ public final class BlackwhipRenderHandler {
     private static void drawRibbonGradient(PoseStack poseStack, MultiBufferSource buffer, Vec3 cameraPos,
                                            List<Vec3> points, float baseHalfWidth,
                                            int startColor, int midColor, int endColor,
-                                           float depthBias, float noiseAmplitude, double time) {
+                                           float depthBias, float noiseAmplitude, double time, float alphaScale) {
         if (points.size() < 2) return;
 
         VertexConsumer consumer = buffer.getBuffer(RenderType.leash());
@@ -445,6 +489,7 @@ public final class BlackwhipRenderHandler {
 
             int argb = lerpGradient(t, startColor, midColor, endColor);
             float a = ((argb >> 24) & 0xFF) / 255f;
+            a *= alphaScale;
             float r = ((argb >> 16) & 0xFF) / 255f;
             float g = ((argb >> 8) & 0xFF) / 255f;
             float b = (argb & 0xFF) / 255f;
@@ -471,7 +516,7 @@ public final class BlackwhipRenderHandler {
     }
 
     private static void drawRibbonSolid(PoseStack poseStack, MultiBufferSource buffer, Vec3 cameraPos,
-                                       List<Vec3> points, float halfWidth, int argb, float depthBias, float noiseAmplitude, double time) {
+                                       List<Vec3> points, float halfWidth, int argb, float depthBias, float noiseAmplitude, double time, float alphaScale) {
 		if (points.size() < 2) return;
 
 		VertexConsumer consumer = buffer.getBuffer(RenderType.leash());
@@ -483,7 +528,8 @@ public final class BlackwhipRenderHandler {
 		EntityRenderDispatcher erd = Minecraft.getInstance().getEntityRenderDispatcher();
 		Vec3 camForward = Vec3.directionFromRotation(erd.camera.getXRot(), erd.camera.getYRot());
 
-		float a = ((argb >> 24) & 0xFF) / 255f;
+        float a = ((argb >> 24) & 0xFF) / 255f;
+        a *= alphaScale;
 		float r = ((argb >> 16) & 0xFF) / 255f;
 		float g = ((argb >> 8) & 0xFF) / 255f;
 		float b = (argb & 0xFF) / 255f;
