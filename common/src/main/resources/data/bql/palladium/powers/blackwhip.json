@@ -315,5 +315,38 @@
         ]
       }
     }
+    ,
+    "blackwhip_bubble_shield": {
+      "type": "bandits_quirk_lib:blackwhip_bubble_shield",
+      "icon": "minecraft:shield",
+      "title": "Bubble Shield",
+      "description": "Tentacles form a spherical shield in front of you, converting hits into knockback at a stamina cost.",
+      "hidden": false,
+      "hidden_in_bar": false,
+      "list_index": 6,
+      "stamina_interval_cost": 10,
+      "stamina_interval": 20,
+      "tentacle_count": 12,
+      "radius": 1.6,
+      "forward_offset": 1.2,
+      "curve": 1.2,
+      "thickness": 1.0,
+      "jaggedness": 0.3,
+      "knockback_strength": 0.6,
+      "stamina_per_damage": 10.0,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:toggle"
+          }
+        ],
+        "unlocking": [
+          {
+            "type": "palladium:ability_unlocked",
+            "ability": "blackwhip_quirk_info"
+          }
+        ]
+      }
+    }
   }
 }

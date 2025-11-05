@@ -91,6 +91,22 @@ public final class BlackwhipRenderHandler {
     }
     private static final Map<Integer, ClientAuraState> PLAYER_TO_AURA = new HashMap<>();
 
+    // Bubble shield state per player
+    private static final class ClientBubbleState {
+        public final int sourcePlayerId;
+        public boolean active;
+        public int tentacleCount;
+        public float radius;
+        public float forwardOffset;
+        public float curve;
+        public float thickness;
+        public float jaggedness;
+        public long seed;
+        public java.util.List<Vec3> localAnchors = new java.util.ArrayList<>();
+        public ClientBubbleState(int id) { this.sourcePlayerId = id; }
+    }
+    private static final Map<Integer, ClientBubbleState> PLAYER_TO_BUBBLE = new HashMap<>();
+
     public static void applyAuraPacket(int sourcePlayerId, boolean active, int tentacleCount, float length, float curve, float thickness, float jaggedness, float orbitSpeed, long seed) {
         ClientAuraState s = PLAYER_TO_AURA.computeIfAbsent(sourcePlayerId, ClientAuraState::new);
         if (active) {
@@ -108,6 +124,21 @@ public final class BlackwhipRenderHandler {
             // begin fade-out; keep active until visibility reaches 0
             s.targetVisible = false;
             if (!s.active) s.active = true;
+        }
+    }
+
+    public static void applyBubbleShieldPacket(int sourcePlayerId, boolean active, int tentacleCount, float radius, float forwardOffset, float curve, float thickness, float jaggedness, long seed) {
+        ClientBubbleState s = PLAYER_TO_BUBBLE.computeIfAbsent(sourcePlayerId, ClientBubbleState::new);
+        s.active = active;
+        if (active) {
+            s.tentacleCount = Math.max(1, tentacleCount);
+            s.radius = Math.max(0.25f, radius);
+            s.forwardOffset = Math.max(0.0f, forwardOffset);
+            s.curve = Math.max(0.0f, curve);
+            s.thickness = Math.max(0.05f, thickness);
+            s.jaggedness = Math.max(0.0f, jaggedness);
+            s.seed = seed;
+            if (s.localAnchors.size() != s.tentacleCount) rebuildAuraAnchorsLike(s);
         }
     }
 
@@ -176,6 +207,7 @@ public final class BlackwhipRenderHandler {
         PLAYER_TO_BLOCK_WHIP.entrySet().removeIf(e -> level.getEntity(e.getKey()) == null || !e.getValue().active);
         PLAYER_TO_MULTI.entrySet().removeIf(e -> level.getEntity(e.getKey()) == null || !e.getValue().active);
         PLAYER_TO_AURA.entrySet().removeIf(e -> level.getEntity(e.getKey()) == null || (!e.getValue().active && e.getValue().visibility <= 0f));
+        PLAYER_TO_BUBBLE.entrySet().removeIf(e -> level.getEntity(e.getKey()) == null || !e.getValue().active);
 
         long gameTime = level.getGameTime();
         double time = gameTime + partial;
@@ -387,6 +419,94 @@ public final class BlackwhipRenderHandler {
                 drawRibbonSolid(poseStack, buffer, camera, pts, (base * widthScale) * 0.6F, 0xFF0A0F11, -0.0007F, noiseAmp, time, aura.visibility);
             }
         }
+
+        // Render bubble shield tentacles (flower-bud style: converge to apex, then ride the sphere rim)
+        for (ClientBubbleState bubble : PLAYER_TO_BUBBLE.values()) {
+            if (!bubble.active) continue;
+            Entity src = level.getEntity(bubble.sourcePlayerId);
+            if (!(src instanceof Player player)) continue;
+
+            if (bubble.localAnchors.size() != bubble.tentacleCount) rebuildAuraAnchorsLike(bubble);
+
+            Vec3 camera = cameraPos;
+            float partialTick = partial;
+            Vec3 eye = player.getEyePosition(partialTick);
+            Vec3 look = player.getViewVector(partialTick).normalize();
+            Vec3 up = new Vec3(0,1,0);
+            // Yaw-only basis for stable back anchors (prevents anchors from popping into view when looking down)
+            Vec3 fwdYaw = Vec3.directionFromRotation(0, player.getYRot()).normalize();
+            Vec3 backYaw = fwdYaw.scale(-1.0);
+            Vec3 rightYaw = backYaw.cross(up);
+            if (rightYaw.lengthSqr() < 1.0e-6) rightYaw = new Vec3(1,0,0);
+            rightYaw = rightYaw.normalize();
+
+            // Sphere center, radius and forward apex point on sphere (yaw-only orientation)
+            float r = Math.max(0.25f, bubble.radius);
+            Vec3 center = eye.add(fwdYaw.scale(Math.max(0.2f, bubble.forwardOffset)));
+            Vec3 apex = center.add(fwdYaw.scale(r));
+
+            int n = Math.max(1, bubble.tentacleCount);
+            double baseArc = (2.0 * Math.PI) / n; // azimuth distribution around forward axis
+
+            for (int i = 0; i < n; i++) {
+                // Build back anchor on player's upper back
+                Vec3 local = bubble.localAnchors.get(i % bubble.localAnchors.size());
+                Vec3 backBase = player.getPosition(partialTick).add(0, player.getBbHeight() * 0.48, 0);
+                // Push anchors further behind and slightly lower to avoid first-person visibility when looking down
+                Vec3 anchor = backBase
+                        .add(backYaw.scale(0.32))
+                        .add(rightYaw.scale(local.x * 1.25))
+                        .add(up.scale(local.y - 0.06))
+                        .add(backYaw.scale(local.z + 0.10));
+
+                // Azimuth around the forward axis for this meridian (slight jitter for organic look)
+                double phi = i * baseArc + Math.sin((time * 0.05) + i * 1.7) * 0.06;
+                Vec3 equatorDir = rightYaw.scale(Math.cos(phi)).add(up.scale(Math.sin(phi))).normalize();
+
+                // Build the petal path: anchor -> back hemisphere contact -> sweep along meridian to front apex (3D)
+                java.util.List<Vec3> points = new java.util.ArrayList<>();
+
+                // Section 1: anchor to a point just outside the back hemisphere (wrap around, do not pierce chest)
+                {
+                    double thetaStart = Math.PI - (0.45 + 0.10 * Math.sin(i * 1.37));
+                    Vec3 backDir = fwdYaw.scale(Math.cos(thetaStart)).add(equatorDir.scale(Math.sin(thetaStart))).normalize();
+                    // Slightly outside the sphere to create an outward arch from the back
+                    Vec3 backContact = center.add(backDir.scale(r * 1.10));
+                    double len = backContact.subtract(anchor).length();
+                    int seg = Math.max(14, (int)Math.min(48, len * 6.0));
+                    points.addAll(buildCurve(anchor, backContact, bubble.curve, seg));
+                }
+
+                // Section 2: sweep along the same meridian from backContact toward the front apex (theta → 0)
+                {
+                    double thetaStart = Math.PI - (0.45 + 0.10 * Math.sin(i * 1.37));
+                    int seg = Math.max(32, (int)(r * 60));
+                    for (int s = 1; s <= seg; s++) {
+                        double t = s / (double)seg; // 0..1
+                        double theta = (1.0 - t) * thetaStart; // end at 0 (apex)
+                        Vec3 p = center.add(
+                                fwdYaw.scale(Math.cos(theta) * r)
+                                        .add(equatorDir.scale(Math.sin(theta) * r))
+                        );
+                        points.add(p);
+                    }
+                }
+
+                // Draw
+                float base = Math.max(0.02F, bubble.thickness * 0.065F);
+                float noiseAmp = Math.min(base * 0.75F, Math.max(0.01F, bubble.jaggedness));
+                drawRibbonGradient(poseStack, buffer, camera, points,
+                        base * 1.30F,
+                        0xB319E8DB,
+                        0xB321E59A,
+                        0xB333F2FF,
+                        0.0015F,
+                        noiseAmp,
+                        time,
+                        1.0f);
+                drawRibbonSolid(poseStack, buffer, camera, points, base * 0.56F, 0xFF0A0F11, -0.0007F, noiseAmp, time, 1.0f);
+            }
+        }
     }
 
     private static void rebuildAuraAnchors(ClientAuraState s) {
@@ -400,6 +520,21 @@ public final class BlackwhipRenderHandler {
             double x = Math.cos(a) * rx * 0.45; // straddle spine
             double y = 0.25 + (rng.nextDouble() - 0.3) * ry; // shoulder blades area
             double z = 0.05 + rng.nextDouble() * 0.12; // slight embed into back
+            s.localAnchors.add(new Vec3(x, y, z));
+        }
+    }
+
+    // Build anchors for bubble shield similar to aura placement on back
+    private static void rebuildAuraAnchorsLike(ClientBubbleState s) {
+        s.localAnchors.clear();
+        java.util.Random rng = new java.util.Random(s.seed);
+        for (int i = 0; i < s.tentacleCount; i++) {
+            double a = 2 * Math.PI * (i / Math.max(1.0, (double) s.tentacleCount)) + rng.nextDouble() * 0.9;
+            double rx = 0.35 + rng.nextDouble() * 0.15;
+            double ry = 0.25 + rng.nextDouble() * 0.10;
+            double x = Math.cos(a) * rx * 0.45;
+            double y = 0.25 + (rng.nextDouble() - 0.3) * ry;
+            double z = 0.05 + rng.nextDouble() * 0.12;
             s.localAnchors.add(new Vec3(x, y, z));
         }
     }

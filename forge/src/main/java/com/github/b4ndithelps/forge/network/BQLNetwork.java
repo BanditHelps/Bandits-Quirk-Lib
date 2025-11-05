@@ -149,6 +149,13 @@ public final class BQLNetwork {
                 .decoder(BlackwhipAuraPacket::decode)
                 .consumerMainThread(BlackwhipAuraPacket::handle)
                 .add();
+
+        // Blackwhip bubble shield visuals (server -> clients)
+        CHANNEL.messageBuilder(BlackwhipBubbleShieldPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(BlackwhipBubbleShieldPacket::encode)
+                .decoder(BlackwhipBubbleShieldPacket::decode)
+                .consumerMainThread(BlackwhipBubbleShieldPacket::handle)
+                .add();
     }
 }
 
