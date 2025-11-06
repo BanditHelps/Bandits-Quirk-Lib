@@ -103,6 +103,11 @@ public final class BlackwhipRenderHandler {
         public float jaggedness;
         public long seed;
         public java.util.List<Vec3> localAnchors = new java.util.ArrayList<>();
+        // Activation tick used to animate tentacle growth on first enable
+        public long activateGameTime = -1L;
+        // Deactivation animation state (shrink all tentacles simultaneously)
+        public boolean deactivating = false;
+        public long deactivateGameTime = -1L;
         public ClientBubbleState(int id) { this.sourcePlayerId = id; }
     }
     private static final Map<Integer, ClientBubbleState> PLAYER_TO_BUBBLE = new HashMap<>();
@@ -129,8 +134,9 @@ public final class BlackwhipRenderHandler {
 
     public static void applyBubbleShieldPacket(int sourcePlayerId, boolean active, int tentacleCount, float radius, float forwardOffset, float curve, float thickness, float jaggedness, long seed) {
         ClientBubbleState s = PLAYER_TO_BUBBLE.computeIfAbsent(sourcePlayerId, ClientBubbleState::new);
-        s.active = active;
         if (active) {
+            s.active = true;
+            s.deactivating = false;
             s.tentacleCount = Math.max(1, tentacleCount);
             s.radius = Math.max(0.25f, radius);
             s.forwardOffset = Math.max(0.0f, forwardOffset);
@@ -139,6 +145,14 @@ public final class BlackwhipRenderHandler {
             s.jaggedness = Math.max(0.0f, jaggedness);
             s.seed = seed;
             if (s.localAnchors.size() != s.tentacleCount) rebuildAuraAnchorsLike(s);
+            // Reset activation time so animation restarts on enable; will be initialized on next render
+            s.activateGameTime = -1L;
+            s.deactivateGameTime = -1L;
+        } else {
+            // Begin deactivation: keep rendering while shrinking until finished
+            s.active = false;
+            s.deactivating = true;
+            s.deactivateGameTime = -1L; // will be set on first render tick
         }
     }
 
@@ -207,7 +221,11 @@ public final class BlackwhipRenderHandler {
         PLAYER_TO_BLOCK_WHIP.entrySet().removeIf(e -> level.getEntity(e.getKey()) == null || !e.getValue().active);
         PLAYER_TO_MULTI.entrySet().removeIf(e -> level.getEntity(e.getKey()) == null || !e.getValue().active);
         PLAYER_TO_AURA.entrySet().removeIf(e -> level.getEntity(e.getKey()) == null || (!e.getValue().active && e.getValue().visibility <= 0f));
-        PLAYER_TO_BUBBLE.entrySet().removeIf(e -> level.getEntity(e.getKey()) == null || !e.getValue().active);
+        PLAYER_TO_BUBBLE.entrySet().removeIf(e -> {
+            Entity ent = level.getEntity(e.getKey());
+            BlackwhipRenderHandler.ClientBubbleState bs = e.getValue();
+            return ent == null || (!bs.active && !bs.deactivating);
+        });
 
         long gameTime = level.getGameTime();
         double time = gameTime + partial;
@@ -422,7 +440,7 @@ public final class BlackwhipRenderHandler {
 
         // Render bubble shield tentacles (flower-bud style: converge to apex, then ride the sphere rim)
         for (ClientBubbleState bubble : PLAYER_TO_BUBBLE.values()) {
-            if (!bubble.active) continue;
+            if (!bubble.active && !bubble.deactivating) continue;
             Entity src = level.getEntity(bubble.sourcePlayerId);
             if (!(src instanceof Player player)) continue;
 
@@ -456,7 +474,32 @@ public final class BlackwhipRenderHandler {
             int n = Math.max(1, bubble.tentacleCount);
             double baseArc = (2.0 * Math.PI) / n; // azimuth distribution around forward axis
 
-            for (int i = 0; i < n; i++) {
+            // Initialize animation times on first render after state changes
+            if (bubble.active && bubble.activateGameTime < 0L) bubble.activateGameTime = gameTime;
+            if (bubble.deactivating && bubble.deactivateGameTime < 0L) bubble.deactivateGameTime = gameTime;
+            // Animation timings
+            final double growDuration = 9.0; // ticks for each tentacle to reach full length (snappier)
+            final double perTentacleStagger = 1.5; // ticks between tentacle starts (snappier)
+            final double shrinkDuration = 7.0; // ticks to retract fully (all at once)
+
+			for (int i = 0; i < n; i++) {
+                // Compute tentacle progress: either growth (staggered) or shrink (simultaneous)
+                float progress;
+                if (bubble.active && !bubble.deactivating) {
+                    // Growth with per-tentacle stagger
+                    double tentacleStart = bubble.activateGameTime + i * perTentacleStagger;
+                    double rawT = (time - tentacleStart) / growDuration; // time includes partials
+                    if (rawT <= 0.0) continue; // not started yet
+                    if (rawT > 1.0) rawT = 1.0;
+                    progress = easeInOutCubic((float)rawT);
+                } else {
+                    // Shrink all at once
+                    double rawT = (time - bubble.deactivateGameTime) / shrinkDuration;
+                    if (rawT < 0.0) rawT = 0.0;
+                    if (rawT > 1.0) rawT = 1.0;
+                    float easedShrink = easeInOutCubic((float)rawT);
+                    progress = 1.0f - easedShrink; // 1 -> 0 over time
+                }
                 // Build back anchor on player's upper back
                 Vec3 local = bubble.localAnchors.get(i % bubble.localAnchors.size());
                 Vec3 backBase = player.getPosition(partialTick).add(0, player.getBbHeight() * 0.47, 0);
@@ -501,22 +544,40 @@ public final class BlackwhipRenderHandler {
                     }
                 }
 
-                // Draw
+				// Trim the path to current growth progress so it appears to extend from the back
+                int totalPts = points.size();
+                int visiblePts = Math.max(2, (int)Math.round(totalPts * progress));
+				if (visiblePts < totalPts) {
+					points = new java.util.ArrayList<>(points.subList(0, visiblePts));
+				}
+
+				// Draw
                 // Slight per-tentacle thickness variation and reduced wiggle
                 java.util.Random rng = new java.util.Random(bubble.seed + (long)i * 31L);
                 float thicknessJitter = 0.9f + (float)rng.nextDouble() * 0.2f; // 0.9..1.1
                 float base = Math.max(0.02F, bubble.thickness * 0.065F * thicknessJitter);
                 float noiseAmp = Math.min(base * 0.75F, Math.max(0.01F, bubble.jaggedness)) * 0.65F;
-                drawRibbonGradient(poseStack, buffer, camera, points,
-                        base * 1.30F,
+                // Scale width and alpha with progress for smooth appear/disappear
+                float widthScale = 0.35f + 0.65f * progress;
+                float alphaScale = 0.25f + 0.75f * progress;
+				drawRibbonGradient(poseStack, buffer, camera, points,
+						(base * 1.30F) * widthScale,
                         0xB319E8DB,
                         0xB321E59A,
                         0xB333F2FF,
                         0.0015F,
                         noiseAmp,
-                        time,
-                        1.0f);
-                drawRibbonSolid(poseStack, buffer, camera, points, base * 0.56F, 0xFF0A0F11, -0.0007F, noiseAmp, time, 1.0f);
+						time,
+						alphaScale);
+				drawRibbonSolid(poseStack, buffer, camera, points, (base * 0.56F) * widthScale, 0xFF0A0F11, -0.0007F, noiseAmp, time, alphaScale);
+            }
+
+            // If deactivation finished, stop rendering next frame
+            if (bubble.deactivating) {
+                double rawT = (time - bubble.deactivateGameTime) / shrinkDuration;
+                if (rawT >= 1.0) {
+                    bubble.deactivating = false;
+                }
             }
         }
     }

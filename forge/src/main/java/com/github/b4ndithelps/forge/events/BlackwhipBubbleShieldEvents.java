@@ -70,11 +70,13 @@ public class BlackwhipBubbleShieldEvents {
 		dir = dir.scale(1.0 / len);
 		double kb = player.getPersistentData().getDouble("Bql.BubbleShield.Knockback");
 		if (kb <= 0) kb = 0.6;
-		Vec3 push = dir.scale(kb);
-		victim.push(push.x, Math.min(0.6, kb * 0.5), push.z);
+		// Scale knockback by incoming damage amount
+		double kbScaled = kb * incoming;
+		Vec3 push = dir.scale(kbScaled);
+		victim.push(push.x, Math.min(0.6, kbScaled * 0.5), push.z);
 		victim.hurtMarked = true;
 		victim.fallDistance = 0.0F;
-		BQLNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new PlayerVelocityS2CPacket(push.x, Math.min(0.6, kb * 0.5), push.z, 0.6f));
+		BQLNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new PlayerVelocityS2CPacket(push.x, Math.min(0.6, kbScaled * 0.5), push.z, 0.6f));
 
 		// Visual feedback: tiny spark burst at sphere center
 		if (victim.level() instanceof ServerLevel sl) {
