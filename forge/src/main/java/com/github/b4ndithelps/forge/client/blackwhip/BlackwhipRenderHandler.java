@@ -462,10 +462,10 @@ public final class BlackwhipRenderHandler {
                 Vec3 backBase = player.getPosition(partialTick).add(0, player.getBbHeight() * 0.47, 0);
                 // Push anchors further behind and slightly lower to avoid first-person visibility when looking down
                 Vec3 anchor = backBase
-                        .add(backYaw.scale(0.46))
+                        .add(backYaw.scale(0.38))
                         .add(rightYaw.scale(local.x * 1.25))
                         .add(up.scale(local.y - 0.10))
-                        .add(backYaw.scale(local.z + 0.14));
+                        .add(backYaw.scale(local.z + 0.07));
 
                 // Azimuth around the forward axis for this meridian (slight jitter for organic look)
                 double phi = i * baseArc + Math.sin((time * 0.05) + i * 1.7) * 0.06;
