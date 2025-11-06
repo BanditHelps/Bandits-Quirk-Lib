@@ -86,6 +86,8 @@ public final class BlackwhipRenderHandler {
         // Smoothed world velocity and last world position for movement-based lag
         public Vec3 lastWorldPos;
         public Vec3 smoothedVel = Vec3.ZERO;
+        // Activation tick used to animate tentacle growth on first enable
+        public long activateGameTime = -1L;
 
         public ClientAuraState(int sourcePlayerId) { this.sourcePlayerId = sourcePlayerId; }
     }
@@ -125,6 +127,8 @@ public final class BlackwhipRenderHandler {
             s.orbitSpeed = Math.max(0.0f, orbitSpeed);
             s.seed = seed;
             if (s.localAnchors.size() != s.tentacleCount) rebuildAuraAnchors(s);
+            // Reset activation time so growth animation restarts on enable; will be initialized on next render
+            s.activateGameTime = -1L;
         } else {
             // begin fade-out; keep active until visibility reaches 0
             s.targetVisible = false;
@@ -393,6 +397,9 @@ public final class BlackwhipRenderHandler {
 
             time = gameTime + partial;
 
+            // Initialize growth timing on first visible render
+            if (aura.targetVisible && aura.activateGameTime < 0L) aura.activateGameTime = gameTime;
+
             // Update fade-in/out
             float fadeSpeed = 0.15f;
             if (aura.targetVisible) {
@@ -432,10 +439,33 @@ public final class BlackwhipRenderHandler {
 
                 java.util.List<Vec3> pts = buildAuraTentacle(anchor, back, right, up, aura, i, time, aura.smoothedVel);
 
+                // Growth progress with slight per-tentacle stagger
+                final double growDuration = 10.0; // ticks to reach full length
+                final double perTentacleStagger = 1.2; // ticks between tentacle starts
+                float progress;
+                if (aura.activateGameTime >= 0L) {
+                    double tentacleStart = aura.activateGameTime + i * perTentacleStagger;
+                    double rawT = (time - tentacleStart) / growDuration; // includes partials
+                    if (rawT <= 0.0) rawT = 0.0;
+                    if (rawT > 1.0) rawT = 1.0;
+                    progress = easeInOutCubic((float)rawT);
+                } else {
+                    progress = 1.0f;
+                }
+
+                // Trim the path so it appears to extend out from the player
+                int totalPts = pts.size();
+                int visiblePts = Math.max(2, (int)Math.round(totalPts * progress));
+                if (visiblePts < totalPts) {
+                    pts = new java.util.ArrayList<>(pts.subList(0, visiblePts));
+                }
+
                 float base = Math.max(0.02F, aura.thickness * 0.06F);
                 float noiseAmp = Math.min(base * 0.9F, Math.max(0.02F, aura.jaggedness));
-            float widthScale = 0.2f + 0.8f * aura.visibility;
-            drawRibbonGradient(poseStack, buffer, camera, pts,
+                // Scale width with both visibility fade and growth progress; alpha scales similarly
+                float widthScale = (0.2f + 0.8f * aura.visibility) * (0.35f + 0.65f * progress);
+                float alphaScale = aura.visibility * (0.25f + 0.75f * progress);
+                drawRibbonGradient(poseStack, buffer, camera, pts,
                         (base * widthScale) * 1.35F,
                         0xB319E8DB,
                         0xB321E59A,
@@ -443,8 +473,8 @@ public final class BlackwhipRenderHandler {
                         0.0015F,
                         noiseAmp,
                         time,
-                        aura.visibility);
-                drawRibbonSolid(poseStack, buffer, camera, pts, (base * widthScale) * 0.6F, 0xFF0A0F11, -0.0007F, noiseAmp, time, aura.visibility);
+                        alphaScale);
+                drawRibbonSolid(poseStack, buffer, camera, pts, (base * widthScale) * 0.6F, 0xFF0A0F11, -0.0007F, noiseAmp, time, alphaScale);
             }
         }
 
@@ -932,14 +962,25 @@ public final class BlackwhipRenderHandler {
     }
 
     private static Vec3 getHandPosition(Player player, float partial) {
-        Vec3 eye = player.getEyePosition(partial);
-        Vec3 look = player.getViewVector(partial);
-        Vec3 up = new Vec3(0, 1, 0);
-        Vec3 right = look.cross(up);
-        if (right.lengthSqr() < 1.0e-6) right = new Vec3(1, 0, 0);
-        right = right.normalize();
-        float sideDir = player.getMainArm() == HumanoidArm.RIGHT ? 1.0f : -1.0f;
-        return eye.add(0, -0.2, 0).add(right.scale(0.35 * sideDir));
+		// Use yaw-only basis to place start near the main-hand side of the torso
+		Vec3 up = new Vec3(0, 1, 0);
+		Vec3 fwdYaw = Vec3.directionFromRotation(0, player.getYRot()).normalize();
+		Vec3 rightYaw = fwdYaw.cross(up);
+		if (rightYaw.lengthSqr() < 1.0e-6) rightYaw = new Vec3(1, 0, 0);
+		rightYaw = rightYaw.normalize();
+		float sideDir = player.getMainArm() == HumanoidArm.RIGHT ? 1.0f : -1.0f;
+
+		// Base point roughly at shoulder height, offset outward to the hand side and slightly forward
+		double shoulderHeight = Math.max(0.4, Math.min(0.8, player.getBbHeight() * 0.62));
+		double crouchAdjust = player.isCrouching() ? -0.10 : 0.0;
+		Vec3 base = player.getPosition(partial).add(0, shoulderHeight + crouchAdjust, 0);
+
+		// Add a small component of current look to push the start forward with camera aim
+		Vec3 look = player.getViewVector(partial).normalize();
+		return base
+				.add(rightYaw.scale(0.42 * sideDir))
+				.add(fwdYaw.scale(0.28))
+				.add(look.scale(0.10));
     }
 
     // Build and draw several closed-loop ribbons that wrap around an entity's horizontal bounds.
