@@ -3,14 +3,18 @@ package com.github.b4ndithelps.forge.abilities;
 import com.github.b4ndithelps.forge.network.BQLNetwork;
 import com.github.b4ndithelps.forge.network.BlackwhipBlockWhipPacket;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.entity.projectile.ProjectileUtil;
+import net.minecraft.world.phys.AABB;
 import net.minecraftforge.network.PacketDistributor;
 import net.threetag.palladium.power.IPowerHolder;
 import net.threetag.palladium.power.ability.Ability;
@@ -82,23 +86,28 @@ public class BlackwhipZipAbility extends Ability {
             return;
         }
 
-        // First press: raycast to a block and store anchor + play visuals
-        BlockHitResult hit = player.level().clip(new ClipContext(
-                player.getEyePosition(),
-                player.getEyePosition().add(player.getLookAngle().scale(range)),
+        // First press: raycast entity and block. If entity is hit first, pull entity toward player; otherwise anchor to block
+        Vec3 eye = player.getEyePosition();
+        Vec3 end = eye.add(player.getLookAngle().scale(range));
+
+        // Block hit
+        BlockHitResult blockHit = player.level().clip(new ClipContext(
+                eye,
+                end,
                 ClipContext.Block.OUTLINE,
                 ClipContext.Fluid.NONE,
                 player));
-        if (hit.getType() != HitResult.Type.BLOCK) return;
 
-        Vec3 anchor = Vec3.atCenterOf(hit.getBlockPos());
+        if (blockHit.getType() != HitResult.Type.BLOCK) return;
+
+        Vec3 anchor = Vec3.atCenterOf(blockHit.getBlockPos());
         entry.setUniqueProperty(HAS_ANCHOR, true);
         entry.setUniqueProperty(ANCHOR_X, anchor.x);
         entry.setUniqueProperty(ANCHOR_Y, anchor.y);
         entry.setUniqueProperty(ANCHOR_Z, anchor.z);
 		// Store rope maximum length at moment of attachment so it cannot grow longer
-		double maxLen = anchor.distanceTo(player.position());
-		entry.setUniqueProperty(ANCHOR_MAXLEN, maxLen);
+        double maxLen = anchor.distanceTo(player.position());
+        entry.setUniqueProperty(ANCHOR_MAXLEN, maxLen);
 
         // Send client visuals: tendril traveling to the block anchor
         BQLNetwork.CHANNEL.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player),
@@ -107,7 +116,7 @@ public class BlackwhipZipAbility extends Ability {
         player.level().playSound(null, player.blockPosition(), SoundEvents.FISHING_BOBBER_THROW, SoundSource.PLAYERS, 0.7f, 1.0f);
 
 		// Debug marker at anchor
-		if (Boolean.TRUE.equals(entry.getProperty(DEBUG)) && player.level() instanceof net.minecraft.server.level.ServerLevel sl) {
+		if (Boolean.TRUE.equals(entry.getProperty(DEBUG)) && player.level() instanceof ServerLevel sl) {
 			sl.sendParticles(ParticleTypes.END_ROD, anchor.x, anchor.y, anchor.z, 8, 0.05, 0.05, 0.05, 0.0);
 		}
     }

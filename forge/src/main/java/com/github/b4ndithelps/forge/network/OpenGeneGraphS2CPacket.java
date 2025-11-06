@@ -47,3 +47,8 @@ public class OpenGeneGraphS2CPacket {
 
 
 
+
+
+
+
+

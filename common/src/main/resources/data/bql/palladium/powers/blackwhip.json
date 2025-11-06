@@ -344,8 +344,7 @@
           }
         ]
       }
-    }
-    ,
+    },
     "blackwhip_bubble_shield": {
       "type": "bandits_quirk_lib:blackwhip_bubble_shield",
       "icon": "minecraft:shield",

@@ -25,6 +25,9 @@ import java.util.*;
 @Mod.EventBusSubscriber(modid = BanditsQuirkLib.MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class BlackwhipRenderHandler {
 
+    public static void applyPacket(int sourcePlayerId, boolean active, boolean restraining, int targetEntityId, int ticksLeft, int missRetractTicks, float range, float curve, float thickness) {
+    }
+
     public static final class ClientWhipState {
         public final int sourcePlayerId;
         public boolean active;
@@ -37,6 +40,11 @@ public final class BlackwhipRenderHandler {
         public float thickness;
         public int initialTravelTicks;
         public long lastGameTimeDecrement = -1L;
+        // sweeping-lash fields
+        public boolean sweeping = false;
+        public float sweepArcDeg = 0f;
+        public float baseYawDeg = 0f;
+        public int chargeTicks = 0;
 
         public ClientWhipState(int sourcePlayerId) {
             this.sourcePlayerId = sourcePlayerId;
@@ -172,28 +180,6 @@ public final class BlackwhipRenderHandler {
         }
     }
 
-    public static void applyPacket(int sourcePlayerId, boolean active, boolean restraining, int targetEntityId,
-                                   int ticksLeft, int missRetractTicks, float range, float curve, float thickness) {
-        ClientWhipState state = PLAYER_TO_WHIP.computeIfAbsent(sourcePlayerId, ClientWhipState::new);
-        state.active = active;
-        state.restraining = restraining;
-        state.targetEntityId = targetEntityId;
-        state.ticksLeft = ticksLeft;
-        state.missRetractTicks = missRetractTicks;
-        state.range = range;
-        state.curve = curve;
-        state.thickness = thickness;
-        if (active && !restraining && targetEntityId >= 0) {
-            // capture initial travel duration to drive smooth progress on client
-            state.initialTravelTicks = ticksLeft;
-        }
-        state.lastGameTimeDecrement = -1L;
-        if (!active) {
-            // allow quick cleanup on next render
-            state.ticksLeft = 0;
-        }
-    }
-
     public static void applyBlockPacket(int sourcePlayerId, boolean active, double x, double y, double z,
                                         int travelTicks, float curve, float thickness) {
         ClientBlockWhipState s = PLAYER_TO_BLOCK_WHIP.computeIfAbsent(sourcePlayerId, ClientBlockWhipState::new);
@@ -282,6 +268,38 @@ public final class BlackwhipRenderHandler {
                 if (target == null || !target.isAlive()) continue;
                 restrainTarget = target;
                 end = getAttachPoint(target, partial);
+            } else if (!state.restraining && state.sweeping) {
+                // Two-phase motion: charge-up reveal (no sweep), then sweeping arc
+                float total = state.initialTravelTicks > 0 ? state.initialTravelTicks : Math.max(1, state.missRetractTicks);
+                float u = 1.0F - Math.max(0F, Math.min(1F, (float) state.ticksLeft / total));
+                float halfArc = Math.max(0f, state.sweepArcDeg) * 0.5f;
+                boolean rightHand = player.getMainArm() == HumanoidArm.RIGHT;
+                float angleStart = rightHand ? +halfArc : -halfArc;
+                float dir = rightHand ? -1f : +1f; // right hand sweeps right->left
+
+                int charge = Math.max(0, state.chargeTicks);
+                float chargeFrac = total <= 0 ? 0f : Math.min(1f, (float)charge / total);
+                float yawNow;
+                double extend;
+                if (u < chargeFrac) {
+                    // Reveal phase: grow outward at starting angle
+                    float ru = u / Math.max(0.0001f, chargeFrac);
+                    float r = easeOutQuad(ru);
+                    yawNow = state.baseYawDeg + angleStart;
+                    extend = 0.15 + 0.55 * r; // up to ~70% of reach
+                } else {
+                    // Sweep phase
+                    float su = (u - chargeFrac) / Math.max(0.0001f, 1f - chargeFrac);
+                    float s = easeInOutCubic(su);
+                    float currentOffset = angleStart + dir * (2f * halfArc * s);
+                    yawNow = state.baseYawDeg + currentOffset;
+                    extend = 0.70 + 0.30 * s; // from reveal extent to full
+                }
+
+                Vec3 eye = player.getEyePosition(partial);
+                Vec3 dirVec = Vec3.directionFromRotation(0, yawNow).normalize();
+                double reach = Math.max(1.0F, state.range);
+                end = eye.add(dirVec.scale(reach * extend));
             } else if (!state.restraining && state.targetEntityId >= 0) {
                 // Traveling toward a target: extend toward the target based on progress
                 Entity target = level.getEntity(state.targetEntityId);
@@ -308,8 +326,19 @@ public final class BlackwhipRenderHandler {
             int segments = Math.max(20, (int)Math.min(96, len * 6.0));
             List<Vec3> points = buildCurve(start, end, state.curve, segments);
 			// Two-pass ribbon: outer teal glow, inner dark core
-			float base = Math.max(0.02F, state.thickness * 0.065F);
-			float noiseAmp = Math.min(base * 0.75F, 0.08F);
+            float base = Math.max(0.02F, state.thickness * 0.065F);
+            // Reduce noise during charge-up to avoid jumpiness
+            float noiseScale = 1.0f;
+            if (state.sweeping && state.chargeTicks > 0 && state.initialTravelTicks > 0) {
+                float total = state.initialTravelTicks;
+                float u = 1.0F - Math.max(0F, Math.min(1F, (float) state.ticksLeft / total));
+                float chargeFrac = Math.min(1f, (float)state.chargeTicks / total);
+                if (u < chargeFrac) {
+                    float ru = u / Math.max(0.0001f, chargeFrac);
+                    noiseScale = 0.4f + 0.6f * ru; // ramp up noise through reveal
+                }
+            }
+            float noiseAmp = Math.min(base * 0.75F, 0.08F) * noiseScale;
 			// Outer glow first (slightly wider, semi-transparent) — push slightly away from camera to avoid coplanar artifacts
             drawRibbonGradient(poseStack, buffer, cameraPos, points,
 					base * 1.25F,
@@ -1007,6 +1036,11 @@ public final class BlackwhipRenderHandler {
         if (t < 0.5f) return 4f * t * t * t;
         t -= 1f;
         return 1f + 4f * t * t * t;
+    }
+
+    private static float easeOutQuad(float t) {
+        float it = 1f - t;
+        return 1f - it * it;
     }
 
     private static int lerpGradient(double t, int start, int mid, int end) {
