@@ -3,6 +3,7 @@ package com.github.b4ndithelps.forge.abilities;
 import com.github.b4ndithelps.forge.network.BQLNetwork;
 import com.github.b4ndithelps.forge.network.BlackwhipMultiBlockWhipPacket;
 import com.github.b4ndithelps.forge.systems.PowerStockHelper;
+import com.github.b4ndithelps.forge.systems.QuirkFactorHelper;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -69,6 +70,20 @@ public class BlackwhipQuadZipAbility extends Ability {
         float curve = Math.max(0.0f, entry.getProperty(CURVE));
         float thickness = Math.max(0.05f, entry.getProperty(THICKNESS));
 
+        // Determine tendril count based on quirk factor (ensure even: split across hands)
+        int baseCount = 4;
+        int maxCount = 12;
+        int count = baseCount;
+        if (player != null) {
+            double qf = Math.max(0.0, QuirkFactorHelper.getQuirkFactor(player));
+            // Scales as base + floor(base * qf), clamped and forced even
+            count = baseCount + (int)Math.floor(baseCount * qf);
+            if (count > maxCount) count = maxCount;
+            if ((count & 1) == 1) count += 1; // make even
+            if (count < 2) count = 2; // minimum even
+        }
+        int perSide = Math.max(1, count / 2);
+
         // Build 4 anchors in the look direction with a wider, symmetric left/right spread (2 per side)
         Vec3 eye = player.getEyePosition();
         Vec3 look = player.getLookAngle().normalize();
@@ -79,24 +94,47 @@ public class BlackwhipQuadZipAbility extends Ability {
         right = right.normalize();
         Vec3 trueUp = up;
 
-        // Build angled directions: half to the right and half to the left of where the player is looking
-        // Order: Right (near), Right (far), Left (near), Left (far)
-        double[] anglesDeg = new double[] { 15.0, 25.0, -15.0, -25.0 };
-        double[] dists = new double[] { range * 0.95, range * 1.05, range * 0.95, range * 1.05 };
-        double[] vertical = new double[] { 0.6, -0.6, 0.6, -0.6 };
+        // Build angled directions: perSide to the right (positive angles), then perSide to the left (negative angles)
+        double minAngle = 12.0, maxAngle = 35.0;
+        java.util.List<Double> anglesDegList = new java.util.ArrayList<>(count);
+        java.util.List<Double> distList = new java.util.ArrayList<>(count);
+        java.util.List<Double> verticalList = new java.util.ArrayList<>(count);
 
-        List<Double> xs = new ArrayList<>(4);
-        List<Double> ys = new ArrayList<>(4);
-        List<Double> zs = new ArrayList<>(4);
-        for (int i = 0; i < 4; i++) {
-            double ang = Math.toRadians(anglesDeg[i]);
+        for (int i = 0; i < perSide; i++) {
+            double t = perSide == 1 ? 0.5 : (i + 0.5) / (double) perSide;
+            double ang = minAngle + t * (maxAngle - minAngle);
+            // right side
+            anglesDegList.add(ang);
+            // slight distance variance per index
+            double distScale = 0.9 + 0.2 * t; // 0.9..1.1
+            distList.add(range * distScale);
+            // alternate vertical offsets up/down
+            double v = (i % 2 == 0 ? 0.75 : -0.75);
+            verticalList.add(v);
+        }
+        for (int i = 0; i < perSide; i++) {
+            double tVar = perSide == 1 ? 0.5 : (i + 0.5) / (double) perSide;
+            double ang = -(minAngle + tVar * (maxAngle - minAngle));
+            // left side
+            anglesDegList.add(ang);
+            double distScale = 0.9 + 0.2 * tVar;
+            distList.add(range * distScale);
+            double v = (i % 2 == 0 ? 0.75 : -0.75);
+            verticalList.add(v);
+        }
+
+        List<Double> xs = new ArrayList<>(count);
+        List<Double> ys = new ArrayList<>(count);
+        List<Double> zs = new ArrayList<>(count);
+        for (int i = 0; i < count; i++) {
+            double ang = Math.toRadians(anglesDegList.get(i));
             double c = Math.cos(ang);
             double s = Math.sin(ang);
             // Yaw around world up: rotate look toward left/right using right axis
             Vec3 dir = look.scale(c).add(right.scale(s)).normalize();
 
             // Raycast forward to try to hit a block
-            Vec3 forwardEnd = eye.add(dir.scale(dists[i]));
+            Vec3 forwardEnd = eye.add(dir.scale(distList.get(i)));
             BlockHitResult forwardHit = player.level().clip(new ClipContext(
                     eye,
                     forwardEnd,
@@ -120,7 +158,7 @@ public class BlackwhipQuadZipAbility extends Ability {
                     anchor = Vec3.atCenterOf(downHit.getBlockPos());
                 } else {
                     // Fallback: keep forwardEnd with vertical offset so it still looks natural
-                    anchor = forwardEnd.add(trueUp.scale(vertical[i]));
+                    anchor = forwardEnd.add(trueUp.scale(verticalList.get(i)));
                 }
             }
 
@@ -173,9 +211,15 @@ public class BlackwhipQuadZipAbility extends Ability {
         float ratio = Math.min(1.0f, chargeTicks / (float)maxTicks);
         float minPull = Math.max(0.0f, entry.getProperty(MIN_PULL));
         float maxPull = Math.max(minPull, entry.getProperty(MAX_PULL));
+        // Scale max pull with quirk factor (base + base * qf)
+        double qf = 0.0;
+        if (player != null) {
+            qf = Math.max(0.0, QuirkFactorHelper.getQuirkFactor(player));
+        }
+        float maxPullScaled = (float)(maxPull + (maxPull * qf));
         // Ease-out cubic for a snappy release
         float eased = 1.0f - (float)Math.pow(1.0 - ratio, 3.0);
-        float impulseMag = minPull + (maxPull - minPull) * eased;
+        float impulseMag = minPull + (maxPullScaled - minPull) * eased;
 
         Vec3 look = player.getLookAngle().normalize();
         Vec3 impulse = look.scale(impulseMag);
