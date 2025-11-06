@@ -442,13 +442,15 @@ public final class BlackwhipRenderHandler {
 
             // Sphere center, radius and forward apex point on sphere (yaw-only orientation)
             float r = Math.max(0.25f, bubble.radius);
-            // Scale the whole sphere toward the player if the apex is farther than desired
+            // Make the sphere a bit larger overall while keeping the apex at ~1.5 blocks
             float desiredApex = 1.5f; // target distance from eyes to apex
-            float sumDist = bubble.forwardOffset + r;
-            float scaleTowardPlayer = sumDist > desiredApex ? (desiredApex / sumDist) : 1.0f;
-            float forwardEff = bubble.forwardOffset * scaleTowardPlayer;
-            float rEff = r * scaleTowardPlayer;
-            Vec3 center = eye.add(fwdYaw.scale(Math.max(0.2f, forwardEff)));
+            float baseRadius = r * 1.15f; // slight overall radius increase
+            float targetSum = Math.min(desiredApex, bubble.forwardOffset + baseRadius);
+            float forwardEff = Math.max(0.2f, targetSum - baseRadius);
+            float rEff = targetSum - forwardEff;
+            // Lower the sphere center so the apex covers the whole player (legs included)
+            double down = Math.max(0.30, Math.min(0.9, player.getBbHeight() * 0.35));
+            Vec3 center = eye.add(0, -down, 0).add(fwdYaw.scale(Math.max(0.2f, forwardEff)));
             Vec3 apex = center.add(fwdYaw.scale(rEff));
 
             int n = Math.max(1, bubble.tentacleCount);
@@ -457,13 +459,13 @@ public final class BlackwhipRenderHandler {
             for (int i = 0; i < n; i++) {
                 // Build back anchor on player's upper back
                 Vec3 local = bubble.localAnchors.get(i % bubble.localAnchors.size());
-                Vec3 backBase = player.getPosition(partialTick).add(0, player.getBbHeight() * 0.48, 0);
+                Vec3 backBase = player.getPosition(partialTick).add(0, player.getBbHeight() * 0.47, 0);
                 // Push anchors further behind and slightly lower to avoid first-person visibility when looking down
                 Vec3 anchor = backBase
-                        .add(backYaw.scale(0.32))
+                        .add(backYaw.scale(0.46))
                         .add(rightYaw.scale(local.x * 1.25))
-                        .add(up.scale(local.y - 0.06))
-                        .add(backYaw.scale(local.z + 0.10));
+                        .add(up.scale(local.y - 0.10))
+                        .add(backYaw.scale(local.z + 0.14));
 
                 // Azimuth around the forward axis for this meridian (slight jitter for organic look)
                 double phi = i * baseArc + Math.sin((time * 0.05) + i * 1.7) * 0.06;
@@ -472,21 +474,22 @@ public final class BlackwhipRenderHandler {
                 // Build the petal path: anchor -> back hemisphere contact -> sweep along meridian to front apex (3D)
                 java.util.List<Vec3> points = new java.util.ArrayList<>();
 
-                // Section 1: anchor to a point just outside the back hemisphere (wrap around, do not pierce chest)
+                // Section 1: anchor to a point just outside the back hemisphere (wrap wider around the player)
                 {
-                    double thetaStart = Math.PI - (0.45 + 0.10 * Math.sin(i * 1.37));
+                    // Start deeper on the back hemisphere to increase arc around camera
+                    double thetaStart = Math.PI - (0.22 + 0.08 * Math.sin(i * 1.37));
                     Vec3 backDir = fwdYaw.scale(Math.cos(thetaStart)).add(equatorDir.scale(Math.sin(thetaStart))).normalize();
                     // Slightly outside the sphere to create an outward arch from the back
                     Vec3 backContact = center.add(backDir.scale(rEff * 1.08));
                     double len = backContact.subtract(anchor).length();
-                    int seg = Math.max(14, (int)Math.min(48, len * 6.0));
-                    points.addAll(buildCurve(anchor, backContact, bubble.curve, seg));
+                    int seg = Math.max(16, (int)Math.min(54, len * 6.5));
+                    points.addAll(buildCurve(anchor, backContact, bubble.curve * 1.75f, seg));
                 }
 
                 // Section 2: sweep along the same meridian from backContact toward the front apex (theta → 0)
                 {
-                    double thetaStart = Math.PI - (0.45 + 0.10 * Math.sin(i * 1.37));
-                    int seg = Math.max(32, (int)(rEff * 60));
+                    double thetaStart = Math.PI - (0.22 + 0.08 * Math.sin(i * 1.37));
+                    int seg = Math.max(36, (int)(rEff * 66));
                     for (int s = 1; s <= seg; s++) {
                         double t = s / (double)seg; // 0..1
                         double theta = (1.0 - t) * thetaStart; // end at 0 (apex)
