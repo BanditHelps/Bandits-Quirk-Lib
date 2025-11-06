@@ -143,6 +143,13 @@ public final class BQLNetwork {
                 .consumerMainThread(BlackwhipBlockWhipPacket::handle)
                 .add();
 
+        // Blackwhip multi block anchor visuals (server -> clients)
+        CHANNEL.messageBuilder(BlackwhipMultiBlockWhipPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(BlackwhipMultiBlockWhipPacket::encode)
+                .decoder(BlackwhipMultiBlockWhipPacket::decode)
+                .consumerMainThread(BlackwhipMultiBlockWhipPacket::handle)
+                .add();
+
         // Blackwhip aura visuals (server -> clients)
         CHANNEL.messageBuilder(BlackwhipAuraPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(BlackwhipAuraPacket::encode)

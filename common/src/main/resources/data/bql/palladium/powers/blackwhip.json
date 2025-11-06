@@ -316,6 +316,36 @@
       }
     }
     ,
+    "blackwhip_quad_zip": {
+      "type": "bandits_quirk_lib:blackwhip_quad_zip",
+      "icon": "minecraft:lead",
+      "title": "Quad Zip",
+      "hidden": false,
+      "hidden_in_bar": false,
+      "list_index": 6,
+      "max_charge_ticks": 50,
+      "max_range": 24.0,
+      "min_pull": 0.9,
+      "max_pull": 3.2,
+      "travel_ticks": 7,
+      "curve": 0.6,
+      "thickness": 1.0,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:held",
+            "key_type": "key_bind"
+          }
+        ],
+        "unlocking": [
+          {
+            "type": "palladium:ability_unlocked",
+            "ability": "blackwhip_quirk_info"
+          }
+        ]
+      }
+    }
+    ,
     "blackwhip_bubble_shield": {
       "type": "bandits_quirk_lib:blackwhip_bubble_shield",
       "icon": "minecraft:shield",
@@ -323,7 +353,7 @@
       "description": "Tentacles form a spherical shield in front of you, converting hits into knockback at a stamina cost.",
       "hidden": false,
       "hidden_in_bar": false,
-      "list_index": 6,
+      "list_index": 7,
       "stamina_interval_cost": 10,
       "stamina_interval": 20,
       "tentacle_count": 12,

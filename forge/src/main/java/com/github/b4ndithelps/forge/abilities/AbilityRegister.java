@@ -45,6 +45,7 @@ public class AbilityRegister {
 	public static final RegistrySupplier<Ability> BLACKWHIP_AUTO_REFRESH;
     public static final RegistrySupplier<Ability> BLACKWHIP_AURA;
     public static final RegistrySupplier<Ability> BLACKWHIP_BUBBLE_SHIELD;
+    public static final RegistrySupplier<Ability> BLACKWHIP_QUAD_ZIP;
 
 
     public AbilityRegister() {
@@ -94,6 +95,7 @@ public class AbilityRegister {
 		BLACKWHIP_AUTO_REFRESH = ABILITIES.register("blackwhip_auto_refresh", BlackwhipAutoRefreshAbility::new);
         BLACKWHIP_AURA = ABILITIES.register("blackwhip_aura", BlackwhipAuraAbility::new);
         BLACKWHIP_BUBBLE_SHIELD = ABILITIES.register("blackwhip_bubble_shield", BlackwhipBubbleShieldAbility::new);
+        BLACKWHIP_QUAD_ZIP = ABILITIES.register("blackwhip_quad_zip", BlackwhipQuadZipAbility::new);
 
     }
 }

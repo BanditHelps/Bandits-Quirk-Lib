@@ -57,6 +57,18 @@ public final class BlackwhipRenderHandler {
         public ClientBlockWhipState(int sourcePlayerId) { this.sourcePlayerId = sourcePlayerId; }
     }
     private static final Map<Integer, ClientBlockWhipState> PLAYER_TO_BLOCK_WHIP = new HashMap<>();
+    private static final class ClientMultiBlockWhipState {
+        public final int sourcePlayerId;
+        public boolean active;
+        public java.util.List<Vec3> targets = new java.util.ArrayList<>();
+        public int ticksLeft;
+        public int initialTravelTicks;
+        public float curve;
+        public float thickness;
+        public long lastGameTimeDecrement = -1L;
+        public ClientMultiBlockWhipState(int sourcePlayerId) { this.sourcePlayerId = sourcePlayerId; }
+    }
+    private static final Map<Integer, ClientMultiBlockWhipState> PLAYER_TO_MULTI_BLOCK = new HashMap<>();
     private static final class ClientMultiTethers {
         public final int sourcePlayerId;
         public boolean active;
@@ -195,6 +207,26 @@ public final class BlackwhipRenderHandler {
         if (!active) s.ticksLeft = 0;
     }
 
+    public static void applyMultiBlockPacket(int sourcePlayerId, boolean active, java.util.List<Double> xs, java.util.List<Double> ys, java.util.List<Double> zs,
+                                             int travelTicks, float curve, float thickness) {
+        ClientMultiBlockWhipState s = PLAYER_TO_MULTI_BLOCK.computeIfAbsent(sourcePlayerId, ClientMultiBlockWhipState::new);
+        s.active = active;
+        s.targets.clear();
+        int n = Math.min(Math.min(xs.size(), ys.size()), zs.size());
+        for (int i = 0; i < n; i++) {
+            s.targets.add(new Vec3(xs.get(i), ys.get(i), zs.get(i)));
+        }
+        s.ticksLeft = Math.max(0, travelTicks);
+        s.initialTravelTicks = Math.max(1, travelTicks);
+        s.curve = curve;
+        s.thickness = thickness;
+        s.lastGameTimeDecrement = -1L;
+        if (!active) s.ticksLeft = 0;
+        if (!active || s.targets.isEmpty()) {
+            s.active = false;
+        }
+    }
+
     public static void applyTethersPacket(int sourcePlayerId, boolean active, float curve, float thickness, java.util.List<Integer> targetIds) {
         ClientMultiTethers multi = PLAYER_TO_MULTI.computeIfAbsent(sourcePlayerId, ClientMultiTethers::new);
         multi.active = active;
@@ -223,6 +255,7 @@ public final class BlackwhipRenderHandler {
         // Cleanup for players no longer present or inactive
         PLAYER_TO_WHIP.entrySet().removeIf(e -> level.getEntity(e.getKey()) == null || !e.getValue().active);
         PLAYER_TO_BLOCK_WHIP.entrySet().removeIf(e -> level.getEntity(e.getKey()) == null || !e.getValue().active);
+        PLAYER_TO_MULTI_BLOCK.entrySet().removeIf(e -> level.getEntity(e.getKey()) == null || !e.getValue().active);
         PLAYER_TO_MULTI.entrySet().removeIf(e -> level.getEntity(e.getKey()) == null || !e.getValue().active);
         PLAYER_TO_AURA.entrySet().removeIf(e -> level.getEntity(e.getKey()) == null || (!e.getValue().active && e.getValue().visibility <= 0f));
         PLAYER_TO_BUBBLE.entrySet().removeIf(e -> {
@@ -338,6 +371,46 @@ public final class BlackwhipRenderHandler {
             if (state.lastGameTimeDecrement != gameTime) {
                 state.lastGameTimeDecrement = gameTime;
                 if (state.ticksLeft > 0) state.ticksLeft -= 1; // stop at 0 to keep anchored visual
+            }
+        }
+
+        // Render multi block-anchored whips
+        for (ClientMultiBlockWhipState state : PLAYER_TO_MULTI_BLOCK.values()) {
+            if (!state.active || state.targets.isEmpty()) continue;
+            Entity src = level.getEntity(state.sourcePlayerId);
+            if (!(src instanceof Player player)) continue;
+
+            Vec3 eye = player.getEyePosition(partial);
+            float total = state.initialTravelTicks > 0 ? state.initialTravelTicks : 1;
+            float u = 1.0F - Math.max(0F, Math.min(1F, (float) state.ticksLeft / total));
+            float progress = easeInOutCubic(u);
+            if (progress < 0.05F) progress = 0.05F;
+
+            int nTargets = state.targets.size();
+            int half = Math.max(1, nTargets / 2);
+            for (int idx = 0; idx < nTargets; idx++) {
+                Vec3 t = state.targets.get(idx);
+                // First half from right hand, second half from left hand
+                boolean rightSide = idx < half;
+                Vec3 start = getHandPositionForSide(player, partial, rightSide ? 1.0f : -1.0f);
+                Vec3 toTarget = t.subtract(eye);
+                Vec3 end = eye.add(toTarget.scale(progress));
+                if (state.ticksLeft <= 0) {
+                    end = t;
+                }
+                double len = end.subtract(start).length();
+                int segments = Math.max(20, (int)Math.min(96, len * 6.0));
+                List<Vec3> points = buildCurve(start, end, state.curve, segments);
+                float base = Math.max(0.02F, state.thickness * 0.065F);
+                float noiseAmp = Math.min(base * 0.75F, 0.08F);
+                drawRibbonGradient(poseStack, buffer, cameraPos, points,
+                        base * 1.25F, 0xB319E8DB, 0xB321E59A, 0xB333F2FF, 0.0015F, noiseAmp, time, 1.0f);
+                drawRibbonSolid(poseStack, buffer, cameraPos, points, base * 0.54F, 0xFF0A0F11, -0.0007F, noiseAmp, time, 1.0f);
+            }
+
+            if (state.lastGameTimeDecrement != gameTime) {
+                state.lastGameTimeDecrement = gameTime;
+                if (state.ticksLeft > 0) state.ticksLeft -= 1;
             }
         }
 
@@ -981,6 +1054,24 @@ public final class BlackwhipRenderHandler {
 				.add(rightYaw.scale(0.42 * sideDir))
 				.add(fwdYaw.scale(0.28))
 				.add(look.scale(0.10));
+    }
+
+    private static Vec3 getHandPositionForSide(Player player, float partial, float sideDir) {
+        Vec3 up = new Vec3(0, 1, 0);
+        Vec3 fwdYaw = Vec3.directionFromRotation(0, player.getYRot()).normalize();
+        Vec3 rightYaw = fwdYaw.cross(up);
+        if (rightYaw.lengthSqr() < 1.0e-6) rightYaw = new Vec3(1, 0, 0);
+        rightYaw = rightYaw.normalize();
+
+        double shoulderHeight = Math.max(0.4, Math.min(0.8, player.getBbHeight() * 0.62));
+        double crouchAdjust = player.isCrouching() ? -0.10 : 0.0;
+        Vec3 base = player.getPosition(partial).add(0, shoulderHeight + crouchAdjust, 0);
+
+        Vec3 look = player.getViewVector(partial).normalize();
+        return base
+                .add(rightYaw.scale(0.42 * sideDir))
+                .add(fwdYaw.scale(0.28))
+                .add(look.scale(0.10));
     }
 
     // Build and draw several closed-loop ribbons that wrap around an entity's horizontal bounds.
