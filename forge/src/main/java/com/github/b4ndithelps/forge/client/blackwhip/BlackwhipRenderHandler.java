@@ -591,7 +591,6 @@ public final class BlackwhipRenderHandler {
             Vec3 camera = cameraPos;
             float partialTick = partial;
             Vec3 eye = player.getEyePosition(partialTick);
-            Vec3 look = player.getViewVector(partialTick).normalize();
             Vec3 up = new Vec3(0,1,0);
             // Yaw-only basis for stable back anchors (prevents anchors from popping into view when looking down)
             Vec3 fwdYaw = Vec3.directionFromRotation(0, player.getYRot()).normalize();
@@ -611,7 +610,6 @@ public final class BlackwhipRenderHandler {
             // Lower the sphere center so the apex covers the whole player (legs included)
             double down = Math.max(0.30, Math.min(0.9, player.getBbHeight() * 0.35));
             Vec3 center = eye.add(0, -down, 0).add(fwdYaw.scale(Math.max(0.2f, forwardEff)));
-            Vec3 apex = center.add(fwdYaw.scale(rEff));
 
             int n = Math.max(1, bubble.tentacleCount);
             double baseArc = (2.0 * Math.PI) / n; // azimuth distribution around forward axis
@@ -620,8 +618,8 @@ public final class BlackwhipRenderHandler {
             if (bubble.active && bubble.activateGameTime < 0L) bubble.activateGameTime = gameTime;
             if (bubble.deactivating && bubble.deactivateGameTime < 0L) bubble.deactivateGameTime = gameTime;
             // Animation timings
-            final double growDuration = 9.0; // ticks for each tentacle to reach full length (snappier)
-            final double perTentacleStagger = 1.5; // ticks between tentacle starts (snappier)
+            final double growDuration = 5.0; // ticks for each tentacle to reach full length (snappier)
+            final double perTentacleStagger = 0.5; // ticks between tentacle starts (snappier)
             final double shrinkDuration = 7.0; // ticks to retract fully (all at once)
 
 			for (int i = 0; i < n; i++) {
