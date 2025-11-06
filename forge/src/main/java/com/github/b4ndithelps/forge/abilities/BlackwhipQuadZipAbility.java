@@ -2,6 +2,7 @@ package com.github.b4ndithelps.forge.abilities;
 
 import com.github.b4ndithelps.forge.network.BQLNetwork;
 import com.github.b4ndithelps.forge.network.BlackwhipMultiBlockWhipPacket;
+import com.github.b4ndithelps.forge.network.PlayerVelocityS2CPacket;
 import com.github.b4ndithelps.forge.systems.PowerStockHelper;
 import com.github.b4ndithelps.forge.systems.QuirkFactorHelper;
 import net.minecraft.world.level.ClipContext;
@@ -40,6 +41,13 @@ public class BlackwhipQuadZipAbility extends Ability {
     public static final PalladiumProperty<Float> THICKNESS = new FloatProperty("thickness").configurable("Visual thickness of tendrils");
 
     public static final PalladiumProperty<Integer> CHARGE_TICKS;
+    public static final PalladiumProperty<Boolean> HAS_ANCHORS;
+    public static final PalladiumProperty<Integer> ANCHOR_COUNT;
+    private static final int MAX_ANCHORS = 12;
+    public static final PalladiumProperty<Double>[] ANCHOR_X = new PalladiumProperty[MAX_ANCHORS];
+    public static final PalladiumProperty<Double>[] ANCHOR_Y = new PalladiumProperty[MAX_ANCHORS];
+    public static final PalladiumProperty<Double>[] ANCHOR_Z = new PalladiumProperty[MAX_ANCHORS];
+    public static final PalladiumProperty<Double>[] ANCHOR_MAXLEN = new PalladiumProperty[MAX_ANCHORS];
 
     public BlackwhipQuadZipAbility() {
         super();
@@ -55,6 +63,14 @@ public class BlackwhipQuadZipAbility extends Ability {
     @Override
     public void registerUniqueProperties(PropertyManager manager) {
         manager.register(CHARGE_TICKS, 0);
+        manager.register(HAS_ANCHORS, false);
+        manager.register(ANCHOR_COUNT, 0);
+        for (int i = 0; i < MAX_ANCHORS; i++) {
+            manager.register(ANCHOR_X[i], 0.0);
+            manager.register(ANCHOR_Y[i], 0.0);
+            manager.register(ANCHOR_Z[i], 0.0);
+            manager.register(ANCHOR_MAXLEN[i], 0.0);
+        }
     }
 
     @Override
@@ -167,6 +183,19 @@ public class BlackwhipQuadZipAbility extends Ability {
             zs.add(anchor.z);
         }
 
+        // Persist anchors for rope constraint
+        entry.setUniqueProperty(HAS_ANCHORS, true);
+        entry.setUniqueProperty(ANCHOR_COUNT, Math.min(count, MAX_ANCHORS));
+        int nStore = Math.min(count, MAX_ANCHORS);
+        for (int i = 0; i < nStore; i++) {
+            double ax = xs.get(i), ay = ys.get(i), az = zs.get(i);
+            entry.setUniqueProperty(ANCHOR_X[i], ax);
+            entry.setUniqueProperty(ANCHOR_Y[i], ay);
+            entry.setUniqueProperty(ANCHOR_Z[i], az);
+            double maxLen = Math.sqrt(player.position().distanceToSqr(ax, ay, az));
+            entry.setUniqueProperty(ANCHOR_MAXLEN[i], maxLen);
+        }
+
         // Send visuals to all tracking and self
         BQLNetwork.CHANNEL.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player),
                 new BlackwhipMultiBlockWhipPacket(player.getId(), true, xs, ys, zs, travel, curve, thickness));
@@ -183,6 +212,40 @@ public class BlackwhipQuadZipAbility extends Ability {
         int maxTicks = Math.max(1, entry.getProperty(MAX_CHARGE_TICKS));
         int t = Math.min(maxTicks, entry.getProperty(CHARGE_TICKS) + 1);
         entry.setUniqueProperty(CHARGE_TICKS, t);
+
+        // Enforce rope constraints while anchors are attached
+        if (Boolean.TRUE.equals(entry.getProperty(HAS_ANCHORS))) {
+            int n = Math.max(0, Math.min(MAX_ANCHORS, entry.getProperty(ANCHOR_COUNT)));
+            Vec3 pos = player.position();
+            Vec3 velocity = player.getDeltaMovement();
+            boolean adjusted = false;
+            for (int i = 0; i < n; i++) {
+                Vec3 anchor = new Vec3(entry.getProperty(ANCHOR_X[i]), entry.getProperty(ANCHOR_Y[i]), entry.getProperty(ANCHOR_Z[i]));
+                double maxLen = Math.max(0.25, entry.getProperty(ANCHOR_MAXLEN[i]));
+                Vec3 toPlayer = pos.subtract(anchor);
+                double dist = toPlayer.length();
+                if (dist > maxLen) {
+                    Vec3 dir = toPlayer.scale(1.0 / dist);
+                    Vec3 boundary = anchor.add(dir.scale(maxLen));
+                    player.setPos(boundary.x, boundary.y, boundary.z);
+                    // Remove radial velocity component to simulate taut rope; keep tangential motion slight damping
+                    double vRad = velocity.dot(dir);
+                    Vec3 vTangential = velocity.subtract(dir.scale(vRad));
+                    double tangentialDamping = 0.0001;
+                    Vec3 newV = vTangential.scale(1.0 - tangentialDamping);
+                    player.setDeltaMovement(newV);
+                    adjusted = true;
+                    pos = boundary;
+                    velocity = newV;
+                }
+            }
+            if (adjusted) {
+                player.hasImpulse = true;
+                player.fallDistance = 0.0F;
+                BQLNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player),
+                        new PlayerVelocityS2CPacket(velocity.x, velocity.y, velocity.z, 0.0f));
+            }
+        }
 
         if (t % 5 == 0) {
             Vec3 eye = player.getEyePosition();
@@ -238,10 +301,20 @@ public class BlackwhipQuadZipAbility extends Ability {
         level.playSound(null, player.blockPosition(), SoundEvents.FISHING_BOBBER_RETRIEVE, SoundSource.PLAYERS, 0.8f, 1.35f);
 
         entry.setUniqueProperty(CHARGE_TICKS, 0);
+        entry.setUniqueProperty(HAS_ANCHORS, false);
+        entry.setUniqueProperty(ANCHOR_COUNT, 0);
     }
 
     static {
         CHARGE_TICKS = (new IntegerProperty("charge_ticks")).sync(SyncType.NONE).disablePersistence();
+        HAS_ANCHORS = (new net.threetag.palladium.util.property.BooleanProperty("qzip_has_anchors")).sync(SyncType.NONE).disablePersistence();
+        ANCHOR_COUNT = (new IntegerProperty("qzip_anchor_count")).sync(SyncType.NONE).disablePersistence();
+        for (int i = 0; i < MAX_ANCHORS; i++) {
+            ANCHOR_X[i] = (new net.threetag.palladium.util.property.DoubleProperty("qzip_anchor_x_" + i)).sync(SyncType.NONE).disablePersistence();
+            ANCHOR_Y[i] = (new net.threetag.palladium.util.property.DoubleProperty("qzip_anchor_y_" + i)).sync(SyncType.NONE).disablePersistence();
+            ANCHOR_Z[i] = (new net.threetag.palladium.util.property.DoubleProperty("qzip_anchor_z_" + i)).sync(SyncType.NONE).disablePersistence();
+            ANCHOR_MAXLEN[i] = (new net.threetag.palladium.util.property.DoubleProperty("qzip_anchor_maxlen_" + i)).sync(SyncType.NONE).disablePersistence();
+        }
     }
 }
 
