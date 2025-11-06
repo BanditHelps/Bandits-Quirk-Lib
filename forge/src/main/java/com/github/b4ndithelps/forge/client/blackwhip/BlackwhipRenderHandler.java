@@ -239,9 +239,11 @@ public final class BlackwhipRenderHandler {
 
             // Resolve end
             Vec3 end;
+            Entity restrainTarget = null;
             if (state.restraining && state.targetEntityId >= 0) {
                 Entity target = level.getEntity(state.targetEntityId);
                 if (target == null || !target.isAlive()) continue;
+                restrainTarget = target;
                 end = getAttachPoint(target, partial);
             } else if (!state.restraining && state.targetEntityId >= 0) {
                 // Traveling toward a target: extend toward the target based on progress
@@ -284,6 +286,11 @@ public final class BlackwhipRenderHandler {
 			);
 			// Inner core on top (narrower, very dark blue-black) — pull slightly toward camera
             drawRibbonSolid(poseStack, buffer, cameraPos, points, base * 0.54F, 0xFF0A0F11, -0.0007F, noiseAmp, time, 1.0f);
+
+            // If restraining a target, render wrap-around rings around it too
+            if (restrainTarget != null) {
+                drawEntityWrapRings(poseStack, buffer, cameraPos, restrainTarget, partial, base, noiseAmp, time);
+            }
 
             // Decrement once per game tick to match server tick rate
             if (!state.restraining && state.lastGameTimeDecrement != gameTime) {
@@ -358,6 +365,9 @@ public final class BlackwhipRenderHandler {
                         time,
                         1.0f);
                 drawRibbonSolid(poseStack, buffer, cameraPos, points, base * 0.54F, 0xFF0A0F11, -0.0007F, noiseAmp, time, 1.0f);
+
+                // Render wrap-around rings around the target's hitbox so it looks tied up
+                drawEntityWrapRings(poseStack, buffer, cameraPos, target, partial, base, noiseAmp, time);
             }
         }
 
@@ -930,6 +940,66 @@ public final class BlackwhipRenderHandler {
         right = right.normalize();
         float sideDir = player.getMainArm() == HumanoidArm.RIGHT ? 1.0f : -1.0f;
         return eye.add(0, -0.2, 0).add(right.scale(0.35 * sideDir));
+    }
+
+    // Build and draw several closed-loop ribbons that wrap around an entity's horizontal bounds.
+    // This scales to any hitbox size to convey the feeling of being tied up.
+    private static void drawEntityWrapRings(PoseStack poseStack, MultiBufferSource buffer, Vec3 cameraPos,
+                                            Entity target, float partial, float baseHalfWidth, float noiseAmp, double time) {
+        if (target == null || !target.isAlive()) return;
+        var bb = target.getBoundingBox();
+        double xSize = bb.getXsize();
+        double zSize = bb.getZsize();
+        double ySize = bb.getYsize();
+        if (xSize <= 0 || zSize <= 0 || ySize <= 0) return;
+
+        double cx = (bb.minX + bb.maxX) * 0.5;
+        double cz = (bb.minZ + bb.maxZ) * 0.5;
+
+        // Radius slightly larger than half the max horizontal size so the wrap sits around the body
+        double radius = Math.max(xSize, zSize) * 0.5 + 0.08;
+        // Number of bands based on height; clamp for readability
+        int bands = Math.max(2, Math.min(5, (int)Math.round(ySize / 0.8)));
+        // Evenly distribute wraps between ~30%..80% of height
+        double yStart = bb.minY + ySize * 0.3;
+        double yEnd = bb.minY + ySize * 0.8;
+
+        for (int i = 0; i < bands; i++) {
+            double t = bands == 1 ? 0.5 : (i / (double)(bands - 1));
+            double y = yStart + (yEnd - yStart) * t;
+
+            // Slight pulsation/irregularity so it feels organic
+            double phase = time * 0.12 + i * 1.73;
+            double rJitter = radius * 0.06 * Math.sin(phase * 1.3);
+            List<Vec3> ring = buildClosedRing(new Vec3(cx, y, cz), radius + rJitter, 64 + (int)Math.min(64, radius * 48));
+
+            float widthScale = 0.95f + (float)(0.1 * Math.sin(phase));
+            float wrapGlow = baseHalfWidth * 1.15f * widthScale;
+            float wrapCore = baseHalfWidth * 0.52f * widthScale;
+
+            drawRibbonGradient(poseStack, buffer, cameraPos, ring,
+                    wrapGlow,
+                    0xB319E8DB,
+                    0xB321E59A,
+                    0xB333F2FF,
+                    0.0015F,
+                    noiseAmp,
+                    time,
+                    1.0f);
+            drawRibbonSolid(poseStack, buffer, cameraPos, ring, wrapCore, 0xFF0A0F11, -0.0007F, noiseAmp, time, 1.0f);
+        }
+    }
+
+    private static List<Vec3> buildClosedRing(Vec3 center, double radius, int segments) {
+        int seg = Math.max(16, Math.min(128, segments));
+        List<Vec3> pts = new ArrayList<>(seg + 1);
+        for (int k = 0; k <= seg; k++) {
+            double a = (2.0 * Math.PI) * (k / (double)seg);
+            double x = center.x + Math.cos(a) * radius;
+            double z = center.z + Math.sin(a) * radius;
+            pts.add(new Vec3(x, center.y, z));
+        }
+        return pts;
     }
 }
 
