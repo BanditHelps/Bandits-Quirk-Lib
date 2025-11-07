@@ -3,6 +3,7 @@ package com.github.b4ndithelps.forge.abilities;
 import com.github.b4ndithelps.forge.network.BQLNetwork;
 import com.github.b4ndithelps.forge.network.BlackwhipStatePacket;
 import com.github.b4ndithelps.forge.systems.BlackwhipTags;
+import com.github.b4ndithelps.forge.systems.QuirkFactorHelper;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -75,6 +76,13 @@ public class BlackwhipTagAbility extends Ability {
 			int expire = Math.max(1, entry.getProperty(TAG_EXPIRE_TICKS));
 			int maxDist = Math.max(0, entry.getProperty(MAX_DISTANCE));
 			int maxKeep = Math.max(0, entry.getProperty(MAX_PERSISTENT_TETHERS));
+			// Apply quirk factor: +1 max whip per quirk factor point
+			if (maxKeep > 0) {
+				int quirkBonus = (int) Math.floor(QuirkFactorHelper.getQuirkFactor(player));
+				if (quirkBonus > 0) {
+					maxKeep += quirkBonus;
+				}
+			}
 			BlackwhipTags.addTagWithMaxDistance(player, target, expire, maxDist);
 			if (maxKeep > 0) {
 				// reuse existing trimming logic
