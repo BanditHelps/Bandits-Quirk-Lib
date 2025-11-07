@@ -105,6 +105,8 @@ public class BlockStackEntity extends Projectile {
 		HitResult hit = ProjectileUtil.getHitResultOnMoveVector(this, this::canHitEntity);
 		if (hit.getType() != HitResult.Type.MISS) {
 			this.onHit(hit);
+			// Stop further motion/updates this tick to avoid visible drift before despawn
+			return;
 		} else {
 			Vec3 motion = this.getDeltaMovement();
 			if (motion.lengthSqr() > 1.0e-8) {
@@ -144,7 +146,23 @@ public class BlockStackEntity extends Projectile {
 			Vec3 kb = this.getDeltaMovement().normalize().scale(0.65);
 			living.push(kb.x, Math.max(0.25, kb.y), kb.z);
 		}
-		spawnFallingBlocksAndDiscard();
+		// Snapshot impact and block states/velocity first
+		Vec3 impact = result.getLocation();
+		BlockState bot = getBottom();
+		BlockState mid = getMiddle();
+		BlockState top = getTop();
+		Vec3 vel = this.getDeltaMovement();
+
+		// Immediately remove this entity so clients stop rendering it right away
+		this.discard();
+
+		// Spawn the three falling blocks at the impact point with burst motion
+		if (this.level() instanceof ServerLevel sl) {
+			java.util.Random rng = new java.util.Random(this.getUUID().getMostSignificantBits() ^ System.nanoTime());
+			spawnOneFalling(sl, bot, impact, vel, rng, 0);
+			spawnOneFalling(sl, mid, impact.add(0, 1, 0), vel, rng, 1);
+			spawnOneFalling(sl, top, impact.add(0, 2, 0), vel, rng, 2);
+		}
 	}
 
 	@Override
@@ -172,6 +190,10 @@ public class BlockStackEntity extends Projectile {
 	}
 
 	private void spawnFallingBlocksAndDiscard() {
+		spawnFallingBlocksAndDiscard(this.position());
+	}
+
+	private void spawnFallingBlocksAndDiscard(Vec3 origin) {
 		if (this.shattered) {
 			this.discard();
 			return;
@@ -183,7 +205,7 @@ public class BlockStackEntity extends Projectile {
 		}
 		// Spawn three falling blocks at current position with slight random offsets and outward velocities
 		java.util.Random rng = new java.util.Random(this.getUUID().getMostSignificantBits() ^ this.tickCount ^ System.nanoTime());
-		Vec3 base = this.position();
+		Vec3 base = origin;
 		Vec3 v = this.getDeltaMovement();
 		spawnOneFalling(sl, getBottom(), base, v, rng, 0);
 		spawnOneFalling(sl, getMiddle(), base.add(0, 1, 0), v, rng, 1);
@@ -213,17 +235,17 @@ public class BlockStackEntity extends Projectile {
 		FallingBlockEntity e = FallingBlockEntity.fall(sl, BlockPos.containing(pos), state);
 		// Random horizontal burst direction
 		double angle = rng.nextDouble() * Math.PI * 2.0;
-		double radius = 0.15 + rng.nextDouble() * 0.35; // small spread offset
+		double radius = 0.20 + rng.nextDouble() * 0.45; // slightly larger spread
 		double offX = Math.cos(angle) * radius;
 		double offZ = Math.sin(angle) * radius;
 		e.setPos(pos.x + offX, pos.y + 0.01 + rng.nextDouble() * 0.06, pos.z + offZ);
 
 		// Base forward velocity + random burst + upward kick
 		Vec3 forward = baseVel.lengthSqr() > 1.0e-6 ? baseVel.normalize() : new Vec3(Math.cos(angle), 0, Math.sin(angle));
-		double baseScale = 0.6 + rng.nextDouble() * 0.3;
-		double burstX = (rng.nextDouble() - 0.5) * 0.6;
-		double burstY = 0.18 + rng.nextDouble() * 0.22;
-		double burstZ = (rng.nextDouble() - 0.5) * 0.6;
+		double baseScale = 0.7 + rng.nextDouble() * 0.5;
+		double burstX = (rng.nextDouble() - 0.5) * 1.0;
+		double burstY = 0.22 + rng.nextDouble() * 0.28;
+		double burstZ = (rng.nextDouble() - 0.5) * 1.0;
 		Vec3 vel = new Vec3(
 				forward.x * baseVel.length() * baseScale + burstX,
 				Math.max(0.12, forward.y * baseVel.length() * 0.25) + burstY,
