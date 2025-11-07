@@ -26,10 +26,13 @@ public class BlackwhipMoveTaggedAbility extends Ability {
 	public static final PalladiumProperty<Float> DAMPING = new FloatProperty("damping").configurable("Velocity damping (0..1)");
 	public static final PalladiumProperty<Float> MAX_PULL_BIAS = new FloatProperty("max_pull_bias").configurable("Max absolute scroll bias applied to distance");
 	public static final PalladiumProperty<Boolean> FACE_PLAYER = new BooleanProperty("face_player").configurable("Make target face the player");
+	public static final PalladiumProperty<Float> HEALTH_SLOW_STRENGTH = new FloatProperty("health_slow_strength").configurable("How much higher-health targets resist being moved (0 = disabled)");
+	public static final PalladiumProperty<Integer> RAMP_TICKS = new IntegerProperty("ramp_ticks").configurable("Ease-in time on activation for smoother start");
 
 	// Runtime state
 	public static final PalladiumProperty<Boolean> IS_ACTIVE = new BooleanProperty("is_active");
 	public static final PalladiumProperty<String> CONTROLLED_TARGET = new StringProperty("controlled_target");
+	public static final PalladiumProperty<Integer> ACTIVE_TICKS = new IntegerProperty("active_ticks");
 
 	public BlackwhipMoveTaggedAbility() {
 		super();
@@ -39,13 +42,16 @@ public class BlackwhipMoveTaggedAbility extends Ability {
 				.withProperty(SPRING_STIFFNESS, 0.45F)
 				.withProperty(DAMPING, 0.75F)
 				.withProperty(MAX_PULL_BIAS, 12.0F)
-				.withProperty(FACE_PLAYER, true);
+				.withProperty(FACE_PLAYER, true)
+				.withProperty(HEALTH_SLOW_STRENGTH, 1.0F)
+				.withProperty(RAMP_TICKS, 8);
 	}
 
 	@Override
 	public void registerUniqueProperties(PropertyManager manager) {
 		manager.register(IS_ACTIVE, false);
 		manager.register(CONTROLLED_TARGET, "");
+		manager.register(ACTIVE_TICKS, 0);
 	}
 
 	@Override
@@ -55,6 +61,7 @@ public class BlackwhipMoveTaggedAbility extends Ability {
 
 		entry.setUniqueProperty(IS_ACTIVE, true);
 		entry.setUniqueProperty(CONTROLLED_TARGET, "");
+		entry.setUniqueProperty(ACTIVE_TICKS, 0);
 
 		// Pick best currently tagged target to begin controlling
 		LivingEntity best = chooseBestTagged(player, Math.max(0, entry.getProperty(MAX_DISTANCE)));
@@ -67,6 +74,10 @@ public class BlackwhipMoveTaggedAbility extends Ability {
 	public void tick(LivingEntity entity, AbilityInstance entry, IPowerHolder holder, boolean enabled) {
 		if (!(entity instanceof ServerPlayer player)) return;
 		if (!enabled || !Boolean.TRUE.equals(entry.getProperty(IS_ACTIVE))) return;
+
+		// advance active ticks for ramp-in
+		int activeTicks = Math.max(0, entry.getProperty(ACTIVE_TICKS));
+		entry.setUniqueProperty(ACTIVE_TICKS, activeTicks + 1);
 
 		int maxDist = Math.max(0, entry.getProperty(MAX_DISTANCE));
 
@@ -105,6 +116,20 @@ public class BlackwhipMoveTaggedAbility extends Ability {
 		if (dist > 1.0e-6) {
 			Vec3 dir = toDesired.scale(1.0 / dist);
 			float k = Math.max(0.0F, entry.getProperty(SPRING_STIFFNESS));
+
+			// Slowdown factor based on target max health (higher HP => lower k)
+			float healthStrength = Math.max(0.0F, entry.getProperty(HEALTH_SLOW_STRENGTH));
+			if (healthStrength > 0.0F && target.getMaxHealth() > 0.0F) {
+				float scale = (float) (target.getMaxHealth() / 20.0F); // 20 = baseline (player/zombie)
+				float slow = 1.0F / (1.0F + healthStrength * scale);
+				k *= clamp01(slow);
+			}
+
+			// Ease-in ramp on activation
+			int rampTicks = Math.max(1, entry.getProperty(RAMP_TICKS));
+			float ramp = clamp01((float) Math.min(activeTicks, rampTicks) / (float) rampTicks);
+			k *= ramp;
+
 			float damping = clamp01(entry.getProperty(DAMPING));
 			Vec3 vel = target.getDeltaMovement();
 			Vec3 accel = dir.scale(dist * k);
@@ -135,6 +160,7 @@ public class BlackwhipMoveTaggedAbility extends Ability {
 	public void lastTick(LivingEntity entity, AbilityInstance entry, IPowerHolder holder, boolean enabled) {
 		entry.setUniqueProperty(IS_ACTIVE, false);
 		entry.setUniqueProperty(CONTROLLED_TARGET, "");
+		entry.setUniqueProperty(ACTIVE_TICKS, 0);
 		if (entity instanceof ServerPlayer player) {
 			try {
 				BodyStatusHelper.setCustomFloat(player, "chest", "blackwhip_move_bias", 0.0F);

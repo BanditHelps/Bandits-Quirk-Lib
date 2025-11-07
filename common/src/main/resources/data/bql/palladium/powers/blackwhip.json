@@ -20,7 +20,7 @@
       "title": "Direct Control",
       "description": "Directly move a tagged target at your crosshair. Scroll to pull/retract.",
       "hidden": false,
-      "list_index": 8,
+      "list_index": 2,
       "max_distance": 48,
       "base_distance": 4.5,
       "carry_height": 1.25,
@@ -39,6 +39,14 @@
           {
             "type": "palladium:has_tag",
             "tag": "bandits_quirk_lib.blackwhip_active"
+          },
+          {
+            "type": "palladium:not",
+            "conditions": [
+              {
+                "type": "palladium:crouching"
+              }
+            ]
           }
         ]
       }
@@ -245,31 +253,6 @@
         ]
       }
     },
-    "blackwhip_lift": {
-      "type": "bandits_quirk_lib:blackwhip_lift",
-      "icon": "minecraft:phantom_membrane",
-      "title": "Lift",
-      "description": "Lift your targets into the air!",
-      "hidden": false,
-      "list_index": 2,
-      "duration_ticks": 20,
-      "levitation_level": 1,
-      "initial_upward_force": 0.2,
-      "conditions": {
-        "enabling": [
-          {
-            "type": "palladium:held",
-            "key_type": "key_bind"
-          }
-        ],
-        "unlocking": [
-          {
-            "type": "palladium:has_tag",
-            "tag": "bandits_quirk_lib.blackwhip_active"
-          }
-        ]
-      }
-    },
     "blackwhip_puppet": {
       "type": "bandits_quirk_lib:blackwhip_puppet",
       "icon": "minecraft:totem_of_undying",
@@ -285,7 +268,7 @@
       "conditions": {
         "enabling": [
           {
-            "type": "palladium:held",
+            "type": "palladium:toggle",
             "key_type": "key_bind"
           }
         ],
@@ -293,71 +276,6 @@
           {
             "type": "palladium:has_tag",
             "tag": "bandits_quirk_lib.blackwhip_active"
-          }
-        ]
-      }
-    }
-    ,
-    "blackwhip_puppet_scroll_in": {
-      "type": "bandits_quirk_lib:body_status_modifier",
-      "description": "Scroll up to pull targets in while Puppet is active",
-      "hidden": true,
-      "hidden_in_bar": true,
-      "value_type": "float",
-      "body_part": "chest",
-      "key": "blackwhip_puppet_bias",
-      "operation": "add",
-      "float_value": 0.75,
-      "min_value": -12,
-      "max_value": 12,
-      "apply_once": true,
-      "tick_interval": 1,
-      "conditions": {
-        "enabling": [
-          {
-            "type": "palladium:action",
-            "cooldown": 0,
-            "key_type": "scroll_up",
-            "needs_empty_hand": false,
-            "allow_scrolling_when_crouching": true
-          }
-        ],
-        "unlocking": [
-          {
-            "type": "palladium:ability_enabled",
-            "ability": "blackwhip_puppet"
-          }
-        ]
-      }
-    },
-    "blackwhip_puppet_scroll_out": {
-      "type": "bandits_quirk_lib:body_status_modifier",
-      "description": "Scroll down to push targets away while Puppet is active",
-      "hidden": true,
-      "hidden_in_bar": true,
-      "value_type": "float",
-      "body_part": "chest",
-      "key": "blackwhip_puppet_bias",
-      "operation": "add",
-      "float_value": -0.75,
-      "min_value": -12,
-      "max_value": 12,
-      "apply_once": true,
-      "tick_interval": 1,
-      "conditions": {
-        "enabling": [
-          {
-            "type": "palladium:action",
-            "cooldown": 0,
-            "key_type": "scroll_down",
-            "needs_empty_hand": false,
-            "allow_scrolling_when_crouching": true
-          }
-        ],
-        "unlocking": [
-          {
-            "type": "palladium:ability_enabled",
-            "ability": "blackwhip_puppet"
           }
         ]
       }
