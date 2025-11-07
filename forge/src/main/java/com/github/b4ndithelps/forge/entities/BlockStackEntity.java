@@ -146,34 +146,26 @@ public class BlockStackEntity extends Projectile {
 			Vec3 kb = this.getDeltaMovement().normalize().scale(0.65);
 			living.push(kb.x, Math.max(0.25, kb.y), kb.z);
 		}
-		// Snapshot impact and block states/velocity first
-		Vec3 impact = result.getLocation();
-		BlockState bot = getBottom();
-		BlockState mid = getMiddle();
-		BlockState top = getTop();
-		Vec3 vel = this.getDeltaMovement();
-
-		// Immediately remove this entity so clients stop rendering it right away
-		this.discard();
-
-		// Spawn the three falling blocks at the impact point with burst motion
+		// Spawn three falling blocks (same type) with an arc around the impact
 		if (this.level() instanceof ServerLevel sl) {
-			java.util.Random rng = new java.util.Random(this.getUUID().getMostSignificantBits() ^ System.nanoTime());
-			spawnOneFalling(sl, bot, impact, vel, rng, 0);
-			spawnOneFalling(sl, mid, impact.add(0, 1, 0), vel, rng, 1);
-			spawnOneFalling(sl, top, impact.add(0, 2, 0), vel, rng, 2);
+			Vec3 impact = result.getLocation().add(0, 0.15, 0);
+			Vec3 baseVel = this.getDeltaMovement();
+			// Use middle block type consistently for all three pieces
+			spawnTripleExplosionFalling(sl, getMiddle(), impact, baseVel);
 		}
+		// Remove the entity after impact
+		this.discard();
 	}
 
 	@Override
 	protected void onHitBlock(BlockHitResult result) {
 		if (this.level().isClientSide) return;
-		// Place the original stack as normal blocks adjacent to the hit face if space allows; otherwise fallback to shatter
+		// Place the original stack as normal blocks adjacent to the hit face if space allows; otherwise just remove
 		if (placeStackAsBlocks(result)) {
 			this.shattered = true; // prevent any later shatter attempts
 			this.discard();
 		} else {
-			spawnFallingBlocksAndDiscard();
+			this.discard();
 		}
 	}
 
@@ -233,26 +225,53 @@ public class BlockStackEntity extends Projectile {
 	private void spawnOneFalling(ServerLevel sl, BlockState state, Vec3 pos, Vec3 baseVel, java.util.Random rng, int index) {
 		// Use vanilla factory, then adjust precise position and motion
 		FallingBlockEntity e = FallingBlockEntity.fall(sl, BlockPos.containing(pos), state);
-		// Random horizontal burst direction
-		double angle = rng.nextDouble() * Math.PI * 2.0;
-		double radius = 0.20 + rng.nextDouble() * 0.45; // slightly larger spread
-		double offX = Math.cos(angle) * radius;
-		double offZ = Math.sin(angle) * radius;
-		e.setPos(pos.x + offX, pos.y + 0.01 + rng.nextDouble() * 0.06, pos.z + offZ);
+		// Random 3D burst direction biased upward
+		double theta = rng.nextDouble() * Math.PI * 2.0; // azimuth
+		double phi = Math.acos(rng.nextDouble() * 0.5 + 0.5); // 0..pi/2 (bias upward)
+		double dirX = Math.cos(theta) * Math.sin(phi);
+		double dirY = Math.cos(phi); // more upward
+		double dirZ = Math.sin(theta) * Math.sin(phi);
+		double radius = 0.15 + rng.nextDouble() * 0.35;
+		e.setPos(pos.x + dirX * radius, pos.y + 0.01 + rng.nextDouble() * 0.08, pos.z + dirZ * radius);
 
-		// Base forward velocity + random burst + upward kick
-		Vec3 forward = baseVel.lengthSqr() > 1.0e-6 ? baseVel.normalize() : new Vec3(Math.cos(angle), 0, Math.sin(angle));
-		double baseScale = 0.7 + rng.nextDouble() * 0.5;
-		double burstX = (rng.nextDouble() - 0.5) * 1.0;
-		double burstY = 0.22 + rng.nextDouble() * 0.28;
-		double burstZ = (rng.nextDouble() - 0.5) * 1.0;
-		Vec3 vel = new Vec3(
-				forward.x * baseVel.length() * baseScale + burstX,
-				Math.max(0.12, forward.y * baseVel.length() * 0.25) + burstY,
-				forward.z * baseVel.length() * baseScale + burstZ
-		);
+		// Outward burst magnitude with some carry-over speed
+		double carry = Math.min(1.25, Math.sqrt(baseVel.lengthSqr()));
+		double burstMag = 0.6 + rng.nextDouble() * 0.9;
+		Vec3 vel = new Vec3(dirX, dirY, dirZ).normalize().scale(burstMag).add(0, 0.12 + rng.nextDouble() * 0.18, 0)
+				.add(baseVel.scale(0.15 + rng.nextDouble() * 0.15));
 		e.setDeltaMovement(vel);
 		sl.addFreshEntity(e);
+	}
+
+	/**
+	 * Spawns three identical falling blocks in a radial arc so they land around the impact point.
+	 * Uses the middle block type for consistency.
+	 */
+	private void spawnTripleExplosionFalling(ServerLevel sl, BlockState state, Vec3 origin, Vec3 baseVel) {
+		java.util.Random rng = new java.util.Random(this.getUUID().getLeastSignificantBits() ^ System.nanoTime());
+		double baseAngle = rng.nextDouble() * Math.PI * 2.0;
+		for (int i = 0; i < 3; i++) {
+			double ang = baseAngle + i * (2.0 * Math.PI / 3.0);
+			double horizSpeed = 0.55 + rng.nextDouble() * 0.45; // 0.55..1.0
+			double upSpeed = 0.32 + rng.nextDouble() * 0.28;    // 0.32..0.60
+
+			FallingBlockEntity e = FallingBlockEntity.fall(sl, BlockPos.containing(origin), state);
+
+			// Slight start offset so pieces don't overlap
+			double r = 0.1 + rng.nextDouble() * 0.15;
+			double ox = Math.cos(ang) * r;
+			double oz = Math.sin(ang) * r;
+			e.setPos(origin.x + ox, origin.y + 0.01 + rng.nextDouble() * 0.05, origin.z + oz);
+
+			// Arc velocity with small carry from current motion
+			Vec3 carry = baseVel.scale(0.18 + rng.nextDouble() * 0.12);
+			double vx = Math.cos(ang) * horizSpeed + carry.x;
+			double vz = Math.sin(ang) * horizSpeed + carry.z;
+			double vy = upSpeed + carry.y * 0.4;
+			e.setDeltaMovement(vx, vy, vz);
+
+			sl.addFreshEntity(e);
+		}
 	}
 
 	public void setStackStates(BlockState bottom, BlockState middle, BlockState top) {
