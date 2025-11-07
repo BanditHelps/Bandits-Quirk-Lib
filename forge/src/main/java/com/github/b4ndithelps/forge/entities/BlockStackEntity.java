@@ -83,7 +83,7 @@ public class BlockStackEntity extends Projectile {
 				this.discard();
 				return;
 			}
-			// Hover at owner's main-shoulder: slight side + forward + shoulder height
+			// Hover at owner's main-shoulder: more side + less forward + slightly higher
 			float yaw = owner.getYRot();
 			Vec3 ownerPos = owner.position();
 			double shoulderHeight = Math.max(0.45, Math.min(0.9, owner.getBbHeight() * 0.78));
@@ -92,10 +92,10 @@ public class BlockStackEntity extends Projectile {
 			Vec3 rightYaw = fwdYaw.cross(up).normalize();
 			float sideDir = owner.getMainArm() == net.minecraft.world.entity.HumanoidArm.RIGHT ? 1.0f : -1.0f;
 			Vec3 target = ownerPos
-					.add(0, shoulderHeight, 0)
-					.add(rightYaw.scale(0.85 * sideDir)) // push further out from shoulder
-					.add(fwdYaw.scale(0.15)); // a bit less forward to avoid overlap
-			this.setPos(target.x, target.y - 0.5, target.z); // center roughly at middle block
+					.add(0, shoulderHeight + 0.25, 0)
+					.add(rightYaw.scale(1.10 * sideDir))
+					.add(fwdYaw.scale(0.05));
+			this.setPos(target.x, target.y - 0.20, target.z); // center roughly at middle block
 			this.setDeltaMovement(Vec3.ZERO);
 			this.noPhysics = true;
 			// avoid entity collisions while attached

@@ -1,6 +1,7 @@
 package com.github.b4ndithelps.forge.client.blackwhip;
 
 import com.github.b4ndithelps.BanditsQuirkLib;
+import com.github.b4ndithelps.forge.entities.BlockStackEntity;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
@@ -1127,6 +1128,13 @@ public final class BlackwhipRenderHandler {
         // Evenly distribute wraps between ~30%..80% of height
         double yStart = bb.minY + ySize * 0.3;
         double yEnd = bb.minY + ySize * 0.8;
+
+        // For block stacks, push rings further out and slightly higher to avoid intersecting corners
+        if (target instanceof BlockStackEntity) {
+            radius += 0.18; // extra clearance beyond block corners
+            yStart = bb.minY + ySize * 0.40;
+            yEnd = bb.minY + ySize * 0.95;
+        }
 
         for (int i = 0; i < bands; i++) {
             double t = bands == 1 ? 0.5 : (i / (double)(bands - 1));
