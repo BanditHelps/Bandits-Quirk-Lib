@@ -98,10 +98,18 @@ public class BlockStackEntity extends Projectile {
 		// Thrown state: enable collisions and lifetime
 		this.noPhysics = false;
 
+		// Check collisions along current motion, then advance
 		HitResult hit = ProjectileUtil.getHitResultOnMoveVector(this, this::canHitEntity);
 		if (hit.getType() != HitResult.Type.MISS) {
 			this.onHit(hit);
+		} else {
+			Vec3 motion = this.getDeltaMovement();
+			if (motion.lengthSqr() > 1.0e-8) {
+				this.setPos(this.getX() + motion.x, this.getY() + motion.y, this.getZ() + motion.z);
+				this.setBoundingBox(this.makeBoundingBox());
+			}
 		}
+
 		if (lifeTicks > 200) { // fallback lifetime
 			this.discard();
 		}
