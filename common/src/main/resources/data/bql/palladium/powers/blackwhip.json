@@ -14,6 +14,99 @@
         "tag @s remove bandits_quirk_lib.blackwhip_active"
       ]
     },
+    "blackwhip_move_tagged": {
+      "type": "bandits_quirk_lib:blackwhip_move_tagged",
+      "icon": "minecraft:lead",
+      "title": "Direct Control",
+      "description": "Directly move a tagged target at your crosshair. Scroll to pull/retract.",
+      "hidden": false,
+      "list_index": 8,
+      "max_distance": 48,
+      "base_distance": 4.5,
+      "carry_height": 1.25,
+      "spring_stiffness": 0.45,
+      "damping": 0.75,
+      "max_pull_bias": 12.0,
+      "face_player": true,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:held",
+            "key_type": "key_bind"
+          }
+        ],
+        "unlocking": [
+          {
+            "type": "palladium:has_tag",
+            "tag": "bandits_quirk_lib.blackwhip_active"
+          }
+        ]
+      }
+    },
+    "blackwhip_move_scroll_in": {
+      "type": "bandits_quirk_lib:body_status_modifier",
+      "description": "Scroll up to pull target closer while Direct Control is active",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "value_type": "float",
+      "body_part": "chest",
+      "key": "blackwhip_move_bias",
+      "operation": "add",
+      "float_value": 0.75,
+      "min_value": -12,
+      "max_value": 12,
+      "apply_once": true,
+      "tick_interval": 1,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:action",
+            "cooldown": 0,
+            "key_type": "scroll_up",
+            "needs_empty_hand": false,
+            "allow_scrolling_when_crouching": true
+          }
+        ],
+        "unlocking": [
+          {
+            "type": "palladium:ability_enabled",
+            "ability": "blackwhip_move_tagged"
+          }
+        ]
+      }
+    },
+    "blackwhip_move_scroll_out": {
+      "type": "bandits_quirk_lib:body_status_modifier",
+      "description": "Scroll down to push target farther while Direct Control is active",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "value_type": "float",
+      "body_part": "chest",
+      "key": "blackwhip_move_bias",
+      "operation": "add",
+      "float_value": -0.75,
+      "min_value": -12,
+      "max_value": 12,
+      "apply_once": true,
+      "tick_interval": 1,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:action",
+            "cooldown": 0,
+            "key_type": "scroll_down",
+            "needs_empty_hand": false,
+            "allow_scrolling_when_crouching": true
+          }
+        ],
+        "unlocking": [
+          {
+            "type": "palladium:ability_enabled",
+            "ability": "blackwhip_move_tagged"
+          }
+        ]
+      }
+    },
     "blackwhip_quirk_info": {
       "type": "palladium:dummy",
       "title": "Blackwhip",
