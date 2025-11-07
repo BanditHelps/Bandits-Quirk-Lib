@@ -41,8 +41,13 @@ public final class BlackwhipTags {
 
     public static void addTag(ServerPlayer player, LivingEntity target, int expireTicks) {
         if (player == null || target == null || player.level().isClientSide) return;
-        PLAYER_TAGS.computeIfAbsent(player.getUUID(), k -> new ConcurrentHashMap<>())
-                .put(target.getId(), new TagEntry(player.level().getGameTime(), target.getId(), Math.max(1, expireTicks)));
+        Map<Integer, TagEntry> map = PLAYER_TAGS.computeIfAbsent(player.getUUID(), k -> new ConcurrentHashMap<>());
+        int id = target.getId();
+        int requested = Math.max(1, expireTicks);
+        TagEntry existing = map.get(id);
+        // Do not shorten an existing tag's allowed lifetime; prefer the larger TTL
+        int ttl = existing == null ? requested : Math.max(existing.expireTicks, requested);
+        map.put(id, new TagEntry(player.level().getGameTime(), id, ttl));
         updateActiveTag(player);
     }
 

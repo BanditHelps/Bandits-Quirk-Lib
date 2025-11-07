@@ -32,13 +32,15 @@ public class BlackwhipPuppetAbility extends Ability {
 	public BlackwhipPuppetAbility() {
 		super();
 		this.withProperty(MAX_DISTANCE, 48)
-				.withProperty(MAX_LENGTH, 12.0F)
 				.withProperty(SPRING_STIFFNESS, 0.35F)
 				.withProperty(DAMPING, 0.8F)
 				.withProperty(UPWARD_BIAS, 0.6F);
 	}
 
-    // Lead behavior does not need per-target offsets, heights, or bias smoothing
+	// Stores, per player, the fixed maximum tether length for each currently attached target
+	private static final Map<UUID, Map<UUID, Double>> PLAYER_TETHER_MAXLEN = new ConcurrentHashMap<>();
+
+	// Lead behavior does not need per-target offsets, heights, or bias smoothing
 
 	@Override
 	public void tick(LivingEntity entity, AbilityInstance entry, IPowerHolder holder, boolean enabled) {
@@ -46,7 +48,6 @@ public class BlackwhipPuppetAbility extends Ability {
 		if (!(entity instanceof ServerPlayer player)) return;
 
 		int maxDist = Math.max(0, entry.getProperty(MAX_DISTANCE));
-		float maxLen = Math.max(1.0F, entry.getProperty(MAX_LENGTH));
 		float k = Math.max(0.0F, entry.getProperty(SPRING_STIFFNESS));
 		float damping = clamp01(entry.getProperty(DAMPING));
         float upBias = Math.max(0.0F, entry.getProperty(UPWARD_BIAS));
@@ -59,35 +60,40 @@ public class BlackwhipPuppetAbility extends Ability {
 
 		// Periodic debug header
         if (player.tickCount % 40 == 0) {
-            BanditsQuirkLibForge.LOGGER.info("[PUPPET] player={} tagged={} maxLen={} k={} damp={}",
-                    player.getGameProfile().getName(), tagged.size(),
-                    String.format("%.2f", maxLen), String.format("%.2f", k), String.format("%.2f", damping));
+			BanditsQuirkLibForge.LOGGER.info("[PUPPET] player={} tagged={} k={} damp={}",
+					player.getGameProfile().getName(), tagged.size(),
+					String.format("%.2f", k), String.format("%.2f", damping));
         }
 
 		// No look-based anchor; behave like a slack lead
 
         // No per-target offset or height memory needed
 
+		Map<UUID, Double> tetherMap = PLAYER_TETHER_MAXLEN.computeIfAbsent(player.getUUID(), id -> new ConcurrentHashMap<>());
+
 		for (LivingEntity t : tagged) {
 			// Refresh tag TTL while controlling so it doesn't expire mid-control
 			BlackwhipTags.addTag(player, t, 20);
 
-            // Slack lead: only pull when distance exceeds max length
+			// Per-entity fixed tether: capture current distance the first time this target is processed
 			Vec3 toPlayer = player.position().subtract(t.position());
-			Vec3 vel = t.getDeltaMovement();
-            Vec3 accel = Vec3.ZERO;
-            double dist = toPlayer.length();
-            if (dist > maxLen && dist > 1.0e-6) {
-                double excess = dist - maxLen;
-                Vec3 pullDir = toPlayer.scale(1.0 / dist);
-                accel = pullDir.scale(excess * k);
-            }
+			double dist = toPlayer.length();
+			UUID tid = t.getUUID();
+			double maxLenForTarget = tetherMap.computeIfAbsent(tid, k2 -> Math.max(1.0, dist));
 
-			Vec3 newVel = new Vec3(
-					vel.x * damping + accel.x,
-					vel.y * damping + accel.y,
-					vel.z * damping + accel.z
-			);
+			// Only pull when stretched beyond stored length
+			Vec3 vel = t.getDeltaMovement();
+			Vec3 newVel = vel;
+			if (dist > maxLenForTarget && dist > 1.0e-6) {
+				double excess = dist - maxLenForTarget;
+				Vec3 pullDir = toPlayer.scale(1.0 / dist);
+				Vec3 accel = pullDir.scale(excess * k);
+				newVel = new Vec3(
+						vel.x * damping + accel.x,
+						vel.y * damping + accel.y,
+						vel.z * damping + accel.z
+				);
+			}
 
 			t.setDeltaMovement(newVel);
 			t.fallDistance = 0.0F;
@@ -104,8 +110,9 @@ public class BlackwhipPuppetAbility extends Ability {
 
 	@Override
 	public void lastTick(LivingEntity entity, AbilityInstance entry, IPowerHolder holder, boolean enabled) {
-		// When puppet control ends, reset scroll bias to neutral so it doesn't persist into next use
+		// When puppet control ends: clear tethers so whips can extend again; reset any UI bias
 		if (entity instanceof ServerPlayer player) {
+			PLAYER_TETHER_MAXLEN.remove(player.getUUID());
 			try {
 				BodyStatusHelper.setCustomFloat(player, "chest", "blackwhip_puppet_bias", 0.0F);
 			} catch (Exception ignored) {}
