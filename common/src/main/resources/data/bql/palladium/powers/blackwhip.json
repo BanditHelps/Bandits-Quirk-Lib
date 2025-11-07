@@ -58,6 +58,7 @@
       "stamina_interval": 20,
       "range": 10,
       "travel_ticks": 20,
+      "max_distance": 30,
       "miss_retract_ticks": 10,
       "whip_curve": 0.6,
       "whip_particle_size": 1,

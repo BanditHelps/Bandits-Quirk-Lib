@@ -73,7 +73,7 @@ public class BlackwhipPuppetAbility extends Ability {
 
 		for (LivingEntity t : tagged) {
 			// Refresh tag TTL while controlling so it doesn't expire mid-control
-			BlackwhipTags.addTag(player, t, 20);
+			BlackwhipTags.addTagWithMaxDistance(player, t, 20, maxDist);
 
 			// Per-entity fixed tether: capture current distance the first time this target is processed
 			Vec3 toPlayer = player.position().subtract(t.position());

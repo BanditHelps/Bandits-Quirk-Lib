@@ -29,6 +29,7 @@ public class BlackwhipTagAbility extends Ability {
 	public static final PalladiumProperty<Integer> TAG_EXPIRE_TICKS = new IntegerProperty("tag_expire_ticks").configurable("How long a tag remains usable");
 	public static final PalladiumProperty<Boolean> PERSISTENT_TETHERS = new BooleanProperty("persistent_tethers").configurable("Render persistent tethers to tagged targets");
 	public static final PalladiumProperty<Integer> MAX_PERSISTENT_TETHERS = new IntegerProperty("max_persistent_tethers").configurable("Max number of persistent tethers to keep (0 = unlimited)");
+	public static final PalladiumProperty<Integer> MAX_DISTANCE = new IntegerProperty("max_distance").configurable("Max distance before auto-break (0 = unlimited)");
 
 	public static final PalladiumProperty<Boolean> IS_ACTIVE = new BooleanProperty("is_active");
 	public static final PalladiumProperty<String> TARGET_UUID = new StringProperty("target_uuid");
@@ -43,7 +44,8 @@ public class BlackwhipTagAbility extends Ability {
 				.withProperty(WHIP_PARTICLE_SIZE, 1.0F)
 				.withProperty(TAG_EXPIRE_TICKS, 200)
 				.withProperty(PERSISTENT_TETHERS, true)
-				.withProperty(MAX_PERSISTENT_TETHERS, 4);
+				.withProperty(MAX_PERSISTENT_TETHERS, 4)
+				.withProperty(MAX_DISTANCE, 48);
 	}
 
 	@Override
@@ -69,8 +71,15 @@ public class BlackwhipTagAbility extends Ability {
 			entry.setUniqueProperty(TARGET_UUID, target.getUUID().toString());
 			entry.setUniqueProperty(TICKS_LEFT, travel);
 
-			// add tag immediately; visuals will travel
-			BlackwhipTags.addTag(player, target, Math.max(1, entry.getProperty(TAG_EXPIRE_TICKS)), Math.max(0, entry.getProperty(MAX_PERSISTENT_TETHERS)));
+			// add tag immediately with max distance; then enforce max tether count if needed
+			int expire = Math.max(1, entry.getProperty(TAG_EXPIRE_TICKS));
+			int maxDist = Math.max(0, entry.getProperty(MAX_DISTANCE));
+			int maxKeep = Math.max(0, entry.getProperty(MAX_PERSISTENT_TETHERS));
+			BlackwhipTags.addTagWithMaxDistance(player, target, expire, maxDist);
+			if (maxKeep > 0) {
+				// reuse existing trimming logic
+				BlackwhipTags.addTag(player, target, expire, maxKeep);
+			}
 
 			player.level().playSound(null, player.blockPosition(), SoundEvents.FISHING_BOBBER_THROW, SoundSource.PLAYERS, 0.7f, 1.35f);
 			BQLNetwork.CHANNEL.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player),

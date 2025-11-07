@@ -27,11 +27,13 @@ public final class BlackwhipTags {
 		public final long createdTick;
 		public final int entityId;
 		public final int expireTicks;
+		public final int maxDistance; // 0 = unlimited
 
-		public TagEntry(long createdTick, int entityId, int expireTicks) {
+		public TagEntry(long createdTick, int entityId, int expireTicks, int maxDistance) {
 			this.createdTick = createdTick;
 			this.entityId = entityId;
 			this.expireTicks = expireTicks;
+			this.maxDistance = Math.max(0, maxDistance);
 		}
 	}
 
@@ -40,14 +42,12 @@ public final class BlackwhipTags {
 	private BlackwhipTags() {}
 
     public static void addTag(ServerPlayer player, LivingEntity target, int expireTicks) {
-        if (player == null || target == null || player.level().isClientSide) return;
-        Map<Integer, TagEntry> map = PLAYER_TAGS.computeIfAbsent(player.getUUID(), k -> new ConcurrentHashMap<>());
-        int id = target.getId();
-        int requested = Math.max(1, expireTicks);
-        TagEntry existing = map.get(id);
-        // Do not shorten an existing tag's allowed lifetime; prefer the larger TTL
-        int ttl = existing == null ? requested : Math.max(existing.expireTicks, requested);
-        map.put(id, new TagEntry(player.level().getGameTime(), id, ttl));
+        putOrExtendTag(player, target, expireTicks, 0);
+        updateActiveTag(player);
+    }
+
+    public static void addTagWithMaxDistance(ServerPlayer player, LivingEntity target, int expireTicks, int maxDistance) {
+        putOrExtendTag(player, target, expireTicks, maxDistance);
         updateActiveTag(player);
     }
 
@@ -143,16 +143,45 @@ public final class BlackwhipTags {
 		if (map == null) return false;
 		boolean changed = false;
 		long gt = player.level().getGameTime();
+		ServerLevel level = (ServerLevel) player.level();
 		for (Map.Entry<Integer, TagEntry> e : new ArrayList<>(map.entrySet())) {
 			TagEntry te = e.getValue();
 			if (gt - te.createdTick > te.expireTicks) {
 				map.remove(e.getKey());
 				changed = true;
+				continue;
+			}
+			// Enforce max-distance constraint if set (> 0)
+			if (te.maxDistance > 0) {
+				Entity ent = level.getEntity(e.getKey());
+				if (!(ent instanceof LivingEntity living) || !living.isAlive()) {
+					map.remove(e.getKey());
+					changed = true;
+					continue;
+				}
+				double dist = living.position().distanceTo(player.position());
+				if (dist > te.maxDistance) {
+					map.remove(e.getKey());
+					changed = true;
+				}
 			}
 		}
 		if (map.isEmpty()) PLAYER_TAGS.remove(player.getUUID());
 		return changed;
 	}
+
+    private static void putOrExtendTag(ServerPlayer player, LivingEntity target, int expireTicks, int maxDistance) {
+        if (player == null || target == null || player.level().isClientSide) return;
+        Map<Integer, TagEntry> map = PLAYER_TAGS.computeIfAbsent(player.getUUID(), k -> new ConcurrentHashMap<>());
+        int id = target.getId();
+        int requested = Math.max(1, expireTicks);
+        TagEntry existing = map.get(id);
+        // Do not shorten an existing tag's allowed lifetime; prefer the larger TTL
+        int ttl = existing == null ? requested : Math.max(existing.expireTicks, requested);
+        int storedMax = existing == null ? 0 : existing.maxDistance;
+        int finalMax = maxDistance > 0 ? maxDistance : storedMax;
+        map.put(id, new TagEntry(player.level().getGameTime(), id, ttl, finalMax));
+    }
 
     /**
      * Server-side periodic maintenance for a player's Blackwhip tags.
