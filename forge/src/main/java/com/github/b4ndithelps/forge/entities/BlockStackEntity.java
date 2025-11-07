@@ -13,6 +13,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.entity.projectile.Projectile;
+import net.minecraft.world.entity.item.FallingBlockEntity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -22,6 +23,7 @@ import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
+import net.minecraft.core.Direction;
 
 /**
  * Carries three captured blocks in a 1x3 vertical stack, can hover near the owner, then be thrown to deal damage.
@@ -36,6 +38,7 @@ public class BlockStackEntity extends Projectile {
 	private static final EntityDataAccessor<Float> DATA_THROW_SPEED = SynchedEntityData.defineId(BlockStackEntity.class, EntityDataSerializers.FLOAT);
 
 	private int lifeTicks = 0;
+	private boolean shattered = false;
 
 	public BlockStackEntity(EntityType<? extends BlockStackEntity> type, Level level) {
 		super(type, level);
@@ -79,15 +82,15 @@ public class BlockStackEntity extends Projectile {
 			// Hover at owner's main-shoulder: slight side + forward + shoulder height
 			float yaw = owner.getYRot();
 			Vec3 ownerPos = owner.position();
-			double shoulderHeight = Math.max(0.4, Math.min(0.85, owner.getBbHeight() * 0.75));
+			double shoulderHeight = Math.max(0.45, Math.min(0.9, owner.getBbHeight() * 0.78));
 			Vec3 up = new Vec3(0, 1, 0);
 			Vec3 fwdYaw = Vec3.directionFromRotation(0, yaw).normalize();
 			Vec3 rightYaw = fwdYaw.cross(up).normalize();
 			float sideDir = owner.getMainArm() == net.minecraft.world.entity.HumanoidArm.RIGHT ? 1.0f : -1.0f;
 			Vec3 target = ownerPos
 					.add(0, shoulderHeight, 0)
-					.add(rightYaw.scale(0.6 * sideDir))
-					.add(fwdYaw.scale(0.25));
+					.add(rightYaw.scale(0.85 * sideDir)) // push further out from shoulder
+					.add(fwdYaw.scale(0.15)); // a bit less forward to avoid overlap
 			this.setPos(target.x, target.y - 0.5, target.z); // center roughly at middle block
 			this.setDeltaMovement(Vec3.ZERO);
 			this.noPhysics = true;
@@ -109,6 +112,9 @@ public class BlockStackEntity extends Projectile {
 				this.setBoundingBox(this.makeBoundingBox());
 			}
 		}
+		// Apply gravity and light drag when thrown
+		Vec3 vel = this.getDeltaMovement();
+		this.setDeltaMovement(vel.x * 0.99, vel.y - 0.045, vel.z * 0.99);
 
 		if (lifeTicks > 200) { // fallback lifetime
 			this.discard();
@@ -124,7 +130,6 @@ public class BlockStackEntity extends Projectile {
 		} else if (result instanceof BlockHitResult bhr) {
 			onHitBlock(bhr);
 		}
-		this.discard();
 	}
 
 	@Override
@@ -139,22 +144,93 @@ public class BlockStackEntity extends Projectile {
 			Vec3 kb = this.getDeltaMovement().normalize().scale(0.65);
 			living.push(kb.x, Math.max(0.25, kb.y), kb.z);
 		}
+		spawnFallingBlocksAndDiscard();
 	}
 
 	@Override
 	protected void onHitBlock(BlockHitResult result) {
-		// simple thud; no special behavior for now
+		if (this.level().isClientSide) return;
+		// Place the original stack as normal blocks adjacent to the hit face if space allows; otherwise fallback to shatter
+		if (placeStackAsBlocks(result)) {
+			this.shattered = true; // prevent any later shatter attempts
+			this.discard();
+		} else {
+			spawnFallingBlocksAndDiscard();
+		}
 	}
 
 	public void throwForward(LivingEntity owner) {
 		this.setOwner(owner);
 		setAttached(false);
 		this.lifeTicks = 0;
+		this.shattered = false;
 		Vec3 dir = owner.getLookAngle().normalize();
 		double speed = Math.max(0.1, getThrowSpeed());
 		this.setDeltaMovement(dir.scale(speed));
 		this.hasImpulse = true;
 		this.noPhysics = false;
+	}
+
+	private void spawnFallingBlocksAndDiscard() {
+		if (this.shattered) {
+			this.discard();
+			return;
+		}
+		this.shattered = true;
+		if (!(this.level() instanceof ServerLevel sl)) {
+			this.discard();
+			return;
+		}
+		// Spawn three falling blocks at current position with slight random offsets and outward velocities
+		java.util.Random rng = new java.util.Random(this.getUUID().getMostSignificantBits() ^ this.tickCount ^ System.nanoTime());
+		Vec3 base = this.position();
+		Vec3 v = this.getDeltaMovement();
+		spawnOneFalling(sl, getBottom(), base, v, rng, 0);
+		spawnOneFalling(sl, getMiddle(), base.add(0, 1, 0), v, rng, 1);
+		spawnOneFalling(sl, getTop(), base.add(0, 2, 0), v, rng, 2);
+		this.discard();
+	}
+
+	private boolean placeStackAsBlocks(BlockHitResult hit) {
+		if (!(this.level() instanceof ServerLevel sl)) return false;
+		Direction face = hit.getDirection();
+		BlockPos anchor = hit.getBlockPos().relative(face);
+		BlockPos b0 = anchor;
+		BlockPos b1 = anchor.above();
+		BlockPos b2 = anchor.above(2);
+		// Require air for all three positions
+		if (!sl.getBlockState(b0).isAir() || !sl.getBlockState(b1).isAir() || !sl.getBlockState(b2).isAir()) {
+			return false;
+		}
+		sl.setBlock(b0, getBottom(), 3);
+		sl.setBlock(b1, getMiddle(), 3);
+		sl.setBlock(b2, getTop(), 3);
+		return true;
+	}
+
+	private void spawnOneFalling(ServerLevel sl, BlockState state, Vec3 pos, Vec3 baseVel, java.util.Random rng, int index) {
+		// Use vanilla factory, then adjust precise position and motion
+		FallingBlockEntity e = FallingBlockEntity.fall(sl, BlockPos.containing(pos), state);
+		// Random horizontal burst direction
+		double angle = rng.nextDouble() * Math.PI * 2.0;
+		double radius = 0.15 + rng.nextDouble() * 0.35; // small spread offset
+		double offX = Math.cos(angle) * radius;
+		double offZ = Math.sin(angle) * radius;
+		e.setPos(pos.x + offX, pos.y + 0.01 + rng.nextDouble() * 0.06, pos.z + offZ);
+
+		// Base forward velocity + random burst + upward kick
+		Vec3 forward = baseVel.lengthSqr() > 1.0e-6 ? baseVel.normalize() : new Vec3(Math.cos(angle), 0, Math.sin(angle));
+		double baseScale = 0.6 + rng.nextDouble() * 0.3;
+		double burstX = (rng.nextDouble() - 0.5) * 0.6;
+		double burstY = 0.18 + rng.nextDouble() * 0.22;
+		double burstZ = (rng.nextDouble() - 0.5) * 0.6;
+		Vec3 vel = new Vec3(
+				forward.x * baseVel.length() * baseScale + burstX,
+				Math.max(0.12, forward.y * baseVel.length() * 0.25) + burstY,
+				forward.z * baseVel.length() * baseScale + burstZ
+		);
+		e.setDeltaMovement(vel);
+		sl.addFreshEntity(e);
 	}
 
 	public void setStackStates(BlockState bottom, BlockState middle, BlockState top) {

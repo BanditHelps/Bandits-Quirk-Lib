@@ -272,9 +272,9 @@ public class BlackwhipBlockGrabAbility extends Ability {
 		if (rightYaw.lengthSqr() < 1.0e-6) rightYaw = new Vec3(1, 0, 0);
 		rightYaw = rightYaw.normalize();
 		float sideDir = player.getMainArm() == net.minecraft.world.entity.HumanoidArm.RIGHT ? 1.0f : -1.0f;
-		double shoulderHeight = Math.max(0.4, Math.min(0.85, player.getBbHeight() * 0.75));
+		double shoulderHeight = Math.max(0.45, Math.min(0.9, player.getBbHeight() * 0.78));
 		Vec3 base = player.position().add(0, shoulderHeight, 0);
-		Vec3 target = base.add(rightYaw.scale(0.6 * sideDir)).add(fwdYaw.scale(0.25));
+		Vec3 target = base.add(rightYaw.scale(0.85 * sideDir)).add(fwdYaw.scale(0.15));
 		return target.add(0, -0.5, 0);
 	}
 }
