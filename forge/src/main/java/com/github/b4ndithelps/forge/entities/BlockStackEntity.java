@@ -1,11 +1,15 @@
 package com.github.b4ndithelps.forge.entities;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.BlockParticleOption;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.EntityType;
@@ -146,12 +150,12 @@ public class BlockStackEntity extends Projectile {
 			Vec3 kb = this.getDeltaMovement().normalize().scale(0.65);
 			living.push(kb.x, Math.max(0.25, kb.y), kb.z);
 		}
-		// Spawn three falling blocks (same type) with an arc around the impact
+		// Place the pillar at/near impact and play small burst FX, then remove this entity
 		if (this.level() instanceof ServerLevel sl) {
-			Vec3 impact = result.getLocation().add(0, 0.15, 0);
-			Vec3 baseVel = this.getDeltaMovement();
-			// Use middle block type consistently for all three pieces
-			spawnTripleExplosionFalling(sl, getMiddle(), impact, baseVel);
+			Vec3 targetCenter = result.getEntity().getBoundingBox().getCenter();
+			Vec3 impact = targetCenter.add(0, Math.max(0.4, result.getEntity().getBbHeight() * 0.25), 0);
+			placeStackAtImpact(sl, impact);
+			burstFX(sl, impact);
 		}
 		// Remove the entity after impact
 		this.discard();
@@ -222,25 +226,55 @@ public class BlockStackEntity extends Projectile {
 		return true;
 	}
 
+	private boolean placeStackAtImpact(ServerLevel sl, Vec3 impact) {
+		BlockPos ip = BlockPos.containing(impact);
+		// Find ground within a few blocks below
+		BlockPos probe = ip;
+		for (int i = 0; i < 6; i++) {
+			if (!sl.getBlockState(probe).isAir()) {
+				break;
+			}
+			probe = probe.below();
+		}
+		BlockPos base = sl.getBlockState(probe).isAir() ? ip : probe.above();
+		BlockPos b0 = base;
+		BlockPos b1 = base.above();
+		BlockPos b2 = base.above(2);
+		if (!sl.getBlockState(b0).isAir() || !sl.getBlockState(b1).isAir() || !sl.getBlockState(b2).isAir()) {
+			return false;
+		}
+		sl.setBlock(b0, getBottom(), 3);
+		sl.setBlock(b1, getMiddle(), 3);
+		sl.setBlock(b2, getTop(), 3);
+		return true;
+	}
+
+	private void burstFX(ServerLevel sl, Vec3 where) {
+		sl.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, getMiddle()),
+				where.x, where.y, where.z,
+				20, 0.4, 0.3, 0.4, 0.12);
+		sl.playSound(null, BlockPos.containing(where), SoundEvents.GENERIC_EXPLODE, SoundSource.PLAYERS, 0.6f, 1.2f);
+	}
+
 	private void spawnOneFalling(ServerLevel sl, BlockState state, Vec3 pos, Vec3 baseVel, java.util.Random rng, int index) {
-		// Use vanilla factory, then adjust precise position and motion
-		FallingBlockEntity e = FallingBlockEntity.fall(sl, BlockPos.containing(pos), state);
+		// Spawn via factory at a safe air position just above impact
+		BlockPos spawnPos = BlockPos.containing(pos.add(0, 1, 0));
+		FallingBlockEntity e = FallingBlockEntity.fall(sl, spawnPos, state);
 		// Random 3D burst direction biased upward
 		double theta = rng.nextDouble() * Math.PI * 2.0; // azimuth
 		double phi = Math.acos(rng.nextDouble() * 0.5 + 0.5); // 0..pi/2 (bias upward)
 		double dirX = Math.cos(theta) * Math.sin(phi);
 		double dirY = Math.cos(phi); // more upward
 		double dirZ = Math.sin(theta) * Math.sin(phi);
-		double radius = 0.15 + rng.nextDouble() * 0.35;
-		e.setPos(pos.x + dirX * radius, pos.y + 0.01 + rng.nextDouble() * 0.08, pos.z + dirZ * radius);
+		double radius = 0.12 + rng.nextDouble() * 0.22;
+		e.setPos(pos.x + dirX * radius, pos.y + 0.25 + rng.nextDouble() * 0.05, pos.z + dirZ * radius);
 
 		// Outward burst magnitude with some carry-over speed
-		double carry = Math.min(1.25, Math.sqrt(baseVel.lengthSqr()));
-		double burstMag = 0.6 + rng.nextDouble() * 0.9;
-		Vec3 vel = new Vec3(dirX, dirY, dirZ).normalize().scale(burstMag).add(0, 0.12 + rng.nextDouble() * 0.18, 0)
-				.add(baseVel.scale(0.15 + rng.nextDouble() * 0.15));
+		double carry = Math.min(1.0, Math.sqrt(baseVel.lengthSqr()));
+		double burstMag = 0.28 + rng.nextDouble() * 0.22; // toned down
+		Vec3 vel = new Vec3(dirX, dirY, dirZ).normalize().scale(burstMag).add(0, 0.10 + rng.nextDouble() * 0.12, 0)
+				.add(baseVel.scale(0.08 + rng.nextDouble() * 0.08));
 		e.setDeltaMovement(vel);
-		sl.addFreshEntity(e);
 	}
 
 	/**
@@ -252,25 +286,35 @@ public class BlockStackEntity extends Projectile {
 		double baseAngle = rng.nextDouble() * Math.PI * 2.0;
 		for (int i = 0; i < 3; i++) {
 			double ang = baseAngle + i * (2.0 * Math.PI / 3.0);
-			double horizSpeed = 0.55 + rng.nextDouble() * 0.45; // 0.55..1.0
-			double upSpeed = 0.32 + rng.nextDouble() * 0.28;    // 0.32..0.60
+			double horizSpeed = 0.22 + rng.nextDouble() * 0.18; // subtle
+			double upSpeed = 0.16 + rng.nextDouble() * 0.10;    // subtle
 
-			FallingBlockEntity e = FallingBlockEntity.fall(sl, BlockPos.containing(origin), state);
+			// Find a nearby air block above origin to avoid converting existing blocks
+			BlockPos spawnPos = BlockPos.containing(origin);
+			int tries = 0;
+			while (tries < 6 && !sl.getBlockState(spawnPos).isAir()) {
+				spawnPos = spawnPos.above();
+				tries++;
+			}
+			// Ensure at least one block above origin
+			if (sl.getBlockState(spawnPos).isAir()) {
+				spawnPos = spawnPos.above();
+			}
+			FallingBlockEntity e = FallingBlockEntity.fall(sl, spawnPos, state);
 
 			// Slight start offset so pieces don't overlap
-			double r = 0.1 + rng.nextDouble() * 0.15;
+			double r = 0.24 + rng.nextDouble() * 0.18; // spawn a bit farther for visibility
 			double ox = Math.cos(ang) * r;
 			double oz = Math.sin(ang) * r;
-			e.setPos(origin.x + ox, origin.y + 0.01 + rng.nextDouble() * 0.05, origin.z + oz);
+			e.setPos(origin.x + ox, origin.y + 0.9 + rng.nextDouble() * 0.08, origin.z + oz);
 
 			// Arc velocity with small carry from current motion
-			Vec3 carry = baseVel.scale(0.18 + rng.nextDouble() * 0.12);
+			Vec3 carry = baseVel.scale(0.06 + rng.nextDouble() * 0.06);
 			double vx = Math.cos(ang) * horizSpeed + carry.x;
 			double vz = Math.sin(ang) * horizSpeed + carry.z;
-			double vy = upSpeed + carry.y * 0.4;
+			double vy = upSpeed + carry.y * 0.2;
 			e.setDeltaMovement(vx, vy, vz);
-
-			sl.addFreshEntity(e);
+			e.hasImpulse = true;
 		}
 	}
 
