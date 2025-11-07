@@ -1,0 +1,28 @@
+{
+  "name": "Blackwhip Block Grab - Example",
+  "icon": "minecraft:stone",
+  "abilities": {
+    "blackwhip_block_grab": {
+      "type": "bandits_quirk_lib:blackwhip_block_grab",
+      "icon": "minecraft:lead",
+      "title": "Block Grab",
+      "description": "Grab a 1x3 column of blocks with whips, carry it, then throw it.",
+      "range": 16.0,
+      "travel_ticks": 8,
+      "whip_curve": 0.6,
+      "whip_thickness": 1.0,
+      "throw_speed": 1.6,
+      "damage": 8.0,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:action",
+            "key_type": "use"  // right-click; change in your pack if using different binds
+          }
+        ]
+      }
+    }
+  }
+}
+
+

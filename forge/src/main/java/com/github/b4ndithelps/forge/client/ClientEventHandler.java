@@ -2,6 +2,7 @@ package com.github.b4ndithelps.forge.client;
 
 import com.github.b4ndithelps.BanditsQuirkLib;
 import com.github.b4ndithelps.forge.client.renderer.entity.BetterWallProjectileRenderer;
+import com.github.b4ndithelps.forge.client.renderer.entity.BlockStackEntityRenderer;
 import com.github.b4ndithelps.forge.entities.ModEntities;
 import com.github.b4ndithelps.forge.entities.WindProjectileEntity;
 import com.github.b4ndithelps.util.FileManager;
@@ -35,6 +36,7 @@ public class ClientEventHandler {
             // Register the wind projectile renderer - invisible renderer since particles handle visuals
             event.registerEntityRenderer(ModEntities.WIND_PROJECTILE.get(), WindProjectileRenderer::new);
             event.registerEntityRenderer(ModEntities.BETTER_WALL_PROJECTILE.get(), BetterWallProjectileRenderer::new);
+            event.registerEntityRenderer(ModEntities.BLOCK_STACK.get(), BlockStackEntityRenderer::new);
         }
 
         @SubscribeEvent

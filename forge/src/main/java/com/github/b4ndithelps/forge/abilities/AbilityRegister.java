@@ -46,6 +46,7 @@ public class AbilityRegister {
     public static final RegistrySupplier<Ability> BLACKWHIP_BUBBLE_SHIELD;
     public static final RegistrySupplier<Ability> BLACKWHIP_QUAD_ZIP;
     public static final RegistrySupplier<Ability> BLACKWHIP_MOVE_TAGGED;
+    public static final RegistrySupplier<Ability> BLACKWHIP_BLOCK_GRAB;
 
 
     public AbilityRegister() {
@@ -96,6 +97,7 @@ public class AbilityRegister {
         BLACKWHIP_BUBBLE_SHIELD = ABILITIES.register("blackwhip_bubble_shield", BlackwhipBubbleShieldAbility::new);
         BLACKWHIP_QUAD_ZIP = ABILITIES.register("blackwhip_quad_zip", BlackwhipQuadZipAbility::new);
         BLACKWHIP_MOVE_TAGGED = ABILITIES.register("blackwhip_move_tagged", BlackwhipMoveTaggedAbility::new);
+        BLACKWHIP_BLOCK_GRAB = ABILITIES.register("blackwhip_block_grab", BlackwhipBlockGrabAbility::new);
 
     }
 }
