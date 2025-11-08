@@ -288,7 +288,7 @@ public final class BlackwhipRenderHandler {
             if (forceRight) {
                 Vec3 fwdYaw = Vec3.directionFromRotation(0, player.getYRot()).normalize();
                 start = getHandPositionForSide(player, partial, 1.0f)
-                        .add(0, 0.30, 0)        // move up about 2x more
+                        .add(0, 0.35, 0)        // move up about 2x more
                         .add(fwdYaw.scale(0.60)); // push forward roughly arm length
             } else {
                 start = getHandPosition(player, partial);
