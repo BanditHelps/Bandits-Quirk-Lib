@@ -238,21 +238,6 @@
         ]
       }
     },
-    "blackwhip_restrain_aim": {
-      "type": "palladium:aim",
-      "description": "Little animation to show they are holding something",
-      "hidden": true,
-      "hidden_in_bar": true,
-      "arm": "main_arm",
-      "conditions": {
-        "enabling": [
-          {
-            "type": "palladium:ability_enabled",
-            "ability": "blackwhip_restrain"
-          }
-        ]
-      }
-    },
     "blackwhip_puppet": {
       "type": "bandits_quirk_lib:blackwhip_puppet",
       "icon": "minecraft:totem_of_undying",

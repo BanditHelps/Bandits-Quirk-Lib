@@ -1,6 +1,8 @@
 package com.github.b4ndithelps.forge.abilities;
 
 import com.github.b4ndithelps.forge.effects.ModEffects;
+import com.github.b4ndithelps.forge.network.BQLNetwork;
+import com.github.b4ndithelps.forge.network.PlayerAnimationPacket;
 import com.github.b4ndithelps.forge.systems.BlackwhipTags;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
@@ -8,6 +10,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.AABB;
+import net.minecraftforge.network.PacketDistributor;
 import net.threetag.palladium.power.IPowerHolder;
 import net.threetag.palladium.power.ability.Ability;
 import net.threetag.palladium.power.ability.AbilityInstance;
@@ -26,6 +29,17 @@ public class BlackwhipRestrainTaggedAbility extends Ability {
 		super();
 		this.withProperty(MAX_TARGETS, 0)
 				.withProperty(MAX_DISTANCE, 48);
+	}
+
+	@Override
+	public void firstTick(LivingEntity entity, AbilityInstance entry, IPowerHolder holder, boolean enabled) {
+		if (!enabled) return;
+		if (!(entity instanceof ServerPlayer player)) return;
+
+		BQLNetwork.CHANNEL.send(
+				PacketDistributor.PLAYER.with(() -> player),
+				new PlayerAnimationPacket("restrain_animation")
+		);
 	}
 
 	@Override
@@ -49,6 +63,16 @@ public class BlackwhipRestrainTaggedAbility extends Ability {
 						6, 0.15, 0.15, 0.15, 0.01);
 			}
 		}
+	}
+
+	@Override
+	public void lastTick(LivingEntity entity, AbilityInstance entry, IPowerHolder holder, boolean enabled) {
+		if (!(entity instanceof ServerPlayer player)) return;
+
+		BQLNetwork.CHANNEL.send(
+				PacketDistributor.PLAYER.with(() -> player),
+				new PlayerAnimationPacket("")
+		);
 	}
 }
 

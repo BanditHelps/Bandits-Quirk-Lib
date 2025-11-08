@@ -7,6 +7,7 @@ import net.minecraftforge.network.simple.SimpleChannel;
 
 import static com.github.b4ndithelps.BanditsQuirkLib.MOD_ID;
 
+@SuppressWarnings("removal")
 public final class BQLNetwork {
     private static final String PROTOCOL_VERSION = "1";
 
@@ -163,6 +164,14 @@ public final class BQLNetwork {
                 .decoder(BlackwhipBubbleShieldPacket::decode)
                 .consumerMainThread(BlackwhipBubbleShieldPacket::handle)
                 .add();
+
+        // Player Animation
+        CHANNEL.messageBuilder(PlayerAnimationPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(PlayerAnimationPacket::encode)
+                .decoder(PlayerAnimationPacket::decode)
+                .consumerMainThread(PlayerAnimationPacket::handle)
+                .add();
+
     }
 }
 

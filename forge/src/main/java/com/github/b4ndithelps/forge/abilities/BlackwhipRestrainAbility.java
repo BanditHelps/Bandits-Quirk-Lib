@@ -3,6 +3,7 @@ package com.github.b4ndithelps.forge.abilities;
 import com.github.b4ndithelps.forge.effects.ModEffects;
 import com.github.b4ndithelps.forge.network.BQLNetwork;
 import com.github.b4ndithelps.forge.network.BlackwhipStatePacket;
+import com.github.b4ndithelps.forge.network.PlayerAnimationPacket;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
@@ -108,8 +109,7 @@ public class BlackwhipRestrainAbility extends Ability {
  		} else {
  			// Miss: play retract visuals for a short time
  			playWhipMiss(player, entry, range);
-	}
-
+		}
 	}
 
  	@Override
@@ -129,6 +129,16 @@ public class BlackwhipRestrainAbility extends Ability {
 				BQLNetwork.CHANNEL.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player),
 						new BlackwhipStatePacket(player.getId(), false, false, -1, 0, entry.getProperty(MISS_RETRACT_TICKS),
 								entry.getProperty(RANGE), entry.getProperty(WHIP_CURVE), entry.getProperty(WHIP_PARTICLE_SIZE)));
+
+				if (entry.getEnabledTicks() < 1) {
+					BQLNetwork.CHANNEL.send(
+							PacketDistributor.PLAYER.with(() -> player),
+							new PlayerAnimationPacket("restrain_animation")
+					);
+
+					System.out.println("OAISJD UJISDHIKFGHJH SDIUFHOASUIDFGHUO ASHJFIOUHGIOUEHF");
+				}
+
 				finish(entry);
  				return;
  			}
@@ -204,6 +214,11 @@ public class BlackwhipRestrainAbility extends Ability {
 			BQLNetwork.CHANNEL.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player),
 					new BlackwhipStatePacket(player.getId(), false, false, -1, 0, entry.getProperty(MISS_RETRACT_TICKS),
 							entry.getProperty(RANGE), entry.getProperty(WHIP_CURVE), entry.getProperty(WHIP_PARTICLE_SIZE)));
+
+			BQLNetwork.CHANNEL.send(
+					PacketDistributor.PLAYER.with(() -> player),
+					new PlayerAnimationPacket("")
+			);
 		}
 		finish(entry);
  	}
