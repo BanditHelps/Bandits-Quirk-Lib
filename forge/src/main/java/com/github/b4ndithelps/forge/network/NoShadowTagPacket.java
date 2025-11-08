@@ -1,6 +1,5 @@
 package com.github.b4ndithelps.forge.network;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.Entity;
 import net.minecraftforge.api.distmarker.Dist;
@@ -49,6 +48,3 @@ public class NoShadowTagPacket {
         return v != null && v;
     }
 }
-
-
-

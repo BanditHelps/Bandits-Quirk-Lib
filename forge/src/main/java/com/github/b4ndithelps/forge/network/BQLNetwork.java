@@ -7,6 +7,7 @@ import net.minecraftforge.network.simple.SimpleChannel;
 
 import static com.github.b4ndithelps.BanditsQuirkLib.MOD_ID;
 
+@SuppressWarnings("removal")
 public final class BQLNetwork {
     private static final String PROTOCOL_VERSION = "1";
 
@@ -25,7 +26,12 @@ public final class BQLNetwork {
                 .consumerMainThread(NoShadowTagPacket::handle)
                 .add();
 
-        
+        CHANNEL.messageBuilder(ZoomStatePacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(ZoomStatePacket::encode)
+                .decoder(ZoomStatePacket::decode)
+                .consumerMainThread(ZoomStatePacket::handle)
+                .add();
+
         CHANNEL.messageBuilder(BodyStatusSyncPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(BodyStatusSyncPacket::encode)
                 .decoder(BodyStatusSyncPacket::decode)
@@ -43,7 +49,149 @@ public final class BQLNetwork {
                 .decoder(MineHaSlotSyncPacket::decode)
                 .consumerMainThread(MineHaSlotSyncPacket::handle)
                 .add();
+
+        CHANNEL.messageBuilder(DoubleJumpC2SPacket.class, index++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(DoubleJumpC2SPacket::encode)
+                .decoder(DoubleJumpC2SPacket::decode)
+                .consumerMainThread(DoubleJumpC2SPacket::handle)
+                .add();
+
+        CHANNEL.messageBuilder(DoubleJumpS2CPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(DoubleJumpS2CPacket::encode)
+                .decoder(DoubleJumpS2CPacket::decode)
+                .consumerMainThread(DoubleJumpS2CPacket::handle)
+                .add();
+
+        CHANNEL.messageBuilder(PlayerVelocityS2CPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(PlayerVelocityS2CPacket::encode)
+                .decoder(PlayerVelocityS2CPacket::decode)
+                .consumerMainThread(PlayerVelocityS2CPacket::handle)
+                .add();
+
+        CHANNEL.messageBuilder(GenomeSyncPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(GenomeSyncPacket::encode)
+                .decoder(GenomeSyncPacket::decode)
+                .consumerMainThread(GenomeSyncPacket::handle)
+                .add();
+
+        // Ref-screen program control (client -> server)
+        CHANNEL.messageBuilder(RefProgramActionC2SPacket.class, index++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(RefProgramActionC2SPacket::encode)
+                .decoder(RefProgramActionC2SPacket::decode)
+                .consumerMainThread(RefProgramActionC2SPacket::handle)
+                .add();
+
+        // Sequencer state updates (server -> clients)
+        CHANNEL.messageBuilder(SequencerStateS2CPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(SequencerStateS2CPacket::encode)
+                .decoder(SequencerStateS2CPacket::decode)
+                .consumerMainThread(SequencerStateS2CPacket::handle)
+                .add();
+
+        // Catalog entries (server -> client)
+        CHANNEL.messageBuilder(CatalogEntriesS2CPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(CatalogEntriesS2CPacket::encode)
+                .decoder(CatalogEntriesS2CPacket::decode)
+                .consumerMainThread(CatalogEntriesS2CPacket::handle)
+                .add();
+
+        // Slicer state updates (server -> client)
+        CHANNEL.messageBuilder(SlicerStateS2CPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(SlicerStateS2CPacket::encode)
+                .decoder(SlicerStateS2CPacket::decode)
+                .consumerMainThread(SlicerStateS2CPacket::handle)
+                .add();
+
+        // Combiner result updates (server -> client)
+        CHANNEL.messageBuilder(CombinerStateS2CPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(CombinerStateS2CPacket::encode)
+                .decoder(CombinerStateS2CPacket::decode)
+                .consumerMainThread(CombinerStateS2CPacket::handle)
+                .add();
+
+        // Printer result updates (server -> client)
+        CHANNEL.messageBuilder(PrinterStateS2CPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(PrinterStateS2CPacket::encode)
+                .decoder(PrinterStateS2CPacket::decode)
+                .consumerMainThread(PrinterStateS2CPacket::handle)
+                .add();
+
+        // Open gene graph (server -> client)
+        CHANNEL.messageBuilder(OpenGeneGraphS2CPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(OpenGeneGraphS2CPacket::encode)
+                .decoder(OpenGeneGraphS2CPacket::decode)
+                .consumerMainThread(OpenGeneGraphS2CPacket::handle)
+                .add();
+
+        // Blackwhip visual updates (server -> clients)
+        CHANNEL.messageBuilder(BlackwhipStatePacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(BlackwhipStatePacket::encode)
+                .decoder(BlackwhipStatePacket::decode)
+                .consumerMainThread(BlackwhipStatePacket::handle)
+                .add();
+
+        // Blackwhip persistent multi-tethers (server -> clients)
+        CHANNEL.messageBuilder(BlackwhipTethersPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(BlackwhipTethersPacket::encode)
+                .decoder(BlackwhipTethersPacket::decode)
+                .consumerMainThread(BlackwhipTethersPacket::handle)
+                .add();
+
+        // Blackwhip block anchor visuals (server -> clients)
+        CHANNEL.messageBuilder(BlackwhipBlockWhipPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(BlackwhipBlockWhipPacket::encode)
+                .decoder(BlackwhipBlockWhipPacket::decode)
+                .consumerMainThread(BlackwhipBlockWhipPacket::handle)
+                .add();
+
+        // Blackwhip multi block anchor visuals (server -> clients)
+        CHANNEL.messageBuilder(BlackwhipMultiBlockWhipPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(BlackwhipMultiBlockWhipPacket::encode)
+                .decoder(BlackwhipMultiBlockWhipPacket::decode)
+                .consumerMainThread(BlackwhipMultiBlockWhipPacket::handle)
+                .add();
+
+        // Blackwhip aura visuals (server -> clients)
+        CHANNEL.messageBuilder(BlackwhipAuraPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(BlackwhipAuraPacket::encode)
+                .decoder(BlackwhipAuraPacket::decode)
+                .consumerMainThread(BlackwhipAuraPacket::handle)
+                .add();
+
+        // Blackwhip bubble shield visuals (server -> clients)
+        CHANNEL.messageBuilder(BlackwhipBubbleShieldPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(BlackwhipBubbleShieldPacket::encode)
+                .decoder(BlackwhipBubbleShieldPacket::decode)
+                .consumerMainThread(BlackwhipBubbleShieldPacket::handle)
+                .add();
+
+        // Blackwhip start anchor override (server -> clients)
+        CHANNEL.messageBuilder(BlackwhipAnchorOverridePacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(BlackwhipAnchorOverridePacket::encode)
+                .decoder(BlackwhipAnchorOverridePacket::decode)
+                .consumerMainThread(BlackwhipAnchorOverridePacket::handle)
+                .add();
+
+        // Blackwhip struggle: client taps (client -> server)
+        CHANNEL.messageBuilder(BlackwhipStruggleTapC2SPacket.class, index++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(BlackwhipStruggleTapC2SPacket::encode)
+                .decoder(BlackwhipStruggleTapC2SPacket::decode)
+                .consumerMainThread(BlackwhipStruggleTapC2SPacket::handle)
+                .add();
+
+        // Blackwhip struggle HUD (server -> client)
+        CHANNEL.messageBuilder(BlackwhipStruggleStatusS2CPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(BlackwhipStruggleStatusS2CPacket::encode)
+                .decoder(BlackwhipStruggleStatusS2CPacket::decode)
+                .consumerMainThread(BlackwhipStruggleStatusS2CPacket::handle)
+                .add();
+
+        // Player Animation
+        CHANNEL.messageBuilder(PlayerAnimationPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(PlayerAnimationPacket::encode)
+                .decoder(PlayerAnimationPacket::decode)
+                .consumerMainThread(PlayerAnimationPacket::handle)
+                .add();
+
     }
 }
-
-

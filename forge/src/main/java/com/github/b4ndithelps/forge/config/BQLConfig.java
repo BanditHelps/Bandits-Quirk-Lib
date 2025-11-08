@@ -5,8 +5,6 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
 
 /**
  * This is the file that builds the BQL specific config located in the root of the /config folder.
@@ -61,6 +59,21 @@ public class BQLConfig {
     public final ForgeConfigSpec.DoubleValue minorDamage;
     public final ForgeConfigSpec.DoubleValue majorDamage;
     public final ForgeConfigSpec.DoubleValue severeDamage;
+
+    // Genetics / Extractor Constants
+    public final ForgeConfigSpec.IntValue extractorMaxDurability;
+    public final ForgeConfigSpec.IntValue extractorDurabilityCost;
+    public final ForgeConfigSpec.BooleanValue extractorDamageTarget;
+    public final ForgeConfigSpec.DoubleValue extractorDamageAmount;
+    public final ForgeConfigSpec.ConfigValue<List<? extends String>> extractorValidEntityTypes;
+    public final ForgeConfigSpec.IntValue seqLenPlayer;
+    public final ForgeConfigSpec.ConfigValue<List<? extends Integer>> seqLenVillagerRange;
+    public final ForgeConfigSpec.ConfigValue<List<? extends Integer>> seqLenZombieRange;
+    public final ForgeConfigSpec.ConfigValue<List<? extends Integer>> seqLenHuskRange;
+    public final ForgeConfigSpec.ConfigValue<List<? extends Integer>> seqLenDrownedRange;
+
+    // Player Genome
+    public final ForgeConfigSpec.IntValue playerMaxGenes;
 
 
     public BQLConfig(ForgeConfigSpec.Builder builder) {
@@ -212,6 +225,66 @@ public class BQLConfig {
                 .comment("The amount of damage overusing in the 'severe' level does to a limb")
                 .defineInRange("powerstock_severe_damage", 75, 0.0, 1000);
 
+
+        builder.pop();
+
+        // Genetics / Extractor section
+        builder.comment("Genetics & Tissue Extractor Configuration")
+                .push("genetics");
+
+        this.extractorMaxDurability = builder
+                .comment("Maximum durability of the Tissue Extractor item")
+                .defineInRange("extractor_max_durability", 128, 1, 4096);
+
+        this.extractorDurabilityCost = builder
+                .comment("Durability cost per successful use of the Tissue Extractor")
+                .defineInRange("extractor_durability_cost", 1, 1, 64);
+
+        this.extractorDamageTarget = builder
+                .comment("Whether using the Tissue Extractor damages the target entity")
+                .define("extractor_damage_target", false);
+
+        this.extractorDamageAmount = builder
+                .comment("Damage dealt to the target when extractor is used (in health points)")
+                .defineInRange("extractor_damage_amount", 1.0, 0.0, 20.0);
+
+        this.extractorValidEntityTypes = builder
+                .comment("List of entity type IDs that can be swabbed (e.g., minecraft:player)")
+                .defineList(
+                        "extractor_valid_entity_types",
+                        Arrays.asList(
+                                "minecraft:player",
+                                "minecraft:villager",
+                                "minecraft:zombie",
+                                "minecraft:husk",
+                                "minecraft:drowned"
+                        ),
+                        obj -> obj instanceof String
+                );
+
+        this.seqLenPlayer = builder
+                .comment("Exact number of genes for players")
+                .defineInRange("sequence_len_player", 4, 1, 16);
+
+        this.seqLenVillagerRange = builder
+                .comment("Villager gene count range [min,max]")
+                .defineList("sequence_len_villager", Arrays.asList(3,4), o -> o instanceof Integer);
+
+        this.seqLenZombieRange = builder
+                .comment("Zombie gene count range [min,max]")
+                .defineList("sequence_len_zombie", Arrays.asList(2,3), o -> o instanceof Integer);
+
+        this.seqLenHuskRange = builder
+                .comment("Husk gene count range [min,max]")
+                .defineList("sequence_len_husk", Arrays.asList(2,3), o -> o instanceof Integer);
+
+        this.seqLenDrownedRange = builder
+                .comment("Drowned gene count range [min,max]")
+                .defineList("sequence_len_drowned", Arrays.asList(2,3), o -> o instanceof Integer);
+
+        this.playerMaxGenes = builder
+                .comment("Maximum number of genes a player can have at once")
+                .defineInRange("player_max_genes", 12, 1, 64);
 
         builder.pop();
     }

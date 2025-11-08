@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "VIV",
+    "IGI",
+    "I I"
+  ],
+  "key": {
+    "I": {
+      "item": "minecraft:iron_block"
+    },
+    "G": {
+      "item": "minecraft:glass_pane"
+    },
+    "V": {
+      "item": "palladium:vibranium_circuit"
+    }
+  },
+  "result": {
+    "item": "bandits_quirk_lib:gene_combiner",
+    "count": 1
+  }
+}

@@ -27,6 +27,14 @@ public class ModEntities {
                     .updateInterval(1)
                     .build("better_wall_projectile"));
 
+    public static final RegistryObject<EntityType<BlockStackEntity>> BLOCK_STACK =
+            ENTITY_TYPES.register("block_stack", () ->
+                    EntityType.Builder.<BlockStackEntity>of(BlockStackEntity::new, MobCategory.MISC)
+                            .sized(1.0F, 3.0F)
+                            .clientTrackingRange(64)
+                            .updateInterval(1)
+                            .build("block_stack"));
+
     public static void register(IEventBus eventBus) {
         ENTITY_TYPES.register(eventBus);
     }

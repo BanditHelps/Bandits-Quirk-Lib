@@ -18,6 +18,23 @@ public class ModCreativeTabs {
             .icon(() -> new ItemStack(ModBlocks.RESEARCH_TABLE_BLOCK.get()))
             .displayItems((parameters, output) -> {
                 output.accept(ModBlocks.RESEARCH_TABLE_BLOCK.get());
+                output.accept(ModBlocks.BIO_TERMINAL.get());
+                output.accept(ModBlocks.GENE_SEQUENCER.get());
+                output.accept(ModBlocks.GENE_SLICER.get());
+                output.accept(ModBlocks.SAMPLE_REFRIGERATOR.get());
+                output.accept(ModBlocks.BIO_PRINTER.get());
+                output.accept(ModBlocks.GENE_COMBINER.get());
+                output.accept(ModBlocks.BIO_CABLE.get());
+                output.accept(ModItems.TISSUE_EXTRACTOR.get());
+                output.accept(ModItems.TISSUE_SAMPLE.get());
+                output.accept(ModItems.SEQUENCED_SAMPLE.get());
+                output.accept(ModItems.GENE_VIAL_COSMETIC.get());
+                output.accept(ModItems.GENE_VIAL_RESISTANCE.get());
+                output.accept(ModItems.GENE_VIAL_LOWEND.get());
+                output.accept(ModItems.GENE_VIAL_BUILDER.get());
+                output.accept(ModItems.GENE_VIAL_QUIRK.get());
+                output.accept(ModItems.GENE_DATABASE.get());
+                output.accept(ModItems.INJECTOR.get());
             })
             .build());
 
@@ -25,5 +42,3 @@ public class ModCreativeTabs {
         TABS.register(bus);
     }
 }
-
-

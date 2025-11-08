@@ -21,6 +21,4 @@ public class ProjectileSpawner {
     public static BetterWallProjectileEntity spawnWallProjectile(Level level, Player shooter, float width, float height, float knockback) {
         return spawnWallProjectile(level, shooter, width, height, 100);
     }
-
-
 }

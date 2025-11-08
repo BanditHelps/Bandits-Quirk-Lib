@@ -97,5 +97,3 @@ public class MineHaSlotSyncPacket {
         return new MineHaSlotSyncPacket(player.getUUID(), tag);
     }
 }
-
-

@@ -1,0 +1,5 @@
+{
+  "variants": {
+    "": { "model": "bandits_quirk_lib:block/gene_sequencer" }
+  }
+}

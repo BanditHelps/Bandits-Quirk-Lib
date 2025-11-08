@@ -1,21 +1,22 @@
 package com.github.b4ndithelps.forge.systems;
 
 import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
-import com.github.b4ndithelps.forge.capabilities.Body.BodyPart;
-import com.github.b4ndithelps.forge.capabilities.Body.BodyStatusCapabilityProvider;
-import com.github.b4ndithelps.forge.capabilities.Body.CustomStatus;
-import com.github.b4ndithelps.forge.capabilities.Body.IBodyStatusCapability;
+import com.github.b4ndithelps.forge.capabilities.body.BodyPart;
+import com.github.b4ndithelps.forge.capabilities.body.BodyStatusCapabilityProvider;
+import com.github.b4ndithelps.forge.capabilities.body.CustomStatus;
+import com.github.b4ndithelps.forge.capabilities.body.IBodyStatusCapability;
 import com.github.b4ndithelps.forge.network.BQLNetwork;
 import com.github.b4ndithelps.forge.network.BodyStatusSyncPacket;
-import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.network.PacketDistributor;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 public class BodyStatusHelper {
     private static final Map<String, CustomStatus> registeredStatuses = new HashMap<>();
@@ -714,7 +715,7 @@ public class BodyStatusHelper {
             return new BodyPart[0]; // Return empty array if capability not available
         }
         
-        return java.util.Arrays.stream(BodyPart.values())
+        return Arrays.stream(BodyPart.values())
                 .filter(part -> {
                     float damage = bodyStatus.getDamage(part);
                     boolean isDestroyed = bodyStatus.isPartDestroyed(part);
@@ -732,7 +733,7 @@ public class BodyStatusHelper {
      */
     public static String[] getDamagedPartNames(Player player) {
         BodyPart[] damagedParts = getDamagedParts(player);
-        return java.util.Arrays.stream(damagedParts)
+        return Arrays.stream(damagedParts)
                 .map(part -> part.getName())
                 .toArray(String[]::new);
     }
@@ -752,7 +753,7 @@ public class BodyStatusHelper {
         }
 
         // Pick a random damaged part
-        BodyPart randomPart = damagedParts[new java.util.Random().nextInt(damagedParts.length)];
+        BodyPart randomPart = damagedParts[new Random().nextInt(damagedParts.length)];
         
         // Get current damage and calculate new damage
         IBodyStatusCapability bodyStatus = getBodyStatus(player);
@@ -789,7 +790,7 @@ public class BodyStatusHelper {
         }
 
         // Pick a random damaged part
-        BodyPart randomPart = damagedParts[new java.util.Random().nextInt(damagedParts.length)];
+        BodyPart randomPart = damagedParts[new Random().nextInt(damagedParts.length)];
         
         // Get current damage and calculate new damage
         IBodyStatusCapability bodyStatus = getBodyStatus(player);
@@ -828,7 +829,7 @@ public class BodyStatusHelper {
             return 0.0f; // Return 0 if capability not available
         }
         
-        return java.util.Arrays.stream(BodyPart.values())
+        return Arrays.stream(BodyPart.values())
                 .filter(part -> !bodyStatus.isPartDestroyed(part))
                 .map(part -> bodyStatus.getDamage(part))
                 .reduce(0.0f, Float::sum);

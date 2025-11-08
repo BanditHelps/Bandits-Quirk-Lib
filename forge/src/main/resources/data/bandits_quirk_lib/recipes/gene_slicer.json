@@ -1,0 +1,29 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "QIV",
+    "ISI",
+    "ITI"
+  ],
+  "key": {
+    "I": {
+      "item": "minecraft:iron_block"
+    },
+    "S": {
+      "item": "minecraft:iron_sword"
+    },
+    "T": {
+      "item": "bandits_quirk_lib:tissue_extractor"
+    },
+    "V": {
+      "item": "palladium:vibranium_circuit"
+    },
+    "Q": {
+      "item": "palladium:quartz_circuit"
+    }
+  },
+  "result": {
+    "item": "bandits_quirk_lib:gene_slicer",
+    "count": 1
+  }
+}

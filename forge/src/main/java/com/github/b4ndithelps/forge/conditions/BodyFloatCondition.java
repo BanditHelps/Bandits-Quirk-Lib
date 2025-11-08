@@ -1,7 +1,6 @@
 package com.github.b4ndithelps.forge.conditions;
 
-import com.github.b4ndithelps.forge.capabilities.Body.BodyPart;
-import com.github.b4ndithelps.forge.capabilities.Body.DamageStage;
+import com.github.b4ndithelps.forge.capabilities.body.BodyPart;
 import com.github.b4ndithelps.forge.systems.BodyStatusHelper;
 import com.google.gson.JsonObject;
 import net.minecraft.server.level.ServerPlayer;

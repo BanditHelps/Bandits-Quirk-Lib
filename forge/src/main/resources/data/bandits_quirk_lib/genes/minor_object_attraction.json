@@ -1,0 +1,12 @@
+{
+  "id": "bandits_quirk_lib:gene.minor_object_attraction",
+  "category": "quirk",
+  "rarity": "uncommon",
+  "quality_range": [10, 90],
+  "combinable": true,
+  "description": "Things find themselves attracted to you",
+  "mobs": [
+    "minecraft:player",
+    "minecraft:zombie"
+  ]
+}

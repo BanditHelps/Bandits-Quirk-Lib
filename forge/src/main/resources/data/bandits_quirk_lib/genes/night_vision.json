@@ -1,0 +1,12 @@
+{
+  "id": "bandits_quirk_lib:gene.night_vision",
+  "category": "quirk",
+  "rarity": "rare",
+  "quality_range": [10, 90],
+  "combinable": true,
+  "description": "Your eyes are able to peer through the darkness",
+  "mobs": [
+    "minecraft:player",
+    "minecraft:zombie"
+  ]
+}

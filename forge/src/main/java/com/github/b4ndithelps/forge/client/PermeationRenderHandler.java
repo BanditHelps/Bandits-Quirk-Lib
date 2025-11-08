@@ -11,7 +11,6 @@ import net.minecraftforge.client.event.RenderPlayerEvent;
 import net.minecraftforge.client.event.RenderNameTagEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-import net.threetag.palladium.client.model.animation.AnimationUtil;
 
 @Mod.EventBusSubscriber(modid = BanditsQuirkLib.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
 public class PermeationRenderHandler {
@@ -47,12 +46,10 @@ public class PermeationRenderHandler {
         }
 
         float depthPixels = BodyStatusHelper.getCustomFloat(player, "right_leg", "permeation_depth");
-        //int state = BodyStatusHelper.getCustomStatus(player, "chest", "permeation_state");
+
         // -34 is the lowest the sink will go
         if (depthPixels <= -34) {
             event.setContent(Component.empty());
         }
     }
 }
-
-
