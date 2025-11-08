@@ -4,6 +4,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtUtils;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -43,6 +44,7 @@ public class BlockStackEntity extends Projectile {
 
 	private int lifeTicks = 0;
 	private boolean shattered = false;
+	private boolean hasPlaced = false;
 
 	public BlockStackEntity(EntityType<? extends BlockStackEntity> type, Level level) {
 		super(type, level);
@@ -131,6 +133,11 @@ public class BlockStackEntity extends Projectile {
 	protected void onHit(HitResult result) {
 		super.onHit(result);
 		if (this.level().isClientSide) return;
+		// Prevent double-processing in edge cases
+		if (this.hasPlaced) {
+			return;
+		}
+		this.hasPlaced = true;
 		if (result instanceof EntityHitResult ehr) {
 			onHitEntity(ehr);
 		} else if (result instanceof BlockHitResult bhr) {
@@ -373,6 +380,11 @@ public class BlockStackEntity extends Projectile {
 		tag.putBoolean("Attached", isAttached());
 		tag.putFloat("Damage", getDamageAmount());
 		tag.putFloat("ThrowSpeed", getThrowSpeed());
+		// Store full blockstates for fidelity
+		tag.put("BotState", NbtUtils.writeBlockState(getBottom()));
+		tag.put("MidState", NbtUtils.writeBlockState(getMiddle()));
+		tag.put("TopState", NbtUtils.writeBlockState(getTop()));
+		// Legacy ints for backward compatibility
 		tag.putInt("Bot", net.minecraft.core.registries.BuiltInRegistries.BLOCK.getId(getBottom().getBlock()));
 		tag.putInt("Mid", net.minecraft.core.registries.BuiltInRegistries.BLOCK.getId(getMiddle().getBlock()));
 		tag.putInt("Top", net.minecraft.core.registries.BuiltInRegistries.BLOCK.getId(getTop().getBlock()));
@@ -384,9 +396,18 @@ public class BlockStackEntity extends Projectile {
 		setAttached(tag.getBoolean("Attached"));
 		setDamageAmount(tag.getFloat("Damage"));
 		setThrowSpeed(tag.getFloat("ThrowSpeed"));
-		BlockState bot = net.minecraft.core.registries.BuiltInRegistries.BLOCK.byId(tag.getInt("Bot")).defaultBlockState();
-		BlockState mid = net.minecraft.core.registries.BuiltInRegistries.BLOCK.byId(tag.getInt("Mid")).defaultBlockState();
-		BlockState top = net.minecraft.core.registries.BuiltInRegistries.BLOCK.byId(tag.getInt("Top")).defaultBlockState();
+		BlockState bot;
+		BlockState mid;
+		BlockState top;
+		if (tag.contains("BotState") && tag.contains("MidState") && tag.contains("TopState")) {
+			bot = NbtUtils.readBlockState(net.minecraft.core.registries.BuiltInRegistries.BLOCK.asLookup(), tag.getCompound("BotState"));
+			mid = NbtUtils.readBlockState(net.minecraft.core.registries.BuiltInRegistries.BLOCK.asLookup(), tag.getCompound("MidState"));
+			top = NbtUtils.readBlockState(net.minecraft.core.registries.BuiltInRegistries.BLOCK.asLookup(), tag.getCompound("TopState"));
+		} else {
+			bot = net.minecraft.core.registries.BuiltInRegistries.BLOCK.byId(tag.getInt("Bot")).defaultBlockState();
+			mid = net.minecraft.core.registries.BuiltInRegistries.BLOCK.byId(tag.getInt("Mid")).defaultBlockState();
+			top = net.minecraft.core.registries.BuiltInRegistries.BLOCK.byId(tag.getInt("Top")).defaultBlockState();
+		}
 		setStackStates(bot, mid, top);
 	}
 

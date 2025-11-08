@@ -238,6 +238,27 @@
         ]
       }
     },
+    "blackwhip_restrain_stop_movement": {
+      "type": "palladium:command",
+      "description": "Stops the player from moving",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "commands": [
+        "effect give @s bandits_quirk_lib:stun_effect 1 1 true"
+      ],
+      "last_tick_commands": [
+        "effect clear @s bandits_quirk_lib:stun_effect"
+      ],
+      "first_tick_commands": [],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:ability_enabled",
+            "ability": "blackwhip_restrain"
+          }
+        ]
+      }
+    },
     "blackwhip_puppet": {
       "type": "bandits_quirk_lib:blackwhip_puppet",
       "icon": "minecraft:totem_of_undying",
