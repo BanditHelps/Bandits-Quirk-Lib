@@ -3,11 +3,15 @@ package com.github.b4ndithelps.forge.abilities;
 import com.github.b4ndithelps.forge.network.BQLNetwork;
 import com.github.b4ndithelps.forge.network.BlackwhipMultiBlockWhipPacket;
 import com.github.b4ndithelps.forge.network.PlayerVelocityS2CPacket;
-import com.github.b4ndithelps.forge.systems.PowerStockHelper;
+import com.github.b4ndithelps.forge.utils.ActionBarHelper;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import com.github.b4ndithelps.forge.systems.QuirkFactorHelper;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.server.level.ServerLevel;
@@ -39,6 +43,8 @@ public class BlackwhipQuadZipAbility extends Ability {
     public static final PalladiumProperty<Integer> TRAVEL_TICKS = new IntegerProperty("travel_ticks").configurable("Ticks for tendrils to travel to anchors");
     public static final PalladiumProperty<Float> CURVE = new FloatProperty("curve").configurable("Visual curve of tendrils");
     public static final PalladiumProperty<Float> THICKNESS = new FloatProperty("thickness").configurable("Visual thickness of tendrils");
+    public static final PalladiumProperty<Float> BASE_DAMAGE = new FloatProperty("base_damage").configurable("Base damage when hitting an entity on release");
+    public static final PalladiumProperty<Float> BASE_KNOCKBACK = new FloatProperty("base_knockback").configurable("Base knockback when hitting an entity on release");
 
     public static final PalladiumProperty<Integer> CHARGE_TICKS;
     public static final PalladiumProperty<Boolean> HAS_ANCHORS;
@@ -57,7 +63,9 @@ public class BlackwhipQuadZipAbility extends Ability {
                 .withProperty(MAX_PULL, 3.2f)
                 .withProperty(TRAVEL_TICKS, 7)
                 .withProperty(CURVE, 0.6f)
-                .withProperty(THICKNESS, 1.0f);
+                .withProperty(THICKNESS, 1.0f)
+                .withProperty(BASE_DAMAGE, 4.0f)
+                .withProperty(BASE_KNOCKBACK, 0.6f);
     }
 
     @Override
@@ -253,12 +261,14 @@ public class BlackwhipQuadZipAbility extends Ability {
             Vec3 p = eye.add(look.scale(1.0 + (t / (float)maxTicks) * 0.8));
             level.sendParticles(ParticleTypes.CRIT, p.x, p.y, p.z, 2 + (int)(t / (float)maxTicks * 4), 0.1, 0.1, 0.1, 0.02);
 
-            // Action bar charging percentage with safety color coding (like ChargedPunch)
+            // Action bar charging percentage without safety status label
             float chargeRatio = t / (float) maxTicks;
-            float storedPower = PowerStockHelper.getStoredPower(player);
             float chargePercent = chargeRatio * 100.0f;
-            float powerUsed = storedPower * chargeRatio;
-            PowerStockHelper.sendPlayerPercentageMessage(player, powerUsed, chargePercent, "Charging Quad Zip");
+            MutableComponent message = Component.literal("Charging Quad Zip")
+                    .withStyle(ChatFormatting.GREEN)
+                    .append(Component.literal(": ").withStyle(ChatFormatting.WHITE))
+                    .append(Component.literal(String.format("%.0f%%", chargePercent)).withStyle(ChatFormatting.GREEN));
+            ActionBarHelper.sendActionBar(player, message);
         }
     }
 
@@ -284,14 +294,42 @@ public class BlackwhipQuadZipAbility extends Ability {
         float eased = 1.0f - (float)Math.pow(1.0 - ratio, 3.0);
         float impulseMag = minPull + (maxPullScaled - minPull) * eased;
 
-        Vec3 look = player.getLookAngle().normalize();
-        Vec3 impulse = look.scale(impulseMag);
+        // Try to fling toward a looked-at entity within range scaled by quirk factor
+        double rayDistance = Math.max(6.0, entry.getProperty(MAX_RANGE) * (1.0 + qf));
+        LivingEntity target = raycastLivingTarget(player, rayDistance);
+        if (target != null && target != player && target.isAlive()) {
+            Vec3 toTarget = target.getEyePosition().subtract(player.getEyePosition());
+            if (toTarget.lengthSqr() > 1.0E-4) {
+                Vec3 dir = toTarget.normalize();
+                Vec3 newImpulse = dir.scale(impulseMag * 1.05F);
+                // Override previous velocity to ensure straight flight toward target
+                player.setDeltaMovement(newImpulse);
+                player.hasImpulse = true;
+                player.fallDistance = 0.0F;
+                player.connection.send(new ClientboundSetEntityMotionPacket(player));
 
-        // Apply strong forward impulse; slightly damp existing velocity for control
-        player.setDeltaMovement(player.getDeltaMovement().scale(0.2).add(impulse));
-        player.hasImpulse = true;
-        player.fallDistance = 0.0F;
-        player.connection.send(new ClientboundSetEntityMotionPacket(player));
+                // Arm a brief post-release collision hit window; damage will apply only if player flies through an entity
+                float baseDamage = Math.max(0.0f, entry.getProperty(BASE_DAMAGE));
+                float finalDamage = baseDamage * (1.0f + (float) qf);
+                float baseKb = Math.max(0.0f, entry.getProperty(BASE_KNOCKBACK));
+                float finalKb = baseKb * (1.0f + (float) qf);
+                player.getPersistentData().putDouble("Bql.QZipDamage", finalDamage);
+                player.getPersistentData().putDouble("Bql.QZipKnock", finalKb);
+                player.getPersistentData().putInt("Bql.QZipTicks", 8);
+                // Initialize per-window hit tracking
+                player.getPersistentData().put("Bql.QZipHits", new net.minecraft.nbt.CompoundTag());
+            }
+        } else {
+            // Apply a more horizontally biased impulse when no target is found
+            Vec3 dir = player.getLookAngle().normalize();
+            Vec3 biasedDir = new Vec3(dir.x, dir.y * 0.35, dir.z).normalize();
+            Vec3 impulse = biasedDir.scale(impulseMag);
+            // Override previous velocity to ensure straight flight in look direction
+            player.setDeltaMovement(impulse);
+            player.hasImpulse = true;
+            player.fallDistance = 0.0F;
+            player.connection.send(new ClientboundSetEntityMotionPacket(player));
+        }
 
         // Clear visuals
         BQLNetwork.CHANNEL.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player),
@@ -303,6 +341,28 @@ public class BlackwhipQuadZipAbility extends Ability {
         entry.setUniqueProperty(CHARGE_TICKS, 0);
         entry.setUniqueProperty(HAS_ANCHORS, false);
         entry.setUniqueProperty(ANCHOR_COUNT, 0);
+    }
+
+    private LivingEntity raycastLivingTarget(ServerPlayer player, double range) {
+        Vec3 eye = player.getEyePosition();
+        Vec3 look = player.getLookAngle();
+        Vec3 end = eye.add(look.scale(range));
+        List<LivingEntity> candidates = player.level().getEntitiesOfClass(LivingEntity.class,
+                new AABB(eye, end).inflate(1.0), e -> e != null && e != player && e.isAlive());
+
+        LivingEntity best = null;
+        double bestDist = range;
+        for (LivingEntity e : candidates) {
+            var hit = e.getBoundingBox().inflate(0.3).clip(eye, end);
+            if (hit.isPresent()) {
+                double d = eye.distanceTo(hit.get());
+                if (d < bestDist) {
+                    bestDist = d;
+                    best = e;
+                }
+            }
+        }
+        return best;
     }
 
     static {

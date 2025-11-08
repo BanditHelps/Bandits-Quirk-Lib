@@ -342,6 +342,7 @@
       "travel_ticks": 7,
       "curve": 0.6,
       "thickness": 1.0,
+      "base_damage": 6.0,
       "conditions": {
         "enabling": [
           {

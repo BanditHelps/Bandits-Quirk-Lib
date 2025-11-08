@@ -212,6 +212,51 @@ public class PlayerEventHandler {
             player.setMainArm(desiredLeftHanded ? HumanoidArm.LEFT : HumanoidArm.RIGHT);
         }
 
+        // Quad Zip collision damage window: apply damage/knockback to every entity passed through during the window
+        if (player.getPersistentData().contains("Bql.QZipTicks")) {
+            int ticks = player.getPersistentData().getInt("Bql.QZipTicks");
+            if (ticks > 0) {
+                player.getPersistentData().putInt("Bql.QZipTicks", ticks - 1);
+                Vec3 prevPos = new Vec3(player.xOld, player.yOld, player.zOld);
+                Vec3 currPos = player.position();
+                net.minecraft.world.phys.AABB swept = new net.minecraft.world.phys.AABB(prevPos, currPos).inflate(0.6);
+                java.util.List<LivingEntity> hits = player.level().getEntitiesOfClass(LivingEntity.class, swept, e -> e != null && e != player && e.isAlive());
+                net.minecraft.nbt.CompoundTag hitSet = player.getPersistentData().getCompound("Bql.QZipHits");
+                for (LivingEntity e : hits) {
+                    String idKey = Integer.toString(e.getId());
+                    if (hitSet.contains(idKey)) continue; // already hit this entity during this window
+                    var opt = e.getBoundingBox().inflate(0.3).clip(prevPos, currPos);
+                    if (opt.isPresent()) {
+                        float dmg = (float) player.getPersistentData().getDouble("Bql.QZipDamage");
+                        float kb = (float) player.getPersistentData().getDouble("Bql.QZipKnock");
+                        if (dmg > 0.0f) {
+                            e.hurt(player.damageSources().playerAttack(player), dmg);
+                        } else {
+                            player.attack(e);
+                        }
+                        if (kb > 0.0f && e.isAlive()) {
+                            Vec3 dir = currPos.subtract(prevPos);
+                            if (dir.lengthSqr() > 1.0E-4) {
+                                Vec3 k = dir.normalize().scale(kb * 0.6).add(0, 0.12F * kb, 0);
+                                e.setDeltaMovement(e.getDeltaMovement().add(k));
+                                if (e instanceof ServerPlayer sp) {
+                                    sp.connection.send(new net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket(sp));
+                                }
+                            }
+                        }
+                        hitSet.putBoolean(idKey, true);
+                    }
+                }
+                // write back updated hit set
+                player.getPersistentData().put("Bql.QZipHits", hitSet);
+            } else {
+                player.getPersistentData().remove("Bql.QZipTicks");
+                player.getPersistentData().remove("Bql.QZipDamage");
+                player.getPersistentData().remove("Bql.QZipKnock");
+                player.getPersistentData().remove("Bql.QZipHits");
+            }
+        }
+
         // Check if player has the movement restriction tag
         if (player.getTags().contains("Bql.RestrictMove")) {
             // Check if player still has any stun effect active
