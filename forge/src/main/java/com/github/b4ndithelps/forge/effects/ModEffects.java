@@ -23,6 +23,9 @@ public class ModEffects {
     public static final RegistryObject<MobEffect> PSTOCK_OVERUSE =
             MOB_EFFECTS.register("pstock_overuse", PstockOveruseEffect::new);
 
+    public static final RegistryObject<MobEffect> AMPULE_EFFECT =
+            MOB_EFFECTS.register("ampule_use", AmpuleEffect::new);
+
     public static final RegistryObject<MobEffect> HEAT_RESISTANCE =
             MOB_EFFECTS.register("heat_resistance", HeatResistanceEffect::new);
 

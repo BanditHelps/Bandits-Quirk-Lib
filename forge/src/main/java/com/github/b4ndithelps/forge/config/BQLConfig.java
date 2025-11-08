@@ -60,6 +60,14 @@ public class BQLConfig {
     public final ForgeConfigSpec.DoubleValue majorDamage;
     public final ForgeConfigSpec.DoubleValue severeDamage;
 
+    // Factor Trigger Constants
+    public final ForgeConfigSpec.IntValue tier1Duration;
+    public final ForgeConfigSpec.IntValue tier2Duration;
+    public final ForgeConfigSpec.IntValue tier3Duration;
+    public final ForgeConfigSpec.IntValue tier1Addiction;
+    public final ForgeConfigSpec.IntValue tier2Addiction;
+    public final ForgeConfigSpec.IntValue tier3Addiction;
+
     // Genetics / Extractor Constants
     public final ForgeConfigSpec.IntValue extractorMaxDurability;
     public final ForgeConfigSpec.IntValue extractorDurabilityCost;
@@ -228,6 +236,33 @@ public class BQLConfig {
 
         builder.pop();
 
+        // Factor Trigger Section
+        builder.comment("Factor Triggers Configuration")
+                .push("triggers");
+
+        this.tier1Duration = builder
+                .comment("Duration in seconds of tier 1 trigger")
+                .defineInRange("tier1_duration", 1800, 0, 10000);
+
+        this.tier1Addiction = builder
+                .comment("Addiction value of tier 1 trigger")
+                .defineInRange("tier1_addiction", 10, 0, 10000);
+
+        this.tier2Duration = builder
+                .comment("Duration in seconds of tier 2 trigger")
+                .defineInRange("tier2_duration", 3000, 0, 10000);
+
+        this.tier2Addiction = builder
+                .comment("Addiction value of tier 2 trigger")
+                .defineInRange("tier2_addiction", 10, 0, 10000);
+
+        this.tier3Duration = builder
+                .comment("Duration in seconds of tier 3 trigger")
+                .defineInRange("tier3_duration", 1200, 0, 10000);
+
+        this.tier3Addiction = builder
+                .comment("Addiction value of tier 3 trigger")
+                .defineInRange("tier3_addiction", 10, 0, 10000);
         // Genetics / Extractor section
         builder.comment("Genetics & Tissue Extractor Configuration")
                 .push("genetics");

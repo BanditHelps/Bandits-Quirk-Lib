@@ -24,6 +24,7 @@ public class AbilityRegister {
     public static final RegistrySupplier<Ability> ENHANCED_PUNCH;
     public static final RegistrySupplier<Ability> ENHANCED_KICK;
     public static final RegistrySupplier<Ability> CHARGED_PUNCH;
+    public static final RegistrySupplier<Ability> AMPULE_SELF_REMOVE;
     public static final RegistrySupplier<Ability> SCALING_GENE_DURATION_EFFECT;
     public static final RegistrySupplier<Ability> SCALING_GENE_AMP_EFFECT;
     public static final RegistrySupplier<Ability> MINOR_OBJECT_ATTRACTION;
@@ -68,6 +69,7 @@ public class AbilityRegister {
         ENHANCED_PUNCH = ABILITIES.register("enhanced_punch", EnhancedPunchAbility::new);
         ENHANCED_KICK = ABILITIES.register("enhanced_kick", EnhancedKickAbility::new);
         CHARGED_PUNCH = ABILITIES.register("charged_punch", ChargedPunchAbility::new);
+        AMPULE_SELF_REMOVE = ABILITIES.register("ampule_self_remove", AmpuleSelfRemove::new);
         SCALING_GENE_DURATION_EFFECT = ABILITIES.register("scaling_gene_duration_effect", ScalingGeneDurationEffect::new);
         SCALING_GENE_AMP_EFFECT = ABILITIES.register("scaling_gene_amp_effect", ScalingGeneAmpEffect::new);
         MINOR_OBJECT_ATTRACTION = ABILITIES.register("minor_object_attraction", MinorObjectAttractionAbility::new);

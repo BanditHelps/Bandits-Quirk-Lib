@@ -193,5 +193,5 @@ public final class BQLNetwork {
                 .consumerMainThread(PlayerAnimationPacket::handle)
                 .add();
 
-    }
+        }
 }
