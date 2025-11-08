@@ -150,6 +150,7 @@ public class BlackwhipQuadZipAbility extends Ability {
         List<Double> xs = new ArrayList<>(count);
         List<Double> ys = new ArrayList<>(count);
         List<Double> zs = new ArrayList<>(count);
+        boolean anySolidAnchor = false;
         for (int i = 0; i < count; i++) {
             double ang = Math.toRadians(anglesDegList.get(i));
             double c = Math.cos(ang);
@@ -169,6 +170,7 @@ public class BlackwhipQuadZipAbility extends Ability {
             Vec3 anchor;
             if (forwardHit.getType() == HitResult.Type.BLOCK) {
                 anchor = Vec3.atCenterOf(forwardHit.getBlockPos());
+                anySolidAnchor = true;
             } else {
                 // No hit: apply simple gravity by dropping from the forwardEnd point down to ground
                 double drop = Math.max(4.0, range);
@@ -180,6 +182,7 @@ public class BlackwhipQuadZipAbility extends Ability {
                         player));
                 if (downHit.getType() == HitResult.Type.BLOCK) {
                     anchor = Vec3.atCenterOf(downHit.getBlockPos());
+                    anySolidAnchor = true;
                 } else {
                     // Fallback: keep forwardEnd with vertical offset so it still looks natural
                     anchor = forwardEnd.add(trueUp.scale(verticalList.get(i)));
@@ -189,6 +192,12 @@ public class BlackwhipQuadZipAbility extends Ability {
             xs.add(anchor.x);
             ys.add(anchor.y);
             zs.add(anchor.z);
+        }
+
+        // If none of the tendrils latched onto a real block, do not arm the ability
+        if (!anySolidAnchor) {
+            entry.setUniqueProperty(CHARGE_TICKS, 0);
+            return;
         }
 
         // Persist anchors for rope constraint
@@ -216,6 +225,12 @@ public class BlackwhipQuadZipAbility extends Ability {
         if (!enabled) return;
         if (!(entity instanceof ServerPlayer player)) return;
         if (!(player.level() instanceof ServerLevel level)) return;
+
+        // If we have no valid anchors, don't charge or show any feedback
+        if (!Boolean.TRUE.equals(entry.getProperty(HAS_ANCHORS))) {
+            entry.setUniqueProperty(CHARGE_TICKS, 0);
+            return;
+        }
 
         int maxTicks = Math.max(1, entry.getProperty(MAX_CHARGE_TICKS));
         int t = Math.min(maxTicks, entry.getProperty(CHARGE_TICKS) + 1);
@@ -276,6 +291,12 @@ public class BlackwhipQuadZipAbility extends Ability {
     public void lastTick(LivingEntity entity, AbilityInstance entry, IPowerHolder holder, boolean enabled) {
         if (!(entity instanceof ServerPlayer player)) return;
         if (!(player.level() instanceof ServerLevel level)) return;
+
+        // No valid anchors => do nothing on release
+        if (!Boolean.TRUE.equals(entry.getProperty(HAS_ANCHORS))) {
+            entry.setUniqueProperty(CHARGE_TICKS, 0);
+            return;
+        }
 
         int chargeTicks = Math.max(0, entry.getProperty(CHARGE_TICKS));
         if (chargeTicks <= 0) return;

@@ -343,16 +343,16 @@ public final class BlackwhipRenderHandler {
 			// Outer glow first (slightly wider, semi-transparent) — push slightly away from camera to avoid coplanar artifacts
             drawRibbonGradient(poseStack, buffer, cameraPos, points,
 					base * 1.25F,
-					0xB319E8DB, // start teal with alpha
-					0xB321E59A, // mid greenish-teal
-					0xB333F2FF, // end aqua
+					BlackwhipColors.OUTER_GLOW_START, // start teal with alpha
+					BlackwhipColors.OUTER_GLOW_MID, // mid greenish-teal
+					BlackwhipColors.OUTER_GLOW_END, // end aqua
 					0.0015F,
                     noiseAmp,
                     time,
                     1.0f
 			);
 			// Inner core on top (narrower, very dark blue-black) — pull slightly toward camera
-            drawRibbonSolid(poseStack, buffer, cameraPos, points, base * 0.54F, 0xFF0A0F11, -0.0007F, noiseAmp, time, 1.0f);
+            drawRibbonSolid(poseStack, buffer, cameraPos, points, base * 0.54F, BlackwhipColors.INNER_CORE, -0.0007F, noiseAmp, time, 1.0f);
 
             // If restraining a target, render wrap-around rings around it too
             if (restrainTarget != null) {
@@ -395,8 +395,8 @@ public final class BlackwhipRenderHandler {
             float base = Math.max(0.02F, state.thickness * 0.065F);
             float noiseAmp = Math.min(base * 0.75F, 0.08F);
             drawRibbonGradient(poseStack, buffer, cameraPos, points,
-                    base * 1.25F, 0xB319E8DB, 0xB321E59A, 0xB333F2FF, 0.0015F, noiseAmp, time, 1.0f);
-            drawRibbonSolid(poseStack, buffer, cameraPos, points, base * 0.54F, 0xFF0A0F11, -0.0007F, noiseAmp, time, 1.0f);
+                    base * 1.25F, BlackwhipColors.OUTER_GLOW_START, BlackwhipColors.OUTER_GLOW_MID, BlackwhipColors.OUTER_GLOW_END, 0.0015F, noiseAmp, time, 1.0f);
+            drawRibbonSolid(poseStack, buffer, cameraPos, points, base * 0.54F, BlackwhipColors.INNER_CORE, -0.0007F, noiseAmp, time, 1.0f);
 
             if (state.lastGameTimeDecrement != gameTime) {
                 state.lastGameTimeDecrement = gameTime;
@@ -434,8 +434,8 @@ public final class BlackwhipRenderHandler {
                 float base = Math.max(0.02F, state.thickness * 0.065F);
                 float noiseAmp = Math.min(base * 0.75F, 0.08F);
                 drawRibbonGradient(poseStack, buffer, cameraPos, points,
-                        base * 1.25F, 0xB319E8DB, 0xB321E59A, 0xB333F2FF, 0.0015F, noiseAmp, time, 1.0f);
-                drawRibbonSolid(poseStack, buffer, cameraPos, points, base * 0.54F, 0xFF0A0F11, -0.0007F, noiseAmp, time, 1.0f);
+                        base * 1.25F, BlackwhipColors.OUTER_GLOW_START, BlackwhipColors.OUTER_GLOW_MID, BlackwhipColors.OUTER_GLOW_END, 0.0015F, noiseAmp, time, 1.0f);
+                drawRibbonSolid(poseStack, buffer, cameraPos, points, base * 0.54F, BlackwhipColors.INNER_CORE, -0.0007F, noiseAmp, time, 1.0f);
             }
 
             if (state.lastGameTimeDecrement != gameTime) {
@@ -464,14 +464,14 @@ public final class BlackwhipRenderHandler {
                 float noiseAmp = Math.min(base * 0.75F, 0.08F);
                 drawRibbonGradient(poseStack, buffer, cameraPos, points,
                         base * 1.25F,
-                        0xB319E8DB,
-                        0xB321E59A,
-                        0xB333F2FF,
+                        BlackwhipColors.OUTER_GLOW_START,
+                        BlackwhipColors.OUTER_GLOW_MID,
+                        BlackwhipColors.OUTER_GLOW_END,
                         0.0015F,
                         noiseAmp,
                         time,
                         1.0f);
-                drawRibbonSolid(poseStack, buffer, cameraPos, points, base * 0.54F, 0xFF0A0F11, -0.0007F, noiseAmp, time, 1.0f);
+                drawRibbonSolid(poseStack, buffer, cameraPos, points, base * 0.54F, BlackwhipColors.INNER_CORE, -0.0007F, noiseAmp, time, 1.0f);
 
                 // Render wrap-around rings around the target's hitbox so it looks tied up
                 drawEntityWrapRings(poseStack, buffer, cameraPos, target, partial, base, noiseAmp, time);
@@ -570,14 +570,14 @@ public final class BlackwhipRenderHandler {
                 float alphaScale = aura.visibility * (0.25f + 0.75f * progress);
                 drawRibbonGradient(poseStack, buffer, camera, pts,
                         (base * widthScale) * 1.35F,
-                        0xB319E8DB,
-                        0xB321E59A,
-                        0xB333F2FF,
+                        BlackwhipColors.OUTER_GLOW_START,
+                        BlackwhipColors.OUTER_GLOW_MID,
+                        BlackwhipColors.OUTER_GLOW_END,
                         0.0015F,
                         noiseAmp,
                         time,
                         alphaScale);
-                drawRibbonSolid(poseStack, buffer, camera, pts, (base * widthScale) * 0.6F, 0xFF0A0F11, -0.0007F, noiseAmp, time, alphaScale);
+                drawRibbonSolid(poseStack, buffer, camera, pts, (base * widthScale) * 0.6F, BlackwhipColors.INNER_CORE, -0.0007F, noiseAmp, time, alphaScale);
             }
         }
 
@@ -703,14 +703,14 @@ public final class BlackwhipRenderHandler {
                 float alphaScale = 0.25f + 0.75f * progress;
 				drawRibbonGradient(poseStack, buffer, camera, points,
 						(base * 1.30F) * widthScale,
-                        0xB319E8DB,
-                        0xB321E59A,
-                        0xB333F2FF,
+                        BlackwhipColors.OUTER_GLOW_START,
+                        BlackwhipColors.OUTER_GLOW_MID,
+                        BlackwhipColors.OUTER_GLOW_END,
                         0.0015F,
                         noiseAmp,
 						time,
 						alphaScale);
-				drawRibbonSolid(poseStack, buffer, camera, points, (base * 0.56F) * widthScale, 0xFF0A0F11, -0.0007F, noiseAmp, time, alphaScale);
+				drawRibbonSolid(poseStack, buffer, camera, points, (base * 0.56F) * widthScale, BlackwhipColors.INNER_CORE, -0.0007F, noiseAmp, time, alphaScale);
             }
 
             // If deactivation finished, stop rendering next frame
@@ -1151,14 +1151,14 @@ public final class BlackwhipRenderHandler {
 
             drawRibbonGradient(poseStack, buffer, cameraPos, ring,
                     wrapGlow,
-                    0xB319E8DB,
-                    0xB321E59A,
-                    0xB333F2FF,
+                    BlackwhipColors.OUTER_GLOW_START,
+                    BlackwhipColors.OUTER_GLOW_MID,
+                    BlackwhipColors.OUTER_GLOW_END,
                     0.0015F,
                     noiseAmp,
                     time,
                     1.0f);
-            drawRibbonSolid(poseStack, buffer, cameraPos, ring, wrapCore, 0xFF0A0F11, -0.0007F, noiseAmp, time, 1.0f);
+            drawRibbonSolid(poseStack, buffer, cameraPos, ring, wrapCore, BlackwhipColors.INNER_CORE, -0.0007F, noiseAmp, time, 1.0f);
         }
     }
 
