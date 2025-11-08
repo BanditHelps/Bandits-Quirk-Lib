@@ -1,4 +1,4 @@
-package com.github.b4ndithelps.forge.capabilities.Body;
+package com.github.b4ndithelps.forge.capabilities.body;
 
 import com.github.b4ndithelps.forge.systems.BodyStatusHelper;
 import net.minecraft.resources.ResourceLocation;

@@ -12,6 +12,7 @@ import net.minecraftforge.fml.common.Mod;
 
 import static com.github.b4ndithelps.BanditsQuirkLib.MOD_ID;
 
+@SuppressWarnings("removal")
 @Mod.EventBusSubscriber(modid = MOD_ID)
 public class GenomeCapabilityHandler {
     @SubscribeEvent
@@ -40,5 +41,3 @@ public class GenomeCapabilityHandler {
         }
     }
 }
-
-

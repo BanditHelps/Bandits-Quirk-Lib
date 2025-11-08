@@ -1,4 +1,4 @@
-package com.github.b4ndithelps.forge.capabilities.Body;
+package com.github.b4ndithelps.forge.capabilities.body;
 
 /**
  * The CustomStatus is to be used via KubeJS developers in order to add values to each body part.

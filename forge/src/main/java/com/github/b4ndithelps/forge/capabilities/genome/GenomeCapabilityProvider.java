@@ -53,5 +53,3 @@ public class GenomeCapabilityProvider implements ICapabilitySerializable<Compoun
 
     public void invalidate() { lazyCapability.invalidate(); }
 }
-
-

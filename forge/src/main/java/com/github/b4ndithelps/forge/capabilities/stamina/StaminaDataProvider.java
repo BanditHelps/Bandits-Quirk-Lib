@@ -1,9 +1,8 @@
-package com.github.b4ndithelps.forge.capabilities;
+package com.github.b4ndithelps.forge.capabilities.stamina;
 
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraftforge.common.capabilities.*;
-import net.minecraftforge.common.util.INBTSerializable;
 import net.minecraftforge.common.util.LazyOptional;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

@@ -1,4 +1,4 @@
-package com.github.b4ndithelps.forge.capabilities;
+package com.github.b4ndithelps.forge.capabilities.stamina;
 
 import net.minecraft.nbt.CompoundTag;
 

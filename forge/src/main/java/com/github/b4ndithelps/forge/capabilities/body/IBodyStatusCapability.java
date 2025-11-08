@@ -1,4 +1,4 @@
-package com.github.b4ndithelps.forge.capabilities.Body;
+package com.github.b4ndithelps.forge.capabilities.body;
 
 import net.minecraft.nbt.CompoundTag;
 

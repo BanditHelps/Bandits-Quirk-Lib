@@ -1,7 +1,8 @@
-package com.github.b4ndithelps.forge.capabilities;
+package com.github.b4ndithelps.forge.capabilities.stamina;
 
 import com.github.b4ndithelps.BanditsQuirkLib;
-import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
+import com.github.b4ndithelps.forge.network.BQLNetwork;
+import com.github.b4ndithelps.forge.network.StaminaSyncPacket;
 import com.github.b4ndithelps.values.BodyConstants;
 import com.github.b4ndithelps.values.StaminaConstants;
 import net.minecraft.resources.ResourceLocation;
@@ -12,10 +13,10 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.entity.player.PlayerSleepInBedEvent;
-import net.minecraftforge.event.entity.player.PlayerWakeUpEvent;
 import net.minecraftforge.event.level.SleepFinishedTimeEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.network.PacketDistributor;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -78,9 +79,9 @@ public class StaminaCapabilityHandler {
         }
 
         if (event.getEntity() instanceof ServerPlayer sp) {
-            com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.send(
-                    net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> sp),
-                    com.github.b4ndithelps.forge.network.StaminaSyncPacket.fullSync(sp)
+            BQLNetwork.CHANNEL.send(
+                    PacketDistributor.PLAYER.with(() -> sp),
+                    StaminaSyncPacket.fullSync(sp)
             );
         }
 
@@ -102,7 +103,6 @@ public class StaminaCapabilityHandler {
         Player player = event.getEntity();
         if (!player.level().isClientSide) {
             sleepingPlayers.add(player.getUUID());
-            System.out.println("Player sleeping");
         }
     }
 
@@ -115,7 +115,6 @@ public class StaminaCapabilityHandler {
         for (ServerPlayer player : level.getPlayers(serverPlayer ->
                 sleepingPlayers.contains(serverPlayer.getUUID()))) {
 
-            System.out.println("Handling a player");
             handlePlayerSleptThroughNight(player);
         }
 

@@ -1,12 +1,10 @@
-package com.github.b4ndithelps.forge.capabilities.Body;
+package com.github.b4ndithelps.forge.capabilities.body;
 
 import com.github.b4ndithelps.forge.systems.BodyStatusHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 
-import java.util.EnumMap;
-import java.util.Map;
 import java.util.function.Supplier;
 
 /**

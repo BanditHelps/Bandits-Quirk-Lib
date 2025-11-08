@@ -1,4 +1,4 @@
-package com.github.b4ndithelps.forge.capabilities.Body;
+package com.github.b4ndithelps.forge.capabilities.body;
 
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -9,8 +9,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Supplier;
-
-import static com.github.b4ndithelps.values.BodyConstants.MAX_DAMAGE;
 
 /**
  * Provider for the Body Status capability. Follows the same pattern as StaminaDataProvider
@@ -32,14 +30,6 @@ public class BodyStatusCapabilityProvider implements ICapabilitySerializable<Com
     public BodyStatusCapabilityProvider(Supplier<Player> playerSupplier) {
         this.playerSupplier = playerSupplier;
         this.enableAutoSync = true;
-    }
-
-    /**
-     * Creates a provider without auto-sync (legacy constructor).
-     */
-    public BodyStatusCapabilityProvider() {
-        this.playerSupplier = null;
-        this.enableAutoSync = false;
     }
 
     private IBodyStatusCapability createCapability() {

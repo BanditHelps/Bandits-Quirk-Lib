@@ -28,5 +28,3 @@ public class SyncedGenomeCapability implements IGenomeCapability {
     @Override public CompoundTag serializeNBT() { return base.serializeNBT(); }
     @Override public void deserializeNBT(CompoundTag tag) { base.deserializeNBT(tag); }
 }
-
-

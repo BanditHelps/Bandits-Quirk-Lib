@@ -66,5 +66,3 @@ public class GenomeCapability implements IGenomeCapability {
         }
     }
 }
-
-

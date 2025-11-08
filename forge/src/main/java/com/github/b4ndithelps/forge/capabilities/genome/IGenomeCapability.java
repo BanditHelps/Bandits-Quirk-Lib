@@ -28,5 +28,3 @@ public interface IGenomeCapability {
     CompoundTag serializeNBT();
     void deserializeNBT(CompoundTag tag);
 }
-
-
