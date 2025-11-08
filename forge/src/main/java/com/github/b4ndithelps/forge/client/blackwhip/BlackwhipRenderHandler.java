@@ -27,6 +27,30 @@ import java.util.*;
 public final class BlackwhipRenderHandler {
 
     public static void applyPacket(int sourcePlayerId, boolean active, boolean restraining, int targetEntityId, int ticksLeft, int missRetractTicks, float range, float curve, float thickness) {
+        ClientWhipState s = PLAYER_TO_WHIP.computeIfAbsent(sourcePlayerId, ClientWhipState::new);
+        s.active = active;
+        s.restraining = restraining;
+        s.targetEntityId = targetEntityId;
+        s.ticksLeft = Math.max(0, ticksLeft);
+        s.initialTravelTicks = Math.max(1, ticksLeft);
+        s.missRetractTicks = Math.max(0, missRetractTicks);
+        s.range = Math.max(1.0F, range);
+        s.curve = Math.max(0.0F, curve);
+        s.thickness = Math.max(0.01F, thickness);
+        s.lastGameTimeDecrement = -1L;
+        // reset sweeping-related fields when receiving direct state packets
+        s.sweeping = false;
+        s.chargeTicks = 0;
+        if (!active) {
+            s.active = false;
+        }
+    }
+
+    // Flag to force the start anchor to the player's right-hand side (with extra height) for restrain animation
+    private static final java.util.Set<Integer> FORCE_RIGHT_HAND_ANCHOR = new java.util.HashSet<>();
+    public static void applyAnchorOverride(int sourcePlayerId, boolean active) {
+        if (active) FORCE_RIGHT_HAND_ANCHOR.add(sourcePlayerId);
+        else FORCE_RIGHT_HAND_ANCHOR.remove(sourcePlayerId);
     }
 
     public static final class ClientWhipState {
@@ -258,8 +282,17 @@ public final class BlackwhipRenderHandler {
             Entity src = level.getEntity(state.sourcePlayerId);
             if (!(src instanceof Player player)) continue;
 
-            // Compute start from hand (camera-smooth)
-            Vec3 start = getHandPosition(player, partial);
+            // Compute start from hand (camera-smooth); force right hand + a bit higher for restrain visuals
+            boolean forceRight = state.restraining || FORCE_RIGHT_HAND_ANCHOR.contains(state.sourcePlayerId);
+            Vec3 start;
+            if (forceRight) {
+                Vec3 fwdYaw = Vec3.directionFromRotation(0, player.getYRot()).normalize();
+                start = getHandPositionForSide(player, partial, 1.0f)
+                        .add(0, 0.30, 0)        // move up about 2x more
+                        .add(fwdYaw.scale(0.60)); // push forward roughly arm length
+            } else {
+                start = getHandPosition(player, partial);
+            }
 
             // Resolve end
             Vec3 end;
@@ -450,7 +483,16 @@ public final class BlackwhipRenderHandler {
             Entity src = level.getEntity(multi.sourcePlayerId);
             if (!(src instanceof Player player)) continue;
 
-            Vec3 start = getHandPosition(player, partial);
+            boolean forceRight = FORCE_RIGHT_HAND_ANCHOR.contains(multi.sourcePlayerId);
+            Vec3 start;
+            if (forceRight) {
+                Vec3 fwdYaw = Vec3.directionFromRotation(0, player.getYRot()).normalize();
+                start = getHandPositionForSide(player, partial, 1.0f)
+                        .add(0, 0.30, 0)
+                        .add(fwdYaw.scale(0.60));
+            } else {
+                start = getHandPosition(player, partial);
+            }
             for (Integer targetId : multi.targetEntityIds) {
                 Entity target = level.getEntity(targetId);
                 if (!(target != null && target.isAlive())) continue;

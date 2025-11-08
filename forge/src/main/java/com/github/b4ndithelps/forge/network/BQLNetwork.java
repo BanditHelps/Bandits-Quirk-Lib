@@ -165,6 +165,13 @@ public final class BQLNetwork {
                 .consumerMainThread(BlackwhipBubbleShieldPacket::handle)
                 .add();
 
+        // Blackwhip start anchor override (server -> clients)
+        CHANNEL.messageBuilder(BlackwhipAnchorOverridePacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(BlackwhipAnchorOverridePacket::encode)
+                .decoder(BlackwhipAnchorOverridePacket::decode)
+                .consumerMainThread(BlackwhipAnchorOverridePacket::handle)
+                .add();
+
         // Player Animation
         CHANNEL.messageBuilder(PlayerAnimationPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(PlayerAnimationPacket::encode)

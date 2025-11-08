@@ -3,6 +3,7 @@ package com.github.b4ndithelps.forge.abilities;
 import com.github.b4ndithelps.forge.effects.ModEffects;
 import com.github.b4ndithelps.forge.network.BQLNetwork;
 import com.github.b4ndithelps.forge.network.PlayerAnimationPacket;
+import com.github.b4ndithelps.forge.network.BlackwhipAnchorOverridePacket;
 import com.github.b4ndithelps.forge.systems.BlackwhipTags;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
@@ -40,6 +41,11 @@ public class BlackwhipRestrainTaggedAbility extends Ability {
 				PacketDistributor.PLAYER.with(() -> player),
 				new PlayerAnimationPacket("restrain_animation")
 		);
+		// Force right-hand/high anchor for everyone viewing this player while restraining
+		BQLNetwork.CHANNEL.send(
+				PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player),
+				new BlackwhipAnchorOverridePacket(player.getId(), true)
+		);
 	}
 
 	@Override
@@ -72,6 +78,11 @@ public class BlackwhipRestrainTaggedAbility extends Ability {
 		BQLNetwork.CHANNEL.send(
 				PacketDistributor.PLAYER.with(() -> player),
 				new PlayerAnimationPacket("")
+		);
+		// Remove forced right-hand/high anchor
+		BQLNetwork.CHANNEL.send(
+				PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player),
+				new BlackwhipAnchorOverridePacket(player.getId(), false)
 		);
 	}
 }
