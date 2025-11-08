@@ -5,14 +5,16 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.client.model.PlayerModel;
-import net.minecraft.client.model.geom.ModelPart;
+
+import java.util.Map;
+import java.util.WeakHashMap;
 
 public final class LongArmsController {
 
     private static final ThreadLocal<Boolean> HIDE_VANILLA_ARMS = ThreadLocal.withInitial(() -> Boolean.FALSE);
     private static final String LONG_ARMS_GENE_ID = "bandits_quirk_lib:gene.long_arms";
     private static final String LONG_ARMS_GENE_ID_ALT = "bandits_quirk_lib:long_arms";
-    private static final java.util.Map<Player, ArmPose> ARM_POSES = new java.util.WeakHashMap<>();
+    private static final Map<Player, ArmPose> ARM_POSES = new WeakHashMap<>();
 
     private LongArmsController() {}
 
@@ -86,5 +88,3 @@ public final class LongArmsController {
         float lsx, lsy, lsz;
     }
 }
-
-

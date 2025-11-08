@@ -1,6 +1,7 @@
 package com.github.b4ndithelps.forge.client.animation;
 
 import com.github.b4ndithelps.BanditsQuirkLib;
+import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -31,7 +32,7 @@ public class GeckoLibAnimationSubscriber {
 	private static boolean invokeTrigger(PlayClientAnimationEvent event, String className, String controller, String animation) {
 		try {
 			Class<?> cls = Class.forName(className);
-			Method m = cls.getMethod("triggerPlayerAnimation", net.minecraft.world.entity.player.Player.class, String.class, String.class);
+			Method m = cls.getMethod("triggerPlayerAnimation", Player.class, String.class, String.class);
 			m.invoke(null, event.player, controller, animation);
 			return true;
 		} catch (Throwable ignored) {
@@ -44,5 +45,3 @@ public class GeckoLibAnimationSubscriber {
 		return i >= 0 ? id.substring(i + 1) : id;
 	}
 }
-
-

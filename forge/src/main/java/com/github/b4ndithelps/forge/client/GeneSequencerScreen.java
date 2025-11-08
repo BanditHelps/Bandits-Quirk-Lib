@@ -29,5 +29,3 @@ public class GeneSequencerScreen extends AbstractContainerScreen<GeneSequencerMe
         this.renderTooltip(graphics, mouseX, mouseY);
     }
 }
-
-

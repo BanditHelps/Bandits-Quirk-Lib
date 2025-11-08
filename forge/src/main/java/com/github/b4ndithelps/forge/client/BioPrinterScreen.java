@@ -29,5 +29,3 @@ public class BioPrinterScreen extends AbstractContainerScreen<BioPrinterMenu> {
         this.renderTooltip(graphics, mouseX, mouseY);
     }
 }
-
-

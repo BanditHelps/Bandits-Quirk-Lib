@@ -6,6 +6,9 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.world.entity.player.Player;
 
+import java.util.Map;
+import java.util.WeakHashMap;
+
 public final class LongLegsController {
 
     private static final ThreadLocal<Boolean> HIDE_VANILLA_LEGS = ThreadLocal.withInitial(() -> Boolean.FALSE);
@@ -33,7 +36,7 @@ public final class LongLegsController {
     public static void setHideVanillaLegs(boolean hide) { HIDE_VANILLA_LEGS.set(hide); }
     public static boolean isHideVanillaLegs() { return HIDE_VANILLA_LEGS.get(); }
 
-    private static final java.util.Map<Player, LegPose> LEG_POSES = new java.util.WeakHashMap<>();
+    private static final Map<Player, LegPose> LEG_POSES = new WeakHashMap<>();
 
     public static void saveAndMoveLegsOffscreen(Player player, PlayerModel<?> model) {
         if (player == null || model == null) return;
@@ -69,6 +72,3 @@ public final class LongLegsController {
         float lpx, lpy, lpz;
     }
 }
-
-
-

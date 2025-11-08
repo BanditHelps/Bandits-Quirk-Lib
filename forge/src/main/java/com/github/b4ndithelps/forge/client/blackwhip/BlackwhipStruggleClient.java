@@ -89,5 +89,3 @@ public final class BlackwhipStruggleClient {
 		g.drawString(font, pct, px, py, 0xFF0D0F14, false);
 	}
 }
-
-

@@ -7,14 +7,9 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.FormattedCharSequence;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Simple pannable/zoomable DAG-like view of all genes and their combination paths.
@@ -236,10 +231,10 @@ public class GeneGraphScreen extends Screen {
         g.pose().scale(zoom, zoom, 1f);
 
         // Edge routing: unique vertical lanes, source/target port offsets, and label offsets
-        java.util.Map<Edge, Integer> outYOffset = computeOutgoingYOffsetByEdge();
-        java.util.Map<Edge, Integer> inYOffset = computeIncomingYOffsetByEdge();
-        java.util.Map<Edge, Integer> midXByEdge = computeMidXByEdge();
-        java.util.Map<Edge, Integer> labelYOffsetByEdge = computeLabelYOffsetByEdge(midXByEdge);
+        Map<Edge, Integer> outYOffset = computeOutgoingYOffsetByEdge();
+        Map<Edge, Integer> inYOffset = computeIncomingYOffsetByEdge();
+        Map<Edge, Integer> midXByEdge = computeMidXByEdge();
+        Map<Edge, Integer> labelYOffsetByEdge = computeLabelYOffsetByEdge(midXByEdge);
 
         // non-highlighted edges
         for (Edge e : edges) {
@@ -312,7 +307,7 @@ public class GeneGraphScreen extends Screen {
             List<Component> header = List.of(catC, rarC, combC, qualC);
 
             int contentW = modalW - innerPad * 2;
-            List<net.minecraft.util.FormattedCharSequence> descLines = this.font.split(Component.literal(openGene.getDescription()), contentW);
+            List<FormattedCharSequence> descLines = this.font.split(Component.literal(openGene.getDescription()), contentW);
 
             int lineH = this.font.lineHeight;
             int titleH = lineH + 2;
@@ -413,10 +408,10 @@ public class GeneGraphScreen extends Screen {
 
     private void drawEdgeTop(GuiGraphics g,
                               Edge e,
-                              java.util.Map<Edge, Integer> midXByEdge,
-                              java.util.Map<Edge, Integer> outYOffset,
-                              java.util.Map<Edge, Integer> inYOffset,
-                              java.util.Map<Edge, Integer> labelYOffsetByEdge,
+                              Map<Edge, Integer> midXByEdge,
+                              Map<Edge, Integer> outYOffset,
+                              Map<Edge, Integer> inYOffset,
+                              Map<Edge, Integer> labelYOffsetByEdge,
                               int accent) {
         Node a = nodes.get(e.from());
         Node b = nodes.get(e.to());
@@ -474,10 +469,10 @@ public class GeneGraphScreen extends Screen {
         }
     }
 
-    private java.util.Map<Edge, Integer> computeMidXByEdge() {
-        java.util.Map<Edge, Integer> midXByEdge = new java.util.HashMap<>();
+    private Map<Edge, Integer> computeMidXByEdge() {
+        Map<Edge, Integer> midXByEdge = new HashMap<>();
         // Group edges by their base corridor (rounded mid between source/right and target/left)
-        java.util.Map<Integer, java.util.List<Edge>> byCorridor = new java.util.HashMap<>();
+        Map<Integer, List<Edge>> byCorridor = new HashMap<>();
         for (Edge e : edges) {
             Node a = nodes.get(e.from());
             Node b = nodes.get(e.to());
@@ -485,14 +480,14 @@ public class GeneGraphScreen extends Screen {
             int ax = Math.round(a.x + NODE_WIDTH);
             int bx = Math.round(b.x);
             int baseMid = Math.round((ax + bx) / 2f);
-            byCorridor.computeIfAbsent(baseMid, k -> new java.util.ArrayList<>()).add(e);
+            byCorridor.computeIfAbsent(baseMid, k -> new ArrayList<>()).add(e);
         }
         final int MID_SEP = 14; // separation between parallel lanes in the same corridor
         for (var entry : byCorridor.entrySet()) {
             int baseMid = entry.getKey();
-            java.util.List<Edge> list = entry.getValue();
+            List<Edge> list = entry.getValue();
             // sort by the average of source/target y to keep lanes stable and reduce crossings
-            list.sort(java.util.Comparator.comparingInt(e -> {
+            list.sort(Comparator.comparingInt(e -> {
                 Node a = nodes.get(e.from());
                 Node b = nodes.get(e.to());
                 int ay = Math.round(a.y + NODE_HEIGHT / 2f);
@@ -508,14 +503,14 @@ public class GeneGraphScreen extends Screen {
         return midXByEdge;
     }
 
-    private java.util.Map<Edge, Integer> computeLabelYOffsetByEdge(java.util.Map<Edge, Integer> midXByEdge) {
-        java.util.Map<Edge, Integer> offsets = new java.util.HashMap<>();
-        java.util.Map<ResourceLocation, java.util.List<Edge>> byTarget = new java.util.HashMap<>();
-        for (Edge e : edges) byTarget.computeIfAbsent(e.to(), k -> new java.util.ArrayList<>()).add(e);
+    private Map<Edge, Integer> computeLabelYOffsetByEdge(Map<Edge, Integer> midXByEdge) {
+        Map<Edge, Integer> offsets = new HashMap<>();
+        Map<ResourceLocation, List<Edge>> byTarget = new HashMap<>();
+        for (Edge e : edges) byTarget.computeIfAbsent(e.to(), k -> new ArrayList<>()).add(e);
         final int LABEL_SEP = 8;
         for (var entry : byTarget.entrySet()) {
-            java.util.List<Edge> list = entry.getValue();
-            list.sort(java.util.Comparator.comparingInt(e -> Math.round(nodes.get(e.from()).y + NODE_HEIGHT / 2f)));
+            List<Edge> list = entry.getValue();
+            list.sort(Comparator.comparingInt(e -> Math.round(nodes.get(e.from()).y + NODE_HEIGHT / 2f)));
             for (int i = 0; i < list.size(); i++) {
                 offsets.put(list.get(i), ((i % 3) - 1) * LABEL_SEP); // cycle -sep, 0, +sep
             }
@@ -523,15 +518,15 @@ public class GeneGraphScreen extends Screen {
         return offsets;
     }
 
-    private java.util.Map<Edge, Integer> computeOutgoingYOffsetByEdge() {
-        java.util.Map<Edge, Integer> off = new java.util.HashMap<>();
-        java.util.Map<ResourceLocation, java.util.List<Edge>> bySource = new java.util.HashMap<>();
-        for (Edge e : edges) bySource.computeIfAbsent(e.from(), k -> new java.util.ArrayList<>()).add(e);
+    private Map<Edge, Integer> computeOutgoingYOffsetByEdge() {
+        Map<Edge, Integer> off = new HashMap<>();
+        Map<ResourceLocation, List<Edge>> bySource = new HashMap<>();
+        for (Edge e : edges) bySource.computeIfAbsent(e.from(), k -> new ArrayList<>()).add(e);
         final int PORT_SEP = 6;
         int maxOff = (NODE_HEIGHT / 2) - 3;
         for (var entry : bySource.entrySet()) {
-            java.util.List<Edge> list = entry.getValue();
-            list.sort(java.util.Comparator.comparingInt(e -> Math.round(nodes.get(e.to()).y + NODE_HEIGHT / 2f)));
+            List<Edge> list = entry.getValue();
+            list.sort(Comparator.comparingInt(e -> Math.round(nodes.get(e.to()).y + NODE_HEIGHT / 2f)));
             int n = list.size();
             int start = -((n - 1) * PORT_SEP) / 2;
             for (int i = 0; i < n; i++) {
@@ -543,15 +538,15 @@ public class GeneGraphScreen extends Screen {
         return off;
     }
 
-    private java.util.Map<Edge, Integer> computeIncomingYOffsetByEdge() {
-        java.util.Map<Edge, Integer> off = new java.util.HashMap<>();
-        java.util.Map<ResourceLocation, java.util.List<Edge>> byTarget = new java.util.HashMap<>();
-        for (Edge e : edges) byTarget.computeIfAbsent(e.to(), k -> new java.util.ArrayList<>()).add(e);
+    private Map<Edge, Integer> computeIncomingYOffsetByEdge() {
+        Map<Edge, Integer> off = new HashMap<>();
+        Map<ResourceLocation, List<Edge>> byTarget = new HashMap<>();
+        for (Edge e : edges) byTarget.computeIfAbsent(e.to(), k -> new ArrayList<>()).add(e);
         final int PORT_SEP = 6;
         int maxOff = (NODE_HEIGHT / 2) - 3;
         for (var entry : byTarget.entrySet()) {
-            java.util.List<Edge> list = entry.getValue();
-            list.sort(java.util.Comparator.comparingInt(e -> Math.round(nodes.get(e.from()).y + NODE_HEIGHT / 2f)));
+            List<Edge> list = entry.getValue();
+            list.sort(Comparator.comparingInt(e -> Math.round(nodes.get(e.from()).y + NODE_HEIGHT / 2f)));
             int n = list.size();
             int start = -((n - 1) * PORT_SEP) / 2;
             for (int i = 0; i < n; i++) {
@@ -582,9 +577,9 @@ public class GeneGraphScreen extends Screen {
     private Edge edgeAt(double mouseX, double mouseY) {
         float gx = (float)((mouseX - panX) / zoom);
         float gy = (float)((mouseY - panY) / zoom);
-        java.util.Map<Edge, Integer> midXByEdge = computeMidXByEdge();
-        java.util.Map<Edge, Integer> outYOffset = computeOutgoingYOffsetByEdge();
-        java.util.Map<Edge, Integer> inYOffset = computeIncomingYOffsetByEdge();
+        Map<Edge, Integer> midXByEdge = computeMidXByEdge();
+        Map<Edge, Integer> outYOffset = computeOutgoingYOffsetByEdge();
+        Map<Edge, Integer> inYOffset = computeIncomingYOffsetByEdge();
         final float tol = 3.5f;
         for (Edge e : edges) {
             Node a = nodes.get(e.from());
@@ -741,10 +736,8 @@ public class GeneGraphScreen extends Screen {
         super.mouseMoved(mouseX, mouseY);
     }
 
-    private static float clamp(float v, float lo, float hi) { return v < lo ? lo : (v > hi ? hi : v); }
+    private static float clamp(float v, float lo, float hi) { return v < lo ? lo : (Math.min(v, hi)); }
 
     @Override
     public boolean isPauseScreen() { return false; }
 }
-
-

@@ -16,10 +16,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Client-side combiner program for the ref screen.
@@ -83,7 +80,7 @@ public class CombinerProgram {
 
     private void rebuildVialEntries() {
         int prevCursor = rightCursorIndex;
-        java.util.Set<Integer> prevSelected = new java.util.HashSet<>(selectedVialIndices);
+        Set<Integer> prevSelected = new HashSet<>(selectedVialIndices);
 
         List<VialEntry> list = new ArrayList<>();
         var cached = ClientCatalogCache.get(terminalPos);
@@ -180,8 +177,8 @@ public class CombinerProgram {
             // Immediately request catalog sync to refresh list
             BQLNetwork.CHANNEL.sendToServer(new RefProgramActionC2SPacket(terminalPos, "catalog.sync", null));
             // Optimistically remove selected entries locally and clear selection
-            java.util.ArrayList<Integer> sorted = new java.util.ArrayList<>(selectedVialIndices);
-            sorted.sort(java.util.Comparator.reverseOrder());
+            ArrayList<Integer> sorted = new ArrayList<>(selectedVialIndices);
+            sorted.sort(Comparator.reverseOrder());
             for (int idx : sorted) {
                 if (idx >= 0 && idx < vialEntries.size()) vialEntries.remove(idx);
             }
@@ -211,7 +208,6 @@ public class CombinerProgram {
         } else {
             for (int i = 0; i < combiners.size(); i++) {
                 boolean sel = (activePane == Pane.LEFT && i == selectedCombinerIndex);
-                var comb = combiners.get(i);
                 String line = (sel ? ">> " : "   ") + "Combiner " + (i + 1);
                 g.drawString(font, Component.literal(line), leftX, curY, sel ? 0x55FF55 : 0xFFFFFF, false);
                 curY += font.lineHeight;
@@ -231,7 +227,7 @@ public class CombinerProgram {
         // Feedback line (success/failure) from server cache
         if (!combiners.isEmpty() && selectedCombinerIndex >= 0 && selectedCombinerIndex < combiners.size()) {
             var comb = combiners.get(selectedCombinerIndex);
-            var entry = com.github.b4ndithelps.forge.client.programs.ClientCombinerStateCache.get(comb.getBlockPos());
+            var entry = ClientCombinerStateCache.get(comb.getBlockPos());
             if (entry != null && entry.message != null && !entry.message.isEmpty()) {
                 int color = entry.success ? 0x55FF55 : 0xFFAA00;
                 g.drawString(font, Component.literal(entry.message), rightX, ry, color, false);
@@ -304,28 +300,4 @@ public class CombinerProgram {
         if (t.length() > 16) return t.substring(0, 16);
         return t;
     }
-
-    private static String describeCombiner(GeneCombinerBlockEntity c) {
-        List<String> labels = new ArrayList<>();
-        for (int i = 0; i < GeneCombinerBlockEntity.SLOT_INPUT_COUNT; i++) {
-            ItemStack st = c.getItem(i);
-            labels.add(st.isEmpty() ? "-" : shortLabel(st));
-        }
-        String out = c.getItem(GeneCombinerBlockEntity.SLOT_OUTPUT).isEmpty() ? "<empty>" : shortLabel(c.getItem(GeneCombinerBlockEntity.SLOT_OUTPUT));
-        return "[In: " + String.join(", ", labels) + "] [Out: " + out + "]";
-    }
-
-    private static String shortLabel(ItemStack vial) {
-        if (vial == null || vial.isEmpty()) return "-";
-        CompoundTag tag = vial.getTag();
-        if (tag != null && tag.contains("gene", 10)) {
-            CompoundTag g = tag.getCompound("gene");
-            String name = g.contains("name", 8) ? g.getString("name") : "gene";
-            Integer q = g.contains("quality", 3) ? g.getInt("quality") : null;
-            return q == null ? name : (name + " (" + q + "%)");
-        }
-        return vial.getHoverName().getString();
-    }
 }
-
-

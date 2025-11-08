@@ -16,10 +16,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Client-side printer program for the ref screen.
@@ -77,7 +74,7 @@ public class PrinterProgram {
 
     private void rebuildVialEntries() {
         int prevCursor = rightCursorIndex;
-        java.util.Set<Integer> prevSelected = new java.util.HashSet<>(selectedVialIndices);
+        Set<Integer> prevSelected = new HashSet<>(selectedVialIndices);
         List<VialEntry> list = new ArrayList<>();
         var cached = ClientCatalogCache.get(terminalPos);
         if (!cached.isEmpty()) {
@@ -153,8 +150,8 @@ public class PrinterProgram {
             BQLNetwork.CHANNEL.sendToServer(new RefProgramActionC2SPacket(terminalPos, action, target.getBlockPos()));
             // Request updated catalog and optimistically remove the used vials
             BQLNetwork.CHANNEL.sendToServer(new RefProgramActionC2SPacket(terminalPos, "catalog.sync", null));
-            java.util.ArrayList<Integer> sorted = new java.util.ArrayList<>(selectedVialIndices);
-            sorted.sort(java.util.Comparator.reverseOrder());
+            ArrayList<Integer> sorted = new ArrayList<>(selectedVialIndices);
+            sorted.sort(Comparator.reverseOrder());
             for (int idx : sorted) if (idx >= 0 && idx < vialEntries.size()) vialEntries.remove(idx);
             selectedVialIndices.clear();
             rightCursorIndex = Math.min(rightCursorIndex, Math.max(0, getRightRowCount() - 1));
@@ -195,7 +192,7 @@ public class PrinterProgram {
         // Feedback (success/failure)
         if (!printers.isEmpty() && selectedPrinterIndex >= 0 && selectedPrinterIndex < printers.size()) {
             var printer = printers.get(selectedPrinterIndex);
-            var entry = com.github.b4ndithelps.forge.client.programs.ClientPrinterStateCache.get(printer.getBlockPos());
+            var entry = ClientPrinterStateCache.get(printer.getBlockPos());
             if (entry != null && entry.message != null && !entry.message.isEmpty()) {
                 int color = entry.success ? 0x55FF55 : 0xFFAA00;
                 g.drawString(font, Component.literal(entry.message), rightX, ry, color, false);
@@ -268,5 +265,3 @@ public class PrinterProgram {
         return t;
     }
 }
-
-

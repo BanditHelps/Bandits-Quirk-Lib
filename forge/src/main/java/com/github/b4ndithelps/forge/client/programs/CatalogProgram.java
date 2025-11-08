@@ -7,6 +7,8 @@ import com.github.b4ndithelps.forge.blocks.util.CableNetworkUtil;
 import com.github.b4ndithelps.forge.client.BioTerminalScreen;
 import com.github.b4ndithelps.forge.item.GeneVialItem;
 import com.github.b4ndithelps.forge.item.ModItems;
+import com.github.b4ndithelps.forge.network.BQLNetwork;
+import com.github.b4ndithelps.forge.network.RefProgramActionC2SPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -24,6 +26,7 @@ import java.util.List;
  * Left: list all gene vials in connected sample containers and sequenced samples.
  * Right: details of the currently selected entry (all fields shown as unknown for now).
  */
+@SuppressWarnings("removal")
 public class CatalogProgram {
     private final BioTerminalScreen screen;
     private final BlockPos terminalPos;
@@ -159,11 +162,11 @@ public class CatalogProgram {
         if (sel.type == EntryType.SECTION || sel.geneId == null || sel.geneId.isEmpty()) return;
         if (sel.known) return;
         // Client debug log
-        try { net.minecraft.client.Minecraft.getInstance().player.sendSystemMessage(Component.literal("[Catalog] Request identify: " + sel.geneId)); } catch (Throwable ignored) {}
+        try { Minecraft.getInstance().player.sendSystemMessage(Component.literal("[Catalog] Request identify: " + sel.geneId)); } catch (Throwable ignored) {}
         int q = sel.quality >= 0 ? sel.quality : 50;
         String action = "catalog.identify:" + sel.geneId + ":" + q;
-        com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.sendToServer(
-                new com.github.b4ndithelps.forge.network.RefProgramActionC2SPacket(terminalPos, action, null)
+        BQLNetwork.CHANNEL.sendToServer(
+                new RefProgramActionC2SPacket(terminalPos, action, null)
         );
         // Immediately request a sync so progress appears quickly
         requestSync();
@@ -341,12 +344,11 @@ public class CatalogProgram {
         return -1;
     }
 
-    public int getSelectedIndex() { return selectedIndex; }
     public int size() { return entries.size(); }
 
     public void requestSync() {
-        com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.sendToServer(
-                new com.github.b4ndithelps.forge.network.RefProgramActionC2SPacket(terminalPos, "catalog.sync", null)
+        BQLNetwork.CHANNEL.sendToServer(
+                new RefProgramActionC2SPacket(terminalPos, "catalog.sync", null)
         );
     }
 
@@ -397,5 +399,3 @@ public class CatalogProgram {
         return null;
     }
 }
-
-

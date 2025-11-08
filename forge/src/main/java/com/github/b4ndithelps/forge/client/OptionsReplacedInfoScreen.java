@@ -13,12 +13,12 @@ import java.util.List;
  * A screen that displays information about the options.txt file being replaced
  * Similar to the settings screens but with specific information about customization bar removal
  */
+@SuppressWarnings("removal")
 public class OptionsReplacedInfoScreen extends Screen {
     private static final Component TITLE = Component.literal("Welcome to the Mine Hero Addon!");
     private static final Component INFO_TEXT = Component.literal("In order to get some cool GUI's, we use FancyMenu created by Keksuccino! To make it a little easier for a normal player, Bandit's Quirk Library has automatically updated your FancyMenu options.txt file to remove the customization bar (seen below). This change will take effect on the next game restart, so we recommend just doing that now! You won't see this message again.");
     private static final Component BUTTON_TEXT = Component.literal("I Understand!");
-    
-    // Image resource location - you'll place this in resources/assets/bql/textures/gui/
+
     private static final ResourceLocation OPTIONS_INFO_IMAGE = new ResourceLocation("bql", "textures/gui/options_info.png");
     
     // Image dimensions (adjust these based on your actual image)

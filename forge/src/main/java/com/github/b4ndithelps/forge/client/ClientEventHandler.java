@@ -1,10 +1,14 @@
 package com.github.b4ndithelps.forge.client;
 
 import com.github.b4ndithelps.BanditsQuirkLib;
+import com.github.b4ndithelps.forge.client.blackwhip.BlackwhipStruggleClient;
 import com.github.b4ndithelps.forge.client.renderer.entity.BetterWallProjectileRenderer;
 import com.github.b4ndithelps.forge.client.renderer.entity.BlockStackEntityRenderer;
 import com.github.b4ndithelps.forge.entities.ModEntities;
 import com.github.b4ndithelps.forge.entities.WindProjectileEntity;
+import com.github.b4ndithelps.forge.network.BQLNetwork;
+import com.github.b4ndithelps.forge.network.DoubleJumpC2SPacket;
+import com.github.b4ndithelps.forge.network.ZoomStatePacket;
 import com.github.b4ndithelps.util.FileManager;
 import com.github.b4ndithelps.forge.blocks.ModMenus;
 import net.minecraft.client.gui.screens.MenuScreens;
@@ -27,6 +31,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 
+@SuppressWarnings("removal")
 public class ClientEventHandler {
 
     @Mod.EventBusSubscriber(modid = BanditsQuirkLib.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
@@ -86,9 +91,9 @@ public class ClientEventHandler {
 		@SubscribeEvent
 		public static void onComputeFov(ViewportEvent.ComputeFov event) {
 			// Apply zoom FOV scaling if enabled
-			if (com.github.b4ndithelps.forge.network.ZoomStatePacket.ENABLED) {
+			if (ZoomStatePacket.ENABLED) {
 				double base = event.getFOV();
-				event.setFOV(base * com.github.b4ndithelps.forge.network.ZoomStatePacket.FOV_SCALE);
+				event.setFOV(base * ZoomStatePacket.FOV_SCALE);
 			}
 		}
 
@@ -104,10 +109,10 @@ public class ClientEventHandler {
             if (jumpDown && !lastJumpDown) {
                 // Rising edge of jump key
                 if (!mc.player.onGround() && !mc.player.isInWater() && !mc.player.isInLava()) {
-                    com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.sendToServer(new com.github.b4ndithelps.forge.network.DoubleJumpC2SPacket());
+                    BQLNetwork.CHANNEL.sendToServer(new DoubleJumpC2SPacket());
                 }
 				// Struggle tap (if tagged)
-				com.github.b4ndithelps.forge.client.blackwhip.BlackwhipStruggleClient.sendTapIfActiveOnJumpEdge(jumpDown, lastJumpDown);
+				BlackwhipStruggleClient.sendTapIfActiveOnJumpEdge(jumpDown, lastJumpDown);
             }
             lastJumpDown = jumpDown;
         }
@@ -122,10 +127,10 @@ public class ClientEventHandler {
             boolean jumpDown = mc.options.keyJump.isDown();
             if (jumpDown && !lastJumpDown) {
                 if (!mc.player.onGround() && !mc.player.isInWater() && !mc.player.isInLava()) {
-                    com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.sendToServer(new com.github.b4ndithelps.forge.network.DoubleJumpC2SPacket());
+                    BQLNetwork.CHANNEL.sendToServer(new DoubleJumpC2SPacket());
                 }
 				// Struggle tap (if tagged)
-				com.github.b4ndithelps.forge.client.blackwhip.BlackwhipStruggleClient.sendTapIfActiveOnJumpEdge(jumpDown, lastJumpDown);
+				BlackwhipStruggleClient.sendTapIfActiveOnJumpEdge(jumpDown, lastJumpDown);
             }
             lastJumpDown = jumpDown;
         }

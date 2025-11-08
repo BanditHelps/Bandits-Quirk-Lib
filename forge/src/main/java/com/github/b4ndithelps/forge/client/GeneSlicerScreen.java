@@ -29,5 +29,3 @@ public class GeneSlicerScreen extends AbstractContainerScreen<GeneSlicerMenu> {
         this.renderTooltip(graphics, mouseX, mouseY);
     }
 }
-
-

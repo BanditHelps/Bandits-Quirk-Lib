@@ -28,5 +28,3 @@ public final class ClientCombinerStateCache {
 
     public static Entry get(BlockPos pos) { return CACHE.get(pos); }
 }
-
-

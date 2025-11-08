@@ -29,5 +29,3 @@ public class GeneCombinerScreen extends AbstractContainerScreen<GeneCombinerMenu
         this.renderTooltip(graphics, mouseX, mouseY);
     }
 }
-
-

@@ -3,7 +3,6 @@ package com.github.b4ndithelps.forge.client;
 import com.github.b4ndithelps.forge.systems.GenomeHelper;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.PlayerModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.player.AbstractClientPlayer;
@@ -43,14 +42,13 @@ public class LongArmsLayer extends RenderLayer<AbstractClientPlayer, PlayerModel
 
         int quality = getGeneQualityClient(player, LONG_ARMS_GENE_ID);
         if (quality < 0) quality = getGeneQualityClient(player, LONG_ARMS_GENE_ID_ALT);
-        boolean debugForce = player.isCrouching();
 
         float factor = Math.max(0F, Math.min(1F, (quality < 0 ? 100 : quality) / 100F));
         // Ease-in curve for more variety: smaller growth at low % and reach prior max at high %
         float eased = factor * factor; // quadratic ease-in
         float baseScale = 1.10F;      // smaller extension at low gene quality
         float maxScale = 2.00F;       // cap at former ~80% length to avoid clipping
-        float yScale = debugForce ? 2.0F : (baseScale + (maxScale - baseScale) * eased);
+        float yScale = (baseScale + (maxScale - baseScale) * eased);
 
         PlayerModel<AbstractClientPlayer> model = this.getParentModel();
         // Base arms already hidden in pre-hook; proceed to draw stretched arms
@@ -113,5 +111,3 @@ public class LongArmsLayer extends RenderLayer<AbstractClientPlayer, PlayerModel
         return -1;
     }
 }
-
-

@@ -68,9 +68,9 @@ public class SlicerProgram {
     private void refreshRightPane() {
         // Preserve current selection and cursor where possible
         int prevCursor = rightCursorIndex;
-        java.util.Set<Integer> prevSelected = new java.util.HashSet<>(selectedGeneIndices);
+        Set<Integer> prevSelected = new HashSet<>(selectedGeneIndices);
 
-        java.util.List<String> newLabels = new java.util.ArrayList<>();
+        List<String> newLabels = new ArrayList<>();
         if (slicers.isEmpty()) {
             geneLabels.clear();
             selectedGeneIndices.clear();
@@ -80,7 +80,7 @@ public class SlicerProgram {
         var slicer = slicers.get(selectedSlicerIndex);
         // Prefer server-supplied cache for labels to avoid reliance on client BE sync.
         // If cache is missing OR empty, fall back to local BE read.
-        var cache = com.github.b4ndithelps.forge.client.programs.ClientSlicerStateCache.get(slicer.getBlockPos());
+        var cache = ClientSlicerStateCache.get(slicer.getBlockPos());
         boolean usedCache = false;
         if (cache != null && cache.labels != null && !cache.labels.isEmpty()) {
             newLabels.addAll(cache.labels);
@@ -144,7 +144,7 @@ public class SlicerProgram {
             if (!slicers.isEmpty()) {
                 var slicer = slicers.get(selectedSlicerIndex);
                 boolean runningNow = slicer.isRunning();
-                var cache = com.github.b4ndithelps.forge.client.programs.ClientSlicerStateCache.get(slicer.getBlockPos());
+                var cache = ClientSlicerStateCache.get(slicer.getBlockPos());
                 if (cache != null) runningNow = cache.running;
                 if (runningNow) return; // lock controls while running
             }
@@ -158,7 +158,7 @@ public class SlicerProgram {
         if (!slicers.isEmpty()) {
             var slicer = slicers.get(selectedSlicerIndex);
             boolean runningNow = slicer.isRunning();
-            var cache = com.github.b4ndithelps.forge.client.programs.ClientSlicerStateCache.get(slicer.getBlockPos());
+            var cache = ClientSlicerStateCache.get(slicer.getBlockPos());
             if (cache != null) runningNow = cache.running;
             if (runningNow) {
                 if (rightCursorIndex == genes + 1) { activePane = Pane.LEFT; }
@@ -201,7 +201,7 @@ public class SlicerProgram {
         // If cache for the selected slicer was updated, rebuild labels immediately
         if (!slicers.isEmpty() && selectedSlicerIndex >= 0 && selectedSlicerIndex < slicers.size()) {
             var slicer = slicers.get(selectedSlicerIndex);
-            var cache = com.github.b4ndithelps.forge.client.programs.ClientSlicerStateCache.get(slicer.getBlockPos());
+            var cache = ClientSlicerStateCache.get(slicer.getBlockPos());
             if (cache != null && cache.lastUpdateGameTime != lastRightCacheUpdateSeen) {
                 refreshRightPane();
             }
@@ -225,7 +225,7 @@ public class SlicerProgram {
                 var slicer = slicers.get(i);
                 // Prefer running state from cache if available
                 boolean runningNow = slicer.isRunning();
-                var cache = com.github.b4ndithelps.forge.client.programs.ClientSlicerStateCache.get(slicer.getBlockPos());
+                var cache = ClientSlicerStateCache.get(slicer.getBlockPos());
                 if (cache != null) runningNow = cache.running;
                 String status = runningNow ? "[RUNNING]" : "[IDLE]";
                 String line = (sel ? ">> " : "   ") + "Slicer " + (i + 1) + " " + status;
@@ -289,5 +289,3 @@ public class SlicerProgram {
         return t;
     }
 }
-
-

@@ -4,8 +4,6 @@ import com.github.b4ndithelps.BanditsQuirkLib;
 import com.github.b4ndithelps.forge.systems.GenomeHelper;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.model.PlayerModel;
-import net.minecraft.client.model.geom.ModelPart;
-import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.world.entity.player.Player;
@@ -14,9 +12,12 @@ import net.minecraftforge.client.event.RenderPlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
+import java.util.Map;
+import java.util.WeakHashMap;
+
 @Mod.EventBusSubscriber(modid = BanditsQuirkLib.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
 public class LongLegsRenderHandler {
-    private static final java.util.Map<Player, boolean[]> VISIBLE_CACHE = new java.util.WeakHashMap<>();
+    private static final Map<Player, boolean[]> VISIBLE_CACHE = new WeakHashMap<>();
 
     private static final String LONG_LEGS_GENE_ID = "bandits_quirk_lib:gene.long_legs";
     private static final String LONG_LEGS_GENE_ID_ALT = "bandits_quirk_lib:long_legs";
@@ -98,5 +99,3 @@ public class LongLegsRenderHandler {
         if (pm.leftPants != null) pm.leftPants.visible = vis[3];
     }
 }
-
-

@@ -3,9 +3,12 @@ package com.github.b4ndithelps.forge.client.programs;
 import com.github.b4ndithelps.forge.blocks.GeneSequencerBlockEntity;
 import com.github.b4ndithelps.forge.blocks.util.CableNetworkUtil;
 import com.github.b4ndithelps.forge.client.BioTerminalScreen;
+import com.github.b4ndithelps.forge.item.ModItems;
 import com.github.b4ndithelps.forge.network.BQLNetwork;
 import com.github.b4ndithelps.forge.network.RefProgramActionC2SPacket;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 
@@ -55,19 +58,19 @@ public class AnalyzeProgram {
         if (sequencers.isEmpty()) return;
         var target = sequencers.get(selectedIndex);
         // Prevent starting if already running
-        var cache = com.github.b4ndithelps.forge.client.programs.ClientSequencerStatusCache.get(target.getBlockPos());
+        var cache = ClientSequencerStatusCache.get(target.getBlockPos());
         boolean runningNow = (cache != null) ? cache.running : target.isRunning();
         if (runningNow) return;
         // Prevent starting without a sample in input
         var in = target.getItem(GeneSequencerBlockEntity.SLOT_INPUT);
-        if (in.isEmpty() || in.getItem() != com.github.b4ndithelps.forge.item.ModItems.TISSUE_SAMPLE.get()) return;
+        if (in.isEmpty() || in.getItem() != ModItems.TISSUE_SAMPLE.get()) return;
         // Prevent starting if output is occupied (already analyzed result present)
         var out = target.getItem(GeneSequencerBlockEntity.SLOT_OUTPUT);
         if (!out.isEmpty()) return;
         BQLNetwork.CHANNEL.sendToServer(new RefProgramActionC2SPacket(terminalPos, "analyze.start", target.getBlockPos()));
     }
 
-    public void render(net.minecraft.client.gui.GuiGraphics g, int x, int y, int w, int h, net.minecraft.client.gui.Font font) {
+    public void render(GuiGraphics g, int x, int y, int w, int h, Font font) {
         // Periodically refresh connections and request sync so UI reflects latest server state
         refreshSequencers();
         // Split area: 60% left list, 40% right DNA panel
@@ -97,7 +100,7 @@ public class AnalyzeProgram {
             var out = seq.getItem(GeneSequencerBlockEntity.SLOT_OUTPUT);
             boolean analyzed = !out.isEmpty() && out.getTag() != null;
             // Check cache override for both running and analyzed
-            var cache = com.github.b4ndithelps.forge.client.programs.ClientSequencerStatusCache.get(seq.getBlockPos());
+            var cache = ClientSequencerStatusCache.get(seq.getBlockPos());
             boolean runningNow = (cache != null) ? cache.running : seq.isRunning();
             if (cache != null) analyzed = analyzed || cache.analyzed;
             if (runningNow) status = "[RUNNING]";
@@ -119,7 +122,7 @@ public class AnalyzeProgram {
         }
     }
 
-    private void drawDnaPanel(net.minecraft.client.gui.GuiGraphics g, GeneSequencerBlockEntity seq, int x, int y, int w, int h, net.minecraft.client.gui.Font font) {
+    private void drawDnaPanel(GuiGraphics g, GeneSequencerBlockEntity seq, int x, int y, int w, int h, Font font) {
         int curY = y;
         g.drawString(font, Component.literal("DNA"), x, curY, 0xA0FFFFFF, false);
         curY += font.lineHeight + 2;
@@ -177,14 +180,14 @@ public class AnalyzeProgram {
         }
         if (!haveLabels) {
             // If server told us it's analyzed, request a catalog sync and read labels from catalog cache
-            var cache = com.github.b4ndithelps.forge.client.programs.ClientSequencerStatusCache.get(seq.getBlockPos());
+            var cache = ClientSequencerStatusCache.get(seq.getBlockPos());
             var mcLocal = Minecraft.getInstance();
             long gt = (mcLocal.level == null) ? 0L : mcLocal.level.getGameTime();
             if (cache != null && cache.analyzed && gt - lastCatalogSyncGameTime >= 10L) {
                 lastCatalogSyncGameTime = gt;
                 BQLNetwork.CHANNEL.sendToServer(new RefProgramActionC2SPacket(terminalPos, "catalog.sync", null));
             }
-            var entries = com.github.b4ndithelps.forge.client.programs.ClientCatalogCache.get(terminalPos);
+            var entries = ClientCatalogCache.get(terminalPos);
             if (entries != null && !entries.isEmpty()) {
                 int placed = 0;
                 for (var e : entries) {
@@ -222,7 +225,7 @@ public class AnalyzeProgram {
 
         // Optional: show a tiny running indicator
         {
-            var cache = com.github.b4ndithelps.forge.client.programs.ClientSequencerStatusCache.get(seq.getBlockPos());
+            var cache = ClientSequencerStatusCache.get(seq.getBlockPos());
             boolean runningNow = (cache != null) ? cache.running : seq.isRunning();
             if (runningNow) {
             String running = "[RUNNING]";
@@ -247,27 +250,5 @@ public class AnalyzeProgram {
         return t;
     }
 
-    private static String padRight(String s, int width) {
-        if (s == null) s = "";
-        if (s.length() >= width) return s.substring(0, width);
-        StringBuilder b = new StringBuilder(s);
-        while (b.length() < width) b.append(' ');
-        return b.toString();
-    }
-
-    private static String padLeft(String s, int width) {
-        if (s == null) s = "";
-        if (s.length() >= width) return s.substring(0, width);
-        StringBuilder b = new StringBuilder();
-        while (b.length() + s.length() < width) b.append(' ');
-        b.append(s);
-        return b.toString();
-    }
-
-    private static String spaces(int n) { return " ".repeat(Math.max(0, n)); }
-
-    public int getSelectedIndex() { return selectedIndex; }
     public int size() { return sequencers.size(); }
 }
-
-

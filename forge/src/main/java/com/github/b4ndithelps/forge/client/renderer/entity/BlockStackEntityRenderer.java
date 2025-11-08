@@ -13,6 +13,7 @@ import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.state.BlockState;
 
+@SuppressWarnings("removal")
 public class BlockStackEntityRenderer extends EntityRenderer<BlockStackEntity> {
 
 	public BlockStackEntityRenderer(EntityRendererProvider.Context ctx) {
@@ -52,5 +53,3 @@ public class BlockStackEntityRenderer extends EntityRenderer<BlockStackEntity> {
 		return new ResourceLocation("minecraft", "textures/misc/white.png");
 	}
 }
-
-

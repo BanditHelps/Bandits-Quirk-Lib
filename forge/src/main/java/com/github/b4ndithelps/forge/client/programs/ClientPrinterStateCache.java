@@ -25,5 +25,3 @@ public final class ClientPrinterStateCache {
 
     public static Entry get(BlockPos pos) { return CACHE.get(pos); }
 }
-
-

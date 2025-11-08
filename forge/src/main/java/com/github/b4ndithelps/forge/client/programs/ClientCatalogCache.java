@@ -62,5 +62,3 @@ public final class ClientCatalogCache {
         return cache.getOrDefault(terminal, List.of());
     }
 }
-
-

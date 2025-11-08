@@ -4,13 +4,11 @@ import com.github.b4ndithelps.BanditsQuirkLib;
 import com.github.b4ndithelps.forge.entities.BlockStackEntity;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
-import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.player.Player;
@@ -47,7 +45,7 @@ public final class BlackwhipRenderHandler {
     }
 
     // Flag to force the start anchor to the player's right-hand side (with extra height) for restrain animation
-    private static final java.util.Set<Integer> FORCE_RIGHT_HAND_ANCHOR = new java.util.HashSet<>();
+    private static final Set<Integer> FORCE_RIGHT_HAND_ANCHOR = new HashSet<>();
     public static void applyAnchorOverride(int sourcePlayerId, boolean active) {
         if (active) FORCE_RIGHT_HAND_ANCHOR.add(sourcePlayerId);
         else FORCE_RIGHT_HAND_ANCHOR.remove(sourcePlayerId);
@@ -93,7 +91,7 @@ public final class BlackwhipRenderHandler {
     private static final class ClientMultiBlockWhipState {
         public final int sourcePlayerId;
         public boolean active;
-        public java.util.List<Vec3> targets = new java.util.ArrayList<>();
+        public List<Vec3> targets = new ArrayList<>();
         public int ticksLeft;
         public int initialTravelTicks;
         public float curve;
@@ -107,7 +105,7 @@ public final class BlackwhipRenderHandler {
         public boolean active;
         public float curve;
         public float thickness;
-        public java.util.List<Integer> targetEntityIds = new java.util.ArrayList<>();
+        public List<Integer> targetEntityIds = new ArrayList<>();
 
         public ClientMultiTethers(int sourcePlayerId) { this.sourcePlayerId = sourcePlayerId; }
     }
@@ -127,7 +125,7 @@ public final class BlackwhipRenderHandler {
         public float orbitSpeed;
         public long seed;
         // Cached anchor offsets in player-local space (back area), built from seed
-        public java.util.List<Vec3> localAnchors = new java.util.ArrayList<>();
+        public List<Vec3> localAnchors = new ArrayList<>();
         // Smoothed world velocity and last world position for movement-based lag
         public Vec3 lastWorldPos;
         public Vec3 smoothedVel = Vec3.ZERO;
@@ -149,7 +147,7 @@ public final class BlackwhipRenderHandler {
         public float thickness;
         public float jaggedness;
         public long seed;
-        public java.util.List<Vec3> localAnchors = new java.util.ArrayList<>();
+        public List<Vec3> localAnchors = new ArrayList<>();
         // Activation tick used to animate tentacle growth on first enable
         public long activateGameTime = -1L;
         // Deactivation animation state (shrink all tentacles simultaneously)
@@ -218,7 +216,7 @@ public final class BlackwhipRenderHandler {
         if (!active) s.ticksLeft = 0;
     }
 
-    public static void applyMultiBlockPacket(int sourcePlayerId, boolean active, java.util.List<Double> xs, java.util.List<Double> ys, java.util.List<Double> zs,
+    public static void applyMultiBlockPacket(int sourcePlayerId, boolean active, List<Double> xs, List<Double> ys, List<Double> zs,
                                              int travelTicks, float curve, float thickness) {
         ClientMultiBlockWhipState s = PLAYER_TO_MULTI_BLOCK.computeIfAbsent(sourcePlayerId, ClientMultiBlockWhipState::new);
         s.active = active;
@@ -238,7 +236,7 @@ public final class BlackwhipRenderHandler {
         }
     }
 
-    public static void applyTethersPacket(int sourcePlayerId, boolean active, float curve, float thickness, java.util.List<Integer> targetIds) {
+    public static void applyTethersPacket(int sourcePlayerId, boolean active, float curve, float thickness, List<Integer> targetIds) {
         ClientMultiTethers multi = PLAYER_TO_MULTI.computeIfAbsent(sourcePlayerId, ClientMultiTethers::new);
         multi.active = active;
         multi.curve = curve;
@@ -582,7 +580,7 @@ public final class BlackwhipRenderHandler {
                         .add(aura.smoothedVel.scale(-0.25))
                         .add(back.scale(local.z));
 
-                java.util.List<Vec3> pts = buildAuraTentacle(anchor, back, right, up, aura, i, time, aura.smoothedVel);
+                List<Vec3> pts = buildAuraTentacle(anchor, back, right, up, aura, i, time, aura.smoothedVel);
 
                 // Growth progress with slight per-tentacle stagger
                 final double growDuration = 10.0; // ticks to reach full length
@@ -602,7 +600,7 @@ public final class BlackwhipRenderHandler {
                 int totalPts = pts.size();
                 int visiblePts = Math.max(2, (int)Math.round(totalPts * progress));
                 if (visiblePts < totalPts) {
-                    pts = new java.util.ArrayList<>(pts.subList(0, visiblePts));
+                    pts = new ArrayList<>(pts.subList(0, visiblePts));
                 }
 
                 float base = Math.max(0.02F, aura.thickness * 0.06F);
@@ -698,7 +696,7 @@ public final class BlackwhipRenderHandler {
                 Vec3 equatorDir = rightYaw.scale(Math.cos(phi)).add(up.scale(Math.sin(phi))).normalize();
 
                 // Build the petal path: anchor -> back hemisphere contact -> sweep along meridian to front apex (3D)
-                java.util.List<Vec3> points = new java.util.ArrayList<>();
+                List<Vec3> points = new ArrayList<>();
 
                 // Section 1: anchor to a point just outside the back hemisphere (wrap wider around the player)
                 {
@@ -731,12 +729,12 @@ public final class BlackwhipRenderHandler {
                 int totalPts = points.size();
                 int visiblePts = Math.max(2, (int)Math.round(totalPts * progress));
 				if (visiblePts < totalPts) {
-					points = new java.util.ArrayList<>(points.subList(0, visiblePts));
+					points = new ArrayList<>(points.subList(0, visiblePts));
 				}
 
 				// Draw
                 // Slight per-tentacle thickness variation and reduced wiggle
-                java.util.Random rng = new java.util.Random(bubble.seed + (long)i * 31L);
+                Random rng = new Random(bubble.seed + (long)i * 31L);
                 float thicknessJitter = 0.9f + (float)rng.nextDouble() * 0.2f; // 0.9..1.1
                 float base = Math.max(0.02F, bubble.thickness * 0.065F * thicknessJitter);
                 float noiseAmp = Math.min(base * 0.75F, Math.max(0.01F, bubble.jaggedness)) * 0.65F;
@@ -767,7 +765,7 @@ public final class BlackwhipRenderHandler {
 
     private static void rebuildAuraAnchors(ClientAuraState s) {
         s.localAnchors.clear();
-        java.util.Random rng = new java.util.Random(s.seed);
+        Random rng = new Random(s.seed);
         // Scatter anchors across an oval region on the upper back
         for (int i = 0; i < s.tentacleCount; i++) {
             double a = 2 * Math.PI * (i / Math.max(1.0, (double) s.tentacleCount)) + rng.nextDouble() * 0.9;
@@ -783,7 +781,7 @@ public final class BlackwhipRenderHandler {
     // Build anchors for bubble shield similar to aura placement on back
     private static void rebuildAuraAnchorsLike(ClientBubbleState s) {
         s.localAnchors.clear();
-        java.util.Random rng = new java.util.Random(s.seed);
+        Random rng = new Random(s.seed);
         for (int i = 0; i < s.tentacleCount; i++) {
             double a = 2 * Math.PI * (i / Math.max(1.0, (double) s.tentacleCount)) + rng.nextDouble() * 0.9;
             double rx = 0.35 + rng.nextDouble() * 0.15;
@@ -795,13 +793,12 @@ public final class BlackwhipRenderHandler {
         }
     }
 
-    private static java.util.List<Vec3> buildAuraTentacle(Vec3 anchor, Vec3 back, Vec3 right, Vec3 up, ClientAuraState aura, int index, double time, Vec3 playerVel) {
+    private static List<Vec3> buildAuraTentacle(Vec3 anchor, Vec3 back, Vec3 right, Vec3 up, ClientAuraState aura, int index, double time, Vec3 playerVel) {
         // Downward-curving, side-biased tendril with gentle bobbing and shoulder-peek arc
         Vec3 down = up.scale(-1.0);
-        java.util.Random rng = new java.util.Random(aura.seed + index * 31L);
+        Random rng = new Random(aura.seed + index * 31L);
         double sideBias = (rng.nextDouble() - 0.5) * 0.7; // left/right variation
         // Outward from the back with an initial lift to peek over the shoulder
-        Vec3 outward = back.scale(0.8).add(up.scale(0.35)).add(right.scale(sideBias)).normalize();
         Vec3 dir0 = back.scale(0.55).add(up.scale(0.35)).add(right.scale(sideBias * 0.4)).normalize();
 
         // Per-tentacle radial spread direction around the player to diversify endpoints
@@ -813,7 +810,7 @@ public final class BlackwhipRenderHandler {
         double lengthBase = aura.length;
         double length = lengthBase * (0.85 + 0.3 * rng.nextDouble()); // vary end positions
         int segments = Math.max(16, (int) Math.min(64, length * 8.0));
-        java.util.List<Vec3> pts = new java.util.ArrayList<>(segments + 1);
+        List<Vec3> pts = new ArrayList<>(segments + 1);
         pts.add(anchor);
 
         // Build a wavy, somewhat jagged spline using simple forward marching with noisy offsets
@@ -911,7 +908,7 @@ public final class BlackwhipRenderHandler {
         int light = LightTexture.FULL_BRIGHT;
 
         poseStack.pushPose();
-        com.mojang.blaze3d.vertex.PoseStack.Pose last = poseStack.last();
+        PoseStack.Pose last = poseStack.last();
 
         EntityRenderDispatcher erd = Minecraft.getInstance().getEntityRenderDispatcher();
         Vec3 camForward = Vec3.directionFromRotation(erd.camera.getXRot(), erd.camera.getYRot());
@@ -976,7 +973,7 @@ public final class BlackwhipRenderHandler {
 		int light = LightTexture.FULL_BRIGHT;
 
 		poseStack.pushPose();
-		com.mojang.blaze3d.vertex.PoseStack.Pose last = poseStack.last();
+		PoseStack.Pose last = poseStack.last();
 
 		EntityRenderDispatcher erd = Minecraft.getInstance().getEntityRenderDispatcher();
 		Vec3 camForward = Vec3.directionFromRotation(erd.camera.getXRot(), erd.camera.getYRot());
@@ -1216,5 +1213,3 @@ public final class BlackwhipRenderHandler {
         return pts;
     }
 }
-
-

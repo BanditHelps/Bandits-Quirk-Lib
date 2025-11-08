@@ -109,5 +109,3 @@ public class LongLegsLayer extends RenderLayer<AbstractClientPlayer, PlayerModel
         return -1;
     }
 }
-
-

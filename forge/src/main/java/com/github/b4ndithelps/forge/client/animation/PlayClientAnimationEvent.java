@@ -14,5 +14,3 @@ public class PlayClientAnimationEvent extends Event {
 		this.active = active;
 	}
 }
-
-

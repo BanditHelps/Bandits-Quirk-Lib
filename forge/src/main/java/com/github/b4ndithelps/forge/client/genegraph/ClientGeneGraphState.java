@@ -3,7 +3,6 @@ package com.github.b4ndithelps.forge.client.genegraph;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public final class ClientGeneGraphState {
@@ -23,11 +22,3 @@ public final class ClientGeneGraphState {
         }
     }
 }
-
-
-
-
-
-
-
-

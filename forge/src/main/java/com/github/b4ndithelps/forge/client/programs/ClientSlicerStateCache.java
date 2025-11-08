@@ -31,5 +31,3 @@ public final class ClientSlicerStateCache {
 
     public static Entry get(BlockPos pos) { return CACHE.get(pos); }
 }
-
-

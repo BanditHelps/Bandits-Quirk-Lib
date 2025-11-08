@@ -351,21 +351,6 @@ public class BioTerminalScreen extends AbstractContainerScreen<BioTerminalMenu> 
 		}
     }
 
-	private void drawDashedLinePhased(GuiGraphics graphics, int x1, int x2, int y, int dashLen, int gapLen, int color, int phaseOrigin) {
-		if (x2 <= x1 || dashLen <= 0) return;
-		int period = dashLen + Math.max(0, gapLen);
-		if (period <= 0) return;
-		int delta = x1 - phaseOrigin;
-		int k = delta <= 0 ? 0 : (delta + period - 1) / period; // ceil(delta/period) for positive delta
-		int start = phaseOrigin + k * period;
-		for (int sx = start; sx < x2; sx += period) {
-			int ex = Math.min(sx + dashLen, x2);
-			if (ex > sx) {
-				graphics.fill(sx, y, ex, y + 1, color);
-			}
-		}
-	}
-
 	// Method handles the scrolling of just the program area
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
@@ -388,5 +373,3 @@ public class BioTerminalScreen extends AbstractContainerScreen<BioTerminalMenu> 
         return super.mouseScrolled(mouseX, mouseY, delta);
     }
 }
-
-
