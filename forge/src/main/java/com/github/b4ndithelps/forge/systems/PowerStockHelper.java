@@ -1,7 +1,7 @@
 package com.github.b4ndithelps.forge.systems;
 
-import com.github.b4ndithelps.forge.capabilities.Body.BodyPart;
-import com.github.b4ndithelps.forge.capabilities.Body.IBodyStatusCapability;
+import com.github.b4ndithelps.forge.capabilities.body.BodyPart;
+import com.github.b4ndithelps.forge.capabilities.body.IBodyStatusCapability;
 import com.github.b4ndithelps.forge.effects.ModEffects;
 import com.github.b4ndithelps.forge.utils.ActionBarHelper;
 import com.github.b4ndithelps.values.BodyConstants;
@@ -213,6 +213,4 @@ public class PowerStockHelper {
             BodyStatusHelper.addDamage(player, bodyPart, (float) damage);
         }
     }
-
-
 }

@@ -1,8 +1,10 @@
 package com.github.b4ndithelps.forge.systems;
 
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.scores.Objective;
 import net.minecraft.world.scores.Scoreboard;
+import net.minecraft.world.scores.criteria.ObjectiveCriteria;
 
 public class QuirkFactorHelper {
     
@@ -47,9 +49,9 @@ public class QuirkFactorHelper {
             if (quirkFactorObj == null) {
                 // Create the objective if it doesn't exist
                 quirkFactorObj = scoreboard.addObjective(QUIRK_FACTOR_OBJECTIVE, 
-                    net.minecraft.world.scores.criteria.ObjectiveCriteria.DUMMY, 
-                    net.minecraft.network.chat.Component.literal("Quirk Factor"), 
-                    net.minecraft.world.scores.criteria.ObjectiveCriteria.RenderType.INTEGER);
+                    ObjectiveCriteria.DUMMY,
+                    Component.literal("Quirk Factor"),
+                    ObjectiveCriteria.RenderType.INTEGER);
             }
             
             // Convert decimal to score (e.g., 0.1 multiplier = score of 1)

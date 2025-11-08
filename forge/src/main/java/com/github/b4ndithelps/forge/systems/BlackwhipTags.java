@@ -8,11 +8,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraftforge.network.PacketDistributor;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -45,14 +41,14 @@ public final class BlackwhipTags {
         putOrExtendTag(player, target, expireTicks, 0);
         updateActiveTag(player);
 		// Notify target that they are tagged to initialize struggle HUD
-		com.github.b4ndithelps.forge.systems.BlackwhipStruggle.onTagged(player, target);
+		BlackwhipStruggle.onTagged(player, target);
     }
 
     public static void addTagWithMaxDistance(ServerPlayer player, LivingEntity target, int expireTicks, int maxDistance) {
         putOrExtendTag(player, target, expireTicks, maxDistance);
         updateActiveTag(player);
 		// Notify target that they are tagged to initialize struggle HUD
-		com.github.b4ndithelps.forge.systems.BlackwhipStruggle.onTagged(player, target);
+		BlackwhipStruggle.onTagged(player, target);
     }
 
     public static void addTag(ServerPlayer player, LivingEntity target, int expireTicks, int maxTags) {
@@ -78,7 +74,7 @@ public final class BlackwhipTags {
 		// Clearing tags from this player may untag targets; affected players should hide struggle HUD
 		if (player.level() instanceof ServerLevel level) {
 			for (ServerPlayer sp : player.server.getPlayerList().getPlayers()) {
-				com.github.b4ndithelps.forge.systems.BlackwhipStruggle.onPotentialUntag(level, sp);
+				BlackwhipStruggle.onPotentialUntag(level, sp);
 			}
 		}
 	}
@@ -95,7 +91,7 @@ public final class BlackwhipTags {
 			if (player.level() instanceof ServerLevel level) {
 				Entity ent = level.getEntity(entityId);
 				if (ent instanceof LivingEntity living) {
-					com.github.b4ndithelps.forge.systems.BlackwhipStruggle.onPotentialUntag(level, living);
+					BlackwhipStruggle.onPotentialUntag(level, living);
 				}
 			}
 		}
@@ -106,14 +102,14 @@ public final class BlackwhipTags {
 		if (target == null) return false;
 		boolean res = removeTag(player, target.getId());
 		if (player.level() instanceof ServerLevel level) {
-			com.github.b4ndithelps.forge.systems.BlackwhipStruggle.onPotentialUntag(level, target);
+			BlackwhipStruggle.onPotentialUntag(level, target);
 		}
 		return res;
 	}
 
 	public static List<LivingEntity> getTaggedEntities(ServerPlayer player, int maxDistance) {
 		Map<Integer, TagEntry> map = PLAYER_TAGS.get(player.getUUID());
-		if (map == null || map.isEmpty()) return java.util.Collections.emptyList();
+		if (map == null || map.isEmpty()) return Collections.emptyList();
 		boolean mapModified = cleanupExpired(player);
 		ServerLevel level = (ServerLevel) player.level();
 		List<LivingEntity> out = new ArrayList<>();
@@ -136,7 +132,7 @@ public final class BlackwhipTags {
 
     public static List<LivingEntity> consumeTags(ServerPlayer player, int maxTargets, int maxDistance) {
 		Map<Integer, TagEntry> map = PLAYER_TAGS.get(player.getUUID());
-		if (map == null || map.isEmpty()) return java.util.Collections.emptyList();
+		if (map == null || map.isEmpty()) return Collections.emptyList();
 		cleanupExpired(player);
 		ServerLevel level = (ServerLevel) player.level();
 		List<LivingEntity> out = new ArrayList<>();

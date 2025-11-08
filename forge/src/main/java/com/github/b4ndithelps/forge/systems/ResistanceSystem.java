@@ -3,10 +3,8 @@ package com.github.b4ndithelps.forge.systems;
 import com.github.b4ndithelps.forge.effects.ModEffects;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.effect.MobEffects;
 
 public final class ResistanceSystem {
     private ResistanceSystem() {}
@@ -18,8 +16,6 @@ public final class ResistanceSystem {
         int coldAmplifier = 0;
         int poisonAmplifier = 0;
         int hungerAmplifier = 0;
-        boolean wantsWaterBreathing = false;
-        boolean wantsNightVision = false;
 
         for (int i = 0; i < genome.size(); i++) {
             CompoundTag gene = genome.getCompound(i);
@@ -54,5 +50,3 @@ public final class ResistanceSystem {
         return 0;
     }
 }
-
-

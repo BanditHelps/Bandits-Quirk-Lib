@@ -37,5 +37,3 @@ public abstract class PlayerModelIndexFilterMixin<T extends LivingEntity> {
         cir.setReturnValue(filtered);
     }
 }
-
-

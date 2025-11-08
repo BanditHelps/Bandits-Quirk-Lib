@@ -1,5 +1,7 @@
 package com.github.b4ndithelps.forge.systems;
 
+import com.github.b4ndithelps.forge.network.BQLNetwork;
+import com.github.b4ndithelps.forge.network.DoubleJumpS2CPacket;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
@@ -7,6 +9,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraftforge.network.PacketDistributor;
 
 /**
  * Server-side rules and helpers for performing double jumps based on genome gene presence.
@@ -65,8 +68,8 @@ public final class DoubleJumpSystem {
         serverLevel.sendParticles(ParticleTypes.CLOUD, fxX, fxY + 0.05, fxZ, 6, 0.15, 0.02, 0.15, 0.0);
 
         // Also inform the client to apply the same boost immediately to avoid interpolation delays
-        com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.send(net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player),
-                new com.github.b4ndithelps.forge.network.DoubleJumpS2CPacket((float) verticalBoost));
+        BQLNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player),
+                new DoubleJumpS2CPacket((float) verticalBoost));
     }
 
     private static boolean hasDoubleJumpGene(Player player) {
@@ -79,5 +82,3 @@ public final class DoubleJumpSystem {
         return false;
     }
 }
-
-

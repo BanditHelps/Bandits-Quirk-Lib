@@ -1,12 +1,12 @@
 package com.github.b4ndithelps.mixin;
 
 import com.github.b4ndithelps.forge.client.LongArmsController;
+import com.github.b4ndithelps.forge.client.LongLegsController;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.model.PlayerModel;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
-import net.minecraft.client.renderer.entity.layers.PlayerItemInHandLayer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -20,8 +20,8 @@ public abstract class PlayerRendererMixin {
     private void bql$markHideArmsStart(AbstractClientPlayer player, float entityYaw, float partialTicks, PoseStack poseStack, MultiBufferSource buffer, int packedLight, CallbackInfo ci) {
         boolean hideArms = LongArmsController.shouldRenderLongArms(player);
         LongArmsController.setHideVanillaArms(hideArms);
-        boolean hideLegs = com.github.b4ndithelps.forge.client.LongLegsController.shouldRenderLongLegs(player);
-        com.github.b4ndithelps.forge.client.LongLegsController.setHideVanillaLegs(hideLegs);
+        boolean hideLegs = LongLegsController.shouldRenderLongLegs(player);
+        LongLegsController.setHideVanillaLegs(hideLegs);
 
         // Proactively move vanilla legs offscreen so any layer that forces visibility won't draw them
         if (hideLegs) {
@@ -32,7 +32,7 @@ public abstract class PlayerRendererMixin {
                 if (model.leftLeg != null) model.leftLeg.visible = false;
                 if (model.rightPants != null) model.rightPants.visible = false;
                 if (model.leftPants != null) model.leftPants.visible = false;
-                com.github.b4ndithelps.forge.client.LongLegsController.saveAndMoveLegsOffscreen(player, model);
+                LongLegsController.saveAndMoveLegsOffscreen(player, model);
             }
         }
     }
@@ -41,14 +41,14 @@ public abstract class PlayerRendererMixin {
             at = @At("RETURN"))
     private void bql$markHideArmsEnd(AbstractClientPlayer player, float entityYaw, float partialTicks, PoseStack poseStack, MultiBufferSource buffer, int packedLight, CallbackInfo ci) {
         LongArmsController.setHideVanillaArms(false);
-        com.github.b4ndithelps.forge.client.LongLegsController.setHideVanillaLegs(false);
+        LongLegsController.setHideVanillaLegs(false);
 
         // Restore any leg part positions moved offscreen
         PlayerRenderer self = (PlayerRenderer)(Object)this;
         PlayerModel<AbstractClientPlayer> model = (PlayerModel<AbstractClientPlayer>) self.getModel();
         if (model != null) {
-            com.github.b4ndithelps.forge.client.LongLegsController.restoreLegPositions(player, model);
-            com.github.b4ndithelps.forge.client.LongLegsController.clearLegPositions(player);
+            LongLegsController.restoreLegPositions(player, model);
+            LongLegsController.clearLegPositions(player);
         }
     }
 
@@ -63,7 +63,7 @@ public abstract class PlayerRendererMixin {
             if (model.rightSleeve != null) model.rightSleeve.visible = false;
             if (model.leftSleeve != null) model.leftSleeve.visible = false;
         }
-        if (com.github.b4ndithelps.forge.client.LongLegsController.shouldRenderLongLegs(player)) {
+        if (LongLegsController.shouldRenderLongLegs(player)) {
             if (model.rightLeg != null) model.rightLeg.visible = false;
             if (model.leftLeg != null) model.leftLeg.visible = false;
             if (model.rightPants != null) model.rightPants.visible = false;
@@ -82,5 +82,3 @@ public abstract class PlayerRendererMixin {
         if (LongArmsController.shouldRenderLongArms(player)) ci.cancel();
     }
 }
-
-

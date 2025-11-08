@@ -32,5 +32,4 @@ public class ElementMixin {
             BanditsQuirkLibForge.LOGGER.error("Failed to register custom FancyMenu element: " + e.getMessage());
         }
     }
-
 }

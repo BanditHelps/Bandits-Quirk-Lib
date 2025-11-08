@@ -1,7 +1,6 @@
 package com.github.b4ndithelps.forge;
 
 import com.github.b4ndithelps.forge.abilities.AbilityRegister;
-import com.github.b4ndithelps.forge.capabilities.CapabilityRegistration;
 import com.github.b4ndithelps.forge.conditions.CustomConditionSerializers;
 import com.github.b4ndithelps.forge.effects.ModEffects;
 import com.github.b4ndithelps.forge.blocks.ModBlocks;
@@ -37,7 +36,6 @@ public final class BanditsQuirkLibForge {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
         // Submit our event bus to let Architectury API register our content on the right time.
         EventBuses.registerModEventBus(BanditsQuirkLib.MOD_ID, modEventBus);
-
 
         // Initialize config system
         ConfigManager.initialize();

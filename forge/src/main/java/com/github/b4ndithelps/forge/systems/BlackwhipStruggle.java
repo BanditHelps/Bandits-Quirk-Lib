@@ -113,5 +113,3 @@ public final class BlackwhipStruggle {
 				new BlackwhipStruggleStatusS2CPacket(true, Math.max(0, s.taps), Math.max(1, s.threshold)));
 	}
 }
-
-

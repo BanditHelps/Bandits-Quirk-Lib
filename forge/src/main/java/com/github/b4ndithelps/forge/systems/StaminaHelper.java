@@ -1,9 +1,11 @@
 package com.github.b4ndithelps.forge.systems;
 
-import com.github.b4ndithelps.forge.capabilities.IStaminaData;
-import com.github.b4ndithelps.forge.capabilities.StaminaDataProvider;
+import com.github.b4ndithelps.forge.capabilities.stamina.IStaminaData;
+import com.github.b4ndithelps.forge.capabilities.stamina.StaminaDataProvider;
 import com.github.b4ndithelps.forge.config.ModGameRules;
 import com.github.b4ndithelps.forge.damage.ModDamageTypes;
+import com.github.b4ndithelps.forge.network.BQLNetwork;
+import com.github.b4ndithelps.forge.network.StaminaSyncPacket;
 import com.github.b4ndithelps.forge.vfx.ParticleEffects;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -14,6 +16,7 @@ import net.minecraft.world.level.GameType;
 import net.minecraft.world.scores.Objective;
 import net.minecraft.world.scores.Scoreboard;
 import net.minecraftforge.common.util.LazyOptional;
+import net.minecraftforge.network.PacketDistributor;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -449,10 +452,10 @@ public class StaminaHelper {
         if (staminaData != null) {
             staminaData.setUpgradePoints(amount);
             // Sync to client if on server side
-            if (player instanceof net.minecraft.server.level.ServerPlayer sp) {
-                com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.send(
-                        net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> sp),
-                        com.github.b4ndithelps.forge.network.StaminaSyncPacket.fullSync(sp)
+            if (player instanceof ServerPlayer sp) {
+                BQLNetwork.CHANNEL.send(
+                        PacketDistributor.PLAYER.with(() -> sp),
+                        StaminaSyncPacket.fullSync(sp)
                 );
             }
         }
