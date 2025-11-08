@@ -110,5 +110,3 @@ public class GeneCombinerMenu extends AbstractContainerMenu {
         return this.container.stillValid(player);
     }
 }
-
-

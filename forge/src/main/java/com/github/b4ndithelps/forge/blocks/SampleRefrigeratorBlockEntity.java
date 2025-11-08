@@ -47,7 +47,7 @@ public class SampleRefrigeratorBlockEntity extends BlockEntity implements MenuPr
     @Override
     public AbstractContainerMenu createMenu(int id, Inventory inv, Player player) {
         // Custom menu so we can hard-enforce filtering at the Slot level visually and logically.
-        return new AbstractContainerMenu(net.minecraft.world.inventory.MenuType.GENERIC_9x2, id) {
+        return new AbstractContainerMenu(MenuType.GENERIC_9x2, id) {
             @Override
             public boolean stillValid(Player player) {
                 return SampleRefrigeratorBlockEntity.this.stillValid(player);
@@ -154,5 +154,3 @@ public class SampleRefrigeratorBlockEntity extends BlockEntity implements MenuPr
     @Override
     public boolean canTakeItemThroughFace(int index, ItemStack stack, Direction direction) { return true; }
 }
-
-

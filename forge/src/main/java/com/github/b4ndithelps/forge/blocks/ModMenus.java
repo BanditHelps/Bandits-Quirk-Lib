@@ -30,5 +30,3 @@ public class ModMenus {
         MENUS.register(bus);
     }
 }
-
-

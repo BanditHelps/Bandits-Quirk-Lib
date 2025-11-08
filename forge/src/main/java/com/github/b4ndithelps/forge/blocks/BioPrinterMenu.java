@@ -130,5 +130,3 @@ public class BioPrinterMenu extends AbstractContainerMenu {
         return this.container.stillValid(player);
     }
 }
-
-

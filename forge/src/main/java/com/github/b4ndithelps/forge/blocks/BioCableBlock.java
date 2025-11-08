@@ -122,5 +122,3 @@ public class BioCableBlock extends Block {
         return shape;
     }
 }
-
-

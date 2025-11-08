@@ -14,8 +14,6 @@ import net.minecraft.world.WorldlyContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.MenuType;
-import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -145,5 +143,3 @@ public class BioPrinterBlockEntity extends BlockEntity implements MenuProvider, 
     @Override
     public boolean canTakeItemThroughFace(int index, ItemStack stack, Direction direction) { return true; }
 }
-
-

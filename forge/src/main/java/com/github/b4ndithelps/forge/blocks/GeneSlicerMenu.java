@@ -130,5 +130,3 @@ public class GeneSlicerMenu extends AbstractContainerMenu {
         return this.container.stillValid(player);
     }
 }
-
-

@@ -61,7 +61,3 @@ public class BioTerminalMenu extends AbstractContainerMenu {
         return stillValid(this.access, player, ModBlocks.BIO_TERMINAL.get());
     }
 }
-
-
-
-

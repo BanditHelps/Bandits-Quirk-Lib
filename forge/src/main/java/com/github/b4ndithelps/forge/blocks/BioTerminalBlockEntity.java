@@ -4,12 +4,14 @@ import com.github.b4ndithelps.forge.item.GeneDatabaseItem;
 import com.github.b4ndithelps.genetics.Gene;
 import com.github.b4ndithelps.genetics.GeneRegistry;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.ContainerHelper;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.WorldlyContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -21,14 +23,19 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.MenuProvider;
 
-public class BioTerminalBlockEntity extends BlockEntity implements MenuProvider, net.minecraft.world.WorldlyContainer {
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+@SuppressWarnings("removal")
+public class BioTerminalBlockEntity extends BlockEntity implements MenuProvider, WorldlyContainer {
     public static final int SLOT_DISK = 0;
     private final NonNullList<ItemStack> items = NonNullList.withSize(1, ItemStack.EMPTY);
     private final ContainerData data = new SimpleContainerData(1);
 
     // Identification queue (max 3 concurrent)
     private static final int MAX_IDENTIFICATIONS = 3;
-    private final java.util.List<IdentificationTask> identificationTasks = new java.util.ArrayList<>();
+    private final List<IdentificationTask> identificationTasks = new ArrayList<>();
 
     public static final class IdentificationTask {
         public String geneId = "";
@@ -81,7 +88,7 @@ public class BioTerminalBlockEntity extends BlockEntity implements MenuProvider,
     public void markGeneKnown(ResourceLocation id) { GeneDatabaseItem.addKnown(getDatabaseStack(), id); setChanged(); }
 
     // --- Identification API (mirrors main terminal behavior) ---
-    public java.util.List<IdentificationTask> getIdentificationTasks() { return java.util.Collections.unmodifiableList(this.identificationTasks); }
+    public List<IdentificationTask> getIdentificationTasks() { return Collections.unmodifiableList(this.identificationTasks); }
 
     public boolean canStartIdentification(ResourceLocation geneId) {
         if (geneId == null) return false;
@@ -180,15 +187,11 @@ public class BioTerminalBlockEntity extends BlockEntity implements MenuProvider,
     public void clearContent() { items.clear(); }
 
     @Override
-    public int[] getSlotsForFace(net.minecraft.core.Direction side) { return new int[]{SLOT_DISK}; }
+    public int[] getSlotsForFace(Direction side) { return new int[]{SLOT_DISK}; }
     @Override
     public boolean canPlaceItem(int index, ItemStack stack) { return index == SLOT_DISK && stack != null && !stack.isEmpty() && stack.getItem() instanceof GeneDatabaseItem; }
     @Override
-    public boolean canPlaceItemThroughFace(int index, ItemStack stack, net.minecraft.core.Direction direction) { return canPlaceItem(index, stack); }
+    public boolean canPlaceItemThroughFace(int index, ItemStack stack, Direction direction) { return canPlaceItem(index, stack); }
     @Override
-    public boolean canTakeItemThroughFace(int index, ItemStack stack, net.minecraft.core.Direction direction) { return index == SLOT_DISK; }
+    public boolean canTakeItemThroughFace(int index, ItemStack stack, Direction direction) { return index == SLOT_DISK; }
 }
-
-
-
-

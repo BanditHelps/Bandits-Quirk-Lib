@@ -99,5 +99,3 @@ public class GeneCombinerBlockEntity extends BlockEntity implements MenuProvider
     @Override
     public boolean canTakeItemThroughFace(int index, ItemStack stack, Direction direction) { return true; }
 }
-
-

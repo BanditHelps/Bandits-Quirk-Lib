@@ -23,5 +23,3 @@ public class ResearchTableBlock extends Block {
         return InteractionResult.sidedSuccess(level.isClientSide);
     }
 }
-
-

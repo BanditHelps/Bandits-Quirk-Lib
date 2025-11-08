@@ -44,5 +44,3 @@ public class GeneSlicerBlock extends Block implements EntityBlock {
         return InteractionResult.sidedSuccess(level.isClientSide);
     }
 }
-
-

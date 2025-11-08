@@ -110,7 +110,3 @@ public class BioTerminalBlock extends Block implements EntityBlock {
         };
     }
 }
-
-
-
-

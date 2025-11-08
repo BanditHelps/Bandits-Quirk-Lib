@@ -96,5 +96,3 @@ public class BioPrinterBlock extends Block implements EntityBlock {
         super.onRemove(state, level, pos, newState, isMoving);
     }
 }
-
-

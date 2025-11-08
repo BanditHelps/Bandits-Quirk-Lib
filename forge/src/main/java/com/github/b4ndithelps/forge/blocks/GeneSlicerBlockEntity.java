@@ -1,10 +1,15 @@
 package com.github.b4ndithelps.forge.blocks;
 
+import com.github.b4ndithelps.forge.item.ModItems;
+import com.github.b4ndithelps.forge.network.BQLNetwork;
+import com.github.b4ndithelps.forge.network.SlicerStateS2CPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.ContainerHelper;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.WorldlyContainer;
@@ -17,6 +22,10 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraftforge.network.PacketDistributor;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Accepts a sequenced sample and, when commanded by a BioTerminal program, slices it into up to six outputs.
@@ -33,7 +42,7 @@ public class GeneSlicerBlockEntity extends BlockEntity implements MenuProvider, 
     private int progress = 0;
     private int maxProgress = 200;
     private boolean running = false;
-    private final java.util.ArrayList<ItemStack> pendingOutputs = new java.util.ArrayList<>();
+    private final ArrayList<ItemStack> pendingOutputs = new ArrayList<>();
 
     public GeneSlicerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.GENE_SLICER.get(), pos, state);
@@ -47,7 +56,7 @@ public class GeneSlicerBlockEntity extends BlockEntity implements MenuProvider, 
         if (be.progress >= be.maxProgress) {
             // On completion, place any pending outputs into free slots
             if (!be.pendingOutputs.isEmpty()) {
-                java.util.ArrayList<ItemStack> remaining = new java.util.ArrayList<>();
+                ArrayList<ItemStack> remaining = new ArrayList<>();
                 for (ItemStack vial : be.pendingOutputs) {
                     boolean placed = false;
                     for (int i = 0; i < SLOT_OUTPUT_COUNT; i++) {
@@ -69,14 +78,14 @@ public class GeneSlicerBlockEntity extends BlockEntity implements MenuProvider, 
             }
             // Broadcast completion so client-side ref screen updates immediately
             if (!level.isClientSide) {
-                java.util.ArrayList<String> labels = new java.util.ArrayList<>();
+                ArrayList<String> labels = new ArrayList<>();
                 ItemStack in = be.getItem(SLOT_INPUT);
-                if (!in.isEmpty() && in.getItem() == com.github.b4ndithelps.forge.item.ModItems.SEQUENCED_SAMPLE.get()) {
-                    net.minecraft.nbt.CompoundTag tag = in.getTag();
+                if (!in.isEmpty() && in.getItem() == ModItems.SEQUENCED_SAMPLE.get()) {
+                    CompoundTag tag = in.getTag();
                     if (tag != null && tag.contains("genes", 9)) {
                         var list = tag.getList("genes", 10);
                         for (int i = 0; i < list.size(); i++) {
-                            net.minecraft.nbt.CompoundTag g = list.getCompound(i);
+                            CompoundTag g = list.getCompound(i);
                             String label = g.getString("name");
                             if (label == null || label.isEmpty()) label = g.getString("id");
                             if (label == null || label.isEmpty()) label = "gene_" + Integer.toString(i + 1);
@@ -84,9 +93,9 @@ public class GeneSlicerBlockEntity extends BlockEntity implements MenuProvider, 
                         }
                     }
                 }
-                com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.send(
-                        net.minecraftforge.network.PacketDistributor.TRACKING_CHUNK.with(() -> ((net.minecraft.server.level.ServerLevel)level).getChunkAt(pos)),
-                        new com.github.b4ndithelps.forge.network.SlicerStateS2CPacket(pos, false, labels)
+                BQLNetwork.CHANNEL.send(
+                        PacketDistributor.TRACKING_CHUNK.with(() -> ((ServerLevel)level).getChunkAt(pos)),
+                        new SlicerStateS2CPacket(pos, false, labels)
                 );
             }
         }
@@ -94,7 +103,7 @@ public class GeneSlicerBlockEntity extends BlockEntity implements MenuProvider, 
     }
 
     /** Queue outputs to be placed when processing completes. Also starts processing. */
-    public void enqueueOutputs(java.util.List<ItemStack> outputs) {
+    public void enqueueOutputs(List<ItemStack> outputs) {
         this.pendingOutputs.clear();
         if (outputs != null) this.pendingOutputs.addAll(outputs);
         this.progress = 0;
@@ -120,8 +129,8 @@ public class GeneSlicerBlockEntity extends BlockEntity implements MenuProvider, 
         tag.putInt("MaxProgress", this.maxProgress);
         tag.putBoolean("Running", this.running);
         if (!this.pendingOutputs.isEmpty()) {
-            net.minecraft.nbt.ListTag list = new net.minecraft.nbt.ListTag();
-            for (ItemStack st : this.pendingOutputs) list.add(st.save(new net.minecraft.nbt.CompoundTag()));
+            ListTag list = new ListTag();
+            for (ItemStack st : this.pendingOutputs) list.add(st.save(new CompoundTag()));
             tag.put("PendingOutputs", list);
         }
     }
@@ -135,7 +144,7 @@ public class GeneSlicerBlockEntity extends BlockEntity implements MenuProvider, 
         this.running = tag.contains("Running") && tag.getBoolean("Running");
         this.pendingOutputs.clear();
         if (tag.contains("PendingOutputs", 9)) {
-            net.minecraft.nbt.ListTag list = tag.getList("PendingOutputs", 10);
+            ListTag list = tag.getList("PendingOutputs", 10);
             for (int i = 0; i < list.size(); i++) {
                 this.pendingOutputs.add(ItemStack.of(list.getCompound(i)));
             }
@@ -181,5 +190,3 @@ public class GeneSlicerBlockEntity extends BlockEntity implements MenuProvider, 
     @Override
     public boolean canTakeItemThroughFace(int index, ItemStack stack, Direction direction) { return index >= SLOT_OUTPUT_START; }
 }
-
-

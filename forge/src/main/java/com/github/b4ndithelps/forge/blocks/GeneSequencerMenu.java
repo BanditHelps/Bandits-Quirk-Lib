@@ -116,5 +116,3 @@ public class GeneSequencerMenu extends AbstractContainerMenu {
         return this.container.stillValid(player);
     }
 }
-
-

@@ -44,5 +44,3 @@ public class GeneSequencerBlock extends Block implements EntityBlock {
         return InteractionResult.sidedSuccess(level.isClientSide);
     }
 }
-
-
