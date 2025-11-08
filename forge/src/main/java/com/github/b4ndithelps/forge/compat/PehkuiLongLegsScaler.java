@@ -4,6 +4,7 @@ import com.github.b4ndithelps.BanditsQuirkLib;
 import com.github.b4ndithelps.forge.systems.GenomeHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -59,7 +60,7 @@ public final class PehkuiLongLegsScaler {
 
             Field fHitboxHeight = scaleTypesClass.getField("HITBOX_HEIGHT");
             Field fEyeHeight = scaleTypesClass.getField("EYE_HEIGHT");
-            scaleType_getScaleData = scaleTypeClass.getMethod("getScaleData", net.minecraft.world.entity.Entity.class);
+            scaleType_getScaleData = scaleTypeClass.getMethod("getScaleData", Entity.class);
             scaleData_setTargetScale = scaleDataClass.getMethod("setTargetScale", float.class);
 
             scaleTypeHitboxHeight = fHitboxHeight.get(null);
@@ -110,5 +111,3 @@ public final class PehkuiLongLegsScaler {
         }
     }
 }
-
-

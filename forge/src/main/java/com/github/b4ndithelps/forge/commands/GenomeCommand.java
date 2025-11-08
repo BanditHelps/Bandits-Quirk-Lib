@@ -3,8 +3,8 @@ package com.github.b4ndithelps.forge.commands;
 import com.github.b4ndithelps.forge.systems.GenomeHelper;
 import com.github.b4ndithelps.forge.network.BQLNetwork;
 import com.github.b4ndithelps.forge.network.OpenGeneGraphS2CPacket;
-import net.minecraftforge.network.PacketDistributor;
 import com.github.b4ndithelps.genetics.GeneCombinationService;
+import net.minecraftforge.network.PacketDistributor;
 import com.github.b4ndithelps.genetics.Gene;
 import com.github.b4ndithelps.genetics.GeneRegistry;
 import com.github.b4ndithelps.forge.item.ModItems;
@@ -25,6 +25,10 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
+import java.util.ArrayList;
+import java.util.List;
+
+@SuppressWarnings("removal")
 public class GenomeCommand {
     private static final SuggestionProvider<CommandSourceStack> GENE_ID_SUGGESTIONS = (context, builder) -> {
         try {
@@ -33,14 +37,14 @@ public class GenomeCommand {
                 builder
             );
         } catch (Throwable t) {
-            return SharedSuggestionProvider.suggestResource(java.util.List.<ResourceLocation>of(), builder);
+            return SharedSuggestionProvider.suggestResource(List.<ResourceLocation>of(), builder);
         }
     };
     private static final SuggestionProvider<CommandSourceStack> PLAYER_GENE_ID_SUGGESTIONS = (context, builder) -> {
         try {
             ServerPlayer player = EntityArgument.getPlayer(context, "player");
             ListTag genome = GenomeHelper.getGenome(player);
-            java.util.List<ResourceLocation> ids = new java.util.ArrayList<>();
+            List<ResourceLocation> ids = new ArrayList<>();
             for (int i = 0; i < genome.size(); i++) {
                 CompoundTag g = genome.getCompound(i);
                 if (g.contains("id", 8)) {
@@ -49,7 +53,7 @@ public class GenomeCommand {
             }
             return SharedSuggestionProvider.suggestResource(ids, builder);
         } catch (Throwable t) {
-            return SharedSuggestionProvider.suggestResource(java.util.List.<ResourceLocation>of(), builder);
+            return SharedSuggestionProvider.suggestResource(List.<ResourceLocation>of(), builder);
         }
     };
     
@@ -63,9 +67,9 @@ public class GenomeCommand {
                         var src = ctx.getSource();
                         var player = src.getPlayerOrException();
                         var server = src.getServer();
-                        java.util.List<net.minecraft.resources.ResourceLocation> builderOrder = com.github.b4ndithelps.genetics.GeneCombinationService.getOrCreateBuilderGenes(server);
+                        List<ResourceLocation> builderOrder = GeneCombinationService.getOrCreateBuilderGenes(server);
                         BQLNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new OpenGeneGraphS2CPacket(builderOrder));
-                        src.sendSuccess(() -> net.minecraft.network.chat.Component.literal("Opening gene graph..."), false);
+                        src.sendSuccess(() -> Component.literal("Opening gene graph..."), false);
                         return 1;
                     }))
                 .then(Commands.literal("list")
@@ -212,5 +216,3 @@ public class GenomeCommand {
         return 1;
     }
 }
-
-

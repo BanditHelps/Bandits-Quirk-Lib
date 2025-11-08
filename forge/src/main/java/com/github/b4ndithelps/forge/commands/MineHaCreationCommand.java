@@ -3,7 +3,6 @@ package com.github.b4ndithelps.forge.commands;
 import com.github.b4ndithelps.forge.config.ConfigHelper;
 import com.github.b4ndithelps.forge.systems.BodyStatusHelper;
 import com.github.b4ndithelps.forge.systems.StaminaHelper;
-import com.github.b4ndithelps.values.CreationShopConstants;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -31,6 +30,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.scores.Objective;
 import net.minecraft.world.scores.Score;
 import net.minecraft.world.scores.Scoreboard;
+import net.minecraft.world.scores.criteria.ObjectiveCriteria;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.threetag.palladium.power.SuperpowerUtil;
 
@@ -182,7 +182,7 @@ public class MineHaCreationCommand {
         int totalItemCount = 0;
         for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
             ItemStack stack = player.getInventory().getItem(i);
-            if (stack.getItem() == ForgeRegistries.ITEMS.getValue(new net.minecraft.resources.ResourceLocation(itemId))) {
+            if (stack.getItem() == ForgeRegistries.ITEMS.getValue(new ResourceLocation(itemId))) {
                 totalItemCount += stack.getCount();
             }
         }
@@ -197,7 +197,7 @@ public class MineHaCreationCommand {
         int remainingToRemove = cost;
         for (int i = 0; i < player.getInventory().getContainerSize() && remainingToRemove > 0; i++) {
             ItemStack stack = player.getInventory().getItem(i);
-            if (stack.getItem() == ForgeRegistries.ITEMS.getValue(new net.minecraft.resources.ResourceLocation(itemId))) {
+            if (stack.getItem() == ForgeRegistries.ITEMS.getValue(new ResourceLocation(itemId))) {
                 int toRemove = Math.min(stack.getCount(), remainingToRemove);
                 stack.shrink(toRemove);
                 remainingToRemove -= toRemove;
@@ -338,7 +338,7 @@ public class MineHaCreationCommand {
             double spawnZ = playerPos.z + (Math.random() - 0.5) * 1.0;
 
             // Create item stack
-            Item item = ForgeRegistries.ITEMS.getValue(new net.minecraft.resources.ResourceLocation(itemId));
+            Item item = ForgeRegistries.ITEMS.getValue(new ResourceLocation(itemId));
             if (item == null) {
                 player.sendSystemMessage(Component.literal("Invalid item: " + itemId));
                 return;
@@ -382,8 +382,8 @@ public class MineHaCreationCommand {
         Scoreboard scoreboard = player.getServer().getScoreboard();
         Objective objective = scoreboard.getObjective(objectiveName);
         if (objective == null) {
-            objective = scoreboard.addObjective(objectiveName, net.minecraft.world.scores.criteria.ObjectiveCriteria.DUMMY,
-                    Component.literal(objectiveName), net.minecraft.world.scores.criteria.ObjectiveCriteria.RenderType.INTEGER);
+            objective = scoreboard.addObjective(objectiveName, ObjectiveCriteria.DUMMY,
+                    Component.literal(objectiveName), ObjectiveCriteria.RenderType.INTEGER);
         }
 
         Score score = scoreboard.getOrCreatePlayerScore(player.getScoreboardName(), objective);
@@ -394,8 +394,8 @@ public class MineHaCreationCommand {
         Scoreboard scoreboard = player.getServer().getScoreboard();
         Objective objective = scoreboard.getObjective(objectiveName);
         if (objective == null) {
-            objective = scoreboard.addObjective(objectiveName, net.minecraft.world.scores.criteria.ObjectiveCriteria.DUMMY,
-                    Component.literal(objectiveName), net.minecraft.world.scores.criteria.ObjectiveCriteria.RenderType.INTEGER);
+            objective = scoreboard.addObjective(objectiveName, ObjectiveCriteria.DUMMY,
+                    Component.literal(objectiveName), ObjectiveCriteria.RenderType.INTEGER);
         }
 
         Score score = scoreboard.getOrCreatePlayerScore(player.getScoreboardName(), objective);

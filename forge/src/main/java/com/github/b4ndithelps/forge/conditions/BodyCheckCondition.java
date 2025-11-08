@@ -1,10 +1,11 @@
 package com.github.b4ndithelps.forge.conditions;
 
-import com.github.b4ndithelps.forge.capabilities.Body.BodyPart;
-import com.github.b4ndithelps.forge.capabilities.Body.DamageStage;
+import com.github.b4ndithelps.forge.capabilities.body.BodyPart;
+import com.github.b4ndithelps.forge.capabilities.body.DamageStage;
 import com.github.b4ndithelps.forge.systems.BodyStatusHelper;
 import com.google.gson.JsonObject;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 import net.threetag.palladium.condition.Condition;
 import net.threetag.palladium.condition.ConditionEnvironment;
 import net.threetag.palladium.condition.ConditionSerializer;
@@ -29,7 +30,7 @@ public class BodyCheckCondition extends Condition {
         LivingEntity entity = dataContext.getLivingEntity();
 
         // Accept both ServerPlayer and LocalPlayer (client-side)
-        if (!(entity instanceof net.minecraft.world.entity.player.Player player)) {
+        if (!(entity instanceof Player player)) {
             return false;
         }
 

@@ -1,6 +1,5 @@
 package com.github.b4ndithelps.forge.conditions;
 
-import net.threetag.palladium.condition.Condition;
 import net.threetag.palladium.condition.ConditionSerializer;
 import net.threetag.palladiumcore.registry.DeferredRegister;
 import net.threetag.palladiumcore.registry.RegistrySupplier;

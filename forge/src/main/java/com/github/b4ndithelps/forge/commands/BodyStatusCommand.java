@@ -1,6 +1,6 @@
 package com.github.b4ndithelps.forge.commands;
 
-import com.github.b4ndithelps.forge.capabilities.Body.BodyPart;
+import com.github.b4ndithelps.forge.capabilities.body.BodyPart;
 import com.github.b4ndithelps.forge.systems.BodyStatusHelper;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.FloatArgumentType;
@@ -98,9 +98,6 @@ public class BodyStatusCommand {
                                 .then(Commands.literal("debug")
                                         .requires(source -> source.hasPermission(2))
                                         .executes(BodyStatusCommand::debugBodyStatus))
-                                .then(Commands.literal("test")
-                                        .requires(source -> source.hasPermission(2))
-                                        .executes(BodyStatusCommand::runTestScenarios))
                                 .then(Commands.literal("init")
                                         .requires(source -> source.hasPermission(2))
                                         .then(Commands.literal("status")
@@ -483,54 +480,6 @@ public class BodyStatusCommand {
                                 partName, damage, MAX_DAMAGE, stage, broken, destroyed, sprained)), false);
             }
             
-            return 1;
-        } catch (Exception e) {
-            context.getSource().sendFailure(Component.literal("Error: " + e.getMessage()));
-            return 0;
-        }
-    }
-
-    private static int runTestScenarios(CommandContext<CommandSourceStack> context) {
-        try {
-            ServerPlayer player = EntityArgument.getPlayer(context, "player");
-            
-            context.getSource().sendSuccess(() -> Component.literal(
-                    "§6=== Running Body Status Test Scenarios ==="), false);
-            
-            // Test 1: Basic damage tests
-            context.getSource().sendSuccess(() -> Component.literal("§eTest 1: Basic Damage"), false);
-            BodyStatusHelper.setDamageNoSync(player, "head", 25.0f);
-            BodyStatusHelper.setDamageNoSync(player, "left_arm", 50.0f);
-            BodyStatusHelper.setDamageNoSync(player, "right_leg", 85.0f);
-            BodyStatusHelper.setDamageNoSync(player, "chest", 100.0f);
-            
-            // Test 2: Custom status tests
-            context.getSource().sendSuccess(() -> Component.literal("§eTest 2: Custom Status"), false);
-            BodyStatusHelper.setCustomStatusNoSync(player, "left_hand", "frostbite", 3);
-            BodyStatusHelper.setCustomStatusNoSync(player, "right_hand", "burn", 2);
-            
-            // Test 3: Custom data tests
-            context.getSource().sendSuccess(() -> Component.literal("§eTest 3: Custom Data"), false);
-            BodyStatusHelper.setCustomFloatNoSync(player, "head", "temperature", 101.5f);
-            BodyStatusHelper.setCustomStringNoSync(player, "chest", "condition", "bruised");
-            
-            // Sync all changes to client
-            BodyStatusHelper.syncToClient(player);
-            
-            // Show results
-            context.getSource().sendSuccess(() -> Component.literal("§eResults:"), false);
-            for (BodyPart part : BodyPart.values()) {
-                String partName = part.getName();
-                float damage = BodyStatusHelper.getDamage(player, partName);
-                String stage = BodyStatusHelper.getDamageStage(player, partName);
-                
-                if (damage > 0) {
-                    context.getSource().sendSuccess(() -> Component.literal(
-                            String.format("§7%s: %.2f damage (%s)", partName, damage, stage)), false);
-                }
-            }
-            
-            context.getSource().sendSuccess(() -> Component.literal("§aTest scenarios completed!"), false);
             return 1;
         } catch (Exception e) {
             context.getSource().sendFailure(Component.literal("Error: " + e.getMessage()));
