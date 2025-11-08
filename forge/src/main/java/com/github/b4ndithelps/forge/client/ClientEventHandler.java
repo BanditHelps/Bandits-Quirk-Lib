@@ -106,6 +106,8 @@ public class ClientEventHandler {
                 if (!mc.player.onGround() && !mc.player.isInWater() && !mc.player.isInLava()) {
                     com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.sendToServer(new com.github.b4ndithelps.forge.network.DoubleJumpC2SPacket());
                 }
+				// Struggle tap (if tagged)
+				com.github.b4ndithelps.forge.client.blackwhip.BlackwhipStruggleClient.sendTapIfActiveOnJumpEdge(jumpDown, lastJumpDown);
             }
             lastJumpDown = jumpDown;
         }
@@ -122,6 +124,8 @@ public class ClientEventHandler {
                 if (!mc.player.onGround() && !mc.player.isInWater() && !mc.player.isInLava()) {
                     com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.sendToServer(new com.github.b4ndithelps.forge.network.DoubleJumpC2SPacket());
                 }
+				// Struggle tap (if tagged)
+				com.github.b4ndithelps.forge.client.blackwhip.BlackwhipStruggleClient.sendTapIfActiveOnJumpEdge(jumpDown, lastJumpDown);
             }
             lastJumpDown = jumpDown;
         }

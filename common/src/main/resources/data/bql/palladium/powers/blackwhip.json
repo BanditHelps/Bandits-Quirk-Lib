@@ -396,6 +396,27 @@
         ]
       }
     },
+    "blackwhip_bubble_restrict_movement": {
+      "type": "palladium:command",
+      "description": "Slows the player from moving so much",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "commands": [
+        "effect give @s minecraft:slowness 1 5 true"
+      ],
+      "last_tick_commands": [
+        "effect clear @s bandits_quirk_lib:stun_effect"
+      ],
+      "first_tick_commands": [],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:ability_enabled",
+            "ability": "blackwhip_restrain"
+          }
+        ]
+      }
+    },
     "blackwhip_block_grab": {
       "type": "bandits_quirk_lib:blackwhip_block_grab",
       "icon": "minecraft:lead",

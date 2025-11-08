@@ -172,6 +172,20 @@ public final class BQLNetwork {
                 .consumerMainThread(BlackwhipAnchorOverridePacket::handle)
                 .add();
 
+        // Blackwhip struggle: client taps (client -> server)
+        CHANNEL.messageBuilder(BlackwhipStruggleTapC2SPacket.class, index++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(BlackwhipStruggleTapC2SPacket::encode)
+                .decoder(BlackwhipStruggleTapC2SPacket::decode)
+                .consumerMainThread(BlackwhipStruggleTapC2SPacket::handle)
+                .add();
+
+        // Blackwhip struggle HUD (server -> client)
+        CHANNEL.messageBuilder(BlackwhipStruggleStatusS2CPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(BlackwhipStruggleStatusS2CPacket::encode)
+                .decoder(BlackwhipStruggleStatusS2CPacket::decode)
+                .consumerMainThread(BlackwhipStruggleStatusS2CPacket::handle)
+                .add();
+
         // Player Animation
         CHANNEL.messageBuilder(PlayerAnimationPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(PlayerAnimationPacket::encode)

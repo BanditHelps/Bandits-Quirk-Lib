@@ -318,7 +318,9 @@ public class GeneGraphScreen extends Screen {
             int titleH = lineH + 2;
             int headerH = header.size() * lineH + 6;
             int descH = Math.max(lineH, descLines.size() * lineH);
-            modalH = 16 + titleH + headerH + descH + innerPad * 2;
+			int mobsCount = openGene.getMobs() == null ? 0 : openGene.getMobs().size();
+			int mobsH = mobsCount > 0 ? (lineH /*label*/ + mobsCount * lineH) : 0;
+			modalH = 16 + titleH + headerH + descH + mobsH + innerPad * 2;
             modalH = Math.min(modalH, this.height - 48); // cap at screen height minus margins
             modalX = (this.width - modalW) / 2;
             modalY = (this.height - modalH) / 2;
@@ -375,6 +377,19 @@ public class GeneGraphScreen extends Screen {
                 g.drawString(this.font, descLines.get(i), tx, ty, secondary);
                 ty += lineH;
             }
+			// mobs list (if any)
+			if (mobsCount > 0) {
+				ty += 4;
+				g.drawString(this.font, Component.literal("Mobs:"), tx, ty, COLOR_TEXT, false);
+				ty += lineH;
+				for (String mobIdOrTag : openGene.getMobs()) {
+					String label = "- " + mobDisplayName(mobIdOrTag);
+					g.drawString(this.font, label, tx, ty, secondary, false);
+					ty += lineH;
+					// stop if we run out of space
+					if (ty >= modalY + modalH - innerPad) break;
+				}
+			}
         }
     }
 
@@ -636,6 +651,20 @@ public class GeneGraphScreen extends Screen {
         int b = Math.round(bA * (1 - t) + bB * t);
         return (a << 24) | (r << 16) | (gC << 8) | b;
     }
+	
+	private String mobDisplayName(String idOrTag) {
+		if (idOrTag == null || idOrTag.isEmpty()) return "";
+		int idx = idOrTag.indexOf(':');
+		if (idx > 0) {
+			// Try to use standard entity translation key: entity.<ns>.<path>
+			String key = "entity." + idOrTag.substring(0, idx) + "." + idOrTag.substring(idx + 1);
+			String translated = Component.translatable(key).getString();
+			// If translation not present, fall back to raw id
+			return translated != null && !translated.equals(key) ? translated : idOrTag;
+		}
+		// Tags or custom categories (e.g., "humanoid")
+		return idOrTag;
+	}
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {

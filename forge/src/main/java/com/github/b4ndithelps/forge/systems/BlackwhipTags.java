@@ -44,11 +44,15 @@ public final class BlackwhipTags {
     public static void addTag(ServerPlayer player, LivingEntity target, int expireTicks) {
         putOrExtendTag(player, target, expireTicks, 0);
         updateActiveTag(player);
+		// Notify target that they are tagged to initialize struggle HUD
+		com.github.b4ndithelps.forge.systems.BlackwhipStruggle.onTagged(player, target);
     }
 
     public static void addTagWithMaxDistance(ServerPlayer player, LivingEntity target, int expireTicks, int maxDistance) {
         putOrExtendTag(player, target, expireTicks, maxDistance);
         updateActiveTag(player);
+		// Notify target that they are tagged to initialize struggle HUD
+		com.github.b4ndithelps.forge.systems.BlackwhipStruggle.onTagged(player, target);
     }
 
     public static void addTag(ServerPlayer player, LivingEntity target, int expireTicks, int maxTags) {
@@ -71,6 +75,12 @@ public final class BlackwhipTags {
         PLAYER_TAGS.remove(player.getUUID());
         syncToClients(player); // clear visuals
         updateActiveTag(player);
+		// Clearing tags from this player may untag targets; affected players should hide struggle HUD
+		if (player.level() instanceof ServerLevel level) {
+			for (ServerPlayer sp : player.server.getPlayerList().getPlayers()) {
+				com.github.b4ndithelps.forge.systems.BlackwhipStruggle.onPotentialUntag(level, sp);
+			}
+		}
 	}
 
 	public static boolean removeTag(ServerPlayer player, int entityId) {
@@ -82,12 +92,23 @@ public final class BlackwhipTags {
 		if (removed) {
 			syncToClients(player);
 			updateActiveTag(player);
+			if (player.level() instanceof ServerLevel level) {
+				Entity ent = level.getEntity(entityId);
+				if (ent instanceof LivingEntity living) {
+					com.github.b4ndithelps.forge.systems.BlackwhipStruggle.onPotentialUntag(level, living);
+				}
+			}
 		}
 		return removed;
 	}
 
 	public static boolean removeTag(ServerPlayer player, LivingEntity target) {
-		return target != null && removeTag(player, target.getId());
+		if (target == null) return false;
+		boolean res = removeTag(player, target.getId());
+		if (player.level() instanceof ServerLevel level) {
+			com.github.b4ndithelps.forge.systems.BlackwhipStruggle.onPotentialUntag(level, target);
+		}
+		return res;
 	}
 
 	public static List<LivingEntity> getTaggedEntities(ServerPlayer player, int maxDistance) {
@@ -229,5 +250,31 @@ public final class BlackwhipTags {
 		} else {
 			if (player.getTags().contains(PLAYER_DEPLOYED_TAG)) player.removeTag(PLAYER_DEPLOYED_TAG);
 		}
+	}
+
+	/**
+	 * Returns true if the given living entity is currently tagged by any player.
+	 */
+	public static boolean isEntityTagged(ServerLevel level, LivingEntity target) {
+		if (target == null) return false;
+		for (Map<Integer, TagEntry> map : PLAYER_TAGS.values()) {
+			if (map != null && map.containsKey(target.getId())) return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Gets all players who currently have the given target tagged.
+	 */
+	public static List<ServerPlayer> getWhippersForTarget(ServerLevel level, LivingEntity target) {
+		List<ServerPlayer> out = new ArrayList<>();
+		if (target == null) return out;
+		for (Map.Entry<UUID, Map<Integer, TagEntry>> e : new ArrayList<>(PLAYER_TAGS.entrySet())) {
+			Map<Integer, TagEntry> map = e.getValue();
+			if (map == null || !map.containsKey(target.getId())) continue;
+			ServerPlayer p = level.getServer().getPlayerList().getPlayer(e.getKey());
+			if (p != null) out.add(p);
+		}
+		return out;
 	}
 }
