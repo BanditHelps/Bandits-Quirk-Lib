@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+@SuppressWarnings("removal")
 public class GenesReloadListener extends SimpleJsonResourceReloadListener {
     private static final Gson GSON = new GsonBuilder().setLenient().create();
 
@@ -98,5 +99,3 @@ public class GenesReloadListener extends SimpleJsonResourceReloadListener {
         BanditsQuirkLib.LOGGER.info("Loaded {} genes", loaded);
     }
 }
-
-

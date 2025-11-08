@@ -64,7 +64,6 @@ public class ResistanceEvents {
         }
 
         event.setAmount(amount);
-//        System.out.println("Damage Type: " + source);
     }
 
     private static float reduceByAmplifier(float base, int amplifier) {
@@ -75,5 +74,3 @@ public class ResistanceEvents {
         return (float)(base * factor);
     }
 }
-
-

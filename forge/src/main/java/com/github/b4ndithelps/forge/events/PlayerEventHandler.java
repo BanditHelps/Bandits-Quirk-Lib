@@ -2,12 +2,16 @@ package com.github.b4ndithelps.forge.events;
 
 import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
 import com.github.b4ndithelps.forge.abilities.HappenOnceAbility;
-import com.github.b4ndithelps.forge.systems.StaminaHelper;
-import com.github.b4ndithelps.forge.systems.BodyStatusHelper;
+import com.github.b4ndithelps.forge.network.MineHaSlotSyncPacket;
+import com.github.b4ndithelps.forge.network.StaminaSyncPacket;
+import com.github.b4ndithelps.forge.systems.*;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
@@ -27,28 +31,30 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.util.Mth;
-import com.github.b4ndithelps.forge.systems.QuirkFactorHelper;
-import com.github.b4ndithelps.forge.systems.DoubleJumpSystem;
 import net.threetag.palladium.power.SuperpowerUtil;
 import net.threetag.palladium.power.ability.AbilityUtil;
 
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static com.github.b4ndithelps.BanditsQuirkLib.MOD_ID;
 
+@SuppressWarnings("removal")
 @Mod.EventBusSubscriber(modid = MOD_ID)
 public class PlayerEventHandler {
-    private static final java.util.Map<Integer, Boolean> LAST_NO_SHADOW_SENT = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final Map<Integer, Boolean> LAST_NO_SHADOW_SENT = new ConcurrentHashMap<>();
 
     @SubscribeEvent
     public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
         if (event.getEntity() instanceof ServerPlayer sp) {
             BQLNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> sp),
-                    com.github.b4ndithelps.forge.network.StaminaSyncPacket.fullSync(sp));
+                    StaminaSyncPacket.fullSync(sp));
 
             // Sync MineHa slot persistent keys to client after respawn (0..3 based on command usage)
             BQLNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> sp),
-                    com.github.b4ndithelps.forge.network.MineHaSlotSyncPacket.fullSync(sp, 3));
+                    MineHaSlotSyncPacket.fullSync(sp, 3));
         }
     }
 
@@ -61,8 +67,6 @@ public class PlayerEventHandler {
 
         BanditsQuirkLibForge.LOGGER.info("Cleaned up player data");
     }
-
-    
 
     @SubscribeEvent
     public static void onLivingHurt(LivingHurtEvent event) {
@@ -157,15 +161,15 @@ public class PlayerEventHandler {
 
         if (player instanceof ServerPlayer sp) {
             // Send full stamina sync on login to ensure client-side GUI shows correct values
-            com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.send(
-                    net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> sp),
-                    com.github.b4ndithelps.forge.network.StaminaSyncPacket.fullSync(sp)
+            BQLNetwork.CHANNEL.send(
+                    PacketDistributor.PLAYER.with(() -> sp),
+                    StaminaSyncPacket.fullSync(sp)
             );
 
             // Send MineHa slot full sync on login as well (0..3 slots)
-            com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.send(
-                    net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> sp),
-                    com.github.b4ndithelps.forge.network.MineHaSlotSyncPacket.fullSync(sp, 3)
+            BQLNetwork.CHANNEL.send(
+                    PacketDistributor.PLAYER.with(() -> sp),
+                    MineHaSlotSyncPacket.fullSync(sp, 3)
             );
         }
     }
@@ -178,7 +182,7 @@ public class PlayerEventHandler {
         // Update per-tick double jump availability and cooldown
         DoubleJumpSystem.serverTick(player);
         // Apply genome-driven resistance and utility effects
-        com.github.b4ndithelps.forge.systems.ResistanceSystem.applyGenomeBasedEffects(player);
+        ResistanceSystem.applyGenomeBasedEffects(player);
         // Keep no-shadow flag in sync for permeation-related tags; only send when changed
         boolean wantNoShadow = player.getTags().contains("Bql.PermeateActive") || player.getTags().contains("Bql.PermeateRise") || player.getTags().contains("Bql.NoShadow");
         Boolean prev = LAST_NO_SHADOW_SENT.put(player.getId(), wantNoShadow);
@@ -219,9 +223,9 @@ public class PlayerEventHandler {
                 player.getPersistentData().putInt("Bql.QZipTicks", ticks - 1);
                 Vec3 prevPos = new Vec3(player.xOld, player.yOld, player.zOld);
                 Vec3 currPos = player.position();
-                net.minecraft.world.phys.AABB swept = new net.minecraft.world.phys.AABB(prevPos, currPos).inflate(0.6);
-                java.util.List<LivingEntity> hits = player.level().getEntitiesOfClass(LivingEntity.class, swept, e -> e != null && e != player && e.isAlive());
-                net.minecraft.nbt.CompoundTag hitSet = player.getPersistentData().getCompound("Bql.QZipHits");
+                AABB swept = new AABB(prevPos, currPos).inflate(0.6);
+                List<LivingEntity> hits = player.level().getEntitiesOfClass(LivingEntity.class, swept, e -> e != null && e != player && e.isAlive());
+                CompoundTag hitSet = player.getPersistentData().getCompound("Bql.QZipHits");
                 for (LivingEntity e : hits) {
                     String idKey = Integer.toString(e.getId());
                     if (hitSet.contains(idKey)) continue; // already hit this entity during this window
@@ -240,7 +244,7 @@ public class PlayerEventHandler {
                                 Vec3 k = dir.normalize().scale(kb * 0.6).add(0, 0.12F * kb, 0);
                                 e.setDeltaMovement(e.getDeltaMovement().add(k));
                                 if (e instanceof ServerPlayer sp) {
-                                    sp.connection.send(new net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket(sp));
+                                    sp.connection.send(new ClientboundSetEntityMotionPacket(sp));
                                 }
                             }
                         }

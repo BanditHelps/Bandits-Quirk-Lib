@@ -1,25 +1,22 @@
 package com.github.b4ndithelps.forge.events;
 
-import com.github.b4ndithelps.forge.abilities.TwinImpactMarkAbility;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-import net.threetag.palladium.power.ability.AbilityInstance;
 import net.threetag.palladium.power.ability.AbilityUtil;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static com.github.b4ndithelps.BanditsQuirkLib.MOD_ID;
@@ -54,7 +51,7 @@ public class TwinImpactEvents {
 
         var source = event.getSource();
         // Only record standard melee player attacks
-        if (!source.is(net.minecraft.world.damagesource.DamageTypes.PLAYER_ATTACK)) return;
+        if (!source.is(DamageTypes.PLAYER_ATTACK)) return;
         Entity attacker = source.getEntity();
         if (!(attacker instanceof ServerPlayer player)) return;
 
@@ -86,11 +83,11 @@ public class TwinImpactEvents {
 
     public static List<StoredMark> consumeMarks(ServerPlayer player, int maxDistance) {
         Map<Integer, StoredMark> map = LAST_MARKS.get(player.getUUID());
-        if (map == null || map.isEmpty()) return java.util.Collections.emptyList();
+        if (map == null || map.isEmpty()) return Collections.emptyList();
 
         List<StoredMark> result = new ArrayList<>();
         ServerLevel slevel = (ServerLevel) player.level();
-        for (Map.Entry<Integer, StoredMark> e : new java.util.ArrayList<>(map.entrySet())) {
+        for (Map.Entry<Integer, StoredMark> e : new ArrayList<>(map.entrySet())) {
             StoredMark mark = e.getValue();
             boolean inRange = true;
             if (mark.position != null) {
@@ -129,9 +126,9 @@ public class TwinImpactEvents {
                 living.hurt(level.damageSources().playerAttack(player), base * multiplier);
 
                 // Visual feedback: small burst effects
-                serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.CRIT, living.getX(), living.getY(0.5), living.getZ(), 12,
+                serverLevel.sendParticles(ParticleTypes.CRIT, living.getX(), living.getY(0.5), living.getZ(), 12,
                         0.15, 0.15, 0.15, 0.15);
-                serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.EXPLOSION, living.getX(), living.getY(0.5), living.getZ(), 2,
+                serverLevel.sendParticles(ParticleTypes.EXPLOSION, living.getX(), living.getY(0.5), living.getZ(), 2,
                         0.0, 0.0, 0.0, 0.0);
 
                 return;
@@ -148,7 +145,7 @@ public class TwinImpactEvents {
         double radius = Math.min(8.0, 2.0 + multiplier);
         // Prevent re-marking before any damage is applied in AoE case as well
         IGNORE_UNTIL_TICK.put(player.getUUID(), level.getGameTime() + 5);
-        for (LivingEntity le : serverLevel.getEntitiesOfClass(LivingEntity.class, new net.minecraft.world.phys.AABB(pos, pos).inflate(radius))) {
+        for (LivingEntity le : serverLevel.getEntitiesOfClass(LivingEntity.class, new AABB(pos, pos).inflate(radius))) {
             if (le == player) continue;
             double dist = Math.max(0.1, le.position().distanceTo(pos));
             double force = (radius / dist) * 0.4 * Math.max(1.0, (double)multiplier);
@@ -157,10 +154,8 @@ public class TwinImpactEvents {
             le.hurt(level.damageSources().playerAttack(player), (float)Math.max(1.0, multiplier));
         }
         // Particle ring at center
-        serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.CRIT, pos.x, pos.y + 0.2, pos.z, 16,
+        serverLevel.sendParticles(ParticleTypes.CRIT, pos.x, pos.y + 0.2, pos.z, 16,
                 radius * 0.25, 0.15, radius * 0.25, 0.05);
         serverLevel.levelEvent(2001, new BlockPos((int)pos.x, (int)pos.y, (int)pos.z), 0);
     }
 }
-
-

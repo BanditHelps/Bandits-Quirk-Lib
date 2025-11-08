@@ -3,6 +3,7 @@ package com.github.b4ndithelps.forge.events;
 import com.github.b4ndithelps.forge.network.BQLNetwork;
 import com.github.b4ndithelps.forge.network.PlayerVelocityS2CPacket;
 import com.github.b4ndithelps.forge.systems.StaminaHelper;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -81,12 +82,10 @@ public class BlackwhipBubbleShieldEvents {
 		// Visual feedback: tiny spark burst at sphere center
 		if (victim.level() instanceof ServerLevel sl) {
 			Vec3 center = victim.getEyePosition().add(victim.getLookAngle().normalize().scale(1.0));
-			sl.sendParticles(net.minecraft.core.particles.ParticleTypes.END_ROD, center.x, center.y, center.z, 6, 0.1, 0.1, 0.1, 0.02);
+			sl.sendParticles(ParticleTypes.END_ROD, center.x, center.y, center.z, 6, 0.1, 0.1, 0.1, 0.02);
 		}
 
 		// Negate the damage
 		event.setCanceled(true);
 	}
 }
-
-

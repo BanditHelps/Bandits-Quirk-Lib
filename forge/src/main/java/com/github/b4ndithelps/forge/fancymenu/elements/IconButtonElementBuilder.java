@@ -182,5 +182,4 @@ public class IconButtonElementBuilder extends ElementBuilder<IconButtonElement, 
     public @Nullable Component[] getDescription(@Nullable AbstractElement element) {
         return null;
     }
-
 }
