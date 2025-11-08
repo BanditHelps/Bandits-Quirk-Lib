@@ -2,7 +2,6 @@ package com.github.b4ndithelps.genetics;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.MobType;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -31,11 +30,6 @@ public final class SequenceGenerator {
         if (count <= 0) return List.of();
 
         List<Gene> available = new ArrayList<>(GeneRegistry.getAllOfType(entity.getType().arch$registryName().toString()));
-
-        for (Gene g : available) {
-            System.out.println(g.getId());
-        }
-
 
         available.sort(Comparator.comparing(g -> g.getId().toString()));
 

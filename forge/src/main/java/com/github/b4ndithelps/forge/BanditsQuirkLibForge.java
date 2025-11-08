@@ -64,7 +64,6 @@ public final class BanditsQuirkLibForge {
 
         // Register for global (Forge) event bus
         MinecraftForge.EVENT_BUS.register(ReloadHandlers.class);
-        MinecraftForge.EVENT_BUS.register(ServerLifecycleHandlers.class);
     }
 
     @Mod.EventBusSubscriber(modid = BanditsQuirkLib.MOD_ID)
@@ -72,23 +71,6 @@ public final class BanditsQuirkLibForge {
         @SubscribeEvent
         public static void onAddReloadListeners(AddReloadListenerEvent event) {
             event.addListener(new GenesReloadListener());
-        }
-    }
-
-    @Mod.EventBusSubscriber(modid = BanditsQuirkLib.MOD_ID)
-    public static class ServerLifecycleHandlers {
-        @net.minecraftforge.eventbus.api.SubscribeEvent
-        public static void onServerStarted(net.minecraftforge.event.server.ServerStartedEvent event) {
-            // Generate gene graph into the world save folder
-            try {
-                var server = event.getServer();
-                var levelPath = server.getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT);
-                java.nio.file.Path outDir = levelPath.resolve("gene_graph");
-                com.github.b4ndithelps.genetics.GeneGraphGenerator.writeGraphHtml(outDir, server);
-                LOGGER.info("Generated gene flowchart at {}", outDir.toAbsolutePath());
-            } catch (Exception ex) {
-                LOGGER.error("Failed to generate gene flowchart: {}", ex.toString());
-            }
         }
     }
 }

@@ -35,8 +35,9 @@ public final class GeneCombinationRecipe {
     public GeneCombinationRecipe(List<Requirement> explicitRequirements, int builderCount, int builderMinQuality) {
         List<Requirement> reqs = explicitRequirements == null ? List.of() : new ArrayList<>(explicitRequirements);
         this.explicitRequirements = List.copyOf(reqs);
-        int clampedBuilderCount = Math.max(0, builderCount);
-        this.builderCount = clampedBuilderCount;
+
+        // Clamp the builder count
+        this.builderCount = Math.max(0, builderCount);
         this.builderMinQuality = Math.max(0, Math.min(100, builderMinQuality));
     }
 

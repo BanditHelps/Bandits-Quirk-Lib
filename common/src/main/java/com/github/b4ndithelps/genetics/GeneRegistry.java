@@ -3,7 +3,6 @@ package com.github.b4ndithelps.genetics;
 import net.minecraft.resources.ResourceLocation;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,10 +30,8 @@ public final class GeneRegistry {
     public static List<Gene> getAllOfType(String type) {
         List<Gene> output = new ArrayList<>();
         for (Gene gene : cachedList) {
-            System.out.println("Attempting " + gene.getId());
             if (gene.getMobs().contains(type)) {
                 output.add(gene);
-                System.out.println("Adding " + gene.getId());
             }
         }
 
