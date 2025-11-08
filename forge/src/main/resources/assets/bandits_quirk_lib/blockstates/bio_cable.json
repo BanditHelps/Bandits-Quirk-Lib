@@ -27,5 +27,3 @@
     { "when": { "down": "cap" }, "apply": { "model": "bandits_quirk_lib:block/bio_cable_cap_d" } }
   ]
 }
-
-

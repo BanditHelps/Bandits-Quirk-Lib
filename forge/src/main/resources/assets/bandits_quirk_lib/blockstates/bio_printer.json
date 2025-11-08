@@ -26,5 +26,3 @@
     { "when": { "vial_quirk": "true", "facing": "east"  }, "apply": { "model": "bandits_quirk_lib:block/bio_printer_vial_quirk", "y": 90 } }
   ]
 }
-
-
