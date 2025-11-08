@@ -8,5 +8,3 @@ public class HeatResistanceEffect extends MobEffect {
         super(MobEffectCategory.BENEFICIAL, 0xFF6A00);
     }
 }
-
-

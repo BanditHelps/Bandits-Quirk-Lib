@@ -1,14 +1,8 @@
 package com.github.b4ndithelps.forge.config;
 
-import com.github.b4ndithelps.values.BodyConstants;
-import com.github.b4ndithelps.values.CreationShopConstants;
-import com.github.b4ndithelps.values.QuirkConstants;
-import com.github.b4ndithelps.values.StaminaConstants;
+import com.github.b4ndithelps.values.*;
 import com.github.b4ndithelps.util.FileManager;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.google.gson.*;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.loading.FMLPaths;
@@ -133,7 +127,7 @@ public class ConfigManager {
         QuirkConstants.PSTOCK_SEVERE_DAMAGE = BQLConfig.INSTANCE.severeDamage.get();
 
         // Update Genetics constants
-        com.github.b4ndithelps.values.GeneticsConstants.PLAYER_MAX_GENES = BQLConfig.INSTANCE.playerMaxGenes.get();
+        GeneticsConstants.PLAYER_MAX_GENES = BQLConfig.INSTANCE.playerMaxGenes.get();
         
         LOGGER.info("Constants updated from config");
     }
@@ -310,14 +304,14 @@ public class ConfigManager {
             
             if (root.has("configs")) {
                 JsonObject configs = root.getAsJsonObject("configs");
-                for (Map.Entry<String, com.google.gson.JsonElement> entry : configs.entrySet()) {
+                for (Map.Entry<String, JsonElement> entry : configs.entrySet()) {
                     dynamicConfigs.put(entry.getKey(), GSON.fromJson(entry.getValue(), Object.class));
                 }
             }
             
             if (root.has("descriptions")) {
                 JsonObject descriptions = root.getAsJsonObject("descriptions");
-                for (Map.Entry<String, com.google.gson.JsonElement> entry : descriptions.entrySet()) {
+                for (Map.Entry<String, JsonElement> entry : descriptions.entrySet()) {
                     configDescriptions.put(entry.getKey(), entry.getValue().getAsString());
                 }
             }

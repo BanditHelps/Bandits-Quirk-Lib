@@ -8,5 +8,3 @@ public class HungerResistanceEffect extends MobEffect {
         super(MobEffectCategory.BENEFICIAL, 0xB58B00);
     }
 }
-
-

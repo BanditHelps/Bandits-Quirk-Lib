@@ -8,5 +8,3 @@ public class PoisonResistanceEffect extends MobEffect {
         super(MobEffectCategory.BENEFICIAL, 0x4CAF50);
     }
 }
-
-

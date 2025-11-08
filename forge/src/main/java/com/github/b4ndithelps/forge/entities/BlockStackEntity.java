@@ -3,6 +3,7 @@ package com.github.b4ndithelps.forge.entities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -12,13 +13,9 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.entity.EntityDimensions;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.Pose;
+import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.entity.projectile.Projectile;
-import net.minecraft.world.entity.item.FallingBlockEntity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -92,7 +89,7 @@ public class BlockStackEntity extends Projectile {
 			Vec3 up = new Vec3(0, 1, 0);
 			Vec3 fwdYaw = Vec3.directionFromRotation(0, yaw).normalize();
 			Vec3 rightYaw = fwdYaw.cross(up).normalize();
-			float sideDir = owner.getMainArm() == net.minecraft.world.entity.HumanoidArm.RIGHT ? 1.0f : -1.0f;
+			float sideDir = owner.getMainArm() == HumanoidArm.RIGHT ? 1.0f : -1.0f;
 			Vec3 target = ownerPos
 					.add(0, shoulderHeight + 0.25, 0)
 					.add(rightYaw.scale(1.10 * sideDir))
@@ -192,30 +189,6 @@ public class BlockStackEntity extends Projectile {
 		this.noPhysics = false;
 	}
 
-	private void spawnFallingBlocksAndDiscard() {
-		spawnFallingBlocksAndDiscard(this.position());
-	}
-
-	private void spawnFallingBlocksAndDiscard(Vec3 origin) {
-		if (this.shattered) {
-			this.discard();
-			return;
-		}
-		this.shattered = true;
-		if (!(this.level() instanceof ServerLevel sl)) {
-			this.discard();
-			return;
-		}
-		// Spawn three falling blocks at current position with slight random offsets and outward velocities
-		java.util.Random rng = new java.util.Random(this.getUUID().getMostSignificantBits() ^ this.tickCount ^ System.nanoTime());
-		Vec3 base = origin;
-		Vec3 v = this.getDeltaMovement();
-		spawnOneFalling(sl, getBottom(), base, v, rng, 0);
-		spawnOneFalling(sl, getMiddle(), base.add(0, 1, 0), v, rng, 1);
-		spawnOneFalling(sl, getTop(), base.add(0, 2, 0), v, rng, 2);
-		this.discard();
-	}
-
 	private boolean placeStackAsBlocks(BlockHitResult hit) {
 		if (!(this.level() instanceof ServerLevel sl)) return false;
 		Direction face = hit.getDirection();
@@ -261,68 +234,6 @@ public class BlockStackEntity extends Projectile {
 				where.x, where.y, where.z,
 				20, 0.4, 0.3, 0.4, 0.12);
 		sl.playSound(null, BlockPos.containing(where), SoundEvents.GENERIC_EXPLODE, SoundSource.PLAYERS, 0.6f, 1.2f);
-	}
-
-	private void spawnOneFalling(ServerLevel sl, BlockState state, Vec3 pos, Vec3 baseVel, java.util.Random rng, int index) {
-		// Spawn via factory at a safe air position just above impact
-		BlockPos spawnPos = BlockPos.containing(pos.add(0, 1, 0));
-		FallingBlockEntity e = FallingBlockEntity.fall(sl, spawnPos, state);
-		// Random 3D burst direction biased upward
-		double theta = rng.nextDouble() * Math.PI * 2.0; // azimuth
-		double phi = Math.acos(rng.nextDouble() * 0.5 + 0.5); // 0..pi/2 (bias upward)
-		double dirX = Math.cos(theta) * Math.sin(phi);
-		double dirY = Math.cos(phi); // more upward
-		double dirZ = Math.sin(theta) * Math.sin(phi);
-		double radius = 0.12 + rng.nextDouble() * 0.22;
-		e.setPos(pos.x + dirX * radius, pos.y + 0.25 + rng.nextDouble() * 0.05, pos.z + dirZ * radius);
-
-		// Outward burst magnitude with some carry-over speed
-		double carry = Math.min(1.0, Math.sqrt(baseVel.lengthSqr()));
-		double burstMag = 0.28 + rng.nextDouble() * 0.22; // toned down
-		Vec3 vel = new Vec3(dirX, dirY, dirZ).normalize().scale(burstMag).add(0, 0.10 + rng.nextDouble() * 0.12, 0)
-				.add(baseVel.scale(0.08 + rng.nextDouble() * 0.08));
-		e.setDeltaMovement(vel);
-	}
-
-	/**
-	 * Spawns three identical falling blocks in a radial arc so they land around the impact point.
-	 * Uses the middle block type for consistency.
-	 */
-	private void spawnTripleExplosionFalling(ServerLevel sl, BlockState state, Vec3 origin, Vec3 baseVel) {
-		java.util.Random rng = new java.util.Random(this.getUUID().getLeastSignificantBits() ^ System.nanoTime());
-		double baseAngle = rng.nextDouble() * Math.PI * 2.0;
-		for (int i = 0; i < 3; i++) {
-			double ang = baseAngle + i * (2.0 * Math.PI / 3.0);
-			double horizSpeed = 0.22 + rng.nextDouble() * 0.18; // subtle
-			double upSpeed = 0.16 + rng.nextDouble() * 0.10;    // subtle
-
-			// Find a nearby air block above origin to avoid converting existing blocks
-			BlockPos spawnPos = BlockPos.containing(origin);
-			int tries = 0;
-			while (tries < 6 && !sl.getBlockState(spawnPos).isAir()) {
-				spawnPos = spawnPos.above();
-				tries++;
-			}
-			// Ensure at least one block above origin
-			if (sl.getBlockState(spawnPos).isAir()) {
-				spawnPos = spawnPos.above();
-			}
-			FallingBlockEntity e = FallingBlockEntity.fall(sl, spawnPos, state);
-
-			// Slight start offset so pieces don't overlap
-			double r = 0.24 + rng.nextDouble() * 0.18; // spawn a bit farther for visibility
-			double ox = Math.cos(ang) * r;
-			double oz = Math.sin(ang) * r;
-			e.setPos(origin.x + ox, origin.y + 0.9 + rng.nextDouble() * 0.08, origin.z + oz);
-
-			// Arc velocity with small carry from current motion
-			Vec3 carry = baseVel.scale(0.06 + rng.nextDouble() * 0.06);
-			double vx = Math.cos(ang) * horizSpeed + carry.x;
-			double vz = Math.sin(ang) * horizSpeed + carry.z;
-			double vy = upSpeed + carry.y * 0.2;
-			e.setDeltaMovement(vx, vy, vz);
-			e.hasImpulse = true;
-		}
 	}
 
 	public void setStackStates(BlockState bottom, BlockState middle, BlockState top) {
@@ -385,9 +296,9 @@ public class BlockStackEntity extends Projectile {
 		tag.put("MidState", NbtUtils.writeBlockState(getMiddle()));
 		tag.put("TopState", NbtUtils.writeBlockState(getTop()));
 		// Legacy ints for backward compatibility
-		tag.putInt("Bot", net.minecraft.core.registries.BuiltInRegistries.BLOCK.getId(getBottom().getBlock()));
-		tag.putInt("Mid", net.minecraft.core.registries.BuiltInRegistries.BLOCK.getId(getMiddle().getBlock()));
-		tag.putInt("Top", net.minecraft.core.registries.BuiltInRegistries.BLOCK.getId(getTop().getBlock()));
+		tag.putInt("Bot", BuiltInRegistries.BLOCK.getId(getBottom().getBlock()));
+		tag.putInt("Mid", BuiltInRegistries.BLOCK.getId(getMiddle().getBlock()));
+		tag.putInt("Top", BuiltInRegistries.BLOCK.getId(getTop().getBlock()));
 	}
 
 	@Override
@@ -400,13 +311,13 @@ public class BlockStackEntity extends Projectile {
 		BlockState mid;
 		BlockState top;
 		if (tag.contains("BotState") && tag.contains("MidState") && tag.contains("TopState")) {
-			bot = NbtUtils.readBlockState(net.minecraft.core.registries.BuiltInRegistries.BLOCK.asLookup(), tag.getCompound("BotState"));
-			mid = NbtUtils.readBlockState(net.minecraft.core.registries.BuiltInRegistries.BLOCK.asLookup(), tag.getCompound("MidState"));
-			top = NbtUtils.readBlockState(net.minecraft.core.registries.BuiltInRegistries.BLOCK.asLookup(), tag.getCompound("TopState"));
+			bot = NbtUtils.readBlockState(BuiltInRegistries.BLOCK.asLookup(), tag.getCompound("BotState"));
+			mid = NbtUtils.readBlockState(BuiltInRegistries.BLOCK.asLookup(), tag.getCompound("MidState"));
+			top = NbtUtils.readBlockState(BuiltInRegistries.BLOCK.asLookup(), tag.getCompound("TopState"));
 		} else {
-			bot = net.minecraft.core.registries.BuiltInRegistries.BLOCK.byId(tag.getInt("Bot")).defaultBlockState();
-			mid = net.minecraft.core.registries.BuiltInRegistries.BLOCK.byId(tag.getInt("Mid")).defaultBlockState();
-			top = net.minecraft.core.registries.BuiltInRegistries.BLOCK.byId(tag.getInt("Top")).defaultBlockState();
+			bot = BuiltInRegistries.BLOCK.byId(tag.getInt("Bot")).defaultBlockState();
+			mid = BuiltInRegistries.BLOCK.byId(tag.getInt("Mid")).defaultBlockState();
+			top = BuiltInRegistries.BLOCK.byId(tag.getInt("Top")).defaultBlockState();
 		}
 		setStackStates(bot, mid, top);
 	}
@@ -427,5 +338,3 @@ public class BlockStackEntity extends Projectile {
 		return false;
 	}
 }
-
-

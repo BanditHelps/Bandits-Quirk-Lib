@@ -8,5 +8,3 @@ public class ColdResistanceEffect extends MobEffect {
         super(MobEffectCategory.BENEFICIAL, 0x66CCFF);
     }
 }
-
-
