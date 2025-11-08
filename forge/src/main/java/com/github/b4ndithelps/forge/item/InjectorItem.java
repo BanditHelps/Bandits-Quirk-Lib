@@ -1,5 +1,6 @@
 package com.github.b4ndithelps.forge.item;
 
+import com.github.b4ndithelps.forge.systems.GenomeHelper;
 import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -61,7 +62,7 @@ public class InjectorItem extends Item {
             // Apply genes to player's genome capability
             for (int i = 0; i < genome.size(); i++) {
                 net.minecraft.nbt.CompoundTag g = genome.getCompound(i);
-                com.github.b4ndithelps.forge.systems.GenomeHelper.addGene(player, g);
+                GenomeHelper.addGene(player, g);
             }
             // Consume injector
             stack.shrink(1);

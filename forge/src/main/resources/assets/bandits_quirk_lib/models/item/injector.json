@@ -1,0 +1,6 @@
+{
+  "parent": "item/handheld",
+  "textures": {
+    "layer0": "bandits_quirk_lib:item/injector"
+  }
+}

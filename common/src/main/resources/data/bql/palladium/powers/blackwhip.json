@@ -401,6 +401,7 @@
       "icon": "minecraft:lead",
       "title": "Block Grab",
       "description": "Grab a 1x3 column of blocks with whips, carry it, then throw it.",
+      "list_index": 8,
       "range": 16.0,
       "travel_ticks": 8,
       "whip_curve": 0.6,
