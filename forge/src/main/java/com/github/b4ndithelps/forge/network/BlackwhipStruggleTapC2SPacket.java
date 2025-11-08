@@ -28,5 +28,3 @@ public class BlackwhipStruggleTapC2SPacket {
 		ctx.setPacketHandled(true);
 	}
 }
-
-

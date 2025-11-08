@@ -68,5 +68,3 @@ public class BlackwhipStatePacket {
         ctx.get().setPacketHandled(true);
     }
 }
-
-

@@ -1,5 +1,6 @@
 package com.github.b4ndithelps.forge.network;
 
+import com.github.b4ndithelps.forge.client.programs.ClientPrinterStateCache;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
@@ -35,10 +36,8 @@ public class PrinterStateS2CPacket {
         NetworkEvent.Context ctx = contextSupplier.get();
         ctx.enqueueWork(() -> {
             long gt = (Minecraft.getInstance().level == null) ? 0L : Minecraft.getInstance().level.getGameTime();
-            com.github.b4ndithelps.forge.client.programs.ClientPrinterStateCache.update(printerPos, success, message, gt);
+            ClientPrinterStateCache.update(printerPos, success, message, gt);
         });
         return true;
     }
 }
-
-

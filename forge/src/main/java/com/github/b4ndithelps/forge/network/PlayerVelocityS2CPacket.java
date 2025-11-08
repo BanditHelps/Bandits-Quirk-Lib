@@ -52,6 +52,3 @@ public class PlayerVelocityS2CPacket {
         ctx.setPacketHandled(true);
     }
 }
-
-
-

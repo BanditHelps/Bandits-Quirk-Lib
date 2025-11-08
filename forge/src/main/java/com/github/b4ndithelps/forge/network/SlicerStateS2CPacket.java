@@ -1,5 +1,6 @@
 package com.github.b4ndithelps.forge.network;
 
+import com.github.b4ndithelps.forge.client.programs.ClientSlicerStateCache;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
@@ -43,10 +44,8 @@ public class SlicerStateS2CPacket {
         NetworkEvent.Context ctx = contextSupplier.get();
         ctx.enqueueWork(() -> {
             long gt = (Minecraft.getInstance().level == null) ? 0L : Minecraft.getInstance().level.getGameTime();
-            com.github.b4ndithelps.forge.client.programs.ClientSlicerStateCache.update(pos, labels, running, gt);
+            ClientSlicerStateCache.update(pos, labels, running, gt);
         });
         return true;
     }
 }
-
-

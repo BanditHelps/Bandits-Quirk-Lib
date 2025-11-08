@@ -44,11 +44,3 @@ public class OpenGeneGraphS2CPacket {
         ctx.setPacketHandled(true);
     }
 }
-
-
-
-
-
-
-
-

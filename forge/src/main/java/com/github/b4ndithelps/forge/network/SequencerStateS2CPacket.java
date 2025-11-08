@@ -1,5 +1,6 @@
 package com.github.b4ndithelps.forge.network;
 
+import com.github.b4ndithelps.forge.client.programs.ClientSequencerStatusCache;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
@@ -38,11 +39,8 @@ public class SequencerStateS2CPacket {
         NetworkEvent.Context ctx = contextSupplier.get();
         ctx.enqueueWork(() -> {
             // Update client-side cache for ref programs
-            com.github.b4ndithelps.forge.client.programs.ClientSequencerStatusCache.update(pos, running, analyzed, Minecraft.getInstance().level == null ? 0L : Minecraft.getInstance().level.getGameTime());
+            ClientSequencerStatusCache.update(pos, running, analyzed, Minecraft.getInstance().level == null ? 0L : Minecraft.getInstance().level.getGameTime());
         });
         return true;
     }
 }
-
-
-

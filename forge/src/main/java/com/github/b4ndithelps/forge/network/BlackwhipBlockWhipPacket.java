@@ -62,6 +62,3 @@ public class BlackwhipBlockWhipPacket {
         ctx.get().setPacketHandled(true);
     }
 }
-
-
-

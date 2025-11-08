@@ -56,10 +56,3 @@ public class BlackwhipTethersPacket {
 		ctx.get().setPacketHandled(true);
 	}
 }
-
-
-
-
-
-
-

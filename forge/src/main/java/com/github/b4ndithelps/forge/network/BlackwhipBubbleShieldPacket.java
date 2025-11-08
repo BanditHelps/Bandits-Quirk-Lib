@@ -1,5 +1,6 @@
 package com.github.b4ndithelps.forge.network;
 
+import com.github.b4ndithelps.forge.client.blackwhip.BlackwhipRenderHandler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.api.distmarker.Dist;
@@ -59,8 +60,7 @@ public class BlackwhipBubbleShieldPacket {
 	public static void handle(BlackwhipBubbleShieldPacket msg, Supplier<NetworkEvent.Context> ctxSupplier) {
 		NetworkEvent.Context ctx = ctxSupplier.get();
 		ctx.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
-			var mc = Minecraft.getInstance();
-			com.github.b4ndithelps.forge.client.blackwhip.BlackwhipRenderHandler.applyBubbleShieldPacket(
+			BlackwhipRenderHandler.applyBubbleShieldPacket(
 					msg.sourcePlayerId,
 					msg.active,
 					msg.tentacleCount,
@@ -74,6 +74,3 @@ public class BlackwhipBubbleShieldPacket {
 		ctx.setPacketHandled(true);
 	}
 }
-
-
-

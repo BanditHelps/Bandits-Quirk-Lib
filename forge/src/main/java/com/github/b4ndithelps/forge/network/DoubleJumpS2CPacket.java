@@ -40,5 +40,3 @@ public class DoubleJumpS2CPacket {
         ctx.setPacketHandled(true);
     }
 }
-
-

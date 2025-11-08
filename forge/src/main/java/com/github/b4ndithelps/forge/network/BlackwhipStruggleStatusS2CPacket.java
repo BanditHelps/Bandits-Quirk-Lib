@@ -44,5 +44,3 @@ public class BlackwhipStruggleStatusS2CPacket {
 		ctx.setPacketHandled(true);
 	}
 }
-
-

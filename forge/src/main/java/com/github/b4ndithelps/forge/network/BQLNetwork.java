@@ -195,5 +195,3 @@ public final class BQLNetwork {
 
     }
 }
-
-

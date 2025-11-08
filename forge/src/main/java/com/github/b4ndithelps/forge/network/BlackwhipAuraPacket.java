@@ -76,5 +76,3 @@ public class BlackwhipAuraPacket {
         ctx.get().setPacketHandled(true);
     }
 }
-
-

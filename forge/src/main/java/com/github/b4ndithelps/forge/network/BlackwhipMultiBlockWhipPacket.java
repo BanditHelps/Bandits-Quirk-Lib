@@ -76,6 +76,3 @@ public class BlackwhipMultiBlockWhipPacket {
         ctx.get().setPacketHandled(true);
     }
 }
-
-
-

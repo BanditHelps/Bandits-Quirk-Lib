@@ -42,5 +42,3 @@ public class ZoomStatePacket {
 		ctx.get().setPacketHandled(true);
 	}
 }
-
-

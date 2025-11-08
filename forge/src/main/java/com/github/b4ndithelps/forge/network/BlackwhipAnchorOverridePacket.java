@@ -40,5 +40,3 @@ public class BlackwhipAnchorOverridePacket {
 		ctx.get().setPacketHandled(true);
 	}
 }
-
-
