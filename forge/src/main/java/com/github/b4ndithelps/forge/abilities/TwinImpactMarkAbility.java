@@ -47,5 +47,3 @@ public class TwinImpactMarkAbility extends Ability {
         return "Marks the last entity or block you impacted. Another ability can remotely trigger a much stronger second impact on that mark.";
     }
 }
-
-

@@ -69,5 +69,3 @@ public class BlackwhipBubbleShieldAbility extends Ability {
 				new BlackwhipBubbleShieldPacket(player.getId(), false, 0, 0, 0, 0, 0, 0, 0L));
 	}
 }
-
-

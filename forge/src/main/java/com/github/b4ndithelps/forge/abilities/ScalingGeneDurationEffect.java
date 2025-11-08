@@ -66,8 +66,6 @@ public class ScalingGeneDurationEffect extends Ability {
                 } else {
                     player.addEffect(new MobEffectInstance(effect, duration * 20, 0, true, false));
                 }
-
-
             }
         }
     }
@@ -91,7 +89,6 @@ public class ScalingGeneDurationEffect extends Ability {
         if (quality >= 50) return  60; // 1 minute
         if (quality >= 25) return  15; // 15 seconds
         return 5; // 30 seconds
-
     }
 
     @Override

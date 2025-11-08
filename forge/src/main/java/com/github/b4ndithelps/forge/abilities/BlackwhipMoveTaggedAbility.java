@@ -1,8 +1,8 @@
 package com.github.b4ndithelps.forge.abilities;
 
-import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
 import com.github.b4ndithelps.forge.systems.BlackwhipTags;
 import com.github.b4ndithelps.forge.systems.BodyStatusHelper;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
@@ -148,7 +148,7 @@ public class BlackwhipMoveTaggedAbility extends Ability {
 			// Lightweight feedback
 			if (player.level() instanceof ServerLevel sl && player.tickCount % 6 == 0) {
 				Vec3 p = target.position().add(0, target.getBbHeight() * 0.6, 0);
-				sl.sendParticles(net.minecraft.core.particles.ParticleTypes.ASH, p.x, p.y, p.z, 1, 0.02, 0.02, 0.02, 0.0);
+				sl.sendParticles(ParticleTypes.ASH, p.x, p.y, p.z, 1, 0.02, 0.02, 0.02, 0.0);
 			}
 		}
 
@@ -210,5 +210,3 @@ public class BlackwhipMoveTaggedAbility extends Ability {
 		return v;
 	}
 }
-
-

@@ -60,5 +60,3 @@ public class BlackwhipAuraAbility extends Ability {
                 new BlackwhipAuraPacket(player.getId(), false, 0, 0, 0, 0, 0, 0, 0L));
     }
 }
-
-

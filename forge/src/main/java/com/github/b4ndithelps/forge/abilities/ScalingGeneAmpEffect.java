@@ -68,7 +68,6 @@ public class ScalingGeneAmpEffect extends Ability {
                     player.addEffect(new MobEffectInstance(effect, 20, amplification, true, false));
                 }
 
-
             }
         }
     }
@@ -92,9 +91,6 @@ public class ScalingGeneAmpEffect extends Ability {
         if (quality >= 50) return  2;
         if (quality >= 25) return  1;
         return 0;
-
-
-
     }
 
     @Override

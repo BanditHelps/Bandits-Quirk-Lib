@@ -9,6 +9,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
@@ -16,12 +17,7 @@ import net.minecraft.world.phys.Vec3;
 import net.threetag.palladium.power.IPowerHolder;
 import net.threetag.palladium.power.ability.Ability;
 import net.threetag.palladium.power.ability.AbilityInstance;
-import net.threetag.palladium.util.property.BooleanProperty;
-import net.threetag.palladium.util.property.FloatProperty;
-import net.threetag.palladium.util.property.IntegerProperty;
-import net.threetag.palladium.util.property.PalladiumProperty;
-import net.threetag.palladium.util.property.PropertyManager;
-import net.threetag.palladium.util.property.StringProperty;
+import net.threetag.palladium.util.property.*;
 
 import java.util.List;
 import java.util.UUID;
@@ -42,7 +38,7 @@ public class LarcenyAbility extends Ability {
     public static final PalladiumProperty<Float> PULL_STRENGTH = new FloatProperty("pull_strength").configurable("Velocity added toward player each tick for the stolen item");
 
     // Per-instance state
-    public static final PalladiumProperty<Boolean> IN_PROGRESS = new net.threetag.palladium.util.property.BooleanProperty("in_progress");
+    public static final PalladiumProperty<Boolean> IN_PROGRESS = new BooleanProperty("in_progress");
     public static final PalladiumProperty<String> IN_FLIGHT_UUID = new StringProperty("in_flight_uuid");
     public static final PalladiumProperty<Integer> TICKS_LEFT = new IntegerProperty("ticks_left");
 
@@ -87,7 +83,7 @@ public class LarcenyAbility extends Ability {
             }
         } else if ("elytra".equalsIgnoreCase(mode)) {
             ItemStack chest = target.getItemBySlot(EquipmentSlot.CHEST);
-            if (!chest.isEmpty() && net.minecraft.world.item.Items.ELYTRA.equals(chest.getItem())) {
+            if (!chest.isEmpty() && Items.ELYTRA.equals(chest.getItem())) {
                 toSteal = chest.copy();
                 slotRef = SlotRef.chest();
             }
@@ -256,5 +252,3 @@ public class LarcenyAbility extends Ability {
         return "Steals a held item or helmet from a targeted entity if the stack count is within the allowed limit, then pulls it to the user and inserts it into their inventory.";
     }
 }
-
-

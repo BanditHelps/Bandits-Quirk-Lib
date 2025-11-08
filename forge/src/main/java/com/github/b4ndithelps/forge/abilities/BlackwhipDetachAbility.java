@@ -66,6 +66,3 @@ public class BlackwhipDetachAbility extends Ability {
 		return best;
 	}
 }
-
-
-

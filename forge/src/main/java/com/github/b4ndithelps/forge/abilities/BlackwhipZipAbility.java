@@ -2,27 +2,20 @@ package com.github.b4ndithelps.forge.abilities;
 
 import com.github.b4ndithelps.forge.network.BQLNetwork;
 import com.github.b4ndithelps.forge.network.BlackwhipBlockWhipPacket;
-import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.server.level.ServerLevel;
+import com.github.b4ndithelps.forge.network.PlayerVelocityS2CPacket;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraft.world.entity.projectile.ProjectileUtil;
-import net.minecraft.world.phys.AABB;
 import net.minecraftforge.network.PacketDistributor;
 import net.threetag.palladium.power.IPowerHolder;
 import net.threetag.palladium.power.ability.Ability;
 import net.threetag.palladium.power.ability.AbilityInstance;
-import net.threetag.palladium.util.property.FloatProperty;
-import net.threetag.palladium.util.property.IntegerProperty;
-import net.threetag.palladium.util.property.PalladiumProperty;
-import net.threetag.palladium.util.property.PropertyManager;
+import net.threetag.palladium.util.property.*;
 
 @SuppressWarnings("removal")
 public class BlackwhipZipAbility extends Ability {
@@ -30,20 +23,19 @@ public class BlackwhipZipAbility extends Ability {
 	public static final PalladiumProperty<Float> RANGE = new FloatProperty("range").configurable("Max grapple range");
 	public static final PalladiumProperty<Float> PULL_SPEED = new FloatProperty("pull_speed").configurable("Pull speed toward anchor");
 	public static final PalladiumProperty<Integer> MAX_TICKS = new IntegerProperty("max_ticks").configurable("Max duration to apply pull (0 = instant impulse)");
+
     // Unique runtime state: stored anchor and armed flag
-    public static final PalladiumProperty<Boolean> HAS_ANCHOR = new net.threetag.palladium.util.property.BooleanProperty("has_anchor");
-    public static final PalladiumProperty<Double> ANCHOR_X = new net.threetag.palladium.util.property.DoubleProperty("anchor_x");
-    public static final PalladiumProperty<Double> ANCHOR_Y = new net.threetag.palladium.util.property.DoubleProperty("anchor_y");
-    public static final PalladiumProperty<Double> ANCHOR_Z = new net.threetag.palladium.util.property.DoubleProperty("anchor_z");
-	public static final PalladiumProperty<Double> ANCHOR_MAXLEN = new net.threetag.palladium.util.property.DoubleProperty("anchor_maxlen");
-	public static final PalladiumProperty<Boolean> DEBUG = new net.threetag.palladium.util.property.BooleanProperty("debug").configurable("Enable debug telemetry for zip");
+    public static final PalladiumProperty<Boolean> HAS_ANCHOR = new BooleanProperty("has_anchor");
+    public static final PalladiumProperty<Double> ANCHOR_X = new DoubleProperty("anchor_x");
+    public static final PalladiumProperty<Double> ANCHOR_Y = new DoubleProperty("anchor_y");
+    public static final PalladiumProperty<Double> ANCHOR_Z = new DoubleProperty("anchor_z");
+	public static final PalladiumProperty<Double> ANCHOR_MAXLEN = new DoubleProperty("anchor_maxlen");
 
 	public BlackwhipZipAbility() {
 		super();
 		this.withProperty(RANGE, 24.0F)
 				.withProperty(PULL_SPEED, 1.2F)
-				.withProperty(MAX_TICKS, 0)
-				.withProperty(DEBUG, false);
+				.withProperty(MAX_TICKS, 0);
 	}
 
     @Override
@@ -75,7 +67,7 @@ public class BlackwhipZipAbility extends Ability {
                 player.fallDistance = 0.0F;
                 // Client motion for instant feedback
                 BQLNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new BlackwhipBlockWhipPacket(player.getId(), false, anchor.x, anchor.y, anchor.z, 0, 0.6f, 1.0f));
-                BQLNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new com.github.b4ndithelps.forge.network.PlayerVelocityS2CPacket(impulse.x, impulse.y, impulse.z, 0.2f));
+                BQLNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new PlayerVelocityS2CPacket(impulse.x, impulse.y, impulse.z, 0.2f));
                 player.level().playSound(null, player.blockPosition(), SoundEvents.FISHING_BOBBER_RETRIEVE, SoundSource.PLAYERS, 0.8f, 1.35f);
             }
             entry.setUniqueProperty(HAS_ANCHOR, false);
@@ -114,11 +106,6 @@ public class BlackwhipZipAbility extends Ability {
                 new BlackwhipBlockWhipPacket(player.getId(), true, anchor.x, anchor.y, anchor.z, 6,
                         0.6f, 1.0f));
         player.level().playSound(null, player.blockPosition(), SoundEvents.FISHING_BOBBER_THROW, SoundSource.PLAYERS, 0.7f, 1.0f);
-
-		// Debug marker at anchor
-		if (Boolean.TRUE.equals(entry.getProperty(DEBUG)) && player.level() instanceof ServerLevel sl) {
-			sl.sendParticles(ParticleTypes.END_ROD, anchor.x, anchor.y, anchor.z, 8, 0.05, 0.05, 0.05, 0.0);
-		}
     }
 
 	@Override
@@ -149,18 +136,8 @@ public class BlackwhipZipAbility extends Ability {
 				player.fallDistance = 0.0F;
 				// Sync client velocity for immediate local feel
 				BQLNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player),
-						new com.github.b4ndithelps.forge.network.PlayerVelocityS2CPacket(newVelocity.x, newVelocity.y, newVelocity.z, 0.0f));
-
-				if (Boolean.TRUE.equals(entry.getProperty(DEBUG)) && player.level() instanceof net.minecraft.server.level.ServerLevel sl) {
-					sl.sendParticles(ParticleTypes.CRIT, boundary.x, boundary.y, boundary.z, 6, 0.03, 0.03, 0.03, 0.0);
-				}
+						new PlayerVelocityS2CPacket(newVelocity.x, newVelocity.y, newVelocity.z, 0.0f));
 			}
 		}
 	}
 }
-
-
-
-
-
-

@@ -10,6 +10,8 @@ import net.threetag.palladium.util.property.FloatProperty;
 import net.threetag.palladium.util.property.IntegerProperty;
 import net.threetag.palladium.util.property.PalladiumProperty;
 
+import java.util.List;
+
 /**
  * Triggers the stored Twin Impact mark. If a recent entity/block mark exists,
  * it applies a much stronger second hit at the marked location or on the marked entity.
@@ -34,7 +36,7 @@ public class TwinImpactTriggerAbility extends Ability {
         float mult = Math.max(1.0F, entry.getProperty(MULTIPLIER));
         int maxDist = Math.max(1, entry.getProperty(MAX_DISTANCE));
 
-        java.util.List<TwinImpactEvents.StoredMark> marks = TwinImpactEvents.consumeMarks(player, maxDist);
+        List<TwinImpactEvents.StoredMark> marks = TwinImpactEvents.consumeMarks(player, maxDist);
         if (marks.isEmpty()) return;
 
         for (TwinImpactEvents.StoredMark mark : marks) {

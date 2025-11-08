@@ -35,10 +35,8 @@ public class AbilityRegister {
     public static final RegistrySupplier<Ability> DASHSTEP;
 	public static final RegistrySupplier<Ability> BLACKWHIP_TAG;
 	public static final RegistrySupplier<Ability> BLACKWHIP_RESTRAIN_TAGGED;
-	public static final RegistrySupplier<Ability> BLACKWHIP_LIFT;
-	public static final RegistrySupplier<Ability> BLACKWHIP_SLAM;
 	public static final RegistrySupplier<Ability> BLACKWHIP_ZIP;
-	public static final RegistrySupplier<Ability> BLACKWHIP_PUPPET;
+	public static final RegistrySupplier<Ability> BLACKWHIP_RESTRICT;
 	public static final RegistrySupplier<Ability> BLACKWHIP_DETACH;
 	public static final RegistrySupplier<Ability> BLACKWHIP_AUTO_REFRESH;
     public static final RegistrySupplier<Ability> BLACKWHIP_AURA;
@@ -48,13 +46,9 @@ public class AbilityRegister {
     public static final RegistrySupplier<Ability> BLACKWHIP_BLOCK_GRAB;
 
 
-    public AbilityRegister() {
+    public AbilityRegister() { }
 
-    }
-
-    public static void init() {
-
-    }
+    public static void init() { }
 
     static {
         ABILITIES = DeferredRegister.create(MOD_ID, Ability.REGISTRY);
@@ -85,10 +79,8 @@ public class AbilityRegister {
         DASHSTEP = ABILITIES.register("dashstep", DashstepAbility::new);
 		BLACKWHIP_TAG = ABILITIES.register("blackwhip_tag", BlackwhipTagAbility::new);
 		BLACKWHIP_RESTRAIN_TAGGED = ABILITIES.register("blackwhip_restrain_tagged", BlackwhipRestrainTaggedAbility::new);
-		BLACKWHIP_LIFT = ABILITIES.register("blackwhip_lift", BlackwhipLiftAbility::new);
-		BLACKWHIP_SLAM = ABILITIES.register("blackwhip_slam", BlackwhipSlamAbility::new);
 		BLACKWHIP_ZIP = ABILITIES.register("blackwhip_zip", BlackwhipZipAbility::new);
-		BLACKWHIP_PUPPET = ABILITIES.register("blackwhip_puppet", BlackwhipPuppetAbility::new);
+        BLACKWHIP_RESTRICT = ABILITIES.register("blackwhip_restrict", BlackwhipRestrictAbility::new);
 		BLACKWHIP_DETACH = ABILITIES.register("blackwhip_detach", BlackwhipDetachAbility::new);
 		BLACKWHIP_AUTO_REFRESH = ABILITIES.register("blackwhip_auto_refresh", BlackwhipAutoRefreshAbility::new);
         BLACKWHIP_AURA = ABILITIES.register("blackwhip_aura", BlackwhipAuraAbility::new);
@@ -96,6 +88,5 @@ public class AbilityRegister {
         BLACKWHIP_QUAD_ZIP = ABILITIES.register("blackwhip_quad_zip", BlackwhipQuadZipAbility::new);
         BLACKWHIP_MOVE_TAGGED = ABILITIES.register("blackwhip_move_tagged", BlackwhipMoveTaggedAbility::new);
         BLACKWHIP_BLOCK_GRAB = ABILITIES.register("blackwhip_block_grab", BlackwhipBlockGrabAbility::new);
-
     }
 }

@@ -1,4 +1,5 @@
 package com.github.b4ndithelps.forge.abilities;
+
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -201,4 +202,3 @@ public class PermeationRiseAbility extends Ability {
         return Vec3.ZERO;
     }
 }
-

@@ -6,6 +6,7 @@ import com.github.b4ndithelps.forge.systems.BodyStatusHelper;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 
+import net.minecraftforge.network.PacketDistributor;
 import net.threetag.palladium.power.IPowerHolder;
 import net.threetag.palladium.power.ability.Ability;
 import net.threetag.palladium.power.ability.AbilityInstance;
@@ -51,7 +52,7 @@ public class ZoomAbility extends Ability {
 		float fovScale = computeFovScaleFromBodySystem(player, entry);
 		entry.setUniqueProperty(LAST_SENT_SCALE, fovScale);
 		entry.setUniqueProperty(LAST_ENABLED, true);
-		BQLNetwork.CHANNEL.send(net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player), new ZoomStatePacket(true, fovScale));
+		BQLNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new ZoomStatePacket(true, fovScale));
 	}
 
 	@Override
@@ -60,7 +61,7 @@ public class ZoomAbility extends Ability {
 		// Disable zoom on client when ability turns off
 		Boolean wasEnabled = entry.getProperty(LAST_ENABLED);
 		if (wasEnabled != null && wasEnabled) {
-			BQLNetwork.CHANNEL.send(net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player), new ZoomStatePacket(false, 1.0F));
+			BQLNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new ZoomStatePacket(false, 1.0F));
 		}
 		entry.setUniqueProperty(LAST_ENABLED, false);
 		entry.setUniqueProperty(LAST_SENT_SCALE, 1.0F);
@@ -72,7 +73,7 @@ public class ZoomAbility extends Ability {
 		if (!enabled) {
 			Boolean wasEnabled = entry.getProperty(LAST_ENABLED);
 			if (wasEnabled != null && wasEnabled) {
-				BQLNetwork.CHANNEL.send(net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player), new ZoomStatePacket(false, 1.0F));
+				BQLNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new ZoomStatePacket(false, 1.0F));
 			}
 			entry.setUniqueProperty(LAST_ENABLED, false);
 			entry.setUniqueProperty(LAST_SENT_SCALE, 1.0F);
@@ -84,7 +85,7 @@ public class ZoomAbility extends Ability {
 		if (Math.abs(newScale - lastScale) > 1.0e-4f) {
 			entry.setUniqueProperty(LAST_SENT_SCALE, newScale);
 			entry.setUniqueProperty(LAST_ENABLED, true);
-			BQLNetwork.CHANNEL.send(net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player), new ZoomStatePacket(true, newScale));
+			BQLNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new ZoomStatePacket(true, newScale));
 		}
 	}
 
@@ -107,5 +108,3 @@ public class ZoomAbility extends Ability {
 		return "Applies a client-side FOV reduction while active to simulate zoom. The zoom amount is configurable via 'zoom_multiplier'.";
 	}
 }
-
-

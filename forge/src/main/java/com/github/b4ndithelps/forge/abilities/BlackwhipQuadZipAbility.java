@@ -5,6 +5,7 @@ import com.github.b4ndithelps.forge.network.BlackwhipMultiBlockWhipPacket;
 import com.github.b4ndithelps.forge.network.PlayerVelocityS2CPacket;
 import com.github.b4ndithelps.forge.utils.ActionBarHelper;
 import net.minecraft.ChatFormatting;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import com.github.b4ndithelps.forge.systems.QuirkFactorHelper;
@@ -24,11 +25,7 @@ import net.minecraftforge.network.PacketDistributor;
 import net.threetag.palladium.power.IPowerHolder;
 import net.threetag.palladium.power.ability.Ability;
 import net.threetag.palladium.power.ability.AbilityInstance;
-import net.threetag.palladium.util.property.FloatProperty;
-import net.threetag.palladium.util.property.IntegerProperty;
-import net.threetag.palladium.util.property.PalladiumProperty;
-import net.threetag.palladium.util.property.PropertyManager;
-import net.threetag.palladium.util.property.SyncType;
+import net.threetag.palladium.util.property.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -120,9 +117,9 @@ public class BlackwhipQuadZipAbility extends Ability {
 
         // Build angled directions: perSide to the right (positive angles), then perSide to the left (negative angles)
         double minAngle = 12.0, maxAngle = 35.0;
-        java.util.List<Double> anglesDegList = new java.util.ArrayList<>(count);
-        java.util.List<Double> distList = new java.util.ArrayList<>(count);
-        java.util.List<Double> verticalList = new java.util.ArrayList<>(count);
+        List<Double> anglesDegList = new ArrayList<>(count);
+        List<Double> distList = new ArrayList<>(count);
+        List<Double> verticalList = new ArrayList<>(count);
 
         for (int i = 0; i < perSide; i++) {
             double t = perSide == 1 ? 0.5 : (i + 0.5) / (double) perSide;
@@ -136,6 +133,7 @@ public class BlackwhipQuadZipAbility extends Ability {
             double v = (i % 2 == 0 ? 0.75 : -0.75);
             verticalList.add(v);
         }
+
         for (int i = 0; i < perSide; i++) {
             double tVar = perSide == 1 ? 0.5 : (i + 0.5) / (double) perSide;
             double ang = -(minAngle + tVar * (maxAngle - minAngle));
@@ -299,7 +297,7 @@ public class BlackwhipQuadZipAbility extends Ability {
         }
 
         int chargeTicks = Math.max(0, entry.getProperty(CHARGE_TICKS));
-        if (chargeTicks <= 0) return;
+        if (chargeTicks == 0) return;
 
         int maxTicks = Math.max(1, entry.getProperty(MAX_CHARGE_TICKS));
         float ratio = Math.min(1.0f, chargeTicks / (float)maxTicks);
@@ -338,7 +336,7 @@ public class BlackwhipQuadZipAbility extends Ability {
                 player.getPersistentData().putDouble("Bql.QZipKnock", finalKb);
                 player.getPersistentData().putInt("Bql.QZipTicks", 8);
                 // Initialize per-window hit tracking
-                player.getPersistentData().put("Bql.QZipHits", new net.minecraft.nbt.CompoundTag());
+                player.getPersistentData().put("Bql.QZipHits", new CompoundTag());
             }
         } else {
             // Apply a more horizontally biased impulse when no target is found
@@ -388,15 +386,13 @@ public class BlackwhipQuadZipAbility extends Ability {
 
     static {
         CHARGE_TICKS = (new IntegerProperty("charge_ticks")).sync(SyncType.NONE).disablePersistence();
-        HAS_ANCHORS = (new net.threetag.palladium.util.property.BooleanProperty("qzip_has_anchors")).sync(SyncType.NONE).disablePersistence();
+        HAS_ANCHORS = (new BooleanProperty("qzip_has_anchors")).sync(SyncType.NONE).disablePersistence();
         ANCHOR_COUNT = (new IntegerProperty("qzip_anchor_count")).sync(SyncType.NONE).disablePersistence();
         for (int i = 0; i < MAX_ANCHORS; i++) {
-            ANCHOR_X[i] = (new net.threetag.palladium.util.property.DoubleProperty("qzip_anchor_x_" + i)).sync(SyncType.NONE).disablePersistence();
-            ANCHOR_Y[i] = (new net.threetag.palladium.util.property.DoubleProperty("qzip_anchor_y_" + i)).sync(SyncType.NONE).disablePersistence();
-            ANCHOR_Z[i] = (new net.threetag.palladium.util.property.DoubleProperty("qzip_anchor_z_" + i)).sync(SyncType.NONE).disablePersistence();
-            ANCHOR_MAXLEN[i] = (new net.threetag.palladium.util.property.DoubleProperty("qzip_anchor_maxlen_" + i)).sync(SyncType.NONE).disablePersistence();
+            ANCHOR_X[i] = (new DoubleProperty("qzip_anchor_x_" + i)).sync(SyncType.NONE).disablePersistence();
+            ANCHOR_Y[i] = (new DoubleProperty("qzip_anchor_y_" + i)).sync(SyncType.NONE).disablePersistence();
+            ANCHOR_Z[i] = (new DoubleProperty("qzip_anchor_z_" + i)).sync(SyncType.NONE).disablePersistence();
+            ANCHOR_MAXLEN[i] = (new DoubleProperty("qzip_anchor_maxlen_" + i)).sync(SyncType.NONE).disablePersistence();
         }
     }
 }
-
-

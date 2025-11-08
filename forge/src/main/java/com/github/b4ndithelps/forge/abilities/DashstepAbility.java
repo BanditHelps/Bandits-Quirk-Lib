@@ -14,7 +14,6 @@ import net.threetag.palladium.power.ability.AbilityInstance;
 import net.threetag.palladium.util.property.FloatProperty;
 import net.threetag.palladium.util.property.IntegerProperty;
 import net.threetag.palladium.util.property.PalladiumProperty;
-import net.threetag.palladium.util.property.PropertyManager;
 
 /**
  * Instant horizontal blink in the look direction. Vertical motion is suppressed.
@@ -102,5 +101,3 @@ public class DashstepAbility extends Ability {
         return "Instantly blinks horizontally in the look direction up to the configured distance, avoiding collisions and spawning particles along the path.";
     }
 }
-
-

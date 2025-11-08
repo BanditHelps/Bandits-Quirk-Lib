@@ -23,13 +23,11 @@ import java.util.List;
 @SuppressWarnings("removal")
 public class BlackwhipRestrainTaggedAbility extends Ability {
 
-	public static final PalladiumProperty<Integer> MAX_TARGETS = new IntegerProperty("max_targets").configurable("Maximum number of tagged targets to affect (0 = all)");
 	public static final PalladiumProperty<Integer> MAX_DISTANCE = new IntegerProperty("max_distance").configurable("Maximum distance to consider tags valid (0 = any)");
 
 	public BlackwhipRestrainTaggedAbility() {
 		super();
-		this.withProperty(MAX_TARGETS, 0)
-				.withProperty(MAX_DISTANCE, 48);
+		this.withProperty(MAX_DISTANCE, 48);
 	}
 
 	@Override
@@ -37,6 +35,7 @@ public class BlackwhipRestrainTaggedAbility extends Ability {
 		if (!enabled) return;
 		if (!(entity instanceof ServerPlayer player)) return;
 
+		// Animation packet
 		BQLNetwork.CHANNEL.send(
 				PacketDistributor.PLAYER.with(() -> player),
 				new PlayerAnimationPacket("restrain_animation")
@@ -53,7 +52,6 @@ public class BlackwhipRestrainTaggedAbility extends Ability {
 		if (!enabled) return;
 		if (!(entity instanceof ServerPlayer player)) return;
 		int duration = 10;
-		int maxTargets = Math.max(0, entry.getProperty(MAX_TARGETS));
 		int maxDist = Math.max(0, entry.getProperty(MAX_DISTANCE));
 
 		List<LivingEntity> targets = BlackwhipTags.getTaggedEntities(player, maxDist);
@@ -86,5 +84,3 @@ public class BlackwhipRestrainTaggedAbility extends Ability {
 		);
 	}
 }
-
-

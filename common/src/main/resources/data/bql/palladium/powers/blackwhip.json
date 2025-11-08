@@ -259,10 +259,10 @@
         ]
       }
     },
-    "blackwhip_puppet": {
-      "type": "bandits_quirk_lib:blackwhip_puppet",
+    "blackwhip_restrict": {
+      "type": "bandits_quirk_lib:blackwhip_restrict",
       "icon": "minecraft:totem_of_undying",
-      "title": "Puppet",
+      "title": "Restrict",
       "description": "Control your target's movement",
       "hidden": false,
       "list_index": 3,

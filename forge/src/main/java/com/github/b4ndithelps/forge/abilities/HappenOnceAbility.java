@@ -1,7 +1,6 @@
 package com.github.b4ndithelps.forge.abilities;
 
 import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
-import dev.latvian.mods.kubejs.server.tag.TagEventFilter;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;

@@ -109,7 +109,3 @@ public class GeneQualityScalingAttributeAbility extends AttributeModifierAbility
         return "Adds an attribute modifier while enabled. The configured amount scales with the specified gene's quality: amount = base + base * (quality/100). Applies only if the player has the gene.";
     }
 }
-
-
-
-

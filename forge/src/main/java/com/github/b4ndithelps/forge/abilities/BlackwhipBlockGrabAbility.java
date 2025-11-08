@@ -9,9 +9,11 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.ClipContext;
-import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
@@ -24,6 +26,7 @@ import net.threetag.palladium.power.ability.AbilityInstance;
 import net.threetag.palladium.util.property.*;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @SuppressWarnings("removal")
@@ -37,21 +40,21 @@ public class BlackwhipBlockGrabAbility extends Ability {
 	public static final PalladiumProperty<Float> DAMAGE = new FloatProperty("damage").configurable("Damage when the thrown stack hits a target");
 
 	// Unique state
-	public static final PalladiumProperty<Boolean> HAS_CARRIED = new net.threetag.palladium.util.property.BooleanProperty("has_carried");
+	public static final PalladiumProperty<Boolean> HAS_CARRIED = new BooleanProperty("has_carried");
 	public static final PalladiumProperty<Integer> CARRIED_ENTITY_ID = new IntegerProperty("carried_entity_id");
 	// 0=idle, 1=traveling_to_blocks, 2=retracting_with_stack, 3=carried_attached
 	public static final PalladiumProperty<Integer> STATE = new IntegerProperty("state");
 	public static final PalladiumProperty<Integer> CAPTURE_TICKS_LEFT = new IntegerProperty("capture_ticks_left");
 	public static final PalladiumProperty<Integer> RETRACT_TICKS_LEFT = new IntegerProperty("retract_ticks_left");
-	public static final PalladiumProperty<Double> P0X = new net.threetag.palladium.util.property.DoubleProperty("p0x");
-	public static final PalladiumProperty<Double> P0Y = new net.threetag.palladium.util.property.DoubleProperty("p0y");
-	public static final PalladiumProperty<Double> P0Z = new net.threetag.palladium.util.property.DoubleProperty("p0z");
-	public static final PalladiumProperty<Double> P1X = new net.threetag.palladium.util.property.DoubleProperty("p1x");
-	public static final PalladiumProperty<Double> P1Y = new net.threetag.palladium.util.property.DoubleProperty("p1y");
-	public static final PalladiumProperty<Double> P1Z = new net.threetag.palladium.util.property.DoubleProperty("p1z");
-	public static final PalladiumProperty<Double> P2X = new net.threetag.palladium.util.property.DoubleProperty("p2x");
-	public static final PalladiumProperty<Double> P2Y = new net.threetag.palladium.util.property.DoubleProperty("p2y");
-	public static final PalladiumProperty<Double> P2Z = new net.threetag.palladium.util.property.DoubleProperty("p2z");
+	public static final PalladiumProperty<Double> P0X = new DoubleProperty("p0x");
+	public static final PalladiumProperty<Double> P0Y = new DoubleProperty("p0y");
+	public static final PalladiumProperty<Double> P0Z = new DoubleProperty("p0z");
+	public static final PalladiumProperty<Double> P1X = new DoubleProperty("p1x");
+	public static final PalladiumProperty<Double> P1Y = new DoubleProperty("p1y");
+	public static final PalladiumProperty<Double> P1Z = new DoubleProperty("p1z");
+	public static final PalladiumProperty<Double> P2X = new DoubleProperty("p2x");
+	public static final PalladiumProperty<Double> P2Y = new DoubleProperty("p2y");
+	public static final PalladiumProperty<Double> P2Z = new DoubleProperty("p2z");
 
 	public BlackwhipBlockGrabAbility() {
 		super();
@@ -95,7 +98,7 @@ public class BlackwhipBlockGrabAbility extends Ability {
 				stack.throwForward(player);
 				// stop rendering persistent tether from player to carried entity
 				BQLNetwork.CHANNEL.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player),
-						new BlackwhipTethersPacket(player.getId(), false, entry.getProperty(WHIP_CURVE), entry.getProperty(WHIP_THICKNESS), java.util.List.of(id)));
+						new BlackwhipTethersPacket(player.getId(), false, entry.getProperty(WHIP_CURVE), entry.getProperty(WHIP_THICKNESS), List.of(id)));
 				player.level().playSound(null, player.blockPosition(), SoundEvents.TRIDENT_THROW, SoundSource.PLAYERS, 0.9f, 1.0f);
 			}
 			entry.setUniqueProperty(HAS_CARRIED, false);
@@ -158,9 +161,9 @@ public class BlackwhipBlockGrabAbility extends Ability {
 				BlockState b = player.level().getBlockState(p0);
 				BlockState m = player.level().getBlockState(p1);
 				BlockState t = player.level().getBlockState(p2);
-				((ServerLevel)player.level()).setBlock(p0, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), 3);
-				((ServerLevel)player.level()).setBlock(p1, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), 3);
-				((ServerLevel)player.level()).setBlock(p2, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), 3);
+				((ServerLevel)player.level()).setBlock(p0, Blocks.AIR.defaultBlockState(), 3);
+				((ServerLevel)player.level()).setBlock(p1, Blocks.AIR.defaultBlockState(), 3);
+				((ServerLevel)player.level()).setBlock(p2, Blocks.AIR.defaultBlockState(), 3);
 
 				BlockStackEntity stack = BlockStackEntity.create((ServerLevel) player.level(), player, b, m, t,
 						Math.max(0.0F, entry.getProperty(DAMAGE)), Math.max(0.1F, entry.getProperty(THROW_SPEED)));
@@ -176,10 +179,10 @@ public class BlackwhipBlockGrabAbility extends Ability {
 
 				// Stop showing static anchors; start tether to moving stack
 				BQLNetwork.CHANNEL.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player),
-						new BlackwhipMultiBlockWhipPacket(player.getId(), false, java.util.List.of(), java.util.List.of(), java.util.List.of(),
+						new BlackwhipMultiBlockWhipPacket(player.getId(), false, List.of(), List.of(), List.of(),
 								0, entry.getProperty(WHIP_CURVE), entry.getProperty(WHIP_THICKNESS)));
 				BQLNetwork.CHANNEL.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player),
-						new BlackwhipTethersPacket(player.getId(), true, entry.getProperty(WHIP_CURVE), entry.getProperty(WHIP_THICKNESS), java.util.List.of(stack.getId())));
+						new BlackwhipTethersPacket(player.getId(), true, entry.getProperty(WHIP_CURVE), entry.getProperty(WHIP_THICKNESS), List.of(stack.getId())));
 
 				player.level().playSound(null, player.blockPosition(), SoundEvents.FISHING_BOBBER_RETRIEVE, SoundSource.PLAYERS, 0.7f, 1.1f);
 			}
@@ -221,7 +224,7 @@ public class BlackwhipBlockGrabAbility extends Ability {
 			int id = entry.getProperty(CARRIED_ENTITY_ID);
 			if (id >= 0) {
 				BQLNetwork.CHANNEL.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player),
-						new BlackwhipTethersPacket(player.getId(), false, entry.getProperty(WHIP_CURVE), entry.getProperty(WHIP_THICKNESS), java.util.List.of(id)));
+						new BlackwhipTethersPacket(player.getId(), false, entry.getProperty(WHIP_CURVE), entry.getProperty(WHIP_THICKNESS), List.of(id)));
 			}
 		}
 		entry.setUniqueProperty(HAS_CARRIED, false);
@@ -235,21 +238,24 @@ public class BlackwhipBlockGrabAbility extends Ability {
 		BlockPos p1 = center;
 		BlockPos p2 = center.above(1);
 		if (isGood(level, p0) && isGood(level, p1) && isGood(level, p2)) {
-			return java.util.Arrays.asList(p0, p1, p2);
+			return Arrays.asList(p0, p1, p2);
 		}
+
 		// else try y,y+1,y+2
 		BlockPos q0 = center;
 		BlockPos q1 = center.above(1);
 		BlockPos q2 = center.above(2);
 		if (isGood(level, q0) && isGood(level, q1) && isGood(level, q2)) {
-			return java.util.Arrays.asList(q0, q1, q2);
+			return Arrays.asList(q0, q1, q2);
 		}
+
 		// else try y-2,y-1,y
 		BlockPos r0 = center.below(2);
 		BlockPos r1 = center.below(1);
 		BlockPos r2 = center;
+
 		if (isGood(level, r0) && isGood(level, r1) && isGood(level, r2)) {
-			return java.util.Arrays.asList(r0, r1, r2);
+			return Arrays.asList(r0, r1, r2);
 		}
 		return null;
 	}
@@ -259,24 +265,23 @@ public class BlackwhipBlockGrabAbility extends Ability {
 		if (st.isAir()) return false;
 		BlockEntity be = level.getBlockEntity(pos);
 		if (be != null) return false;
-		Block b = st.getBlock();
+
 		// disallow unbreakable
 		if (st.getDestroySpeed(level, pos) < 0) return false;
-		return !st.is(net.minecraft.tags.BlockTags.WITHER_IMMUNE);
+		return !st.is(BlockTags.WITHER_IMMUNE);
 	}
 
 	private static Vec3 shoulderAnchor(ServerPlayer player) {
 		Vec3 up = new Vec3(0, 1, 0);
 		Vec3 fwdYaw = Vec3.directionFromRotation(0, player.getYRot()).normalize();
 		Vec3 rightYaw = fwdYaw.cross(up);
+
 		if (rightYaw.lengthSqr() < 1.0e-6) rightYaw = new Vec3(1, 0, 0);
 		rightYaw = rightYaw.normalize();
-		float sideDir = player.getMainArm() == net.minecraft.world.entity.HumanoidArm.RIGHT ? 1.0f : -1.0f;
+		float sideDir = player.getMainArm() == HumanoidArm.RIGHT ? 1.0f : -1.0f;
 		double shoulderHeight = Math.max(0.45, Math.min(0.9, player.getBbHeight() * 0.78));
-		Vec3 base = player.position().add(0, shoulderHeight, 0);
-		Vec3 target = base.add(rightYaw.scale(0.85 * sideDir)).add(fwdYaw.scale(0.15));
-		return target.add(0, -0.5, 0);
+		Vec3 base = player.position().add(0, shoulderHeight + 0.25, 0);
+		Vec3 target = base.add(rightYaw.scale(1.10 * sideDir)).add(fwdYaw.scale(0.05));
+		return target.add(0, -0.20, 0);
 	}
 }
-
-

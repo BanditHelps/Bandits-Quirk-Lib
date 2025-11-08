@@ -104,5 +104,3 @@ public class MinorObjectAttractionAbility extends Ability {
 		return "Attracts ground items that lie along the player's look direction within a narrow beam, pulling only those the player is aiming at toward them.";
 	}
 }
-
-
