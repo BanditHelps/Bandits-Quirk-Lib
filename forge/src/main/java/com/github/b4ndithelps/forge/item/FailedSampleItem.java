@@ -25,5 +25,3 @@ public class FailedSampleItem extends Item {
         tooltip.add(Component.translatable("tooltip.bandits_quirk_lib.failed_sample").withStyle(ChatFormatting.GRAY));
     }
 }
-
-

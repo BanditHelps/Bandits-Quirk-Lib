@@ -23,5 +23,3 @@ public class SequencedSampleItem extends Item {
         tooltip.add(Component.literal("Break down DNA samples into usable genetic data."));
     }
 }
-
-

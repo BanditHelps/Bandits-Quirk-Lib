@@ -1,5 +1,7 @@
 package com.github.b4ndithelps.forge.item;
 
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -9,8 +11,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import com.github.b4ndithelps.forge.blocks.BioTerminalBlockEntity;
 
-import java.util.HashSet;
-import java.util.Set;
 import com.github.b4ndithelps.genetics.GeneRegistry;
 import com.github.b4ndithelps.genetics.Gene;
 
@@ -60,26 +60,15 @@ public class GeneDatabaseItem extends Item {
             }
         } catch (Exception ignored) {}
         var tag = stack.getOrCreateTag();
-        net.minecraft.nbt.ListTag list = tag.contains(TAG_KNOWN_GENES, 9) ? tag.getList(TAG_KNOWN_GENES, 8) : new net.minecraft.nbt.ListTag();
+        ListTag list = tag.contains(TAG_KNOWN_GENES, 9) ? tag.getList(TAG_KNOWN_GENES, 8) : new ListTag();
         boolean present = false;
         for (int i = 0; i < list.size(); i++) {
             if (toStore.toString().equals(list.getString(i))) { present = true; break; }
         }
         if (!present) {
-            list.add(net.minecraft.nbt.StringTag.valueOf(toStore.toString()));
+            list.add(StringTag.valueOf(toStore.toString()));
             tag.put(TAG_KNOWN_GENES, list);
         }
-    }
-
-    public static Set<String> getKnownIds(ItemStack stack) {
-        Set<String> out = new HashSet<>();
-        if (stack == null || stack.isEmpty()) return out;
-        if (!(stack.getItem() instanceof GeneDatabaseItem)) return out;
-        var tag = stack.getOrCreateTag();
-        if (!tag.contains(TAG_KNOWN_GENES, 9)) return out;
-        var list = tag.getList(TAG_KNOWN_GENES, 8);
-        for (int i = 0; i < list.size(); i++) out.add(list.getString(i));
-        return out;
     }
 
     @Override
@@ -110,5 +99,3 @@ public class GeneDatabaseItem extends Item {
         return InteractionResult.PASS;
     }
 }
-
-

@@ -4,17 +4,18 @@ import com.github.b4ndithelps.genetics.GeneticsHelper;
 import com.github.b4ndithelps.forge.config.BQLConfig;
 import com.github.b4ndithelps.genetics.SequenceGenerator;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.monster.Drowned;
 import net.minecraft.world.entity.monster.Husk;
 import net.minecraft.world.entity.monster.Zombie;
+import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -37,13 +38,12 @@ public class TissueExtractorItem extends Item {
         if (!level.isClientSide) {
             LivingEntity target = getTargetedLivingEntity(player);
             if (target != null && isValidTarget(target)) {
-                long seed = GeneticsHelper.getOrAssignGenomeSeed(target);
 
                 int minCount;
                 int maxCount;
-                if (target instanceof net.minecraft.world.entity.player.Player) {
+                if (target instanceof Player) {
                     minCount = maxCount = BQLConfig.INSTANCE.seqLenPlayer.get();
-                } else if (target instanceof net.minecraft.world.entity.npc.Villager) {
+                } else if (target instanceof Villager) {
                     var r = BQLConfig.INSTANCE.seqLenVillagerRange.get();
                     minCount = r.get(0);
                     maxCount = r.get(1);
@@ -70,14 +70,14 @@ public class TissueExtractorItem extends Item {
                 tag.putString("entity_name", target.getName().getString());
                 tag.putString("entity_uuid", target.getUUID().toString());
                 tag.putLong("layout_salt", level.getRandom().nextLong());
-                ListTag genes = new net.minecraft.nbt.ListTag();
+                ListTag genes = new ListTag();
                 for (int i = 0; i < instances.size(); i++) {
                     var gi = instances.get(i);
-                    net.minecraft.nbt.CompoundTag g = new net.minecraft.nbt.CompoundTag();
+                    CompoundTag g = new CompoundTag();
                     g.putString("id", gi.id.toString());
                     g.putInt("quality", gi.quality);
                     // Stable display name per entity/gene/index
-                    String display = com.github.b4ndithelps.genetics.GeneticsHelper.generateStableGeneName(target.getUUID(), gi.id, i);
+                    String display = GeneticsHelper.generateStableGeneName(target.getUUID(), gi.id, i);
                     g.putString("name", display);
                     genes.add(g);
                 }
@@ -140,5 +140,3 @@ public class TissueExtractorItem extends Item {
         return GeneticsHelper.isEntityHumanoid(target);
     }
 }
-
-

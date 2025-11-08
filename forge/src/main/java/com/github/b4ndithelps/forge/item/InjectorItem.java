@@ -61,7 +61,7 @@ public class InjectorItem extends Item {
             ListTag genome = tag.getList("genome", 10);
             // Apply genes to player's genome capability
             for (int i = 0; i < genome.size(); i++) {
-                net.minecraft.nbt.CompoundTag g = genome.getCompound(i);
+                CompoundTag g = genome.getCompound(i);
                 GenomeHelper.addGene(player, g);
             }
             // Consume injector
@@ -74,6 +74,3 @@ public class InjectorItem extends Item {
         return InteractionResultHolder.pass(stack);
     }
 }
-
-
-

@@ -42,5 +42,3 @@ public class ModCreativeTabs {
         TABS.register(bus);
     }
 }
-
-

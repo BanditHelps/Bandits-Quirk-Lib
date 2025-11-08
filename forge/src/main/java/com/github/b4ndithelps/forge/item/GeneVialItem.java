@@ -87,5 +87,3 @@ public class GeneVialItem extends Item {
         return "gene_" + String.format("%04x", Math.abs((id + "_" + quality).hashCode()) & 0xFFFF);
     }
 }
-
-

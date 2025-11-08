@@ -38,5 +38,3 @@ public class ModItems {
         ITEMS.register(eventBus);
     }
 }
-
-
