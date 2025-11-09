@@ -1,6 +1,5 @@
 package com.github.b4ndithelps.forge.abilities;
 
-import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
 import com.github.b4ndithelps.forge.entities.WindProjectileEntity;
 import com.github.b4ndithelps.forge.systems.BodyStatusHelper;
 import net.minecraft.core.particles.ParticleTypes;
@@ -94,9 +93,6 @@ public class WindProjectileAbility extends Ability {
         
         // Create the real projectile entity
         createWindProjectileEntity(level, player, lookDirection, currentDamage, currentKnockback, visualRatio, projectileSpeed, currentRange);
-        
-//        BanditsQuirkLibForge.LOGGER.info("power: {}, damage: {}, knockback: {}, speed: {}, range: {}",
-//                                       powerStock, currentDamage, currentKnockback, projectileSpeed, currentRange);
     }
 
     private void createWindProjectileEntity(ServerLevel level, ServerPlayer shooter, Vec3 direction, 
@@ -133,7 +129,6 @@ public class WindProjectileAbility extends Ability {
         player.connection.send(new ClientboundSetEntityMotionPacket(player));
 
         addBoostEffects(player);
-
     }
 
     private static void addBoostEffects(ServerPlayer player) {

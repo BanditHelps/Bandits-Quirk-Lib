@@ -1,15 +1,12 @@
 package com.github.b4ndithelps.forge.commands;
 
 import com.github.b4ndithelps.forge.config.ConfigManager;
-import com.github.b4ndithelps.values.BodyConstants;
-import com.github.b4ndithelps.values.StaminaConstants;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerPlayer;
 
 public class ConfigCommand {
 

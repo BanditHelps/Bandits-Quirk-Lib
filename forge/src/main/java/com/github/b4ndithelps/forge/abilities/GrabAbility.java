@@ -12,10 +12,8 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.EntityHitResult;
-import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -23,11 +21,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.threetag.palladium.power.IPowerHolder;
 import net.threetag.palladium.power.ability.AbilityInstance;
 import net.threetag.palladium.power.ability.Ability;
-import net.threetag.palladium.util.property.FloatProperty;
-import net.threetag.palladium.util.property.IntegerProperty;
-import net.threetag.palladium.util.property.PalladiumProperty;
-import net.threetag.palladium.util.property.PropertyManager;
-import net.threetag.palladium.util.property.StringProperty;
+import net.threetag.palladium.util.property.*;
 
 import java.util.List;
 import java.util.UUID;
@@ -107,7 +101,7 @@ public class GrabAbility extends Ability {
                 entry.setUniqueProperty(PLAYER_ORIGINAL_X, (float) player.getX());
                 entry.setUniqueProperty(PLAYER_ORIGINAL_Y, (float) player.getY());
                 entry.setUniqueProperty(PLAYER_ORIGINAL_Z, (float) player.getZ());
-                entry.setUniqueProperty(PLAYER_START_HEALTH, (float) player.getHealth());
+                entry.setUniqueProperty(PLAYER_START_HEALTH, player.getHealth());
                 
                 // Play grab sound
                 if (entity.level() instanceof ServerLevel serverLevel) {
@@ -402,7 +396,7 @@ public class GrabAbility extends Ability {
         PLAYER_ORIGINAL_Y = new FloatProperty("player_original_y");
         PLAYER_ORIGINAL_Z = new FloatProperty("player_original_z");
         PLAYER_START_HEALTH = new FloatProperty("player_start_health");
-        IS_GRABBING = new net.threetag.palladium.util.property.BooleanProperty("is_grabbing");
+        IS_GRABBING = new BooleanProperty("is_grabbing");
         GRAB_TICKS = new IntegerProperty("grab_ticks");
     }
 } 

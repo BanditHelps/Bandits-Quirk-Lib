@@ -22,7 +22,7 @@ public class AnimationsInit {
     }
 
     private static IAnimation registerPlayerAnimation(AbstractClientPlayer player) {
-        //This will be invoked for every new player
+        // This will be invoked for every new player
         return new ModifierLayer<>();
     }
 }

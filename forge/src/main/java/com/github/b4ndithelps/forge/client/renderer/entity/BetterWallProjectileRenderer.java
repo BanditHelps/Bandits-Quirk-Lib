@@ -7,6 +7,7 @@ import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.resources.ResourceLocation;
 
+@SuppressWarnings("removal")
 public class BetterWallProjectileRenderer extends EntityRenderer<BetterWallProjectileEntity> {
 
     public BetterWallProjectileRenderer(EntityRendererProvider.Context context) {

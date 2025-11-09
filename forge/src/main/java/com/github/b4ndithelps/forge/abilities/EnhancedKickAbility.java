@@ -6,7 +6,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
@@ -99,5 +98,3 @@ public class EnhancedKickAbility extends Ability {
 		return "Performs a normal kick (standard attack and swing) then applies small bonus damage and configurable extra knockback. No stun.";
 	}
 }
-
-

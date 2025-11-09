@@ -1,7 +1,9 @@
 package com.github.b4ndithelps.forge.capabilities;
 
 import com.github.b4ndithelps.BanditsQuirkLib;
-import com.github.b4ndithelps.forge.capabilities.Body.IBodyStatusCapability;
+import com.github.b4ndithelps.forge.capabilities.body.IBodyStatusCapability;
+import com.github.b4ndithelps.forge.capabilities.genome.IGenomeCapability;
+import com.github.b4ndithelps.forge.capabilities.stamina.IStaminaData;
 import net.minecraftforge.common.capabilities.RegisterCapabilitiesEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -13,5 +15,6 @@ public class CapabilityRegistration {
     public static void onRegisterCapabilities(RegisterCapabilitiesEvent event) {
         event.register(IStaminaData.class);
         event.register(IBodyStatusCapability.class);
+        event.register(IGenomeCapability.class);
     }
 }

@@ -5,9 +5,6 @@ import com.github.b4ndithelps.forge.systems.BodyStatusHelper;
 import de.keksuccino.fancymenu.customization.placeholder.DeserializedPlaceholderString;
 import de.keksuccino.fancymenu.customization.placeholder.Placeholder;
 import net.minecraft.client.Minecraft;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.server.ServerLifecycleHooks;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,22 +29,10 @@ public class BodyStatusFloatPlaceholder extends Placeholder {
         try {
             Minecraft mc = Minecraft.getInstance();
 
-//            MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
-//            if (server == null) {
-//                BanditsQuirkLibForge.LOGGER.error("Server is not available");
-//                return "0";
-//            }
-
             if (mc.player == null) {
                 BanditsQuirkLibForge.LOGGER.error("Player is not available");
                 return "0";
             }
-
-//            ServerPlayer serverPlayer = server.getPlayerList().getPlayer(mc.player.getUUID());
-//            if (serverPlayer == null) {
-//                BanditsQuirkLibForge.LOGGER.error("ServerPlayer is not found");
-//                return "0";
-//            }
 
             return String.valueOf((int)BodyStatusHelper.getCustomFloat(mc.player, bodyPartName, key));
         } catch (Exception e) {

@@ -24,11 +24,31 @@ public class ModItems {
     public static final RegistryObject<Item> TIER2_TRIGGER = ITEMS.register("trigger_tier2",
             () -> new FactorTrigger(new Item.Properties().stacksTo(1).rarity(Rarity.RARE), 2));
     public static final RegistryObject<Item> TIER3_TRIGGER = ITEMS.register("trigger_tier3",
-            () -> new FactorTrigger(new Item.Properties().stacksTo(1).rarity(Rarity.EPIC), 3));
 
+    public static final RegistryObject<Item> TISSUE_EXTRACTOR = ITEMS.register("tissue_extractor", () -> new TissueExtractorItem(new Item.Properties().stacksTo(1).durability(128)));
+    public static final RegistryObject<Item> TISSUE_SAMPLE = ITEMS.register("tissue_sample", () -> new TissueSampleItem(new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> SEQUENCED_SAMPLE = ITEMS.register("sequenced_sample", () -> new SequencedSampleItem(new Item.Properties().stacksTo(1)));
+
+    public static final RegistryObject<Item> GENE_VIAL_COSMETIC = ITEMS.register("gene_vial_cosmetic",
+            () -> new GeneVialItem(new Item.Properties().stacksTo(1), GeneVialItem.Category.COSMETIC));
+            () -> new GeneVialItem(new Item.Properties().stacksTo(1), GeneVialItem.Category.RESISTANCE));
+    public static final RegistryObject<Item> GENE_VIAL_BUILDER = ITEMS.register("gene_vial_builder",
+            () -> new GeneVialItem(new Item.Properties().stacksTo(1), GeneVialItem.Category.BUILDER));
+    public static final RegistryObject<Item> GENE_VIAL_LOWEND = ITEMS.register("gene_vial_lowend",
+            () -> new GeneVialItem(new Item.Properties().stacksTo(1), GeneVialItem.Category.LOWEND));
+    public static final RegistryObject<Item> GENE_VIAL_QUIRK = ITEMS.register("gene_vial_quirk",
+            () -> new GeneVialItem(new Item.Properties().stacksTo(1), GeneVialItem.Category.QUIRK));
+
+    public static final RegistryObject<Item> GENE_DATABASE = ITEMS.register("gene_database",
+            () -> new GeneDatabaseItem(new Item.Properties().stacksTo(1)));
+
+    public static final RegistryObject<Item> INJECTOR = ITEMS.register("injector",
+            () -> new InjectorItem(new Item.Properties().stacksTo(1)));
+
+    public static final RegistryObject<Item> FAILED_SAMPLE = ITEMS.register("failed_sample",
+            () -> new FailedSampleItem(new Item.Properties().stacksTo(1)));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
     }
 }
-

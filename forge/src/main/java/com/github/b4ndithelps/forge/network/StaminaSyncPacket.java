@@ -1,7 +1,6 @@
 package com.github.b4ndithelps.forge.network;
 
-import com.github.b4ndithelps.forge.capabilities.IStaminaData;
-import com.github.b4ndithelps.forge.capabilities.StaminaDataProvider;
+import com.github.b4ndithelps.forge.capabilities.stamina.StaminaDataProvider;
 import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
@@ -58,5 +57,3 @@ public class StaminaSyncPacket {
         return new StaminaSyncPacket(player.getUUID(), tag);
     }
 }
-
-

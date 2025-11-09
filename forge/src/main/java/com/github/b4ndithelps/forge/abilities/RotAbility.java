@@ -5,10 +5,12 @@ import com.github.b4ndithelps.forge.effects.ModEffects;
 import com.github.b4ndithelps.forge.systems.QuirkFactorHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.TickTask;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
@@ -156,10 +158,8 @@ public class RotAbility extends Ability {
     }
 
 
-
     private void executeRotEffect(ServerPlayer player, ServerLevel level, AbilityInstance entry) {
         double quirkFactor = QuirkFactorHelper.getQuirkFactor(player);
-        int baseDamage = entry.getProperty(DAMAGE);
         int maxPossibleRadius = entry.getProperty(MAX_RADIUS);
         float speed = entry.getProperty(SPEED);
 
@@ -550,7 +550,7 @@ public class RotAbility extends Ability {
     }
 
     private void scheduleBlockDestroy(ServerLevel level, BlockPos pos, int delayTicks) {
-        level.getServer().tell(new net.minecraft.server.TickTask(
+        level.getServer().tell(new TickTask(
             level.getServer().getTickCount() + delayTicks,
             () -> {
                 level.destroyBlock(pos, false);
@@ -569,7 +569,7 @@ public class RotAbility extends Ability {
             int totalDamage = damage + (int)(damage * quirkFactor);
             
             mainHand.hurtAndBreak(totalDamage, player, (p) -> {
-                p.broadcastBreakEvent(net.minecraft.world.InteractionHand.MAIN_HAND);
+                p.broadcastBreakEvent(InteractionHand.MAIN_HAND);
             });
         }
     }

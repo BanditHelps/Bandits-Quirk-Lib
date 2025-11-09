@@ -77,7 +77,4 @@ public class ModDamageTypes {
             player.hurt(exhaustionDamage, damageAmount);
         }
     }
-
-
 }
-

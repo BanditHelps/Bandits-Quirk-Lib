@@ -15,9 +15,6 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.players.PlayerList;
 import net.minecraftforge.server.ServerLifecycleHooks;
-import net.threetag.palladium.client.model.animation.AnimationUtil;
-import net.threetag.palladium.compat.kubejs.RegisterAnimationsEventJS;
-import net.threetag.palladium.compat.kubejs.RegisterPalladiumPropertyEventJS;
 
 public class KubeJSForgeBindings extends KubeJSPlugin {
 

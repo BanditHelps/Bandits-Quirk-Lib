@@ -1,0 +1,12 @@
+{
+  "id": "bandits_quirk_lib:gene.invisibility",
+  "category": "cosmetic",
+  "rarity": "uncommon",
+  "quality_range": [100, 100],
+  "combinable": true,
+  "description": "Makes the user permanently invisible",
+  "mobs": [
+    "minecraft:player",
+    "minecraft:drowned"
+  ]
+}

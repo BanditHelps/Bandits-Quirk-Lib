@@ -1,6 +1,5 @@
 package com.github.b4ndithelps.forge.fancymenu.placeholders;
 
-import com.github.b4ndithelps.BanditsQuirkLib;
 import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
 import de.keksuccino.fancymenu.customization.placeholder.DeserializedPlaceholderString;
 import de.keksuccino.fancymenu.customization.placeholder.Placeholder;

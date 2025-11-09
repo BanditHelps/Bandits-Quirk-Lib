@@ -38,6 +38,8 @@ repositories {
             includeGroup "curse.maven"
         }
     }
+
+    // Playeranimator
     maven {
         name "KosmX's maven"
         url 'https://maven.kosmx.dev/'
@@ -59,6 +61,9 @@ dependencies {
 
     // KubeJS
     modImplementation "dev.latvian.mods:kubejs-forge:${kubejs_version}"
+
+    // Player Animation Lib
+    modImplementation "dev.kosmx.player-anim:player-animation-lib-forge:1.0.2-rc1+1.20"
 
     // Fancy Menu and it's dependencies
     modImplementation "curse.maven:fancymenu-367706:6523977"

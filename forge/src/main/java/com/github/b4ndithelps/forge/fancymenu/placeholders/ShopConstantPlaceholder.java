@@ -76,4 +76,3 @@ public class ShopConstantPlaceholder extends Placeholder {
         return DeserializedPlaceholderString.build(this.getIdentifier(), defaultValues);
     }
 }
-

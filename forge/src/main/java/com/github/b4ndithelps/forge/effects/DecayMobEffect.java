@@ -1,7 +1,7 @@
 package com.github.b4ndithelps.forge.effects;
 
 import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
-import com.github.b4ndithelps.forge.capabilities.Body.BodyPart;
+import com.github.b4ndithelps.forge.capabilities.body.BodyPart;
 import com.github.b4ndithelps.forge.systems.BodyStatusHelper;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
@@ -16,8 +16,6 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
-
-import java.util.Random;
 
 public class DecayMobEffect extends MobEffect {
 

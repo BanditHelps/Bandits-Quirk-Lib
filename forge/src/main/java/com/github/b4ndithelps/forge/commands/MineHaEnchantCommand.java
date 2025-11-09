@@ -31,6 +31,7 @@ import com.google.gson.JsonObject;
 import net.minecraft.world.scores.Objective;
 import net.minecraft.world.scores.Score;
 import net.minecraft.world.scores.Scoreboard;
+import net.minecraft.world.scores.criteria.ObjectiveCriteria;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -312,8 +313,8 @@ public class MineHaEnchantCommand {
         Scoreboard scoreboard = player.getServer().getScoreboard();
         Objective objective = scoreboard.getObjective(objectiveName);
         if (objective == null) {
-            objective = scoreboard.addObjective(objectiveName, net.minecraft.world.scores.criteria.ObjectiveCriteria.DUMMY,
-                    Component.literal(objectiveName), net.minecraft.world.scores.criteria.ObjectiveCriteria.RenderType.INTEGER);
+            objective = scoreboard.addObjective(objectiveName, ObjectiveCriteria.DUMMY,
+                    Component.literal(objectiveName), ObjectiveCriteria.RenderType.INTEGER);
         }
 
         Score score = scoreboard.getOrCreatePlayerScore(player.getScoreboardName(), objective);

@@ -13,15 +13,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.network.NetworkEvent;
 import net.threetag.palladium.util.Easing;
 import org.checkerframework.checker.units.qual.C;
-
-import java.util.function.Supplier;
-
-import static dev.kosmx.playerAnim.core.util.Ease.INOUTSINE;
 
 
 // USE THIS TO PLAY PLAYER !MAIN! ANIMATION
@@ -54,6 +49,8 @@ public class PlayerAnimationPacket {
                                 AbstractFadeModifier.standardFadeIn(10, INOUTSINE),
                                 null
                         );
+                    } else if (msg.animation.equals("x")) {
+                        animation.setAnimation(null);
                     } else {
                         KeyframeAnimationPlayer freshAnim = new KeyframeAnimationPlayer(
                                 PlayerAnimationRegistry.getAnimation(
@@ -72,4 +69,5 @@ public class PlayerAnimationPacket {
         });
         ctx.get().setPacketHandled(true);
     }
+
 }

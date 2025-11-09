@@ -4,14 +4,18 @@ import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
 import com.github.b4ndithelps.forge.abilities.HappenOnceAbility;
 import com.github.b4ndithelps.forge.item.FactorTrigger;
 import com.github.b4ndithelps.forge.network.PlayerAnimationPacket;
-import com.github.b4ndithelps.forge.systems.StaminaHelper;
-import com.github.b4ndithelps.forge.systems.BodyStatusHelper;
 import net.minecraft.network.chat.Component;
+import com.github.b4ndithelps.forge.network.MineHaSlotSyncPacket;
+import com.github.b4ndithelps.forge.network.StaminaSyncPacket;
+import com.github.b4ndithelps.forge.systems.*;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.item.ItemTossEvent;
@@ -35,28 +39,31 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.util.Mth;
-import com.github.b4ndithelps.forge.systems.QuirkFactorHelper;
 import net.threetag.palladium.power.SuperpowerUtil;
 import net.threetag.palladium.power.ability.AbilityUtil;
 
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static com.github.b4ndithelps.BanditsQuirkLib.MOD_ID;
 
+@SuppressWarnings("removal")
 @Mod.EventBusSubscriber(modid = MOD_ID)
 public class PlayerEventHandler {
-    private static final java.util.Map<Integer, Boolean> LAST_NO_SHADOW_SENT = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final Map<Integer, Boolean> LAST_NO_SHADOW_SENT = new ConcurrentHashMap<>();
 
     @SubscribeEvent
     public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
         if (event.getEntity() instanceof ServerPlayer sp) {
 
             BQLNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> sp),
-                    com.github.b4ndithelps.forge.network.StaminaSyncPacket.fullSync(sp));
+                    StaminaSyncPacket.fullSync(sp));
 
             // Sync MineHa slot persistent keys to client after respawn (0..3 based on command usage)
             BQLNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> sp),
-                    com.github.b4ndithelps.forge.network.MineHaSlotSyncPacket.fullSync(sp, 3));
+                    MineHaSlotSyncPacket.fullSync(sp, 3));
         }
     }
 
@@ -85,19 +92,6 @@ public class PlayerEventHandler {
             ((FactorTrigger) dropped.getItem()).setUsing(false);
         }
     }
-
-//    @SubscribeEvent
-//    public static void onItemPickup(EntityItemPickupEvent event) {
-//        Player player = event.getEntity();
-//        ItemStack dropped = event.getItem().getItem();
-//
-//        if (dropped.getItem() instanceof FactorTrigger) {
-//            if (player.level().isClientSide) return;
-//            if (!((FactorTrigger) dropped.getItem()).isUsing()) return;
-//
-//            ((FactorTrigger) dropped.getItem()).setUsing(false);
-//        }
-//    }
 
     @SubscribeEvent
     public static void onPlayerDeathDrops(LivingDropsEvent event) {
@@ -134,7 +128,6 @@ public class PlayerEventHandler {
             }
         }
     }
-
 
     @SubscribeEvent
     public static void onLivingHurt(LivingHurtEvent event) {
@@ -230,15 +223,15 @@ public class PlayerEventHandler {
         if (player instanceof ServerPlayer sp) {
 
             // Send full stamina sync on login to ensure client-side GUI shows correct values
-            com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.send(
-                    net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> sp),
-                    com.github.b4ndithelps.forge.network.StaminaSyncPacket.fullSync(sp)
+            BQLNetwork.CHANNEL.send(
+                    PacketDistributor.PLAYER.with(() -> sp),
+                    StaminaSyncPacket.fullSync(sp)
             );
 
             // Send MineHa slot full sync on login as well (0..3 slots)
-            com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.send(
-                    net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> sp),
-                    com.github.b4ndithelps.forge.network.MineHaSlotSyncPacket.fullSync(sp, 3)
+            BQLNetwork.CHANNEL.send(
+                    PacketDistributor.PLAYER.with(() -> sp),
+                    MineHaSlotSyncPacket.fullSync(sp, 3)
             );
         }
     }
@@ -248,6 +241,10 @@ public class PlayerEventHandler {
         if (event.phase != TickEvent.Phase.END) return;
 
         if (!(event.player instanceof ServerPlayer player)) return;
+        // Update per-tick double jump availability and cooldown
+        DoubleJumpSystem.serverTick(player);
+        // Apply genome-driven resistance and utility effects
+        ResistanceSystem.applyGenomeBasedEffects(player);
         // Keep no-shadow flag in sync for permeation-related tags; only send when changed
         boolean wantNoShadow = player.getTags().contains("Bql.PermeateActive") || player.getTags().contains("Bql.PermeateRise") || player.getTags().contains("Bql.NoShadow");
         Boolean prev = LAST_NO_SHADOW_SENT.put(player.getId(), wantNoShadow);
@@ -279,6 +276,51 @@ public class PlayerEventHandler {
 
         if ((player.getMainArm() == HumanoidArm.LEFT) != desiredLeftHanded) {
             player.setMainArm(desiredLeftHanded ? HumanoidArm.LEFT : HumanoidArm.RIGHT);
+        }
+
+        // Quad Zip collision damage window: apply damage/knockback to every entity passed through during the window
+        if (player.getPersistentData().contains("Bql.QZipTicks")) {
+            int ticks = player.getPersistentData().getInt("Bql.QZipTicks");
+            if (ticks > 0) {
+                player.getPersistentData().putInt("Bql.QZipTicks", ticks - 1);
+                Vec3 prevPos = new Vec3(player.xOld, player.yOld, player.zOld);
+                Vec3 currPos = player.position();
+                AABB swept = new AABB(prevPos, currPos).inflate(0.6);
+                List<LivingEntity> hits = player.level().getEntitiesOfClass(LivingEntity.class, swept, e -> e != null && e != player && e.isAlive());
+                CompoundTag hitSet = player.getPersistentData().getCompound("Bql.QZipHits");
+                for (LivingEntity e : hits) {
+                    String idKey = Integer.toString(e.getId());
+                    if (hitSet.contains(idKey)) continue; // already hit this entity during this window
+                    var opt = e.getBoundingBox().inflate(0.3).clip(prevPos, currPos);
+                    if (opt.isPresent()) {
+                        float dmg = (float) player.getPersistentData().getDouble("Bql.QZipDamage");
+                        float kb = (float) player.getPersistentData().getDouble("Bql.QZipKnock");
+                        if (dmg > 0.0f) {
+                            e.hurt(player.damageSources().playerAttack(player), dmg);
+                        } else {
+                            player.attack(e);
+                        }
+                        if (kb > 0.0f && e.isAlive()) {
+                            Vec3 dir = currPos.subtract(prevPos);
+                            if (dir.lengthSqr() > 1.0E-4) {
+                                Vec3 k = dir.normalize().scale(kb * 0.6).add(0, 0.12F * kb, 0);
+                                e.setDeltaMovement(e.getDeltaMovement().add(k));
+                                if (e instanceof ServerPlayer sp) {
+                                    sp.connection.send(new ClientboundSetEntityMotionPacket(sp));
+                                }
+                            }
+                        }
+                        hitSet.putBoolean(idKey, true);
+                    }
+                }
+                // write back updated hit set
+                player.getPersistentData().put("Bql.QZipHits", hitSet);
+            } else {
+                player.getPersistentData().remove("Bql.QZipTicks");
+                player.getPersistentData().remove("Bql.QZipDamage");
+                player.getPersistentData().remove("Bql.QZipKnock");
+                player.getPersistentData().remove("Bql.QZipHits");
+            }
         }
 
         // Check if player has the movement restriction tag

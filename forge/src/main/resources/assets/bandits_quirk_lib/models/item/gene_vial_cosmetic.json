@@ -1,0 +1,6 @@
+{
+  "parent": "item/generated",
+  "textures": {
+    "layer0": "bandits_quirk_lib:item/gene_vial_cosmetic"
+  }
+}

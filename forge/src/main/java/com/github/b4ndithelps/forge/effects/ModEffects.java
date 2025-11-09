@@ -26,6 +26,17 @@ public class ModEffects {
     public static final RegistryObject<MobEffect> AMPULE_EFFECT =
             MOB_EFFECTS.register("ampule_use", AmpuleEffect::new);
 
+    public static final RegistryObject<MobEffect> HEAT_RESISTANCE =
+            MOB_EFFECTS.register("heat_resistance", HeatResistanceEffect::new);
+
+    public static final RegistryObject<MobEffect> COLD_RESISTANCE =
+            MOB_EFFECTS.register("cold_resistance", ColdResistanceEffect::new);
+
+    public static final RegistryObject<MobEffect> POISON_RESISTANCE =
+            MOB_EFFECTS.register("poison_resistance", PoisonResistanceEffect::new);
+
+    public static final RegistryObject<MobEffect> HUNGER_RESISTANCE =
+            MOB_EFFECTS.register("hunger_resistance", HungerResistanceEffect::new);
 
     public static void register(IEventBus eventBus) {
         MOB_EFFECTS.register(eventBus);

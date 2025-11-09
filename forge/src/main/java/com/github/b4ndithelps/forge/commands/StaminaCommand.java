@@ -1,12 +1,10 @@
 package com.github.b4ndithelps.forge.commands;
 
 import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
-import com.github.b4ndithelps.forge.commands.ConfigCommand;
 import com.github.b4ndithelps.forge.systems.StaminaHelper;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
-import com.mojang.brigadier.arguments.FloatArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.commands.CommandSourceStack;
@@ -14,7 +12,6 @@ import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.player.Player;
 
 import static com.github.b4ndithelps.values.StaminaConstants.EXHAUSTION_LEVELS;
 import static com.github.b4ndithelps.values.StaminaConstants.PLUS_ULTRA_TAG;
@@ -296,6 +293,4 @@ public class StaminaCommand {
             return 0;
         }
     }
-
-
 }

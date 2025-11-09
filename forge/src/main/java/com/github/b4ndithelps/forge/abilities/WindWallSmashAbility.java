@@ -153,9 +153,6 @@ public class WindWallSmashAbility extends Ability {
         addReleaseEffects(player, level, chargeTicks);
 
         PowerStockHelper.applyLimbDamage(player, powerBeingUsed, "leg");
-        
-        // No chat feedback - only actionbar during charging
-//        player.sendSystemMessage(Component.literal("Width: " + effectiveWidth + " | Height: " + effectiveHeight + " | lifetime: " + effectiveLifetime));
     }
 
     private void addReleaseEffects(ServerPlayer player, ServerLevel level, int chargeTicks) {

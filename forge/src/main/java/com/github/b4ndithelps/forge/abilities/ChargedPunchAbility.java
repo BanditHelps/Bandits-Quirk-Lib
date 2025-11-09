@@ -264,5 +264,3 @@ public class ChargedPunchAbility extends Ability {
         CHARGE_TICKS = (new IntegerProperty("charge_ticks")).sync(SyncType.NONE).disablePersistence();
     }
 }
-
-

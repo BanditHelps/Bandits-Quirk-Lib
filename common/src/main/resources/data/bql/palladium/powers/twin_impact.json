@@ -1,0 +1,32 @@
+{
+  "name": "Twin Impact",
+  "background": "minecraft:textures/block/stone.png",
+  "icon": "minecraft:grass_block",
+  "gui_display_type": "tree",
+  "persistent_data": true,
+  "abilities": {
+    "mark": {
+      "type": "bandits_quirk_lib:twin_impact_mark",
+      "title": "Twin Impact: Mark",
+      "description": "Marks your last impact for a delayed second strike.",
+      "store_entities": true,
+      "store_blocks": false,
+      "expire_ticks": 2000
+    },
+    "trigger": {
+      "type": "bandits_quirk_lib:twin_impact_trigger",
+      "title": "Twin Impact: Trigger",
+      "description": "Triggers the stored mark",
+      "multiplier": 4.0,
+      "max_distance": 64,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:action",
+            "key_type": "key_bind"
+          }
+        ]
+      }
+    }
+  }
+}

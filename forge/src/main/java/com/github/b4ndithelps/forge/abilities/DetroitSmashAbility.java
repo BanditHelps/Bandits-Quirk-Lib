@@ -238,7 +238,6 @@ public class DetroitSmashAbility extends Ability {
 
     private void executeDetroitSmash(ServerPlayer player, ServerLevel level, AbilityInstance entry, int chargeTicks) {
         int maxChargeTicks = entry.getProperty(MAX_CHARGE_TICKS);
-        float maxDistance = entry.getProperty(MAX_DISTANCE);
         float baseDamage = entry.getProperty(BASE_DAMAGE);
         float baseKnockback = entry.getProperty(BASE_KNOCKBACK);
         float baseRadius = entry.getProperty(BASE_RADIUS);

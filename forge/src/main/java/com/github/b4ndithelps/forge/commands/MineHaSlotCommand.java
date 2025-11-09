@@ -1,6 +1,8 @@
 package com.github.b4ndithelps.forge.commands;
 
 import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
+import com.github.b4ndithelps.forge.network.BQLNetwork;
+import com.github.b4ndithelps.forge.network.MineHaSlotSyncPacket;
 import com.github.b4ndithelps.values.CreationShopConstants;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
@@ -13,6 +15,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.scores.Objective;
 import net.minecraft.world.scores.Score;
 import net.minecraft.world.scores.Scoreboard;
+import net.minecraftforge.network.PacketDistributor;
 
 public class MineHaSlotCommand {
 
@@ -146,9 +149,9 @@ public class MineHaSlotCommand {
                 );
 
                 // Send single-slot sync to the client so placeholders can read it immediately
-                com.github.b4ndithelps.forge.network.BQLNetwork.CHANNEL.send(
-                        net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player),
-                        new com.github.b4ndithelps.forge.network.MineHaSlotSyncPacket(player.getUUID(), slot, item)
+                BQLNetwork.CHANNEL.send(
+                        PacketDistributor.PLAYER.with(() -> player),
+                        new MineHaSlotSyncPacket(player.getUUID(), slot, item)
                 );
 
                 return 1;

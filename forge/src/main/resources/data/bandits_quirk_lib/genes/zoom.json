@@ -1,0 +1,12 @@
+{
+  "id": "bandits_quirk_lib:gene.zoom",
+  "category": "quirk",
+  "rarity": "common",
+  "quality_range": [10, 90],
+  "combinable": true,
+  "description": "Your eyes are able to see much father than normal.",
+  "mobs": [
+    "minecraft:player",
+    "minecraft:zombie"
+  ]
+}
