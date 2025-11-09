@@ -22,7 +22,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.UseAnim;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.scores.Scoreboard;
 import net.minecraftforge.network.PacketDistributor;
 import net.threetag.palladium.power.SuperpowerUtil;
 import org.joml.Vector3f;
