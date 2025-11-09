@@ -7,6 +7,8 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.phys.Vec3;
 
 public class StunMobEffect extends MobEffect {
@@ -14,6 +16,12 @@ public class StunMobEffect extends MobEffect {
     public StunMobEffect() {
         // Color: 0xFFD700 (gold), Category: HARMFUL
         super(MobEffectCategory.HARMFUL, 0xFFD700);
+
+        // Prevent AI-driven motion by zeroing movement-related attributes while stunned.
+        // Using MULTIPLY_TOTAL with -1 sets final speed to 0 regardless of other modifiers.
+        this.addAttributeModifier(Attributes.MOVEMENT_SPEED, "c2c6b3b2-2a5d-4b6b-b7f7-1c6d6c8d9e10", -1.0D, AttributeModifier.Operation.MULTIPLY_TOTAL);
+        // Also cover flying entities (e.g., bats, bees, ghasts use flying speed where applicable)
+        this.addAttributeModifier(Attributes.FLYING_SPEED, "0a3f0c1d-6b9e-4a5f-bb6e-2c1d7e9f8a11", -1.0D, AttributeModifier.Operation.MULTIPLY_TOTAL);
     }
 
     @Override
