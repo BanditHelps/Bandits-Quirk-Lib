@@ -10,13 +10,14 @@ import dev.kosmx.playerAnim.api.layered.modifier.AbstractFadeModifier;
 import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationAccess;
 import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationRegistry;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.network.NetworkEvent;
-import net.threetag.palladium.util.Easing;
-import org.checkerframework.checker.units.qual.C;
+
+import java.util.function.Supplier;
+
+import static dev.kosmx.playerAnim.core.util.Ease.INOUTSINE;
 
 
 // USE THIS TO PLAY PLAYER !MAIN! ANIMATION
