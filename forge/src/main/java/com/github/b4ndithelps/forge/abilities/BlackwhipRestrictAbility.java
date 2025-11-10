@@ -1,6 +1,7 @@
 package com.github.b4ndithelps.forge.abilities;
 
 import com.github.b4ndithelps.forge.systems.BlackwhipTags;
+import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -80,6 +81,11 @@ public class BlackwhipRestrictAbility extends Ability {
 
 			t.setDeltaMovement(newVel);
 			t.fallDistance = 0.0F;
+
+			// Explicitly sync motion to player clients; mob motion syncs automatically, but players need a packet
+			if (t instanceof ServerPlayer targetPlayer && t.level() instanceof ServerLevel targetLevel) {
+				targetLevel.getChunkSource().broadcastAndSend(targetPlayer, new ClientboundSetEntityMotionPacket(targetPlayer));
+			}
 
 			// Small server-side particles to provide feedback while controlling (lightweight)
 			if (player.level() instanceof ServerLevel sl && player.tickCount % 12 == 0) {

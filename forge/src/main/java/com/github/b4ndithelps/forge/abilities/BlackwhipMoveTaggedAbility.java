@@ -2,6 +2,7 @@ package com.github.b4ndithelps.forge.abilities;
 
 import com.github.b4ndithelps.forge.systems.BlackwhipTags;
 import com.github.b4ndithelps.forge.systems.BodyStatusHelper;
+import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -141,6 +142,10 @@ public class BlackwhipMoveTaggedAbility extends Ability {
 			target.setDeltaMovement(newVel);
 			target.fallDistance = 0.0F;
 			target.setOnGround(false);
+			// Sync motion for player targets so their clients are updated immediately
+			if (target instanceof ServerPlayer targetPlayer && target.level() instanceof ServerLevel targetLevel) {
+				targetLevel.getChunkSource().broadcastAndSend(targetPlayer, new ClientboundSetEntityMotionPacket(targetPlayer));
+			}
 			if (Boolean.TRUE.equals(entry.getProperty(FACE_PLAYER))) {
 				target.setYRot(player.getYRot());
 				target.setXRot(0);
