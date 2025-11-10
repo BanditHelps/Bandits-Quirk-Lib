@@ -83,8 +83,8 @@ public class PlayerEventHandler {
             if (player.level().isClientSide) return;
             if (!((FactorTrigger) dropped.getItem()).isUsing()) return;
             BQLNetwork.CHANNEL.send(
-                    PacketDistributor.PLAYER.with(() -> (ServerPlayer) player),
-                    new PlayerAnimationPacket("")
+                    PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> (ServerPlayer) player),
+                    new PlayerAnimationPacket(player.getId(), "")
             );
             ((FactorTrigger) dropped.getItem()).setUsing(false);
         }

@@ -37,8 +37,8 @@ public class BlackwhipRestrainTaggedAbility extends Ability {
 
 		// Animation packet
 		BQLNetwork.CHANNEL.send(
-				PacketDistributor.PLAYER.with(() -> player),
-				new PlayerAnimationPacket("restrain_animation")
+				PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player),
+				new PlayerAnimationPacket(player.getId(), "restrain_animation")
 		);
 		// Force right-hand/high anchor for everyone viewing this player while restraining
 		BQLNetwork.CHANNEL.send(
@@ -74,8 +74,8 @@ public class BlackwhipRestrainTaggedAbility extends Ability {
 		if (!(entity instanceof ServerPlayer player)) return;
 
 		BQLNetwork.CHANNEL.send(
-				PacketDistributor.PLAYER.with(() -> player),
-				new PlayerAnimationPacket("")
+				PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player),
+				new PlayerAnimationPacket(player.getId(), "")
 		);
 		// Remove forced right-hand/high anchor
 		BQLNetwork.CHANNEL.send(

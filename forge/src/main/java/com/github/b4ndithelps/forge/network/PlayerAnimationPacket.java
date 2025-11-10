@@ -10,7 +10,7 @@ import dev.kosmx.playerAnim.api.layered.modifier.AbstractFadeModifier;
 import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationAccess;
 import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationRegistry;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.network.NetworkEvent;
@@ -22,30 +22,35 @@ import static dev.kosmx.playerAnim.core.util.Ease.INOUTSINE;
 
 // USE THIS TO PLAY PLAYER !MAIN! ANIMATION
 public class PlayerAnimationPacket {
+    private final int entityId;
     private final String animation;
 
-    public PlayerAnimationPacket(String anim) {
+    public PlayerAnimationPacket(int entityId, String anim) {
+        this.entityId = entityId;
         this.animation = anim;
     }
 
     public static void encode(PlayerAnimationPacket msg, FriendlyByteBuf buf) {
+        buf.writeVarInt(msg.entityId);
         buf.writeUtf(msg.animation);
     }
 
     public static PlayerAnimationPacket decode(FriendlyByteBuf buf) {
-        return new PlayerAnimationPacket(buf.readUtf());
+        int id = buf.readVarInt();
+        String anim = buf.readUtf();
+        return new PlayerAnimationPacket(id, anim);
     }
 
     public static void handle(PlayerAnimationPacket msg, Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
             Minecraft mc = Minecraft.getInstance();
-            LocalPlayer player = mc.player;
-
-            if (player != null) {
-                var animation = (ModifierLayer<IAnimation>)PlayerAnimationAccess.getPlayerAssociatedData(player).get(ResourceLocation.fromNamespaceAndPath(BanditsQuirkLib.MOD_ID, "animation"));
+            if (mc.level == null) return;
+            var entity = mc.level.getEntity(msg.entityId);
+            if (entity instanceof AbstractClientPlayer player) {
+                var animation = (ModifierLayer<IAnimation>) PlayerAnimationAccess.getPlayerAssociatedData(player).get(ResourceLocation.fromNamespaceAndPath(BanditsQuirkLib.MOD_ID, "animation"));
                 if (animation != null) {
 
-                    if (msg.animation == "") {
+                    if (msg.animation.isEmpty()) {
                         animation.replaceAnimationWithFade(
                                 AbstractFadeModifier.standardFadeIn(10, INOUTSINE),
                                 null
