@@ -3,6 +3,7 @@ package com.github.b4ndithelps.forge.abilities;
 import com.github.b4ndithelps.forge.network.BQLNetwork;
 import com.github.b4ndithelps.forge.network.BlackwhipBlockWhipPacket;
 import com.github.b4ndithelps.forge.network.PlayerVelocityS2CPacket;
+import com.github.b4ndithelps.forge.systems.QuirkFactorHelper;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -20,7 +21,9 @@ import net.threetag.palladium.util.property.*;
 @SuppressWarnings("removal")
 public class BlackwhipZipAbility extends Ability {
 
-	public static final PalladiumProperty<Float> RANGE = new FloatProperty("range").configurable("Max grapple range");
+	public static final PalladiumProperty<Float> MAX_RANGE = new FloatProperty("max_range").configurable("Max grapple range");
+	public static final PalladiumProperty<Float> RANGE_BASE = new FloatProperty("range_base").configurable("Base grapple range");
+	public static final PalladiumProperty<Float> RANGE_QUIRK_BOOST = new FloatProperty("range_quirk_boost").configurable("Additional range per quirk factor");
 	public static final PalladiumProperty<Float> PULL_SPEED = new FloatProperty("pull_speed").configurable("Pull speed toward anchor");
 	public static final PalladiumProperty<Integer> MAX_TICKS = new IntegerProperty("max_ticks").configurable("Max duration to apply pull (0 = instant impulse)");
 
@@ -33,7 +36,9 @@ public class BlackwhipZipAbility extends Ability {
 
 	public BlackwhipZipAbility() {
 		super();
-		this.withProperty(RANGE, 24.0F)
+		this.withProperty(MAX_RANGE, 0.0F)
+				.withProperty(RANGE_BASE, 24.0F)
+				.withProperty(RANGE_QUIRK_BOOST, 6.0F)
 				.withProperty(PULL_SPEED, 1.2F)
 				.withProperty(MAX_TICKS, 0);
 	}
@@ -53,15 +58,25 @@ public class BlackwhipZipAbility extends Ability {
         if (!(entity instanceof ServerPlayer player)) return;
 
         boolean armed = Boolean.TRUE.equals(entry.getProperty(HAS_ANCHOR));
-        float range = Math.max(1.0F, entry.getProperty(RANGE));
+        // Compute effective range: max(legacy range, base + quirkFactor * boost)
+        float maxRange = Math.max(0.0F, entry.getProperty(MAX_RANGE));
+        float baseRange = Math.max(0.0F, entry.getProperty(RANGE_BASE));
+        float quirkBoostPerPoint = Math.max(0.0F, entry.getProperty(RANGE_QUIRK_BOOST));
+        double quirkFactor = QuirkFactorHelper.getQuirkFactor(player);
+        float range = Math.max(1.0F, Math.max(maxRange, baseRange + (float) (quirkFactor * quirkBoostPerPoint)));
         float speed = Math.max(0.1F, entry.getProperty(PULL_SPEED));
 
         if (armed) {
             // Second press: apply zip toward stored anchor and clear it
             Vec3 anchor = new Vec3(entry.getProperty(ANCHOR_X), entry.getProperty(ANCHOR_Y), entry.getProperty(ANCHOR_Z));
             Vec3 toAnchor = anchor.subtract(player.position());
-            if (toAnchor.lengthSqr() > 1.0e-3) {
-                Vec3 impulse = toAnchor.normalize().scale(speed);
+			if (toAnchor.lengthSqr() > 1.0e-3) {
+				// Scale pull strength by current distance to anchor so farther targets pull harder.
+				double dist = Math.sqrt(toAnchor.lengthSqr());
+				double normalized = dist / Math.max(1.0, range);
+				// Base 1.0x up to +2.5x at max range (clamped), prevents excessive launch speeds.
+				double scale = 1.0 + Math.min(2.5, normalized * 2.0);
+				Vec3 impulse = toAnchor.normalize().scale(speed * scale);
                 player.setDeltaMovement(player.getDeltaMovement().scale(0.2).add(impulse));
                 player.hasImpulse = true;
                 player.fallDistance = 0.0F;
