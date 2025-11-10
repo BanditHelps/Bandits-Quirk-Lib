@@ -406,14 +406,14 @@
         "effect give @s minecraft:slowness 1 5 true"
       ],
       "last_tick_commands": [
-        "effect clear @s bandits_quirk_lib:stun_effect"
+        "effect clear @s minecraft:slowness"
       ],
       "first_tick_commands": [],
       "conditions": {
         "enabling": [
           {
             "type": "palladium:ability_enabled",
-            "ability": "blackwhip_restrain"
+            "ability": "blackwhip_bubble_shield"
           }
         ]
       }

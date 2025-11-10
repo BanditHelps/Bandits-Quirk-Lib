@@ -73,6 +73,15 @@ public class BlackwhipRestrainTaggedAbility extends Ability {
 	public void lastTick(LivingEntity entity, AbilityInstance entry, IPowerHolder holder, boolean enabled) {
 		if (!(entity instanceof ServerPlayer player)) return;
 
+		int maxDist = Math.max(0, entry.getProperty(MAX_DISTANCE));
+
+		List<LivingEntity> targets = BlackwhipTags.getTaggedEntities(player, maxDist);
+		if (targets.isEmpty()) return;
+		for (LivingEntity t : targets) {
+			// Apply stun/immobilize
+			t.removeEffect(ModEffects.STUN_EFFECT.get());
+		}
+
 		BQLNetwork.CHANNEL.send(
 				PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player),
 				new PlayerAnimationPacket(player.getId(), "")
