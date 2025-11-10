@@ -1,6 +1,11 @@
 package com.github.b4ndithelps.forge.events;
 
 import com.github.b4ndithelps.BanditsQuirkLib;
+import com.github.b4ndithelps.forge.systems.GenomeHelper;
+import com.github.b4ndithelps.genetics.Gene;
+import com.github.b4ndithelps.genetics.GeneticsHelper;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.monster.Phantom;
@@ -24,11 +29,23 @@ public class PhantomSpawnHandler {
             var players = event.getLevel().players();
             for (var player : players) {
 
-                if (SuperpowerUtil.hasSuperpower(player, ResourceLocation.parse("bql:phantom_immunity"))) {
+                if (hasGene(player, "bandits_quirk_lib:gene.phantom_immunity")) {
                     event.setSpawnCancelled(true);
                     break;
                 }
             }
         }
+    }
+
+
+    public static boolean hasGene(Player player, String geneId) {
+        ListTag genome = GenomeHelper.getGenome(player);
+        for (int i = 0; i < genome.size(); i++) {
+            CompoundTag gene = genome.getCompound(i);
+            if (geneId.equals(gene.getString("id"))) {
+                return true;
+            }
+        }
+        return false;
     }
 }

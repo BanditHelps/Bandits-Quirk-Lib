@@ -32,7 +32,6 @@ public class AdrenalineAbility extends Ability {
         if (!(entity instanceof ServerPlayer player)) return;
         if (!(player.level() instanceof ServerLevel level)) return;
 
-
         long ticks = level.getGameTime();
         long lastUseTick = player.getPersistentData().getLong("lastUseTimeAdrenaline");
 

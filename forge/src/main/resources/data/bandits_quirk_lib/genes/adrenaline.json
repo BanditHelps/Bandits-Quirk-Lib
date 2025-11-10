@@ -1,0 +1,8 @@
+{
+  "id": "bandits_quirk_lib:gene.adrenaline",
+  "category": "lowend",
+  "rarity": "common",
+  "quality_range": [10, 100],
+  "combinable": true,
+  "description": "A gene that releases adrenaline once user is in danger."
+}

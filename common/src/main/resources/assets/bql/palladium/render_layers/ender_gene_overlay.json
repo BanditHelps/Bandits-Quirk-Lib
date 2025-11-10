@@ -11,8 +11,8 @@
     "variables": {
       "MASK": {
         "type": "palladium:ability_integer_property",
-        "power": "bql:ender_gene",
-        "ability": "enablepls",
+        "power": "bql:gene_quirk",
+        "ability": "ender_gene",
         "property": "value"
       }
     },

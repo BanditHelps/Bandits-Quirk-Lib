@@ -1,6 +1,5 @@
 package com.github.b4ndithelps.forge.network;
 
-import com.github.b4ndithelps.forge.capabilities.StaminaDataProvider;
 import com.github.b4ndithelps.forge.client.ScreenFadeOverlay;
 import com.github.b4ndithelps.forge.sounds.ModSounds;
 import net.minecraft.client.Minecraft;
