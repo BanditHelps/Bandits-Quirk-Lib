@@ -38,17 +38,21 @@ public final class BlackwhipTags {
 	private BlackwhipTags() {}
 
     public static void addTag(ServerPlayer player, LivingEntity target, int expireTicks) {
-        putOrExtendTag(player, target, expireTicks, 0);
+        boolean isNew = putOrExtendTag(player, target, expireTicks, 0);
         updateActiveTag(player);
-		// Notify target that they are tagged to initialize struggle HUD
-		BlackwhipStruggle.onTagged(player, target);
+		// Only notify struggle system on first tag creation (not on TTL refresh)
+		if (isNew) {
+			BlackwhipStruggle.onTagged(player, target);
+		}
     }
 
     public static void addTagWithMaxDistance(ServerPlayer player, LivingEntity target, int expireTicks, int maxDistance) {
-        putOrExtendTag(player, target, expireTicks, maxDistance);
+        boolean isNew = putOrExtendTag(player, target, expireTicks, maxDistance);
         updateActiveTag(player);
-		// Notify target that they are tagged to initialize struggle HUD
-		BlackwhipStruggle.onTagged(player, target);
+		// Only notify struggle system on first tag creation (not on TTL/params refresh)
+		if (isNew) {
+			BlackwhipStruggle.onTagged(player, target);
+		}
     }
 
     public static void addTag(ServerPlayer player, LivingEntity target, int expireTicks, int maxTags) {
@@ -187,17 +191,19 @@ public final class BlackwhipTags {
 		return changed;
 	}
 
-    private static void putOrExtendTag(ServerPlayer player, LivingEntity target, int expireTicks, int maxDistance) {
-        if (player == null || target == null || player.level().isClientSide) return;
+    private static boolean putOrExtendTag(ServerPlayer player, LivingEntity target, int expireTicks, int maxDistance) {
+        if (player == null || target == null || player.level().isClientSide) return false;
         Map<Integer, TagEntry> map = PLAYER_TAGS.computeIfAbsent(player.getUUID(), k -> new ConcurrentHashMap<>());
         int id = target.getId();
         int requested = Math.max(1, expireTicks);
         TagEntry existing = map.get(id);
+        boolean isNew = (existing == null);
         // Do not shorten an existing tag's allowed lifetime; prefer the larger TTL
         int ttl = existing == null ? requested : Math.max(existing.expireTicks, requested);
         int storedMax = existing == null ? 0 : existing.maxDistance;
         int finalMax = maxDistance > 0 ? maxDistance : storedMax;
         map.put(id, new TagEntry(player.level().getGameTime(), id, ttl, finalMax));
+        return isNew;
     }
 
     /**
