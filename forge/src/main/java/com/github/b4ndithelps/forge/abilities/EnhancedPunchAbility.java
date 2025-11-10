@@ -101,5 +101,3 @@ public class EnhancedPunchAbility extends Ability {
 		return "Performs a normal punch using standard reach and swing, then adds configurable bonus damage with a chance to apply a short stun.";
 	}
 }
-
-

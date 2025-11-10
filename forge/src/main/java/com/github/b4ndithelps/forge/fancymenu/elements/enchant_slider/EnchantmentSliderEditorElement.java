@@ -1,6 +1,5 @@
 package com.github.b4ndithelps.forge.fancymenu.elements.enchant_slider;
 
-import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
 import de.keksuccino.fancymenu.customization.element.AbstractElement;
 import de.keksuccino.fancymenu.customization.element.elements.slider.v2.SliderEditorElement;
 import de.keksuccino.fancymenu.customization.layout.editor.LayoutEditorScreen;

@@ -2,9 +2,7 @@ package com.github.b4ndithelps.forge.fancymenu;
 
 import com.github.b4ndithelps.BanditsQuirkLib;
 import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
-import com.github.b4ndithelps.forge.fancymenu.elements.IconButtonElementBuilder;
 import com.github.b4ndithelps.forge.fancymenu.placeholders.*;
-import de.keksuccino.fancymenu.customization.element.ElementRegistry;
 import de.keksuccino.fancymenu.customization.placeholder.PlaceholderRegistry;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.ModList;
@@ -19,7 +17,6 @@ public class ForgeFancyMenuIntegration {
     public static final ScoreboardPlaceholder SCOREBOARD_PLACEHOLDER = new ScoreboardPlaceholder();
     public static final NBTPlaceholder NBT_PLACEHOLDER = new NBTPlaceholder();
     public static final PersistentDataPlaceholder PERSISTENT_DATA_PLACEHOLDER = new PersistentDataPlaceholder();
-    public static final EnchantmentDataPlaceholder ENCHANTMENT_DATA_PLACEHOLDER = new EnchantmentDataPlaceholder();
     public static final DynamicConfigPlaceholder DYNAMIC_CONFIG_PLACEHOLDER = new DynamicConfigPlaceholder();
     public static final ShopConstantPlaceholder SHOP_CONSTANT_PLACEHOLDER = new ShopConstantPlaceholder();
     public static final BodyStatusFloatPlaceholder BODY_STATUS_FLOAT_PLACEHOLDER = new BodyStatusFloatPlaceholder();

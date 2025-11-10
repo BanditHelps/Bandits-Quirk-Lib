@@ -39,6 +39,4 @@ public class ActionBarHelper {
 
         sendActionBar(player, message);
     }
-
-
 }

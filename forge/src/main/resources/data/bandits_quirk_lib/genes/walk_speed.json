@@ -1,0 +1,8 @@
+{
+  "id": "bandits_quirk_lib:gene.walk_speed",
+  "category": "lowend",
+  "rarity": "common",
+  "quality_range": [10, 100],
+  "combinable": true,
+  "description": "A gene that boosts the user's walking speed"
+}

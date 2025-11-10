@@ -1,6 +1,5 @@
 package com.github.b4ndithelps.forge.network;
 
-
 import com.github.b4ndithelps.BanditsQuirkLib;
 import dev.kosmx.playerAnim.api.firstPerson.FirstPersonConfiguration;
 import dev.kosmx.playerAnim.api.firstPerson.FirstPersonMode;

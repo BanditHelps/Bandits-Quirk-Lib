@@ -29,14 +29,32 @@ public class AbilityRegister {
     public static final RegistrySupplier<Ability> BURST_GENE;
     public static final RegistrySupplier<Ability> SUPER_BURST_CHARGE_GENE;
     public static final RegistrySupplier<Ability> SUPER_BURST_EXPLOSION_GENE;
+    public static final RegistrySupplier<Ability> AMPULE_SELF_REMOVE;
+    public static final RegistrySupplier<Ability> SCALING_GENE_DURATION_EFFECT;
+    public static final RegistrySupplier<Ability> SCALING_GENE_AMP_EFFECT;
+    public static final RegistrySupplier<Ability> MINOR_OBJECT_ATTRACTION;
+    public static final RegistrySupplier<Ability> ZOOM;
+    public static final RegistrySupplier<Ability> TWIN_IMPACT_MARK;
+    public static final RegistrySupplier<Ability> TWIN_IMPACT_TRIGGER;
+    public static final RegistrySupplier<Ability> LARCENY;
+    public static final RegistrySupplier<Ability> GENE_QUALITY_SCALING_ATTRIBUTE;
+    public static final RegistrySupplier<Ability> DASHSTEP;
+	public static final RegistrySupplier<Ability> BLACKWHIP_TAG;
+	public static final RegistrySupplier<Ability> BLACKWHIP_RESTRAIN_TAGGED;
+	public static final RegistrySupplier<Ability> BLACKWHIP_ZIP;
+	public static final RegistrySupplier<Ability> BLACKWHIP_RESTRICT;
+	public static final RegistrySupplier<Ability> BLACKWHIP_DETACH;
+	public static final RegistrySupplier<Ability> BLACKWHIP_AUTO_REFRESH;
+    public static final RegistrySupplier<Ability> BLACKWHIP_AURA;
+    public static final RegistrySupplier<Ability> BLACKWHIP_BUBBLE_SHIELD;
+    public static final RegistrySupplier<Ability> BLACKWHIP_QUAD_ZIP;
+    public static final RegistrySupplier<Ability> BLACKWHIP_MOVE_TAGGED;
+    public static final RegistrySupplier<Ability> BLACKWHIP_BLOCK_GRAB;
 
-    public AbilityRegister() {
 
-    }
+    public AbilityRegister() { }
 
-    public static void init() {
-
-    }
+    public static void init() { }
 
     static {
         ABILITIES = DeferredRegister.create(MOD_ID, Ability.REGISTRY);
@@ -61,5 +79,26 @@ public class AbilityRegister {
         BURST_GENE = ABILITIES.register("burst_gene", BurstGeneAbility::new);
         SUPER_BURST_CHARGE_GENE = ABILITIES.register("super_burst_charge_gene", SuperBurstChargeGeneAbility::new);
         SUPER_BURST_EXPLOSION_GENE = ABILITIES.register("super_burst_explosion_gene", SuperBurstExplosionGeneAbility::new);
+        AMPULE_SELF_REMOVE = ABILITIES.register("ampule_self_remove", AmpuleSelfRemove::new);
+        SCALING_GENE_DURATION_EFFECT = ABILITIES.register("scaling_gene_duration_effect", ScalingGeneDurationEffect::new);
+        SCALING_GENE_AMP_EFFECT = ABILITIES.register("scaling_gene_amp_effect", ScalingGeneAmpEffect::new);
+        MINOR_OBJECT_ATTRACTION = ABILITIES.register("minor_object_attraction", MinorObjectAttractionAbility::new);
+        ZOOM = ABILITIES.register("zoom", ZoomAbility::new);
+        TWIN_IMPACT_MARK = ABILITIES.register("twin_impact_mark", TwinImpactMarkAbility::new);
+        TWIN_IMPACT_TRIGGER = ABILITIES.register("twin_impact_trigger", TwinImpactTriggerAbility::new);
+        LARCENY = ABILITIES.register("larceny", LarcenyAbility::new);
+        GENE_QUALITY_SCALING_ATTRIBUTE = ABILITIES.register("gene_quality_scaling_attribute", GeneQualityScalingAttributeAbility::new);
+        DASHSTEP = ABILITIES.register("dashstep", DashstepAbility::new);
+		BLACKWHIP_TAG = ABILITIES.register("blackwhip_tag", BlackwhipTagAbility::new);
+		BLACKWHIP_RESTRAIN_TAGGED = ABILITIES.register("blackwhip_restrain_tagged", BlackwhipRestrainTaggedAbility::new);
+		BLACKWHIP_ZIP = ABILITIES.register("blackwhip_zip", BlackwhipZipAbility::new);
+        BLACKWHIP_RESTRICT = ABILITIES.register("blackwhip_restrict", BlackwhipRestrictAbility::new);
+		BLACKWHIP_DETACH = ABILITIES.register("blackwhip_detach", BlackwhipDetachAbility::new);
+		BLACKWHIP_AUTO_REFRESH = ABILITIES.register("blackwhip_auto_refresh", BlackwhipAutoRefreshAbility::new);
+        BLACKWHIP_AURA = ABILITIES.register("blackwhip_aura", BlackwhipAuraAbility::new);
+        BLACKWHIP_BUBBLE_SHIELD = ABILITIES.register("blackwhip_bubble_shield", BlackwhipBubbleShieldAbility::new);
+        BLACKWHIP_QUAD_ZIP = ABILITIES.register("blackwhip_quad_zip", BlackwhipQuadZipAbility::new);
+        BLACKWHIP_MOVE_TAGGED = ABILITIES.register("blackwhip_move_tagged", BlackwhipMoveTaggedAbility::new);
+        BLACKWHIP_BLOCK_GRAB = ABILITIES.register("blackwhip_block_grab", BlackwhipBlockGrabAbility::new);
     }
 }

@@ -5,7 +5,9 @@
   "minVersion": "0.8",
   "client": [
     "EntityRendererMixin",
-    "PowersScreenMixin"
+    "PowersScreenMixin",
+    "PlayerRendererMixin",
+    "PlayerModelIndexFilterMixin"
   ],
   "mixins": [
     "ElementMixin",
@@ -17,5 +19,3 @@
     "defaultRequire": 1
   }
 }
-
-

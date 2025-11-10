@@ -1,6 +1,5 @@
 package com.github.b4ndithelps.forge.conditions;
 
-import net.threetag.palladium.condition.Condition;
 import net.threetag.palladium.condition.ConditionSerializer;
 import net.threetag.palladiumcore.registry.DeferredRegister;
 import net.threetag.palladiumcore.registry.RegistrySupplier;
@@ -16,6 +15,7 @@ public class CustomConditionSerializers {
     public static final RegistrySupplier<ConditionSerializer> RANDOM_CHANCE;
     public static final RegistrySupplier<ConditionSerializer> BURST_RENDER;
     public static final RegistrySupplier<ConditionSerializer> SKULK_CORE_CHECK;
+    public static final RegistrySupplier<ConditionSerializer> GENOME_HAS_GENE;
 
 
     public static final DeferredRegister<ConditionSerializer> CUSTOM_SERIALIZERS;
@@ -35,5 +35,6 @@ public class CustomConditionSerializers {
         BURST_RENDER = CUSTOM_SERIALIZERS.register("burst_render", BurstRenderCondition.Serializer::new);
         SKULK_CORE_CHECK = CUSTOM_SERIALIZERS.register("skulk_core", SkulkCoreCondition.Serializer::new);
 
+        GENOME_HAS_GENE = CUSTOM_SERIALIZERS.register("genome_has_gene", GenomeHasGeneCondition.Serializer::new);
     }
 }

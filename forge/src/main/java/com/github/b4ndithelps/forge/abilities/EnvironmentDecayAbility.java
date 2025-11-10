@@ -3,7 +3,6 @@ package com.github.b4ndithelps.forge.abilities;
 import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
 import com.github.b4ndithelps.forge.effects.ModEffects;
 import com.github.b4ndithelps.forge.systems.QuirkFactorHelper;
-import com.github.b4ndithelps.forge.systems.StaminaHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
@@ -12,9 +11,11 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -539,8 +540,8 @@ public class EnvironmentDecayAbility extends Ability {
 
     // The first intensity is used for basic blocks, and wooden shovel blocks
     private boolean isIntensityZero(BlockState blockState) {
-        return blockState.is(net.minecraft.tags.BlockTags.MINEABLE_WITH_SHOVEL) ||
-                blockState.is(net.minecraft.tags.BlockTags.MINEABLE_WITH_HOE);
+        return blockState.is(BlockTags.MINEABLE_WITH_SHOVEL) ||
+                blockState.is(BlockTags.MINEABLE_WITH_HOE);
     }
 
     // This intensity is used for axe related blocks. Pretty much all wood
@@ -550,25 +551,25 @@ public class EnvironmentDecayAbility extends Ability {
 
     // Intensity for stone pickaxes and below
     private boolean isIntensityTwo(BlockState blockState) {
-        return blockState.is(net.minecraft.tags.BlockTags.MINEABLE_WITH_PICKAXE) &&
-                !blockState.is(net.minecraft.tags.BlockTags.NEEDS_IRON_TOOL) &&
-                !blockState.is(net.minecraft.tags.BlockTags.NEEDS_DIAMOND_TOOL);
+        return blockState.is(BlockTags.MINEABLE_WITH_PICKAXE) &&
+                !blockState.is(BlockTags.NEEDS_IRON_TOOL) &&
+                !blockState.is(BlockTags.NEEDS_DIAMOND_TOOL);
     }
 
     // Intensity for iron pickaxes and below
     private boolean isIntensityThree(BlockState blockState) {
-        return blockState.is(net.minecraft.tags.BlockTags.MINEABLE_WITH_PICKAXE) &&
-                (blockState.is(net.minecraft.tags.BlockTags.NEEDS_STONE_TOOL) ||
-                blockState.is(net.minecraft.tags.BlockTags.NEEDS_IRON_TOOL)) &&
-                !blockState.is(net.minecraft.tags.BlockTags.NEEDS_DIAMOND_TOOL);
+        return blockState.is(BlockTags.MINEABLE_WITH_PICKAXE) &&
+                (blockState.is(BlockTags.NEEDS_STONE_TOOL) ||
+                blockState.is(BlockTags.NEEDS_IRON_TOOL)) &&
+                !blockState.is(BlockTags.NEEDS_DIAMOND_TOOL);
     }
 
     // Intensity for diamond pickaxes and below
     private boolean isIntensityFour(BlockState blockState) {
-        return blockState.is(net.minecraft.tags.BlockTags.MINEABLE_WITH_PICKAXE) &&
-                (blockState.is(net.minecraft.tags.BlockTags.NEEDS_STONE_TOOL) ||
-                        blockState.is(net.minecraft.tags.BlockTags.NEEDS_IRON_TOOL) ||
-                blockState.is(net.minecraft.tags.BlockTags.NEEDS_DIAMOND_TOOL));
+        return blockState.is(BlockTags.MINEABLE_WITH_PICKAXE) &&
+                (blockState.is(BlockTags.NEEDS_STONE_TOOL) ||
+                        blockState.is(BlockTags.NEEDS_IRON_TOOL) ||
+                blockState.is(BlockTags.NEEDS_DIAMOND_TOOL));
     }
 
     private BlockPos findTargetBlock(ServerPlayer player, float range) {
@@ -576,10 +577,10 @@ public class EnvironmentDecayAbility extends Ability {
         Vec3 lookVec = player.getLookAngle();
         Vec3 endPos = eyePos.add(lookVec.scale(range));
 
-        BlockHitResult result = player.level().clip(new net.minecraft.world.level.ClipContext(
+        BlockHitResult result = player.level().clip(new ClipContext(
                 eyePos, endPos,
-                net.minecraft.world.level.ClipContext.Block.OUTLINE,
-                net.minecraft.world.level.ClipContext.Fluid.NONE,
+                ClipContext.Block.OUTLINE,
+                ClipContext.Fluid.NONE,
                 player
         ));
 
@@ -618,7 +619,7 @@ public class EnvironmentDecayAbility extends Ability {
             int totalDamage = damage + (int)(damage * quirkFactor * 0.5);
 
             mainHand.hurtAndBreak(totalDamage, player, (p) -> {
-                p.broadcastBreakEvent(net.minecraft.world.InteractionHand.MAIN_HAND);
+                p.broadcastBreakEvent(InteractionHand.MAIN_HAND);
             });
         }
     }

@@ -1,7 +1,6 @@
 package com.github.b4ndithelps.forge.network;
 
-import com.github.b4ndithelps.forge.capabilities.Body.BodyPart;
-import com.github.b4ndithelps.forge.capabilities.Body.BodyStatusCapabilityProvider;
+import com.github.b4ndithelps.forge.capabilities.body.BodyStatusCapabilityProvider;
 import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;

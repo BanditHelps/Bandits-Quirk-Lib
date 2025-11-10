@@ -14,6 +14,4 @@ public class QuirkConstants {
     public static double PSTOCK_MINOR_DAMAGE = 25;
     public static double PSTOCK_MAJOR_DAMAGE = 50;
     public static double PSTOCK_SEVERE_DAMAGE = 75;
-
-
 }

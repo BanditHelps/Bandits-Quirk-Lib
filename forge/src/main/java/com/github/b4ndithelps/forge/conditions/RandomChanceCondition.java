@@ -1,7 +1,6 @@
 package com.github.b4ndithelps.forge.conditions;
 
 import com.google.gson.JsonObject;
-import net.minecraft.world.entity.LivingEntity;
 import net.threetag.palladium.condition.Condition;
 import net.threetag.palladium.condition.ConditionEnvironment;
 import net.threetag.palladium.condition.ConditionSerializer;

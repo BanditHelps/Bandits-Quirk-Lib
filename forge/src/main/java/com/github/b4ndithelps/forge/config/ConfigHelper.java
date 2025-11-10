@@ -5,7 +5,6 @@ import com.github.b4ndithelps.values.BodyConstants;
 import com.github.b4ndithelps.values.CreationShopConstants;
 import com.github.b4ndithelps.values.QuirkConstants;
 import com.github.b4ndithelps.values.StaminaConstants;
-import dev.latvian.mods.kubejs.util.ConsoleJS;
 import net.minecraftforge.fml.loading.FMLPaths;
 
 import java.nio.file.Files;

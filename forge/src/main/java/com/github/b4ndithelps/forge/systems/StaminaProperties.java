@@ -15,4 +15,4 @@ public class StaminaProperties {
     public static final PalladiumProperty<Integer> STAMINA_TICK_INTERVAL =
             (new IntegerProperty("stamina_interval")).configurable("How often (in ticks) stamina is drained. Default is every tick. Uses \"stamina_interval_cost\"");
 
-} 
+}

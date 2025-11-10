@@ -1,0 +1,8 @@
+{
+  "id": "bandits_quirk_lib:gene.omen_gene",
+  "category": "builder",
+  "rarity": "uncommon",
+  "quality_range": [10, 100],
+  "combinable": true,
+  "description": "A simple builder gene used to generate other gene combinations."
+}
