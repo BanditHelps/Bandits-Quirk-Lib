@@ -182,7 +182,7 @@
             "type": "palladium:not",
             "conditions": [
               {
-                "type": "palladium:crouching"
+                "type": "bandits_quirk_lib:is_holding_shift"
               }
             ]
           }
@@ -207,7 +207,7 @@
         ],
         "unlocking": [
           {
-            "type": "palladium:crouching"
+            "type": "bandits_quirk_lib:is_holding_shift"
           }
         ]
       }
@@ -277,12 +277,6 @@
             "type": "palladium:toggle",
             "key_type": "key_bind"
           }
-        ],
-        "unlocking": [
-          {
-            "type": "palladium:has_tag",
-            "tag": "bandits_quirk_lib.blackwhip_active"
-          }
         ]
       }
     },
@@ -293,7 +287,7 @@
       "description": "Manifest swirling tendrils from your back. Purely cosmetic.",
       "hidden": false,
       "hidden_in_bar": false,
-      "list_index": 4,
+      "list_index": 9,
       "tentacle_count": 6,
       "length": 1.75,
       "curve": 1.5,
