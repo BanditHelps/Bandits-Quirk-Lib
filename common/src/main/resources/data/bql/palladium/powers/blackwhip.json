@@ -60,7 +60,7 @@
       "body_part": "chest",
       "key": "blackwhip_move_bias",
       "operation": "add",
-      "float_value": 0.75,
+      "float_value": 2.0,
       "min_value": -12,
       "max_value": 12,
       "apply_once": true,
@@ -92,7 +92,7 @@
       "body_part": "chest",
       "key": "blackwhip_move_bias",
       "operation": "add",
-      "float_value": -0.75,
+      "float_value": -2.0,
       "min_value": -12,
       "max_value": 12,
       "apply_once": true,
@@ -352,8 +352,9 @@
       "conditions": {
         "enabling": [
           {
-            "type": "palladium:held",
-            "key_type": "key_bind"
+            "type": "bandits_quirk_lib:held_with_cooldown",
+            "key_type": "key_bind",
+            "cooldown": 100
           }
         ],
         "unlocking": [
