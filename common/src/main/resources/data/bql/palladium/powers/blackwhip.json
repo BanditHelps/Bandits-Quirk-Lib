@@ -432,11 +432,11 @@
       "hidden_in_bar": false,
       "list_index": 9,
       "tentacle_count": 6,
-      "length": 1.75,
+      "length": 2.0,
       "curve": 1.5,
       "thickness": 1.0,
-      "jaggedness": 0.5,
-      "orbit_speed": 0.02,
+      "jaggedness": 0.75,
+      "orbit_speed": 0.01,
       "conditions": {
         "enabling": [
           {
