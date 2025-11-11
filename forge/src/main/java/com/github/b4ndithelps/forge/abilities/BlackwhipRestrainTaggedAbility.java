@@ -52,6 +52,8 @@ public class BlackwhipRestrainTaggedAbility extends Ability {
 				PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player),
 				new BlackwhipAnchorOverridePacket(player.getId(), true)
 		);
+		// Lock the player's rotation while restraining for visual consistency
+		player.addTag("Bql.RestrainLockView");
 	}
 
 	@Override
@@ -74,6 +76,8 @@ public class BlackwhipRestrainTaggedAbility extends Ability {
 						new BlackwhipAnchorOverridePacket(player.getId(), false)
 				);
 			}
+			// Ensure rotation lock is removed when restrain ends early
+			player.removeTag("Bql.RestrainLockView");
 			return;
 		}
 		// Ensure animation is active if we have targets again (recover if it was previously stopped)
@@ -86,6 +90,7 @@ public class BlackwhipRestrainTaggedAbility extends Ability {
 					PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player),
 					new BlackwhipAnchorOverridePacket(player.getId(), true)
 			);
+			player.addTag("Bql.RestrainLockView");
 		}
         for (LivingEntity t : targets) {
 			// Apply stun/immobilize
@@ -125,5 +130,7 @@ public class BlackwhipRestrainTaggedAbility extends Ability {
 					new BlackwhipAnchorOverridePacket(player.getId(), false)
 			);
 		}
+		// Remove rotation lock after restrain finishes
+		player.removeTag("Bql.RestrainLockView");
 	}
 }

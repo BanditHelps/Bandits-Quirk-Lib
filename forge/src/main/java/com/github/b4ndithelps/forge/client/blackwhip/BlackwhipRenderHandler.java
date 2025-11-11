@@ -9,6 +9,7 @@ import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.player.Player;
@@ -284,7 +285,8 @@ public final class BlackwhipRenderHandler {
             boolean forceRight = state.restraining || FORCE_RIGHT_HAND_ANCHOR.contains(state.sourcePlayerId);
             Vec3 start;
             if (forceRight) {
-                Vec3 fwdYaw = Vec3.directionFromRotation(0, player.getYRot()).normalize();
+                float yaw = Mth.rotLerp(partial, player.yRotO, player.getYRot());
+                Vec3 fwdYaw = Vec3.directionFromRotation(0, yaw).normalize();
                 start = getHandPositionForSide(player, partial, 1.0f)
                         .add(0, 0.35, 0)        // move up about 2x more
                         .add(fwdYaw.scale(0.60)); // push forward roughly arm length
@@ -484,7 +486,8 @@ public final class BlackwhipRenderHandler {
             boolean forceRight = FORCE_RIGHT_HAND_ANCHOR.contains(multi.sourcePlayerId);
             Vec3 start;
             if (forceRight) {
-                Vec3 fwdYaw = Vec3.directionFromRotation(0, player.getYRot()).normalize();
+                float yaw = Mth.rotLerp(partial, player.yRotO, player.getYRot());
+                Vec3 fwdYaw = Vec3.directionFromRotation(0, yaw).normalize();
                 start = getHandPositionForSide(player, partial, 1.0f)
                         .add(0, 0.30, 0)
                         .add(fwdYaw.scale(0.60));
@@ -532,7 +535,8 @@ public final class BlackwhipRenderHandler {
             Vec3 camera = cameraPos;
             // Build basis from player yaw only (ignore pitch) to keep anchors off-screen when looking down
             Vec3 up = new Vec3(0, 1, 0);
-            Vec3 fwdYaw = Vec3.directionFromRotation(0, player.getYRot()).normalize();
+            float yaw = Mth.rotLerp(partial, player.yRotO, player.getYRot());
+            Vec3 fwdYaw = Vec3.directionFromRotation(0, yaw).normalize();
             Vec3 back = fwdYaw.scale(-1.0);
             Vec3 right = back.cross(up);
             if (right.lengthSqr() < 1.0e-6) right = new Vec3(1, 0, 0);
@@ -634,7 +638,8 @@ public final class BlackwhipRenderHandler {
             Vec3 eye = player.getEyePosition(partialTick);
             Vec3 up = new Vec3(0,1,0);
             // Yaw-only basis for stable back anchors (prevents anchors from popping into view when looking down)
-            Vec3 fwdYaw = Vec3.directionFromRotation(0, player.getYRot()).normalize();
+            float yaw = Mth.rotLerp(partialTick, player.yRotO, player.getYRot());
+            Vec3 fwdYaw = Vec3.directionFromRotation(0, yaw).normalize();
             Vec3 backYaw = fwdYaw.scale(-1.0);
             Vec3 rightYaw = backYaw.cross(up);
             if (rightYaw.lengthSqr() < 1.0e-6) rightYaw = new Vec3(1,0,0);
@@ -1109,7 +1114,8 @@ public final class BlackwhipRenderHandler {
     private static Vec3 getHandPosition(Player player, float partial) {
 		// Use yaw-only basis to place start near the main-hand side of the torso
 		Vec3 up = new Vec3(0, 1, 0);
-		Vec3 fwdYaw = Vec3.directionFromRotation(0, player.getYRot()).normalize();
+		float yaw = Mth.rotLerp(partial, player.yRotO, player.getYRot());
+		Vec3 fwdYaw = Vec3.directionFromRotation(0, yaw).normalize();
 		Vec3 rightYaw = fwdYaw.cross(up);
 		if (rightYaw.lengthSqr() < 1.0e-6) rightYaw = new Vec3(1, 0, 0);
 		rightYaw = rightYaw.normalize();
@@ -1130,7 +1136,8 @@ public final class BlackwhipRenderHandler {
 
     private static Vec3 getHandPositionForSide(Player player, float partial, float sideDir) {
         Vec3 up = new Vec3(0, 1, 0);
-        Vec3 fwdYaw = Vec3.directionFromRotation(0, player.getYRot()).normalize();
+        float yaw = Mth.rotLerp(partial, player.yRotO, player.getYRot());
+        Vec3 fwdYaw = Vec3.directionFromRotation(0, yaw).normalize();
         Vec3 rightYaw = fwdYaw.cross(up);
         if (rightYaw.lengthSqr() < 1.0e-6) rightYaw = new Vec3(1, 0, 0);
         rightYaw = rightYaw.normalize();

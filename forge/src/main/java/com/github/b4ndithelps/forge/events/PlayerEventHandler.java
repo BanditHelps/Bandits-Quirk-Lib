@@ -382,5 +382,27 @@ public class PlayerEventHandler {
                 player.setDeltaMovement(0.0, yVelocity, 0.0);
             }
         }
+
+        // While restraining others, keep the player's view locked so the animation doesn't jitter
+        if (player.getTags().contains("Bql.RestrainLockView")) {
+            // Store once
+            if (!player.getPersistentData().getBoolean("Bql.Restrain.HasStoredRot")) {
+                player.getPersistentData().putFloat("Bql.Restrain.StoredYaw", player.getYRot());
+                player.getPersistentData().putFloat("Bql.Restrain.StoredPitch", player.getXRot());
+                player.getPersistentData().putBoolean("Bql.Restrain.HasStoredRot", true);
+            }
+
+            float storedYaw = player.getPersistentData().getFloat("Bql.Restrain.StoredYaw");
+            float storedPitch = player.getPersistentData().getFloat("Bql.Restrain.StoredPitch");
+
+            // Re-apply rotation each tick
+            player.setYRot(storedYaw);
+            player.setXRot(storedPitch);
+        } else if (player.getPersistentData().getBoolean("Bql.Restrain.HasStoredRot")) {
+            // Cleanup after restrain ends
+            player.getPersistentData().remove("Bql.Restrain.StoredYaw");
+            player.getPersistentData().remove("Bql.Restrain.StoredPitch");
+            player.getPersistentData().remove("Bql.Restrain.HasStoredRot");
+        }
     }
 }

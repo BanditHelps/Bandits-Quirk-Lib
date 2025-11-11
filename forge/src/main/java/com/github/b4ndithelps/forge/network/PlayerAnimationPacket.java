@@ -9,6 +9,7 @@ import dev.kosmx.playerAnim.api.layered.ModifierLayer;
 import dev.kosmx.playerAnim.api.layered.modifier.AbstractFadeModifier;
 import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationAccess;
 import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationRegistry;
+import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.network.FriendlyByteBuf;
@@ -24,6 +25,10 @@ import static dev.kosmx.playerAnim.core.util.Ease.INOUTSINE;
 public class PlayerAnimationPacket {
     private final int entityId;
     private final String animation;
+
+    // Track camera override for restrain animation to restore user's previous preference
+    private static CameraType PREV_CAMERA_TYPE = null;
+    private static boolean CAMERA_FORCED_FOR_RESTRAIN = false;
 
     public PlayerAnimationPacket(int entityId, String anim) {
         this.entityId = entityId;
@@ -47,6 +52,7 @@ public class PlayerAnimationPacket {
             if (mc.level == null) return;
             var entity = mc.level.getEntity(msg.entityId);
             if (entity instanceof AbstractClientPlayer player) {
+                boolean isLocalPlayer = (mc.player != null && mc.player.getId() == msg.entityId);
                 var animation = (ModifierLayer<IAnimation>) PlayerAnimationAccess.getPlayerAssociatedData(player).get(ResourceLocation.fromNamespaceAndPath(BanditsQuirkLib.MOD_ID, "animation"));
                 if (animation != null) {
 
@@ -55,6 +61,12 @@ public class PlayerAnimationPacket {
                                 AbstractFadeModifier.standardFadeIn(10, INOUTSINE),
                                 null
                         );
+                        // If we previously forced third person for restrain, restore the original camera type
+                        if (isLocalPlayer && CAMERA_FORCED_FOR_RESTRAIN && PREV_CAMERA_TYPE != null) {
+                            mc.options.setCameraType(PREV_CAMERA_TYPE);
+                            CAMERA_FORCED_FOR_RESTRAIN = false;
+                            PREV_CAMERA_TYPE = null;
+                        }
                     } else if (msg.animation.equals("x")) {
                         animation.setAnimation(null);
                     } else {
@@ -69,6 +81,15 @@ public class PlayerAnimationPacket {
                                 AbstractFadeModifier.standardFadeIn(10, INOUTSINE),
                                 freshAnim
                         );
+
+                        // Force local player's camera into third person while restrain animation plays
+                        if (isLocalPlayer && "restrain_animation".equals(msg.animation)) {
+                            if (!CAMERA_FORCED_FOR_RESTRAIN) {
+                                PREV_CAMERA_TYPE = mc.options.getCameraType();
+                            }
+                            mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
+                            CAMERA_FORCED_FOR_RESTRAIN = true;
+                        }
                     }
                 }
             }
