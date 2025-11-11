@@ -8,7 +8,9 @@
       "type": "palladium:command",
       "hidden": true,
       "hidden_in_bar": true,
-      "first_tick_commands": [],
+      "first_tick_commands": [
+        "body @s set float chest blackwhip_move_mode 0"
+      ],
       "commands": [],
       "last_tick_commands": [
         "tag @s remove bandits_quirk_lib.blackwhip_active"
@@ -44,9 +46,85 @@
             "type": "palladium:not",
             "conditions": [
               {
-                "type": "palladium:crouching"
+                "type": "bandits_quirk_lib:is_holding_shift"
               }
             ]
+          }
+        ]
+      }
+    },
+    "blackwhip_move_mode_single": {
+      "type": "palladium:command",
+      "icon": "minecraft:diamond",
+      "title": "Control Mode Single",
+      "description": "When pressed, changes the mode to single control mode",
+      "hidden": false,
+      "list_index": 2,
+      "commands": [],
+      "first_tick_commands": [
+        "body @s set float chest blackwhip_move_mode 0",
+        "title @s actionbar {\"text\":\"Mode: Single\",\"color\":\"green\"}"
+      ],
+      "last_tick_commands": [],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:held",
+            "key_type": "key_bind"
+          }
+        ],
+        "unlocking": [
+          {
+            "type": "palladium:has_tag",
+            "tag": "bandits_quirk_lib.blackwhip_active"
+          },
+          {
+            "type": "bandits_quirk_lib:is_holding_shift"
+          },
+          {
+            "type": "bandits_quirk_lib:body_float_check",
+            "body_part": "chest",
+            "key": "blackwhip_move_mode",
+            "value": 1,
+            "mode": "="
+          }
+        ]
+      }
+    },
+    "blackwhip_move_mode_all": {
+      "type": "palladium:command",
+      "icon": "minecraft:diamond_block",
+      "title": "Control Mode All",
+      "description": "When pressed, changes the mode to the all control mode",
+      "hidden": false,
+      "list_index": 2,
+      "commands": [],
+      "first_tick_commands": [
+        "body @s set float chest blackwhip_move_mode 1",
+        "title @s actionbar {\"text\":\"Mode: All\",\"color\":\"green\"}"
+      ],
+      "last_tick_commands": [],
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:held",
+            "key_type": "key_bind"
+          }
+        ],
+        "unlocking": [
+          {
+            "type": "palladium:has_tag",
+            "tag": "bandits_quirk_lib.blackwhip_active"
+          },
+          {
+            "type": "bandits_quirk_lib:is_holding_shift"
+          },
+          {
+            "type": "bandits_quirk_lib:body_float_check",
+            "body_part": "chest",
+            "key": "blackwhip_move_mode",
+            "value": 0,
+            "mode": "="
           }
         ]
       }
@@ -189,6 +267,46 @@
         ]
       }
     },
+    "blackwhip_aoe_tag": {
+      "type": "bandits_quirk_lib:blackwhip_aoe_tag",
+      "icon": "minecraft:bucket",
+      "title": "AOE Grab",
+      "bar_color": "light_gray",
+      "hidden": false,
+      "hidden_in_bar": false,
+      "list_index": 4,
+      "description": "Grab all things around you",
+      "range": 12,
+      "travel_ticks": 10,
+      "miss_retract_ticks": 8,
+      "whip_curve": 0.6,
+      "whip_particle_size": 1,
+      "tag_expire_ticks": 2000,
+      "persistent_tethers": true,
+      "max_persistent_tethers": 4,
+      "conditions": {
+        "unlocking": [
+          {
+            "type": "palladium:ability_unlocked",
+            "ability": "blackwhip_quirk_info"
+          }
+        ],
+        "enabling": [
+          {
+            "type": "palladium:action",
+            "key_type": "key_bind"
+          },
+          {
+            "type": "palladium:not",
+            "conditions": [
+              {
+                "type": "bandits_quirk_lib:is_holding_shift"
+              }
+            ]
+          }
+        ]
+      }
+    },
     "blackwhip_detach_1": {
       "type": "bandits_quirk_lib:blackwhip_detach",
       "icon": "minecraft:shears",
@@ -198,6 +316,31 @@
       "range": 18,
       "whip_curve": 0.6,
       "whip_particle_size": 1.0,
+      "mode": 0,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:action",
+            "key_type": "key_bind"
+          }
+        ],
+        "unlocking": [
+          {
+            "type": "bandits_quirk_lib:is_holding_shift"
+          }
+        ]
+      }
+    },
+    "blackwhip_detach_all": {
+      "type": "bandits_quirk_lib:blackwhip_detach",
+      "icon": "minecraft:shears",
+      "title": "Detach",
+      "hidden": true,
+      "list_index": 4,
+      "range": 18,
+      "whip_curve": 0.6,
+      "whip_particle_size": 1.0,
+      "mode": 1,
       "conditions": {
         "enabling": [
           {

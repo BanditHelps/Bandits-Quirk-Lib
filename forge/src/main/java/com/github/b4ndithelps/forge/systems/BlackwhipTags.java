@@ -7,6 +7,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraftforge.network.PacketDistributor;
+import com.github.b4ndithelps.forge.systems.BodyStatusHelper;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,9 +38,18 @@ public final class BlackwhipTags {
 
 	private BlackwhipTags() {}
 
+	private static void updateBodyStatusCount(ServerPlayer player) {
+		if (player == null) return;
+		Map<Integer, TagEntry> map = PLAYER_TAGS.get(player.getUUID());
+		int count = (map == null) ? 0 : map.size();
+		// Store on chest as a shared spot; synced by helper
+		BodyStatusHelper.setCustomFloat(player, "chest", "blackwhip_connected_count", (float) count);
+	}
+
     public static void addTag(ServerPlayer player, LivingEntity target, int expireTicks) {
         boolean isNew = putOrExtendTag(player, target, expireTicks, 0);
         updateActiveTag(player);
+		updateBodyStatusCount(player);
 		// Only notify struggle system on first tag creation (not on TTL refresh)
 		if (isNew) {
 			BlackwhipStruggle.onTagged(player, target);
@@ -49,6 +59,7 @@ public final class BlackwhipTags {
     public static void addTagWithMaxDistance(ServerPlayer player, LivingEntity target, int expireTicks, int maxDistance) {
         boolean isNew = putOrExtendTag(player, target, expireTicks, maxDistance);
         updateActiveTag(player);
+		updateBodyStatusCount(player);
 		// Only notify struggle system on first tag creation (not on TTL/params refresh)
 		if (isNew) {
 			BlackwhipStruggle.onTagged(player, target);
@@ -68,6 +79,7 @@ public final class BlackwhipTags {
             }
         }
         updateActiveTag(player);
+		updateBodyStatusCount(player);
     }
 
 	public static void clearTags(ServerPlayer player) {
@@ -75,6 +87,7 @@ public final class BlackwhipTags {
         PLAYER_TAGS.remove(player.getUUID());
         syncToClients(player); // clear visuals
         updateActiveTag(player);
+		updateBodyStatusCount(player);
 		// Clearing tags from this player may untag targets; affected players should hide struggle HUD
 		if (player.level() instanceof ServerLevel level) {
 			for (ServerPlayer sp : player.server.getPlayerList().getPlayers()) {
@@ -92,6 +105,7 @@ public final class BlackwhipTags {
 		if (removed) {
 			syncToClients(player);
 			updateActiveTag(player);
+			updateBodyStatusCount(player);
 			if (player.level() instanceof ServerLevel level) {
 				Entity ent = level.getEntity(entityId);
 				if (ent instanceof LivingEntity living) {
@@ -108,6 +122,7 @@ public final class BlackwhipTags {
 		if (player.level() instanceof ServerLevel level) {
 			BlackwhipStruggle.onPotentialUntag(level, target);
 		}
+		updateBodyStatusCount(player);
 		return res;
 	}
 
@@ -129,7 +144,10 @@ public final class BlackwhipTags {
 			}
 		}
 		if (map.isEmpty()) PLAYER_TAGS.remove(player.getUUID());
-		if (mapModified) syncToClients(player);
+		if (mapModified) {
+			syncToClients(player);
+			updateBodyStatusCount(player);
+		}
         updateActiveTag(player);
 		return out;
 	}
@@ -156,6 +174,7 @@ public final class BlackwhipTags {
         // sync visuals after consumption
         syncToClients(player);
         updateActiveTag(player);
+		updateBodyStatusCount(player);
 		return out;
 	}
 
