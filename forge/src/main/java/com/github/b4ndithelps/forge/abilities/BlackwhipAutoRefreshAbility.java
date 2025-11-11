@@ -32,4 +32,12 @@ public class BlackwhipAutoRefreshAbility extends Ability {
             BlackwhipTags.tick(player);
         }
     }
+
+    @Override
+    public void lastTick(LivingEntity entity, AbilityInstance entry, IPowerHolder holder, boolean enabled) {
+        if (!(entity instanceof ServerPlayer player)) return;
+
+        // The idea is that if this method runs, it means that the power was disabled or removed, so remove all active tags
+        BlackwhipTags.clearTags(player);
+    }
 }

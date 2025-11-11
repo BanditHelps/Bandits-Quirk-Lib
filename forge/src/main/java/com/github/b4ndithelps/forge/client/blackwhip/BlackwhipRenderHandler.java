@@ -687,7 +687,17 @@ public final class BlackwhipRenderHandler {
                     progress = 1.0f - easedShrink; // 1 -> 0 over time
                 }
                 // Build back anchor on player's upper back
-                Vec3 local = bubble.localAnchors.get(i % bubble.localAnchors.size());
+                // Ensure we never modulo by zero if anchors are empty (e.g., power removed mid-render)
+                int anchorCount = bubble.localAnchors.size();
+                if (anchorCount == 0) {
+                    // Try to rebuild from current state; guarantee at least one anchor as a fallback
+                    bubble.tentacleCount = Math.max(1, bubble.tentacleCount);
+                    rebuildAuraAnchorsLike(bubble);
+                    anchorCount = bubble.localAnchors.size();
+                }
+                Vec3 local = (anchorCount > 0)
+                        ? bubble.localAnchors.get(i % anchorCount)
+                        : new Vec3(0.0, 0.25, 0.10);
                 Vec3 backBase = player.getPosition(partialTick).add(0, player.getBbHeight() * 0.47, 0);
                 // Push anchors further behind and slightly lower to avoid first-person visibility when looking down
                 Vec3 anchor = backBase
