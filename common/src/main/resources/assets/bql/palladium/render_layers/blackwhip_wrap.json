@@ -1,0 +1,16 @@
+{
+  "type": "palladium:compound",
+  "layers": [
+    {
+      "model": {
+        "normal": "bql:geo/blackwhip_arm_bdr.geo.json",
+        "slim": "bql:geo/blackwhip_arm_bdr.geo.json"
+      },
+      "type": "geckolib:default",
+      "render_type": "glow",
+      "texture": {
+        "base": "bql:textures/models/blackwhip_arm_geo.png"
+      }
+    }
+  ]
+}
