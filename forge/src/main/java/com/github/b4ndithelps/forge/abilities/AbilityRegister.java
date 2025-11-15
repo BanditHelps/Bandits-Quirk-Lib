@@ -11,6 +11,7 @@ public class AbilityRegister {
     public static final RegistrySupplier<Ability> HAPPEN_ONCE;
     public static final RegistrySupplier<Ability> ROT_ABILITY;
     public static final RegistrySupplier<Ability> ENVIRONMENT_DECAY;
+    public static final RegistrySupplier<Ability> THROW_HELD_ITEM;
     public static final RegistrySupplier<Ability> GRAB_ABILITY;
     public static final RegistrySupplier<Ability> BODY_STATUS_MODIFIER;
     public static final RegistrySupplier<Ability> WIND_PROJECTILE;
@@ -57,6 +58,7 @@ public class AbilityRegister {
         HAPPEN_ONCE = ABILITIES.register("happen_once", HappenOnceAbility::new);
         ROT_ABILITY = ABILITIES.register("rot_ability", RotAbility::new);
         ENVIRONMENT_DECAY = ABILITIES.register("environment_decay", EnvironmentDecayAbility::new);
+        THROW_HELD_ITEM = ABILITIES.register("throw_held_item", ThrowHeldItemAbility::new);
         GRAB_ABILITY = ABILITIES.register("grab_ability", GrabAbility::new);
         BODY_STATUS_MODIFIER = ABILITIES.register("body_status_modifier", BodyStatusModifierAbility::new);
         WIND_PROJECTILE = ABILITIES.register("wind_projectile", WindProjectileAbility::new);

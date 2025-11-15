@@ -4,6 +4,7 @@ import com.github.b4ndithelps.BanditsQuirkLib;
 import com.github.b4ndithelps.forge.client.blackwhip.BlackwhipStruggleClient;
 import com.github.b4ndithelps.forge.client.renderer.entity.BetterWallProjectileRenderer;
 import com.github.b4ndithelps.forge.client.renderer.entity.BlockStackEntityRenderer;
+import com.github.b4ndithelps.forge.client.renderer.entity.ThrownHeldItemRenderer;
 import com.github.b4ndithelps.forge.entities.ModEntities;
 import com.github.b4ndithelps.forge.entities.WindProjectileEntity;
 import com.github.b4ndithelps.forge.network.BQLNetwork;
@@ -42,6 +43,7 @@ public class ClientEventHandler {
             event.registerEntityRenderer(ModEntities.WIND_PROJECTILE.get(), WindProjectileRenderer::new);
             event.registerEntityRenderer(ModEntities.BETTER_WALL_PROJECTILE.get(), BetterWallProjectileRenderer::new);
             event.registerEntityRenderer(ModEntities.BLOCK_STACK.get(), BlockStackEntityRenderer::new);
+            event.registerEntityRenderer(ModEntities.THROWN_HELD_ITEM.get(), ThrownHeldItemRenderer::new);
         }
 
         @SubscribeEvent

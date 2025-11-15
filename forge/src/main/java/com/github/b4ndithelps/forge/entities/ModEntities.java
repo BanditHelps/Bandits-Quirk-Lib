@@ -35,6 +35,14 @@ public class ModEntities {
                             .updateInterval(1)
                             .build("block_stack"));
 
+    public static final RegistryObject<EntityType<ThrownHeldItemEntity>> THROWN_HELD_ITEM =
+            ENTITY_TYPES.register("thrown_held_item", () ->
+                    EntityType.Builder.<ThrownHeldItemEntity>of(ThrownHeldItemEntity::new, MobCategory.MISC)
+                            .sized(0.5F, 0.5F)
+                            .clientTrackingRange(64)
+                            .updateInterval(1)
+                            .build("thrown_held_item"));
+
     public static void register(IEventBus eventBus) {
         ENTITY_TYPES.register(eventBus);
     }
