@@ -1,0 +1,8 @@
+{
+  "id": "bandits_quirk_lib:gene.phantom_immunity",
+  "category": "lowend",
+  "rarity": "common",
+  "quality_range": [10, 100],
+  "combinable": true,
+  "description": "A gene that prevents phantoms from spawning on user."
+}

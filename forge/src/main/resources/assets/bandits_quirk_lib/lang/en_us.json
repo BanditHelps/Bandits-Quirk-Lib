@@ -65,5 +65,10 @@
   "bandits_quirk_lib:gene.step_up": "Step Assist",
   "bandits_quirk_lib:gene.swim_speed": "Swim Speed",
   "bandits_quirk_lib:gene.walk_speed": "Walk Speed",
-  "bandits_quirk_lib:gene.zoom": "Zoom"
+  "bandits_quirk_lib:gene.zoom": "Zoom",
+  "bandits_quirk_lib:gene.ender_gene": "Ender",
+  "bandits_quirk_lib:gene.dead_cells": "Dead Cells",
+  "bandits_quirk_lib:gene.phantom_immunity": "Phantom Immunity",
+  "bandits_quirk_lib:gene.adrenaline": "Adrenaline",
+  "bandits_quirk_lib:gene.burst_gene": "Burst"
 }

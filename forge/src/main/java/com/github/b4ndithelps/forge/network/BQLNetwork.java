@@ -50,6 +50,12 @@ public final class BQLNetwork {
                 .consumerMainThread(MineHaSlotSyncPacket::handle)
                 .add();
 
+        CHANNEL.messageBuilder(BlackScreenNetwork.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(BlackScreenNetwork::encode)
+                .decoder(BlackScreenNetwork::decode)
+                .consumerMainThread(BlackScreenNetwork::handle)
+                .add();
+
         CHANNEL.messageBuilder(DoubleJumpC2SPacket.class, index++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(DoubleJumpC2SPacket::encode)
                 .decoder(DoubleJumpC2SPacket::decode)

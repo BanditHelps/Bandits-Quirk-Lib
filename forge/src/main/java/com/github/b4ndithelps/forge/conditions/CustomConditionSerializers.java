@@ -13,6 +13,8 @@ public class CustomConditionSerializers {
     public static final RegistrySupplier<ConditionSerializer> HELD_WITH_COOLDOWN;
     public static final RegistrySupplier<ConditionSerializer> BODY_FLOAT_CHECK;
     public static final RegistrySupplier<ConditionSerializer> RANDOM_CHANCE;
+    public static final RegistrySupplier<ConditionSerializer> BURST_RENDER;
+    public static final RegistrySupplier<ConditionSerializer> SKULK_CORE_CHECK;
     public static final RegistrySupplier<ConditionSerializer> GENOME_HAS_GENE;
 
 
@@ -30,6 +32,9 @@ public class CustomConditionSerializers {
         HELD_WITH_COOLDOWN = CUSTOM_SERIALIZERS.register("held_with_cooldown", HeldWithCooldownCondition.Serializer::new);
         BODY_FLOAT_CHECK = CUSTOM_SERIALIZERS.register("body_float_check", BodyFloatCondition.Serializer::new);
         RANDOM_CHANCE = CUSTOM_SERIALIZERS.register("random_chance", RandomChanceCondition.Serializer::new);
+        BURST_RENDER = CUSTOM_SERIALIZERS.register("burst_render", BurstRenderCondition.Serializer::new);
+        SKULK_CORE_CHECK = CUSTOM_SERIALIZERS.register("skulk_core", SkulkCoreCondition.Serializer::new);
+
         GENOME_HAS_GENE = CUSTOM_SERIALIZERS.register("genome_has_gene", GenomeHasGeneCondition.Serializer::new);
     }
 }

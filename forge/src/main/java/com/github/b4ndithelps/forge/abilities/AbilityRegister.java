@@ -24,6 +24,11 @@ public class AbilityRegister {
     public static final RegistrySupplier<Ability> ENHANCED_PUNCH;
     public static final RegistrySupplier<Ability> ENHANCED_KICK;
     public static final RegistrySupplier<Ability> CHARGED_PUNCH;
+    public static final RegistrySupplier<Ability> ADRENALINE;
+    public static final RegistrySupplier<Ability> ENDER_GENE_TP;
+    public static final RegistrySupplier<Ability> BURST_GENE;
+    public static final RegistrySupplier<Ability> SUPER_BURST_CHARGE_GENE;
+    public static final RegistrySupplier<Ability> SUPER_BURST_EXPLOSION_GENE;
     public static final RegistrySupplier<Ability> AMPULE_SELF_REMOVE;
     public static final RegistrySupplier<Ability> SCALING_GENE_DURATION_EFFECT;
     public static final RegistrySupplier<Ability> SCALING_GENE_AMP_EFFECT;
@@ -69,6 +74,11 @@ public class AbilityRegister {
         ENHANCED_PUNCH = ABILITIES.register("enhanced_punch", EnhancedPunchAbility::new);
         ENHANCED_KICK = ABILITIES.register("enhanced_kick", EnhancedKickAbility::new);
         CHARGED_PUNCH = ABILITIES.register("charged_punch", ChargedPunchAbility::new);
+        ADRENALINE = ABILITIES.register("adrenaline", AdrenalineAbility::new);
+        ENDER_GENE_TP = ABILITIES.register("ender_gene_tp", EnderGeneTP::new);
+        BURST_GENE = ABILITIES.register("burst_gene", BurstGeneAbility::new);
+        SUPER_BURST_CHARGE_GENE = ABILITIES.register("super_burst_charge_gene", SuperBurstChargeGeneAbility::new);
+        SUPER_BURST_EXPLOSION_GENE = ABILITIES.register("super_burst_explosion_gene", SuperBurstExplosionGeneAbility::new);
         AMPULE_SELF_REMOVE = ABILITIES.register("ampule_self_remove", AmpuleSelfRemove::new);
         SCALING_GENE_DURATION_EFFECT = ABILITIES.register("scaling_gene_duration_effect", ScalingGeneDurationEffect::new);
         SCALING_GENE_AMP_EFFECT = ABILITIES.register("scaling_gene_amp_effect", ScalingGeneAmpEffect::new);

@@ -1,0 +1,12 @@
+{
+  "heartbeat": {
+    "sounds": [
+      { "name": "bandits_quirk_lib:heartbeat" }
+    ]
+  },
+  "explosion_charge": {
+    "sounds": [
+      { "name": "bandits_quirk_lib:explosion_charge" }
+    ]
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "name": "Sculk Core",
+  "background": "minecraft:textures/block/blue_wool.png",
+  "icon": "minecraft:echo_shard",
+  "gui_display_type": "tree",
+  "abilities": {
+    "Gene Ability": {
+      "title": "Passive - Sculk Core",
+      "icon": "minecraft:echo_shard",
+      "type": "palladium:render_layer",
+      "description": "An ancient energy source, alone its useless. Maybe it can be utilized by other powers?",
+      "hidden": false,
+      "hidden_in_bar": true,
+      "gui_position": [
+        0,
+        0
+      ],
+      "render_layer": "bql:skulk_core",
+      "conditions": {
+        "enabling": [
+          {
+            "type": "bandits_quirk_lib:skulk_core"
+          }
+        ]
+      }
+    },
+    "Deactivated": {
+      "icon": "minecraft:echo_shard",
+      "type": "palladium:render_layer",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "render_layer": "bql:skulk_core_deactivated",
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:not",
+            "conditions": [{
+              "type": "palladium:ability_enabled",
+              "power": "null",
+              "ability": "Gene Ability"
+            }]
+          }
+        ]
+      }
+    }
+  }
+}

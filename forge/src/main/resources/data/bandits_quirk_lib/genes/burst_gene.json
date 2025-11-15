@@ -1,0 +1,14 @@
+{
+  "id": "bandits_quirk_lib:gene.burst_gene",
+  "category": "quirk",
+  "rarity": "rare",
+  "quality_range": [10, 100],
+  "combinable": true,
+  "description": "Explode parts fo yourself.",
+  "combination": {
+    "requires": [
+      { "id": "bandits_quirk_lib:gene.glowing_skin", "min_quality": 60 }
+    ],
+    "builder": { "count": 1, "min_quality": 50 }
+  }
+}
