@@ -1,6 +1,7 @@
 package com.github.b4ndithelps.forge.entities;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -12,10 +13,11 @@ import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.*;
-import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.entity.projectile.Projectile;
+import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -25,7 +27,6 @@ import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
-import net.minecraft.core.Direction;
 
 /**
  * Carries three captured blocks in a 1x3 vertical stack, can hover near the owner, then be thrown to deal damage.
@@ -128,18 +129,15 @@ public class BlockStackEntity extends Projectile {
 
 	@Override
 	protected void onHit(HitResult result) {
-		super.onHit(result);
-		if (this.level().isClientSide) return;
-		// Prevent double-processing in edge cases
+		if (this.level().isClientSide) {
+			super.onHit(result);
+			return;
+		}
 		if (this.hasPlaced) {
 			return;
 		}
 		this.hasPlaced = true;
-		if (result instanceof EntityHitResult ehr) {
-			onHitEntity(ehr);
-		} else if (result instanceof BlockHitResult bhr) {
-			onHitBlock(bhr);
-		}
+		super.onHit(result);
 	}
 
 	@Override
@@ -196,10 +194,12 @@ public class BlockStackEntity extends Projectile {
 		BlockPos b0 = anchor;
 		BlockPos b1 = anchor.above();
 		BlockPos b2 = anchor.above(2);
-		// Require air for all three positions
-		if (!sl.getBlockState(b0).isAir() || !sl.getBlockState(b1).isAir() || !sl.getBlockState(b2).isAir()) {
+		if (!canOccupy(sl, b0) || !canOccupy(sl, b1) || !canOccupy(sl, b2)) {
 			return false;
 		}
+		clearBlock(sl, b0);
+		clearBlock(sl, b1);
+		clearBlock(sl, b2);
 		sl.setBlock(b0, getBottom(), 3);
 		sl.setBlock(b1, getMiddle(), 3);
 		sl.setBlock(b2, getTop(), 3);
@@ -220,9 +220,12 @@ public class BlockStackEntity extends Projectile {
 		BlockPos b0 = base;
 		BlockPos b1 = base.above();
 		BlockPos b2 = base.above(2);
-		if (!sl.getBlockState(b0).isAir() || !sl.getBlockState(b1).isAir() || !sl.getBlockState(b2).isAir()) {
+		if (!canOccupy(sl, b0) || !canOccupy(sl, b1) || !canOccupy(sl, b2)) {
 			return false;
 		}
+		clearBlock(sl, b0);
+		clearBlock(sl, b1);
+		clearBlock(sl, b2);
 		sl.setBlock(b0, getBottom(), 3);
 		sl.setBlock(b1, getMiddle(), 3);
 		sl.setBlock(b2, getTop(), 3);
@@ -336,5 +339,17 @@ public class BlockStackEntity extends Projectile {
 	public boolean hurt(DamageSource source, float amount) {
 		// ignore damage
 		return false;
+	}
+
+	private boolean canOccupy(ServerLevel level, BlockPos pos) {
+		BlockState state = level.getBlockState(pos);
+		return state.isAir() || state.canBeReplaced() || state.is(BlockTags.LEAVES);
+	}
+
+	private void clearBlock(ServerLevel level, BlockPos pos) {
+		BlockState state = level.getBlockState(pos);
+		if (!state.isAir()) {
+			level.destroyBlock(pos, true);
+		}
 	}
 }
