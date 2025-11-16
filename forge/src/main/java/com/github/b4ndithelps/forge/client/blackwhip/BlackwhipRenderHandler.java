@@ -285,7 +285,7 @@ public final class BlackwhipRenderHandler {
             boolean forceRight = state.restraining || FORCE_RIGHT_HAND_ANCHOR.contains(state.sourcePlayerId);
             Vec3 start;
             if (forceRight) {
-                float yaw = Mth.rotLerp(partial, player.yRotO, player.getYRot());
+                float yaw = Mth.rotLerp(partial, player.yBodyRotO, player.yBodyRot);
                 Vec3 fwdYaw = Vec3.directionFromRotation(0, yaw).normalize();
                 start = getHandPositionForSide(player, partial, 1.0f)
                         .add(0, 0.35, 0)        // move up about 2x more
@@ -486,7 +486,7 @@ public final class BlackwhipRenderHandler {
             boolean forceRight = FORCE_RIGHT_HAND_ANCHOR.contains(multi.sourcePlayerId);
             Vec3 start;
             if (forceRight) {
-                float yaw = Mth.rotLerp(partial, player.yRotO, player.getYRot());
+                float yaw = Mth.rotLerp(partial, player.yBodyRotO, player.yBodyRot);
                 Vec3 fwdYaw = Vec3.directionFromRotation(0, yaw).normalize();
                 start = getHandPositionForSide(player, partial, 1.0f)
                         .add(0, 0.30, 0)
@@ -533,9 +533,9 @@ public final class BlackwhipRenderHandler {
 
             Vec3 playerPos = player.getPosition(partial);
             Vec3 camera = cameraPos;
-            // Build basis from player yaw only (ignore pitch) to keep anchors off-screen when looking down
+            // Build basis from player body yaw only (ignore pitch/head) to keep anchors stable vs camera
             Vec3 up = new Vec3(0, 1, 0);
-            float yaw = Mth.rotLerp(partial, player.yRotO, player.getYRot());
+            float yaw = Mth.rotLerp(partial, player.yBodyRotO, player.yBodyRot);
             Vec3 fwdYaw = Vec3.directionFromRotation(0, yaw).normalize();
             Vec3 back = fwdYaw.scale(-1.0);
             Vec3 right = back.cross(up);
@@ -1122,45 +1122,34 @@ public final class BlackwhipRenderHandler {
     }
 
     private static Vec3 getHandPosition(Player player, float partial) {
-		// Use yaw-only basis to place start near the main-hand side of the torso
-		Vec3 up = new Vec3(0, 1, 0);
-		float yaw = Mth.rotLerp(partial, player.yRotO, player.getYRot());
-		Vec3 fwdYaw = Vec3.directionFromRotation(0, yaw).normalize();
-		Vec3 rightYaw = fwdYaw.cross(up);
-		if (rightYaw.lengthSqr() < 1.0e-6) rightYaw = new Vec3(1, 0, 0);
-		rightYaw = rightYaw.normalize();
-		float sideDir = player.getMainArm() == HumanoidArm.RIGHT ? 1.0f : -1.0f;
-
-		// Base point roughly at shoulder height, offset outward to the hand side and slightly forward
-		double shoulderHeight = Math.max(0.4, Math.min(0.8, player.getBbHeight() * 0.62));
-		double crouchAdjust = player.isCrouching() ? -0.10 : 0.0;
-		Vec3 base = player.getPosition(partial).add(0, shoulderHeight + crouchAdjust, 0);
-
-		// Add a small component of current look to push the start forward with camera aim
-		Vec3 look = player.getViewVector(partial).normalize();
-		return base
-				.add(rightYaw.scale(0.42 * sideDir))
-				.add(fwdYaw.scale(0.28))
-				.add(look.scale(0.10));
+        float sideDir = player.getMainArm() == HumanoidArm.RIGHT ? 1.0f : -1.0f;
+        return getHipAnchorPosition(player, partial, sideDir);
     }
 
     private static Vec3 getHandPositionForSide(Player player, float partial, float sideDir) {
+        return getHipAnchorPosition(player, partial, sideDir);
+    }
+
+    private static Vec3 getHipAnchorPosition(Player player, float partial, float sideDir) {
         Vec3 up = new Vec3(0, 1, 0);
-        float yaw = Mth.rotLerp(partial, player.yRotO, player.getYRot());
+        float yaw = Mth.rotLerp(partial, player.yBodyRotO, player.yBodyRot);
         Vec3 fwdYaw = Vec3.directionFromRotation(0, yaw).normalize();
         Vec3 rightYaw = fwdYaw.cross(up);
         if (rightYaw.lengthSqr() < 1.0e-6) rightYaw = new Vec3(1, 0, 0);
         rightYaw = rightYaw.normalize();
+        float clampedSide = sideDir == 0 ? 0.0f : (sideDir > 0 ? 1.0f : -1.0f);
 
-        double shoulderHeight = Math.max(0.4, Math.min(0.8, player.getBbHeight() * 0.62));
-        double crouchAdjust = player.isCrouching() ? -0.10 : 0.0;
-        Vec3 base = player.getPosition(partial).add(0, shoulderHeight + crouchAdjust, 0);
+        // Anchor near the hip so walking animations don't jerk the connection point
+        double hipHeight = Math.max(0.30, Math.min(0.65, player.getBbHeight() * 0.48));
+        double crouchAdjust = player.isCrouching() ? -0.18 : 0.0;
+        Vec3 base = player.getPosition(partial).add(0, hipHeight + crouchAdjust, 0);
 
-        Vec3 look = player.getViewVector(partial).normalize();
+        // Slight lateral offset keeps the tether aligned with the chosen hip; pull slightly back toward the torso
+        double lateral = 0.20;
+        double forwardOffset = -0.05;
         return base
-                .add(rightYaw.scale(0.42 * sideDir))
-                .add(fwdYaw.scale(0.28))
-                .add(look.scale(0.10));
+                .add(rightYaw.scale(lateral * clampedSide))
+                .add(fwdYaw.scale(forwardOffset));
     }
 
     // Build and draw several closed-loop ribbons that wrap around an entity's horizontal bounds.
