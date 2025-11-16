@@ -39,7 +39,7 @@ public class BlackwhipTagAbility extends Ability {
 	public BlackwhipTagAbility() {
 		super();
 		this.withProperty(RANGE, 18.0F)
-				.withProperty(TRAVEL_TICKS, 10)
+				.withProperty(TRAVEL_TICKS, 36)
 				.withProperty(MISS_RETRACT_TICKS, 8)
 				.withProperty(WHIP_CURVE, 0.6F)
 				.withProperty(WHIP_PARTICLE_SIZE, 1.0F)

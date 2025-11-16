@@ -42,7 +42,7 @@ public class BlackwhipAoETagAbility extends Ability {
 	public BlackwhipAoETagAbility() {
 		super();
 		this.withProperty(RANGE, 12.0F)
-				.withProperty(TRAVEL_TICKS, 10)
+				.withProperty(TRAVEL_TICKS, 24)
 				.withProperty(MISS_RETRACT_TICKS, 8)
 				.withProperty(WHIP_CURVE, 0.6F)
 				.withProperty(WHIP_PARTICLE_SIZE, 1.0F)

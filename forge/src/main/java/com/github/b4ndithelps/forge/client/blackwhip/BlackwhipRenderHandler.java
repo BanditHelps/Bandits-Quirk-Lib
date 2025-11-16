@@ -276,6 +276,7 @@ public final class BlackwhipRenderHandler {
 
         long gameTime = level.getGameTime();
         double time = gameTime + partial;
+        Map<Integer, Integer> pendingEntityTargets = new HashMap<>();
         for (ClientWhipState state : PLAYER_TO_WHIP.values()) {
             if (!state.active) continue;
             Entity src = level.getEntity(state.sourcePlayerId);
@@ -335,16 +336,15 @@ public final class BlackwhipRenderHandler {
                 double reach = Math.max(1.0F, state.range);
                 end = eye.add(dirVec.scale(reach * extend));
             } else if (!state.restraining && state.targetEntityId >= 0) {
-                // Traveling toward a target: extend toward the target based on progress
+                // Traveling toward a target: extend toward the target with a charged reveal phase
                 Entity target = level.getEntity(state.targetEntityId);
                 if (target == null || !target.isAlive()) continue;
                 Vec3 eye = player.getEyePosition(partial);
                 Vec3 toTarget = getAttachPoint(target, partial).subtract(eye);
                 float total = state.initialTravelTicks > 0 ? state.initialTravelTicks : Math.max(1, state.missRetractTicks);
                 float u = 1.0F - Math.max(0F, Math.min(1F, (float) state.ticksLeft / total));
-                float progress = easeInOutCubic(u);
-                // ensure minimal visible extension to avoid first-frame pop
-                if (progress < 0.05F) progress = 0.05F;
+                float chargeFraction = computeDefaultChargeFraction(total);
+                float progress = computeChargedTravelProgress(u, chargeFraction, 0.015f, 0.50f);
                 end = eye.add(toTarget.scale(progress));
             } else {
                 // Miss: extend and retract along look vector
@@ -400,6 +400,9 @@ public final class BlackwhipRenderHandler {
                     state.active = false; // end local-only miss retract
                 }
             }
+            if (!state.restraining && state.targetEntityId >= 0 && state.ticksLeft > 0) {
+                pendingEntityTargets.put(state.sourcePlayerId, state.targetEntityId);
+            }
         }
 
         // Render block-anchored whips (travel animation only)
@@ -413,8 +416,8 @@ public final class BlackwhipRenderHandler {
             Vec3 toTarget = state.target.subtract(eye);
             float total = state.initialTravelTicks > 0 ? state.initialTravelTicks : 1;
             float u = 1.0F - Math.max(0F, Math.min(1F, (float) state.ticksLeft / total));
-            float progress = easeInOutCubic(u);
-            if (progress < 0.05F) progress = 0.05F;
+            float chargeFraction = computeDefaultChargeFraction(total);
+            float progress = computeChargedTravelProgress(u, chargeFraction, 0.0125f, 0.48f);
             Vec3 end = eye.add(toTarget.scale(progress));
 
             // After arrival, always render the full rope from hand to the fixed anchor
@@ -446,8 +449,8 @@ public final class BlackwhipRenderHandler {
             Vec3 eye = player.getEyePosition(partial);
             float total = state.initialTravelTicks > 0 ? state.initialTravelTicks : 1;
             float u = 1.0F - Math.max(0F, Math.min(1F, (float) state.ticksLeft / total));
-            float progress = easeInOutCubic(u);
-            if (progress < 0.05F) progress = 0.05F;
+            float chargeFraction = computeDefaultChargeFraction(total);
+            float progress = computeChargedTravelProgress(u, chargeFraction, 0.0125f, 0.45f);
 
             int nTargets = state.targets.size();
             int half = Math.max(1, nTargets / 2);
@@ -482,6 +485,7 @@ public final class BlackwhipRenderHandler {
             if (!multi.active) continue;
             Entity src = level.getEntity(multi.sourcePlayerId);
             if (!(src instanceof Player player)) continue;
+            Integer pendingTargetId = pendingEntityTargets.get(player.getId());
 
             boolean forceRight = FORCE_RIGHT_HAND_ANCHOR.contains(multi.sourcePlayerId);
             Vec3 start;
@@ -495,6 +499,9 @@ public final class BlackwhipRenderHandler {
                 start = getHandPosition(player, partial);
             }
             for (Integer targetId : multi.targetEntityIds) {
+                if (pendingTargetId != null && targetId != null && pendingTargetId.equals(targetId)) {
+                    continue;
+                }
                 Entity target = level.getEntity(targetId);
                 if (!(target != null && target.isAlive())) continue;
                 Vec3 end = getAttachPoint(target, partial);
@@ -1077,6 +1084,36 @@ public final class BlackwhipRenderHandler {
         if (v < 0.0) v = 0.0;
         if (v > 1.0) v = 1.0;
         return (float)v;
+    }
+
+    private static float computeDefaultChargeFraction(float totalTicks) {
+        float clampedTotal = Math.max(1f, totalTicks);
+        float minChargeTicks = Math.max(2f, clampedTotal * 0.25f);
+        float maxChargeTicks = Math.max(minChargeTicks + 1f, Math.min(clampedTotal - 1f, clampedTotal * 0.8f));
+        float desired = clampedTotal * 0.6f;
+        float chargeTicks = Mth.clamp(desired, minChargeTicks, maxChargeTicks);
+        return Mth.clamp(chargeTicks / clampedTotal, 0.2f, 0.85f);
+    }
+
+    private static float computeChargedTravelProgress(float u, float chargeFraction, float minExtent, float chargeExtent) {
+        float clampedU = Mth.clamp(u, 0f, 1f);
+        float min = Math.max(0f, minExtent);
+        float mid = Math.min(0.95f, Math.max(min + 0.01f, chargeExtent));
+        if (chargeFraction <= 0f || chargeFraction >= 1f) {
+            float eased = easeInOutCubic(clampedU);
+            return Mth.lerp(eased, min, 1f);
+        }
+
+        float frac = Mth.clamp(chargeFraction, 0.05f, 0.9f);
+        if (clampedU < frac) {
+            float revealT = clampedU / frac;
+            float reveal = easeOutQuad(revealT);
+            return Mth.lerp(reveal, min, mid);
+        } else {
+            float travelT = (clampedU - frac) / (1f - frac);
+            float travel = easeInOutCubic(travelT);
+            return Mth.lerp(travel, mid, 1f);
+        }
     }
 
     private static float clamp01(float v) {
