@@ -1,5 +1,9 @@
 package com.github.b4ndithelps.forge.abilities;
 
+import com.github.b4ndithelps.forge.abilities.blackwhip.*;
+import com.github.b4ndithelps.forge.abilities.decay.EnvironmentDecayAbility;
+import com.github.b4ndithelps.forge.abilities.decay.RotAbility;
+import com.github.b4ndithelps.forge.abilities.powerstock.*;
 import net.threetag.palladium.power.ability.Ability;
 import net.threetag.palladiumcore.registry.DeferredRegister;
 import net.threetag.palladiumcore.registry.RegistrySupplier;
@@ -11,6 +15,7 @@ public class AbilityRegister {
     public static final RegistrySupplier<Ability> HAPPEN_ONCE;
     public static final RegistrySupplier<Ability> ROT_ABILITY;
     public static final RegistrySupplier<Ability> ENVIRONMENT_DECAY;
+    public static final RegistrySupplier<Ability> THROW_HELD_ITEM;
     public static final RegistrySupplier<Ability> GRAB_ABILITY;
     public static final RegistrySupplier<Ability> BODY_STATUS_MODIFIER;
     public static final RegistrySupplier<Ability> WIND_PROJECTILE;
@@ -45,6 +50,7 @@ public class AbilityRegister {
     public static final RegistrySupplier<Ability> BLACKWHIP_QUAD_ZIP;
     public static final RegistrySupplier<Ability> BLACKWHIP_MOVE_TAGGED;
     public static final RegistrySupplier<Ability> BLACKWHIP_BLOCK_GRAB;
+    public static final RegistrySupplier<Ability> BLACKWHIP_AOE_TAG;
 
 
     public AbilityRegister() { }
@@ -56,6 +62,7 @@ public class AbilityRegister {
         HAPPEN_ONCE = ABILITIES.register("happen_once", HappenOnceAbility::new);
         ROT_ABILITY = ABILITIES.register("rot_ability", RotAbility::new);
         ENVIRONMENT_DECAY = ABILITIES.register("environment_decay", EnvironmentDecayAbility::new);
+        THROW_HELD_ITEM = ABILITIES.register("throw_held_item", ThrowHeldItemAbility::new);
         GRAB_ABILITY = ABILITIES.register("grab_ability", GrabAbility::new);
         BODY_STATUS_MODIFIER = ABILITIES.register("body_status_modifier", BodyStatusModifierAbility::new);
         WIND_PROJECTILE = ABILITIES.register("wind_projectile", WindProjectileAbility::new);
@@ -90,5 +97,6 @@ public class AbilityRegister {
         BLACKWHIP_QUAD_ZIP = ABILITIES.register("blackwhip_quad_zip", BlackwhipQuadZipAbility::new);
         BLACKWHIP_MOVE_TAGGED = ABILITIES.register("blackwhip_move_tagged", BlackwhipMoveTaggedAbility::new);
         BLACKWHIP_BLOCK_GRAB = ABILITIES.register("blackwhip_block_grab", BlackwhipBlockGrabAbility::new);
+        BLACKWHIP_AOE_TAG = ABILITIES.register("blackwhip_aoe_tag", BlackwhipAoETagAbility::new);
     }
 }

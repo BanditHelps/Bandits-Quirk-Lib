@@ -14,6 +14,7 @@ public class CustomConditionSerializers {
     public static final RegistrySupplier<ConditionSerializer> BODY_FLOAT_CHECK;
     public static final RegistrySupplier<ConditionSerializer> RANDOM_CHANCE;
     public static final RegistrySupplier<ConditionSerializer> GENOME_HAS_GENE;
+    public static final RegistrySupplier<ConditionSerializer> HOLDING_SHIFT;
 
 
     public static final DeferredRegister<ConditionSerializer> CUSTOM_SERIALIZERS;
@@ -31,5 +32,6 @@ public class CustomConditionSerializers {
         BODY_FLOAT_CHECK = CUSTOM_SERIALIZERS.register("body_float_check", BodyFloatCondition.Serializer::new);
         RANDOM_CHANCE = CUSTOM_SERIALIZERS.register("random_chance", RandomChanceCondition.Serializer::new);
         GENOME_HAS_GENE = CUSTOM_SERIALIZERS.register("genome_has_gene", GenomeHasGeneCondition.Serializer::new);
+        HOLDING_SHIFT = CUSTOM_SERIALIZERS.register("is_holding_shift", HoldingShiftCondition.Serializer::new);
     }
 }

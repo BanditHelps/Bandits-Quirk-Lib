@@ -30,7 +30,7 @@ public class BlackwhipBubbleShieldEvents {
 		if (victim.level().isClientSide) return;
 
 		// Only when the Blackwhip Bubble Shield ability is currently enabled
-		if (!AbilityUtil.isEnabled(player, ResourceLocation.parse("bql:blackwhip"), "blackwhip_bubble_shield")) return;
+		if (!AbilityUtil.isEnabled(player, ResourceLocation.parse("mineha:blackwhip"), "blackwhip_bubble_shield")) return;
 
 		DamageSource source = event.getSource();
 		// Exclude environmental/self sources: allow only attacks with an attacker OR explosions/projectiles

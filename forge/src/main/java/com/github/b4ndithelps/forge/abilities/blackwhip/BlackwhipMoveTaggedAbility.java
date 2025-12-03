@@ -1,7 +1,8 @@
-package com.github.b4ndithelps.forge.abilities;
+package com.github.b4ndithelps.forge.abilities.blackwhip;
 
 import com.github.b4ndithelps.forge.systems.BlackwhipTags;
 import com.github.b4ndithelps.forge.systems.BodyStatusHelper;
+import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -63,10 +64,14 @@ public class BlackwhipMoveTaggedAbility extends Ability {
 		entry.setUniqueProperty(CONTROLLED_TARGET, "");
 		entry.setUniqueProperty(ACTIVE_TICKS, 0);
 
-		// Pick best currently tagged target to begin controlling
-		LivingEntity best = chooseBestTagged(player, Math.max(0, entry.getProperty(MAX_DISTANCE)));
-		if (best != null) {
-			entry.setUniqueProperty(CONTROLLED_TARGET, best.getUUID().toString());
+		// Mode 0 = single target; Mode 1 = move all tagged at once
+		int mode = (int) BodyStatusHelper.getCustomFloat(player, "chest", "blackwhip_move_mode");
+		if (mode <= 0) {
+			// Pick best currently tagged target to begin controlling
+			LivingEntity best = chooseBestTagged(player, Math.max(0, entry.getProperty(MAX_DISTANCE)));
+			if (best != null) {
+				entry.setUniqueProperty(CONTROLLED_TARGET, best.getUUID().toString());
+			}
 		}
 	}
 
@@ -81,7 +86,14 @@ public class BlackwhipMoveTaggedAbility extends Ability {
 
 		int maxDist = Math.max(0, entry.getProperty(MAX_DISTANCE));
 
-		// Resolve current controlled target; if missing, reacquire
+		// Mode 0 = single target; Mode 1 = move all tagged at once
+		int mode = (int) BodyStatusHelper.getCustomFloat(player, "chest", "blackwhip_move_mode");
+		if (mode > 0) {
+			moveAllTagged(player, entry, maxDist);
+			return;
+		}
+
+		// Resolve current controlled target; if missing, reacquire (single-target mode)
 		LivingEntity target = resolveControlled(player, entry, maxDist);
 		if (target == null) return;
 
@@ -141,6 +153,10 @@ public class BlackwhipMoveTaggedAbility extends Ability {
 			target.setDeltaMovement(newVel);
 			target.fallDistance = 0.0F;
 			target.setOnGround(false);
+			// Sync motion for player targets so their clients are updated immediately
+			if (target instanceof ServerPlayer targetPlayer && target.level() instanceof ServerLevel targetLevel) {
+				targetLevel.getChunkSource().broadcastAndSend(targetPlayer, new ClientboundSetEntityMotionPacket(targetPlayer));
+			}
 			if (Boolean.TRUE.equals(entry.getProperty(FACE_PLAYER))) {
 				target.setYRot(player.getYRot());
 				target.setXRot(0);
@@ -202,6 +218,86 @@ public class BlackwhipMoveTaggedAbility extends Ability {
 			entry.setUniqueProperty(CONTROLLED_TARGET, reacquired.getUUID().toString());
 		}
 		return reacquired;
+	}
+
+	/**
+	 * Multi-target control: move all currently tagged entities toward the desired offset simultaneously.
+	 */
+	private void moveAllTagged(ServerPlayer player, AbilityInstance entry, int maxDist) {
+		List<LivingEntity> tagged = BlackwhipTags.getTaggedEntities(player, maxDist);
+		if (tagged.isEmpty()) return;
+
+		// Read shared bias once
+		float maxBias = Math.max(0.0F, entry.getProperty(MAX_PULL_BIAS));
+		float bias = BodyStatusHelper.getCustomFloat(player, "chest", "blackwhip_move_bias");
+		if (bias > maxBias) bias = maxBias;
+		if (bias < -maxBias) bias = -maxBias;
+
+		// Desired anchor in front of player
+		Vec3 playerPos = player.position();
+		Vec3 look = player.getLookAngle();
+		float desiredDistance = Math.max(0.5F, entry.getProperty(BASE_DISTANCE) + bias);
+		float height = entry.getProperty(CARRY_HEIGHT);
+		Vec3 desired = playerPos.add(look.scale(desiredDistance)).add(0, height, 0);
+
+		// Spring parameters
+		int activeTicks = Math.max(0, entry.getProperty(ACTIVE_TICKS));
+		int rampTicks = Math.max(1, entry.getProperty(RAMP_TICKS));
+		float ramp = clamp01((float) Math.min(activeTicks, rampTicks) / (float) rampTicks);
+		float baseK = Math.max(0.0F, entry.getProperty(SPRING_STIFFNESS));
+		float damping = clamp01(entry.getProperty(DAMPING));
+		boolean facePlayer = Boolean.TRUE.equals(entry.getProperty(FACE_PLAYER));
+		float healthStrength = Math.max(0.0F, entry.getProperty(HEALTH_SLOW_STRENGTH));
+
+		for (LivingEntity target : tagged) {
+			if (target == null || !target.isAlive()) continue;
+			if (target.getTags().contains("MineHa.GrabProof")) continue;
+			if (maxDist > 0 && target.position().distanceTo(player.position()) > maxDist) continue;
+
+			Vec3 toDesired = desired.subtract(target.position());
+			double dist = toDesired.length();
+			if (dist <= 1.0e-6) continue;
+
+			Vec3 dir = toDesired.scale(1.0 / dist);
+			float k = baseK;
+			if (healthStrength > 0.0F && target.getMaxHealth() > 0.0F) {
+				float scale = (float) (target.getMaxHealth() / 20.0F);
+				float slow = 1.0F / (1.0F + healthStrength * scale);
+				k *= clamp01(slow);
+			}
+			k *= ramp;
+
+			Vec3 vel = target.getDeltaMovement();
+			Vec3 accel = dir.scale(dist * k);
+			Vec3 newVel = new Vec3(
+					vel.x * damping + accel.x,
+					vel.y * damping + accel.y,
+					vel.z * damping + accel.z
+			);
+			target.setDeltaMovement(newVel);
+			target.fallDistance = 0.0F;
+			target.setOnGround(false);
+
+			if (target instanceof ServerPlayer targetPlayer && target.level() instanceof ServerLevel targetLevel) {
+				targetLevel.getChunkSource().broadcastAndSend(targetPlayer, new ClientboundSetEntityMotionPacket(targetPlayer));
+			}
+			if (facePlayer) {
+				target.setYRot(player.getYRot());
+				target.setXRot(0);
+			}
+
+			// Refresh tag short TTL to keep control alive
+			BlackwhipTags.addTagWithMaxDistance(player, target, 20, maxDist);
+		}
+
+		// Occasional lightweight feedback on one of the entities
+		if (player.level() instanceof ServerLevel sl && player.tickCount % 6 == 0) {
+			LivingEntity t0 = tagged.get(0);
+			if (t0 != null && t0.isAlive()) {
+				Vec3 p = t0.position().add(0, t0.getBbHeight() * 0.6, 0);
+				sl.sendParticles(ParticleTypes.ASH, p.x, p.y, p.z, 1, 0.02, 0.02, 0.02, 0.0);
+			}
+		}
 	}
 
 	private static float clamp01(float v) {

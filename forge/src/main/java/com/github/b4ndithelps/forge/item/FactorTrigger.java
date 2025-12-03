@@ -81,8 +81,8 @@ public class FactorTrigger extends Item {
 
         // Start Animation
         BQLNetwork.CHANNEL.send(
-                PacketDistributor.PLAYER.with(() -> (ServerPlayer) player),
-                new PlayerAnimationPacket("ampuleuse")
+                PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> (ServerPlayer) player),
+                new PlayerAnimationPacket(player.getId(), "ampuleuse")
         );
         isUsing = true;
         usedSlot = player.getInventory().selected;
@@ -107,8 +107,8 @@ public class FactorTrigger extends Item {
             if (slot == usedSlot && !selected) {
 
                BQLNetwork.CHANNEL.send(
-                     PacketDistributor.PLAYER.with(() -> (ServerPlayer) player),
-                     new PlayerAnimationPacket("")
+                     PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> (ServerPlayer) player),
+                     new PlayerAnimationPacket(player.getId(), "")
                );
 
                isUsing = false;
@@ -124,8 +124,8 @@ public class FactorTrigger extends Item {
         if (entity instanceof Player player) {
             // Stop Animation
             BQLNetwork.CHANNEL.send(
-                    PacketDistributor.PLAYER.with(() -> (ServerPlayer) player),
-                    new PlayerAnimationPacket("")
+                    PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> (ServerPlayer) player),
+                    new PlayerAnimationPacket(player.getId(), "")
             );
             isUsing = false;
         }

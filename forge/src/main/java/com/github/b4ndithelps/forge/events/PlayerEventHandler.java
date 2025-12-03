@@ -83,8 +83,8 @@ public class PlayerEventHandler {
             if (player.level().isClientSide) return;
             if (!((FactorTrigger) dropped.getItem()).isUsing()) return;
             BQLNetwork.CHANNEL.send(
-                    PacketDistributor.PLAYER.with(() -> (ServerPlayer) player),
-                    new PlayerAnimationPacket("")
+                    PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> (ServerPlayer) player),
+                    new PlayerAnimationPacket(player.getId(), "")
             );
             ((FactorTrigger) dropped.getItem()).setUsing(false);
         }
@@ -215,6 +215,7 @@ public class PlayerEventHandler {
         if (wasInitialized) {
             SuperpowerUtil.addSuperpower(player, ResourceLocation.parse("bql:base_quirk"));
             SuperpowerUtil.addSuperpower(player, ResourceLocation.parse("bql:body_status"));
+//            QuirkRandomizer.giveRandomQuirk(player);
         }
 
         if (player instanceof ServerPlayer sp) {
@@ -381,6 +382,28 @@ public class PlayerEventHandler {
                 double yVelocity = Math.min(currentVelocity.y, 0.0); // Only preserve downward movement
                 player.setDeltaMovement(0.0, yVelocity, 0.0);
             }
+        }
+
+        // While restraining others, keep the player's view locked so the animation doesn't jitter
+        if (player.getTags().contains("Bql.RestrainLockView")) {
+            // Store once
+            if (!player.getPersistentData().getBoolean("Bql.Restrain.HasStoredRot")) {
+                player.getPersistentData().putFloat("Bql.Restrain.StoredYaw", player.getYRot());
+                player.getPersistentData().putFloat("Bql.Restrain.StoredPitch", player.getXRot());
+                player.getPersistentData().putBoolean("Bql.Restrain.HasStoredRot", true);
+            }
+
+            float storedYaw = player.getPersistentData().getFloat("Bql.Restrain.StoredYaw");
+            float storedPitch = player.getPersistentData().getFloat("Bql.Restrain.StoredPitch");
+
+            // Re-apply rotation each tick
+            player.setYRot(storedYaw);
+            player.setXRot(storedPitch);
+        } else if (player.getPersistentData().getBoolean("Bql.Restrain.HasStoredRot")) {
+            // Cleanup after restrain ends
+            player.getPersistentData().remove("Bql.Restrain.StoredYaw");
+            player.getPersistentData().remove("Bql.Restrain.StoredPitch");
+            player.getPersistentData().remove("Bql.Restrain.HasStoredRot");
         }
     }
 }

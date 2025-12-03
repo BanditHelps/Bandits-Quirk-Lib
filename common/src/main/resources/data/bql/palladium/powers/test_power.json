@@ -181,130 +181,6 @@
         ]
       }
     },
-    "blackwhip_lift": {
-      "type": "bandits_quirk_lib:blackwhip_lift",
-      "icon": "minecraft:phantom_membrane",
-      "title": "Lift",
-      "hidden": false,
-      "hidden_in_bar": false,
-      "list_index": 8,
-      "duration_ticks": 60,
-      "levitation_level": 1,
-      "initial_upward_force": 0.4,
-      "max_targets": 0,
-      "max_distance": 48,
-      "conditions": {
-        "enabling": [
-          {
-            "type": "palladium:action",
-            "key_type": "key_bind"
-          }
-        ]
-      }
-    },
-    "blackwhip_slam": {
-      "type": "bandits_quirk_lib:blackwhip_slam",
-      "icon": "minecraft:anvil",
-      "title": "Slam",
-      "hidden": false,
-      "hidden_in_bar": false,
-      "list_index": 9,
-      "lift_force": 0.35,
-      "down_force": 1.2,
-      "damage": 6.0,
-      "max_targets": 0,
-      "max_distance": 48,
-      "conditions": {
-        "enabling": [
-          {
-            "type": "palladium:action",
-            "key_type": "key_bind"
-          }
-        ]
-      }
-    },
-    "blackwhip_lash": {
-      "type": "bandits_quirk_lib:blackwhip_lash",
-      "icon": "minecraft:string",
-      "title": "Lash",
-      "hidden": false,
-      "hidden_in_bar": false,
-      "list_index": 10,
-      "range": 14.0,
-      "travel_ticks": 4,
-      "miss_retract_ticks": 8,
-      "damage": 6.0,
-      "knockback": 0.6,
-      "whip_curve": 0.5,
-      "whip_particle_size": 1.0,
-      "conditions": {
-        "enabling": [
-          {
-            "type": "palladium:action",
-            "key_type": "key_bind"
-          }
-        ]
-      }
-    },
-    "blackwhip_zip": {
-      "type": "bandits_quirk_lib:blackwhip_zip",
-      "icon": "minecraft:lead",
-      "title": "Zip",
-      "hidden": false,
-      "hidden_in_bar": false,
-      "list_index": 11,
-      "range": 24.0,
-      "pull_speed": 1.2,
-      "max_ticks": 0,
-      "conditions": {
-        "enabling": [
-          {
-            "type": "palladium:action",
-            "key_type": "key_bind"
-          }
-        ]
-      }
-    },
-    "blackwhip_puppet": {
-      "type": "bandits_quirk_lib:blackwhip_puppet",
-      "icon": "minecraft:lead",
-      "title": "Puppet",
-      "hidden": false,
-      "hidden_in_bar": false,
-      "list_index": 12,
-      "max_distance": 48,
-      "max_length": 12.0,
-      "spring_stiffness": 0.35,
-      "damping": 0.8,
-      "upward_bias": 0.6,
-      "conditions": {
-        "enabling": [
-          {
-            "type": "palladium:held",
-            "key_type": "key_bind"
-          }
-        ]
-      }
-    },
-    "blackwhip_detach": {
-      "type": "bandits_quirk_lib:blackwhip_detach",
-      "icon": "minecraft:shears",
-      "title": "Detach",
-      "hidden": false,
-      "hidden_in_bar": false,
-      "list_index": 13,
-      "range": 18,
-      "whip_curve": 0.6,
-      "whip_particle_size": 1.0,
-      "conditions": {
-        "enabling": [
-          {
-            "type": "palladium:action",
-            "key_type": "key_bind"
-          }
-        ]
-      }
-    },
     "grow_status": {
       "type": "bandits_quirk_lib:body_status_modifier",
       "title": "Grow",
@@ -394,6 +270,32 @@
             "type": "bandits_quirk_lib:genome_has_gene",
             "gene_id": "bandits_quirk_lib:gene.glowing_skin",
             "min_quality": 50
+          }
+        ]
+      }
+    },
+    "thrower": {
+      "type": "bandits_quirk_lib:throw_held_item",
+      "icon": "minecraft:bow",
+      "title": "null",
+      "bar_color": "light_gray",
+      "hidden": false,
+      "hidden_in_bar": false,
+      "list_index": -1,
+      "gui_position": "null",
+      "description": "null",
+      "stamina_first_cost": 0,
+      "stamina_interval_cost": 0,
+      "stamina_interval": 20,
+      "damage": 6,
+      "proximity_radius": 0.6,
+      "speed": 2,
+      "max_distance": 18,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:action",
+            "key_type": "key_bind"
           }
         ]
       }

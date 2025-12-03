@@ -9,6 +9,7 @@ import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.player.Player;
@@ -275,6 +276,7 @@ public final class BlackwhipRenderHandler {
 
         long gameTime = level.getGameTime();
         double time = gameTime + partial;
+        Map<Integer, Integer> pendingEntityTargets = new HashMap<>();
         for (ClientWhipState state : PLAYER_TO_WHIP.values()) {
             if (!state.active) continue;
             Entity src = level.getEntity(state.sourcePlayerId);
@@ -284,7 +286,8 @@ public final class BlackwhipRenderHandler {
             boolean forceRight = state.restraining || FORCE_RIGHT_HAND_ANCHOR.contains(state.sourcePlayerId);
             Vec3 start;
             if (forceRight) {
-                Vec3 fwdYaw = Vec3.directionFromRotation(0, player.getYRot()).normalize();
+                float yaw = Mth.rotLerp(partial, player.yBodyRotO, player.yBodyRot);
+                Vec3 fwdYaw = Vec3.directionFromRotation(0, yaw).normalize();
                 start = getHandPositionForSide(player, partial, 1.0f)
                         .add(0, 0.35, 0)        // move up about 2x more
                         .add(fwdYaw.scale(0.60)); // push forward roughly arm length
@@ -333,16 +336,15 @@ public final class BlackwhipRenderHandler {
                 double reach = Math.max(1.0F, state.range);
                 end = eye.add(dirVec.scale(reach * extend));
             } else if (!state.restraining && state.targetEntityId >= 0) {
-                // Traveling toward a target: extend toward the target based on progress
+                // Traveling toward a target: extend toward the target with a charged reveal phase
                 Entity target = level.getEntity(state.targetEntityId);
                 if (target == null || !target.isAlive()) continue;
                 Vec3 eye = player.getEyePosition(partial);
                 Vec3 toTarget = getAttachPoint(target, partial).subtract(eye);
                 float total = state.initialTravelTicks > 0 ? state.initialTravelTicks : Math.max(1, state.missRetractTicks);
                 float u = 1.0F - Math.max(0F, Math.min(1F, (float) state.ticksLeft / total));
-                float progress = easeInOutCubic(u);
-                // ensure minimal visible extension to avoid first-frame pop
-                if (progress < 0.05F) progress = 0.05F;
+                float chargeFraction = computeDefaultChargeFraction(total);
+                float progress = computeChargedTravelProgress(u, chargeFraction, 0.015f, 0.50f);
                 end = eye.add(toTarget.scale(progress));
             } else {
                 // Miss: extend and retract along look vector
@@ -398,6 +400,9 @@ public final class BlackwhipRenderHandler {
                     state.active = false; // end local-only miss retract
                 }
             }
+            if (!state.restraining && state.targetEntityId >= 0 && state.ticksLeft > 0) {
+                pendingEntityTargets.put(state.sourcePlayerId, state.targetEntityId);
+            }
         }
 
         // Render block-anchored whips (travel animation only)
@@ -411,8 +416,8 @@ public final class BlackwhipRenderHandler {
             Vec3 toTarget = state.target.subtract(eye);
             float total = state.initialTravelTicks > 0 ? state.initialTravelTicks : 1;
             float u = 1.0F - Math.max(0F, Math.min(1F, (float) state.ticksLeft / total));
-            float progress = easeInOutCubic(u);
-            if (progress < 0.05F) progress = 0.05F;
+            float chargeFraction = computeDefaultChargeFraction(total);
+            float progress = computeChargedTravelProgress(u, chargeFraction, 0.0125f, 0.48f);
             Vec3 end = eye.add(toTarget.scale(progress));
 
             // After arrival, always render the full rope from hand to the fixed anchor
@@ -444,8 +449,8 @@ public final class BlackwhipRenderHandler {
             Vec3 eye = player.getEyePosition(partial);
             float total = state.initialTravelTicks > 0 ? state.initialTravelTicks : 1;
             float u = 1.0F - Math.max(0F, Math.min(1F, (float) state.ticksLeft / total));
-            float progress = easeInOutCubic(u);
-            if (progress < 0.05F) progress = 0.05F;
+            float chargeFraction = computeDefaultChargeFraction(total);
+            float progress = computeChargedTravelProgress(u, chargeFraction, 0.0125f, 0.45f);
 
             int nTargets = state.targets.size();
             int half = Math.max(1, nTargets / 2);
@@ -480,11 +485,13 @@ public final class BlackwhipRenderHandler {
             if (!multi.active) continue;
             Entity src = level.getEntity(multi.sourcePlayerId);
             if (!(src instanceof Player player)) continue;
+            Integer pendingTargetId = pendingEntityTargets.get(player.getId());
 
             boolean forceRight = FORCE_RIGHT_HAND_ANCHOR.contains(multi.sourcePlayerId);
             Vec3 start;
             if (forceRight) {
-                Vec3 fwdYaw = Vec3.directionFromRotation(0, player.getYRot()).normalize();
+                float yaw = Mth.rotLerp(partial, player.yBodyRotO, player.yBodyRot);
+                Vec3 fwdYaw = Vec3.directionFromRotation(0, yaw).normalize();
                 start = getHandPositionForSide(player, partial, 1.0f)
                         .add(0, 0.30, 0)
                         .add(fwdYaw.scale(0.60));
@@ -492,6 +499,9 @@ public final class BlackwhipRenderHandler {
                 start = getHandPosition(player, partial);
             }
             for (Integer targetId : multi.targetEntityIds) {
+                if (pendingTargetId != null && targetId != null && pendingTargetId.equals(targetId)) {
+                    continue;
+                }
                 Entity target = level.getEntity(targetId);
                 if (!(target != null && target.isAlive())) continue;
                 Vec3 end = getAttachPoint(target, partial);
@@ -530,9 +540,10 @@ public final class BlackwhipRenderHandler {
 
             Vec3 playerPos = player.getPosition(partial);
             Vec3 camera = cameraPos;
-            // Build basis from player yaw only (ignore pitch) to keep anchors off-screen when looking down
+            // Build basis from player body yaw only (ignore pitch/head) to keep anchors stable vs camera
             Vec3 up = new Vec3(0, 1, 0);
-            Vec3 fwdYaw = Vec3.directionFromRotation(0, player.getYRot()).normalize();
+            float yaw = Mth.rotLerp(partial, player.yBodyRotO, player.yBodyRot);
+            Vec3 fwdYaw = Vec3.directionFromRotation(0, yaw).normalize();
             Vec3 back = fwdYaw.scale(-1.0);
             Vec3 right = back.cross(up);
             if (right.lengthSqr() < 1.0e-6) right = new Vec3(1, 0, 0);
@@ -634,7 +645,8 @@ public final class BlackwhipRenderHandler {
             Vec3 eye = player.getEyePosition(partialTick);
             Vec3 up = new Vec3(0,1,0);
             // Yaw-only basis for stable back anchors (prevents anchors from popping into view when looking down)
-            Vec3 fwdYaw = Vec3.directionFromRotation(0, player.getYRot()).normalize();
+            float yaw = Mth.rotLerp(partialTick, player.yRotO, player.getYRot());
+            Vec3 fwdYaw = Vec3.directionFromRotation(0, yaw).normalize();
             Vec3 backYaw = fwdYaw.scale(-1.0);
             Vec3 rightYaw = backYaw.cross(up);
             if (rightYaw.lengthSqr() < 1.0e-6) rightYaw = new Vec3(1,0,0);
@@ -682,7 +694,17 @@ public final class BlackwhipRenderHandler {
                     progress = 1.0f - easedShrink; // 1 -> 0 over time
                 }
                 // Build back anchor on player's upper back
-                Vec3 local = bubble.localAnchors.get(i % bubble.localAnchors.size());
+                // Ensure we never modulo by zero if anchors are empty (e.g., power removed mid-render)
+                int anchorCount = bubble.localAnchors.size();
+                if (anchorCount == 0) {
+                    // Try to rebuild from current state; guarantee at least one anchor as a fallback
+                    bubble.tentacleCount = Math.max(1, bubble.tentacleCount);
+                    rebuildAuraAnchorsLike(bubble);
+                    anchorCount = bubble.localAnchors.size();
+                }
+                Vec3 local = (anchorCount > 0)
+                        ? bubble.localAnchors.get(i % anchorCount)
+                        : new Vec3(0.0, 0.25, 0.10);
                 Vec3 backBase = player.getPosition(partialTick).add(0, player.getBbHeight() * 0.47, 0);
                 // Push anchors further behind and slightly lower to avoid first-person visibility when looking down
                 Vec3 anchor = backBase
@@ -1064,6 +1086,36 @@ public final class BlackwhipRenderHandler {
         return (float)v;
     }
 
+    private static float computeDefaultChargeFraction(float totalTicks) {
+        float clampedTotal = Math.max(1f, totalTicks);
+        float minChargeTicks = Math.max(2f, clampedTotal * 0.25f);
+        float maxChargeTicks = Math.max(minChargeTicks + 1f, Math.min(clampedTotal - 1f, clampedTotal * 0.8f));
+        float desired = clampedTotal * 0.6f;
+        float chargeTicks = Mth.clamp(desired, minChargeTicks, maxChargeTicks);
+        return Mth.clamp(chargeTicks / clampedTotal, 0.2f, 0.85f);
+    }
+
+    private static float computeChargedTravelProgress(float u, float chargeFraction, float minExtent, float chargeExtent) {
+        float clampedU = Mth.clamp(u, 0f, 1f);
+        float min = Math.max(0f, minExtent);
+        float mid = Math.min(0.95f, Math.max(min + 0.01f, chargeExtent));
+        if (chargeFraction <= 0f || chargeFraction >= 1f) {
+            float eased = easeInOutCubic(clampedU);
+            return Mth.lerp(eased, min, 1f);
+        }
+
+        float frac = Mth.clamp(chargeFraction, 0.05f, 0.9f);
+        if (clampedU < frac) {
+            float revealT = clampedU / frac;
+            float reveal = easeOutQuad(revealT);
+            return Mth.lerp(reveal, min, mid);
+        } else {
+            float travelT = (clampedU - frac) / (1f - frac);
+            float travel = easeInOutCubic(travelT);
+            return Mth.lerp(travel, mid, 1f);
+        }
+    }
+
     private static float clamp01(float v) {
         if (v < 0f) return 0f;
         if (v > 1f) return 1f;
@@ -1107,43 +1159,34 @@ public final class BlackwhipRenderHandler {
     }
 
     private static Vec3 getHandPosition(Player player, float partial) {
-		// Use yaw-only basis to place start near the main-hand side of the torso
-		Vec3 up = new Vec3(0, 1, 0);
-		Vec3 fwdYaw = Vec3.directionFromRotation(0, player.getYRot()).normalize();
-		Vec3 rightYaw = fwdYaw.cross(up);
-		if (rightYaw.lengthSqr() < 1.0e-6) rightYaw = new Vec3(1, 0, 0);
-		rightYaw = rightYaw.normalize();
-		float sideDir = player.getMainArm() == HumanoidArm.RIGHT ? 1.0f : -1.0f;
-
-		// Base point roughly at shoulder height, offset outward to the hand side and slightly forward
-		double shoulderHeight = Math.max(0.4, Math.min(0.8, player.getBbHeight() * 0.62));
-		double crouchAdjust = player.isCrouching() ? -0.10 : 0.0;
-		Vec3 base = player.getPosition(partial).add(0, shoulderHeight + crouchAdjust, 0);
-
-		// Add a small component of current look to push the start forward with camera aim
-		Vec3 look = player.getViewVector(partial).normalize();
-		return base
-				.add(rightYaw.scale(0.42 * sideDir))
-				.add(fwdYaw.scale(0.28))
-				.add(look.scale(0.10));
+        float sideDir = player.getMainArm() == HumanoidArm.RIGHT ? 1.0f : -1.0f;
+        return getHipAnchorPosition(player, partial, sideDir);
     }
 
     private static Vec3 getHandPositionForSide(Player player, float partial, float sideDir) {
+        return getHipAnchorPosition(player, partial, sideDir);
+    }
+
+    private static Vec3 getHipAnchorPosition(Player player, float partial, float sideDir) {
         Vec3 up = new Vec3(0, 1, 0);
-        Vec3 fwdYaw = Vec3.directionFromRotation(0, player.getYRot()).normalize();
+        float yaw = Mth.rotLerp(partial, player.yBodyRotO, player.yBodyRot);
+        Vec3 fwdYaw = Vec3.directionFromRotation(0, yaw).normalize();
         Vec3 rightYaw = fwdYaw.cross(up);
         if (rightYaw.lengthSqr() < 1.0e-6) rightYaw = new Vec3(1, 0, 0);
         rightYaw = rightYaw.normalize();
+        float clampedSide = sideDir == 0 ? 0.0f : (sideDir > 0 ? 1.0f : -1.0f);
 
-        double shoulderHeight = Math.max(0.4, Math.min(0.8, player.getBbHeight() * 0.62));
-        double crouchAdjust = player.isCrouching() ? -0.10 : 0.0;
-        Vec3 base = player.getPosition(partial).add(0, shoulderHeight + crouchAdjust, 0);
+        // Anchor near the hip so walking animations don't jerk the connection point
+        double hipHeight = Math.max(0.30, Math.min(0.65, player.getBbHeight() * 0.48));
+        double crouchAdjust = player.isCrouching() ? -0.18 : 0.0;
+        Vec3 base = player.getPosition(partial).add(0, hipHeight + crouchAdjust, 0);
 
-        Vec3 look = player.getViewVector(partial).normalize();
+        // Slight lateral offset keeps the tether aligned with the chosen hip; pull slightly back toward the torso
+        double lateral = 0.20;
+        double forwardOffset = -0.05;
         return base
-                .add(rightYaw.scale(0.42 * sideDir))
-                .add(fwdYaw.scale(0.28))
-                .add(look.scale(0.10));
+                .add(rightYaw.scale(lateral * clampedSide))
+                .add(fwdYaw.scale(forwardOffset));
     }
 
     // Build and draw several closed-loop ribbons that wrap around an entity's horizontal bounds.

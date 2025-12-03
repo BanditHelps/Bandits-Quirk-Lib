@@ -9,8 +9,9 @@ import dev.kosmx.playerAnim.api.layered.ModifierLayer;
 import dev.kosmx.playerAnim.api.layered.modifier.AbstractFadeModifier;
 import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationAccess;
 import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationRegistry;
+import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.network.NetworkEvent;
@@ -22,34 +23,50 @@ import static dev.kosmx.playerAnim.core.util.Ease.INOUTSINE;
 
 // USE THIS TO PLAY PLAYER !MAIN! ANIMATION
 public class PlayerAnimationPacket {
+    private final int entityId;
     private final String animation;
 
-    public PlayerAnimationPacket(String anim) {
+    // Track camera override for restrain animation to restore user's previous preference
+    private static CameraType PREV_CAMERA_TYPE = null;
+    private static boolean CAMERA_FORCED_FOR_RESTRAIN = false;
+
+    public PlayerAnimationPacket(int entityId, String anim) {
+        this.entityId = entityId;
         this.animation = anim;
     }
 
     public static void encode(PlayerAnimationPacket msg, FriendlyByteBuf buf) {
+        buf.writeVarInt(msg.entityId);
         buf.writeUtf(msg.animation);
     }
 
     public static PlayerAnimationPacket decode(FriendlyByteBuf buf) {
-        return new PlayerAnimationPacket(buf.readUtf());
+        int id = buf.readVarInt();
+        String anim = buf.readUtf();
+        return new PlayerAnimationPacket(id, anim);
     }
 
     public static void handle(PlayerAnimationPacket msg, Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
             Minecraft mc = Minecraft.getInstance();
-            LocalPlayer player = mc.player;
-
-            if (player != null) {
-                var animation = (ModifierLayer<IAnimation>)PlayerAnimationAccess.getPlayerAssociatedData(player).get(ResourceLocation.fromNamespaceAndPath(BanditsQuirkLib.MOD_ID, "animation"));
+            if (mc.level == null) return;
+            var entity = mc.level.getEntity(msg.entityId);
+            if (entity instanceof AbstractClientPlayer player) {
+                boolean isLocalPlayer = (mc.player != null && mc.player.getId() == msg.entityId);
+                var animation = (ModifierLayer<IAnimation>) PlayerAnimationAccess.getPlayerAssociatedData(player).get(ResourceLocation.fromNamespaceAndPath(BanditsQuirkLib.MOD_ID, "animation"));
                 if (animation != null) {
 
-                    if (msg.animation == "") {
+                    if (msg.animation.isEmpty()) {
                         animation.replaceAnimationWithFade(
                                 AbstractFadeModifier.standardFadeIn(10, INOUTSINE),
                                 null
                         );
+                        // If we previously forced third person for restrain, restore the original camera type
+                        if (isLocalPlayer && CAMERA_FORCED_FOR_RESTRAIN && PREV_CAMERA_TYPE != null) {
+                            mc.options.setCameraType(PREV_CAMERA_TYPE);
+                            CAMERA_FORCED_FOR_RESTRAIN = false;
+                            PREV_CAMERA_TYPE = null;
+                        }
                     } else if (msg.animation.equals("x")) {
                         animation.setAnimation(null);
                     } else {
@@ -64,6 +81,15 @@ public class PlayerAnimationPacket {
                                 AbstractFadeModifier.standardFadeIn(10, INOUTSINE),
                                 freshAnim
                         );
+
+                        // Force local player's camera into third person while restrain animation plays
+                        if (isLocalPlayer && "restrain_animation".equals(msg.animation)) {
+                            if (!CAMERA_FORCED_FOR_RESTRAIN) {
+                                PREV_CAMERA_TYPE = mc.options.getCameraType();
+                            }
+                            mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
+                            CAMERA_FORCED_FOR_RESTRAIN = true;
+                        }
                     }
                 }
             }

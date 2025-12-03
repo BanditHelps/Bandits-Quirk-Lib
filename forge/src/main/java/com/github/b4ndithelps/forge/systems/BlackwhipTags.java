@@ -7,6 +7,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraftforge.network.PacketDistributor;
+import com.github.b4ndithelps.forge.systems.BodyStatusHelper;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,18 +38,32 @@ public final class BlackwhipTags {
 
 	private BlackwhipTags() {}
 
+	private static void updateBodyStatusCount(ServerPlayer player) {
+		if (player == null) return;
+		Map<Integer, TagEntry> map = PLAYER_TAGS.get(player.getUUID());
+		int count = (map == null) ? 0 : map.size();
+		// Store on chest as a shared spot; synced by helper
+		BodyStatusHelper.setCustomFloat(player, "chest", "blackwhip_connected_count", (float) count);
+	}
+
     public static void addTag(ServerPlayer player, LivingEntity target, int expireTicks) {
-        putOrExtendTag(player, target, expireTicks, 0);
+        boolean isNew = putOrExtendTag(player, target, expireTicks, 0);
         updateActiveTag(player);
-		// Notify target that they are tagged to initialize struggle HUD
-		BlackwhipStruggle.onTagged(player, target);
+		updateBodyStatusCount(player);
+		// Only notify struggle system on first tag creation (not on TTL refresh)
+		if (isNew) {
+			BlackwhipStruggle.onTagged(player, target);
+		}
     }
 
     public static void addTagWithMaxDistance(ServerPlayer player, LivingEntity target, int expireTicks, int maxDistance) {
-        putOrExtendTag(player, target, expireTicks, maxDistance);
+        boolean isNew = putOrExtendTag(player, target, expireTicks, maxDistance);
         updateActiveTag(player);
-		// Notify target that they are tagged to initialize struggle HUD
-		BlackwhipStruggle.onTagged(player, target);
+		updateBodyStatusCount(player);
+		// Only notify struggle system on first tag creation (not on TTL/params refresh)
+		if (isNew) {
+			BlackwhipStruggle.onTagged(player, target);
+		}
     }
 
     public static void addTag(ServerPlayer player, LivingEntity target, int expireTicks, int maxTags) {
@@ -64,6 +79,7 @@ public final class BlackwhipTags {
             }
         }
         updateActiveTag(player);
+		updateBodyStatusCount(player);
     }
 
 	public static void clearTags(ServerPlayer player) {
@@ -71,6 +87,7 @@ public final class BlackwhipTags {
         PLAYER_TAGS.remove(player.getUUID());
         syncToClients(player); // clear visuals
         updateActiveTag(player);
+		updateBodyStatusCount(player);
 		// Clearing tags from this player may untag targets; affected players should hide struggle HUD
 		if (player.level() instanceof ServerLevel level) {
 			for (ServerPlayer sp : player.server.getPlayerList().getPlayers()) {
@@ -88,6 +105,7 @@ public final class BlackwhipTags {
 		if (removed) {
 			syncToClients(player);
 			updateActiveTag(player);
+			updateBodyStatusCount(player);
 			if (player.level() instanceof ServerLevel level) {
 				Entity ent = level.getEntity(entityId);
 				if (ent instanceof LivingEntity living) {
@@ -104,6 +122,7 @@ public final class BlackwhipTags {
 		if (player.level() instanceof ServerLevel level) {
 			BlackwhipStruggle.onPotentialUntag(level, target);
 		}
+		updateBodyStatusCount(player);
 		return res;
 	}
 
@@ -125,7 +144,10 @@ public final class BlackwhipTags {
 			}
 		}
 		if (map.isEmpty()) PLAYER_TAGS.remove(player.getUUID());
-		if (mapModified) syncToClients(player);
+		if (mapModified) {
+			syncToClients(player);
+			updateBodyStatusCount(player);
+		}
         updateActiveTag(player);
 		return out;
 	}
@@ -152,6 +174,7 @@ public final class BlackwhipTags {
         // sync visuals after consumption
         syncToClients(player);
         updateActiveTag(player);
+		updateBodyStatusCount(player);
 		return out;
 	}
 
@@ -187,17 +210,19 @@ public final class BlackwhipTags {
 		return changed;
 	}
 
-    private static void putOrExtendTag(ServerPlayer player, LivingEntity target, int expireTicks, int maxDistance) {
-        if (player == null || target == null || player.level().isClientSide) return;
+    private static boolean putOrExtendTag(ServerPlayer player, LivingEntity target, int expireTicks, int maxDistance) {
+        if (player == null || target == null || player.level().isClientSide) return false;
         Map<Integer, TagEntry> map = PLAYER_TAGS.computeIfAbsent(player.getUUID(), k -> new ConcurrentHashMap<>());
         int id = target.getId();
         int requested = Math.max(1, expireTicks);
         TagEntry existing = map.get(id);
+        boolean isNew = (existing == null);
         // Do not shorten an existing tag's allowed lifetime; prefer the larger TTL
         int ttl = existing == null ? requested : Math.max(existing.expireTicks, requested);
         int storedMax = existing == null ? 0 : existing.maxDistance;
         int finalMax = maxDistance > 0 ? maxDistance : storedMax;
         map.put(id, new TagEntry(player.level().getGameTime(), id, ttl, finalMax));
+        return isNew;
     }
 
     /**

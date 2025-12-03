@@ -1,4 +1,4 @@
-package com.github.b4ndithelps.forge.abilities;
+package com.github.b4ndithelps.forge.abilities.blackwhip;
 
 import com.github.b4ndithelps.forge.systems.BlackwhipTags;
 import net.minecraft.server.level.ServerPlayer;
@@ -11,6 +11,7 @@ import net.threetag.palladium.power.IPowerHolder;
 import net.threetag.palladium.power.ability.Ability;
 import net.threetag.palladium.power.ability.AbilityInstance;
 import net.threetag.palladium.util.property.FloatProperty;
+import net.threetag.palladium.util.property.IntegerProperty;
 import net.threetag.palladium.util.property.PalladiumProperty;
 
 import java.util.List;
@@ -21,12 +22,14 @@ public class BlackwhipDetachAbility extends Ability {
 	public static final PalladiumProperty<Float> RANGE = new FloatProperty("range").configurable("Maximum reach to select a tagged target");
 	public static final PalladiumProperty<Float> WHIP_CURVE = new FloatProperty("whip_curve").configurable("How much the whip arcs (visual only)");
 	public static final PalladiumProperty<Float> WHIP_PARTICLE_SIZE = new FloatProperty("whip_particle_size").configurable("Dust particle size for the whip visuals");
+	public static final PalladiumProperty<Integer> MODE = new IntegerProperty("mode").configurable("A mode of 0 detaches a single target, a mode of 1 detaches all targets");
 
 	public BlackwhipDetachAbility() {
 		super();
 		this.withProperty(RANGE, 18.0F)
 				.withProperty(WHIP_CURVE, 0.6F)
-				.withProperty(WHIP_PARTICLE_SIZE, 1.0F);
+				.withProperty(WHIP_PARTICLE_SIZE, 1.0F)
+				.withProperty(MODE, 0);
 	}
 
 	@Override
@@ -34,13 +37,20 @@ public class BlackwhipDetachAbility extends Ability {
 		if (!enabled) return;
 		if (!(entity instanceof ServerPlayer player)) return;
 
-		float range = Math.max(1.0F, entry.getProperty(RANGE));
-		LivingEntity target = findLineTarget(player, range);
-		if (target == null || target == player) return;
+		int mode = entry.getProperty(MODE);
 
-		if (BlackwhipTags.removeTag(player, target)) {
-			player.level().playSound(null, player.blockPosition(), SoundEvents.FISHING_BOBBER_RETRIEVE, SoundSource.PLAYERS, 0.7f, 1.2f);
-			// visuals update via BlackwhipTags.syncToClients inside removeTag
+		// Detach all entities, regardless of distance
+		if (mode == 1) {
+			BlackwhipTags.clearTags(player);
+		} else { // Remove just the entity that the player is looking at
+			float range = Math.max(1.0F, entry.getProperty(RANGE));
+			LivingEntity target = findLineTarget(player, range);
+			if (target == null || target == player) return;
+
+			if (BlackwhipTags.removeTag(player, target)) {
+				player.level().playSound(null, player.blockPosition(), SoundEvents.FISHING_BOBBER_RETRIEVE, SoundSource.PLAYERS, 0.7f, 1.2f);
+				// visuals update via BlackwhipTags.syncToClients inside removeTag
+			}
 		}
 	}
 
