@@ -313,19 +313,21 @@ public class BlackwhipQuadZipAbility extends Ability {
         float eased = 1.0f - (float)Math.pow(1.0 - ratio, 3.0);
         float impulseMag = minPull + (maxPullScaled - minPull) * eased;
 
+        double configuredRange = Math.max(6.0, entry.getProperty(MAX_RANGE));
+        double rayDistance = Math.max(6.0, configuredRange * (1.0 + qf));
+        Vec3 desiredVelocity = null;
+        boolean lockedTarget = false;
+
         // Try to fling toward a looked-at entity within range scaled by quirk factor
-        double rayDistance = Math.max(6.0, entry.getProperty(MAX_RANGE) * (1.0 + qf));
         LivingEntity target = raycastLivingTarget(player, rayDistance);
         if (target != null && target != player && target.isAlive()) {
             Vec3 toTarget = target.getEyePosition().subtract(player.getEyePosition());
-            if (toTarget.lengthSqr() > 1.0E-4) {
+            double dist = Math.sqrt(toTarget.lengthSqr());
+            if (dist > 1.0E-4) {
+                lockedTarget = true;
                 Vec3 dir = toTarget.normalize();
-                Vec3 newImpulse = dir.scale(impulseMag * 1.05F);
-                // Override previous velocity to ensure straight flight toward target
-                player.setDeltaMovement(newImpulse);
-                player.hasImpulse = true;
-                player.fallDistance = 0.0F;
-                player.connection.send(new ClientboundSetEntityMotionPacket(player));
+                double speed = computeQuadZipSpeed(impulseMag * 1.05F, dist, ratio, qf, rayDistance, true);
+                desiredVelocity = dir.scale(speed);
 
                 // Arm a brief post-release collision hit window; damage will apply only if player flies through an entity
                 float baseDamage = Math.max(0.0f, entry.getProperty(BASE_DAMAGE));
@@ -338,17 +340,35 @@ public class BlackwhipQuadZipAbility extends Ability {
                 // Initialize per-window hit tracking
                 player.getPersistentData().put("Bql.QZipHits", new CompoundTag());
             }
-        } else {
+        }
+
+        if (desiredVelocity == null) {
             // Apply a more horizontally biased impulse when no target is found
             Vec3 dir = player.getLookAngle().normalize();
-            Vec3 biasedDir = new Vec3(dir.x, dir.y * 0.35, dir.z).normalize();
-            Vec3 impulse = biasedDir.scale(impulseMag);
-            // Override previous velocity to ensure straight flight in look direction
-            player.setDeltaMovement(impulse);
-            player.hasImpulse = true;
-            player.fallDistance = 0.0F;
-            player.connection.send(new ClientboundSetEntityMotionPacket(player));
+            Vec3 biasedDir = new Vec3(dir.x, dir.y * 0.35, dir.z);
+            if (biasedDir.lengthSqr() < 1.0E-5) {
+                biasedDir = dir;
+            }
+            Vec3 normalized = biasedDir.lengthSqr() > 1.0E-5 ? biasedDir.normalize() : new Vec3(0, 0, 1);
+            double travelBudget = Math.max(3.0, computeAnchorTravelBudget(entry));
+            travelBudget = Math.max(travelBudget, configuredRange * 0.7);
+            double maxBudget = configuredRange * (1.35 + qf * 0.25);
+            travelBudget = Math.min(maxBudget, travelBudget);
+            double speed = computeQuadZipSpeed(impulseMag, travelBudget, ratio, qf, configuredRange, false);
+            desiredVelocity = normalized.scale(speed);
         }
+
+        float damping = lockedTarget ? 0.22f : 0.3f;
+        Vec3 prevVelocity = player.getDeltaMovement();
+        Vec3 damped = prevVelocity.scale(damping);
+        Vec3 adjustment = desiredVelocity.subtract(damped);
+        // Override previous velocity to ensure straight flight toward the chosen direction
+        player.setDeltaMovement(desiredVelocity);
+        player.hasImpulse = true;
+        player.fallDistance = 0.0F;
+        player.connection.send(new ClientboundSetEntityMotionPacket(player));
+        BQLNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player),
+                new PlayerVelocityS2CPacket(adjustment.x, adjustment.y, adjustment.z, damping));
 
         // Clear visuals
         BQLNetwork.CHANNEL.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player),
@@ -360,6 +380,40 @@ public class BlackwhipQuadZipAbility extends Ability {
         entry.setUniqueProperty(CHARGE_TICKS, 0);
         entry.setUniqueProperty(HAS_ANCHORS, false);
         entry.setUniqueProperty(ANCHOR_COUNT, 0);
+    }
+
+    private double computeAnchorTravelBudget(AbilityInstance entry) {
+        if (!Boolean.TRUE.equals(entry.getProperty(HAS_ANCHORS))) {
+            return 0.0;
+        }
+        int n = Math.max(0, Math.min(MAX_ANCHORS, entry.getProperty(ANCHOR_COUNT)));
+        if (n <= 0) {
+            return Math.max(0.0f, entry.getProperty(MAX_RANGE));
+        }
+        double total = 0.0;
+        double max = 0.0;
+        for (int i = 0; i < n; i++) {
+            double len = Math.max(0.0, entry.getProperty(ANCHOR_MAXLEN[i]));
+            total += len;
+            if (len > max) {
+                max = len;
+            }
+        }
+        double avg = total / n;
+        return Math.max(max, avg);
+    }
+
+    private double computeQuadZipSpeed(double baseStrength, double travelDistance, double chargeRatio, double quirkFactor, double rangeHint, boolean targetLocked) {
+        double distance = Math.max(0.25, travelDistance);
+        double normalizedRange = Math.min(1.0, distance / Math.max(4.0, rangeHint));
+        double statsBonus = 1.15 + Math.min(1.75, quirkFactor * 0.25 + chargeRatio * 0.9);
+        double rangeBonus = targetLocked ? (0.9 + normalizedRange * 1.05) : (0.8 + normalizedRange * 1.25);
+        double targetSpeed = Math.max(0.5, baseStrength) * statsBonus * rangeBonus;
+        double minSpeed = Math.max(0.8, Math.min(distance, baseStrength * 0.75));
+        double distanceCap = distance * (targetLocked ? 1.35 : 1.5) + quirkFactor * 0.8;
+        double hardCap = targetLocked ? 13.5 + quirkFactor * 1.6 : 12.0 + quirkFactor * 1.4;
+        double maxSpeed = Math.max(minSpeed + 0.2, Math.min(distanceCap, hardCap));
+        return Math.max(minSpeed, Math.min(maxSpeed, targetSpeed));
     }
 
     private LivingEntity raycastLivingTarget(ServerPlayer player, double range) {

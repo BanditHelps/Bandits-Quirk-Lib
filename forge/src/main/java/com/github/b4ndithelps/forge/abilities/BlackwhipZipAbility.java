@@ -26,6 +26,7 @@ public class BlackwhipZipAbility extends Ability {
 	public static final PalladiumProperty<Float> RANGE_QUIRK_BOOST = new FloatProperty("range_quirk_boost").configurable("Additional range per quirk factor");
 	public static final PalladiumProperty<Float> PULL_SPEED = new FloatProperty("pull_speed").configurable("Pull speed toward anchor");
 	public static final PalladiumProperty<Integer> MAX_TICKS = new IntegerProperty("max_ticks").configurable("Max duration to apply pull (0 = instant impulse)");
+	public static final PalladiumProperty<Float> PULL_QUIRK_BOOST = new FloatProperty("pull_quirk_boost").configurable("Additional pull speed multiplier per quirk factor");
 
     // Unique runtime state: stored anchor and armed flag
     public static final PalladiumProperty<Boolean> HAS_ANCHOR = new BooleanProperty("has_anchor");
@@ -40,6 +41,7 @@ public class BlackwhipZipAbility extends Ability {
 				.withProperty(RANGE_BASE, 24.0F)
 				.withProperty(RANGE_QUIRK_BOOST, 6.0F)
 				.withProperty(PULL_SPEED, 1.2F)
+				.withProperty(PULL_QUIRK_BOOST, 0.35F)
 				.withProperty(MAX_TICKS, 0);
 	}
 
@@ -62,27 +64,34 @@ public class BlackwhipZipAbility extends Ability {
         float maxRange = Math.max(0.0F, entry.getProperty(MAX_RANGE));
         float baseRange = Math.max(0.0F, entry.getProperty(RANGE_BASE));
         float quirkBoostPerPoint = Math.max(0.0F, entry.getProperty(RANGE_QUIRK_BOOST));
-        double quirkFactor = QuirkFactorHelper.getQuirkFactor(player);
+        double quirkFactor = Math.max(0.0, QuirkFactorHelper.getQuirkFactor(player));
         float range = Math.max(1.0F, Math.max(maxRange, baseRange + (float) (quirkFactor * quirkBoostPerPoint)));
-        float speed = Math.max(0.1F, entry.getProperty(PULL_SPEED));
+        float basePullSpeed = Math.max(0.1F, entry.getProperty(PULL_SPEED));
+        float quirkPullBoost = Math.max(0.0F, entry.getProperty(PULL_QUIRK_BOOST));
+        double pullSpeed = basePullSpeed * (1.0 + quirkFactor * quirkPullBoost);
 
         if (armed) {
             // Second press: apply zip toward stored anchor and clear it
             Vec3 anchor = new Vec3(entry.getProperty(ANCHOR_X), entry.getProperty(ANCHOR_Y), entry.getProperty(ANCHOR_Z));
             Vec3 toAnchor = anchor.subtract(player.position());
 			if (toAnchor.lengthSqr() > 1.0e-3) {
-				// Scale pull strength by current distance to anchor so farther targets pull harder.
 				double dist = Math.sqrt(toAnchor.lengthSqr());
-				double normalized = dist / Math.max(1.0, range);
-				// Base 1.0x up to +2.5x at max range (clamped), prevents excessive launch speeds.
-				double scale = 1.0 + Math.min(2.5, normalized * 2.0);
-				Vec3 impulse = toAnchor.normalize().scale(speed * scale);
-                player.setDeltaMovement(player.getDeltaMovement().scale(0.2).add(impulse));
+				double normalizedRange = Math.min(1.0, dist / Math.max(1.0, range));
+				double statsBonus = 1.0 + Math.min(1.5, quirkFactor * Math.max(0.02, quirkPullBoost * 0.15));
+				double targetSpeed = Math.max(0.25, pullSpeed) * (0.6 + normalizedRange * 0.9) * statsBonus;
+				double minSpeed = Math.max(0.3, Math.min(dist, 0.35 + pullSpeed * 0.25));
+				double maxSpeed = Math.max(minSpeed, Math.min(dist, 5.5 + quirkFactor * 0.35));
+				double clampedSpeed = Math.max(minSpeed, Math.min(maxSpeed, targetSpeed));
+				Vec3 desiredVelocity = toAnchor.normalize().scale(clampedSpeed);
+				float damping = 0.35f;
+				Vec3 damped = player.getDeltaMovement().scale(damping);
+				Vec3 adjustment = desiredVelocity.subtract(damped);
+                player.setDeltaMovement(desiredVelocity);
                 player.hasImpulse = true;
                 player.fallDistance = 0.0F;
                 // Client motion for instant feedback
                 BQLNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new BlackwhipBlockWhipPacket(player.getId(), false, anchor.x, anchor.y, anchor.z, 0, 0.6f, 1.0f));
-                BQLNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new PlayerVelocityS2CPacket(impulse.x, impulse.y, impulse.z, 0.2f));
+                BQLNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new PlayerVelocityS2CPacket(adjustment.x, adjustment.y, adjustment.z, damping));
                 player.level().playSound(null, player.blockPosition(), SoundEvents.FISHING_BOBBER_RETRIEVE, SoundSource.PLAYERS, 0.8f, 1.35f);
             }
             entry.setUniqueProperty(HAS_ANCHOR, false);
