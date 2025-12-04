@@ -215,6 +215,7 @@ public class PlayerEventHandler {
         if (wasInitialized) {
             SuperpowerUtil.addSuperpower(player, ResourceLocation.parse("bql:base_quirk"));
             SuperpowerUtil.addSuperpower(player, ResourceLocation.parse("bql:body_status"));
+//            QuirkRandomizer.giveRandomQuirk(player);
         }
 
         if (player instanceof ServerPlayer sp) {

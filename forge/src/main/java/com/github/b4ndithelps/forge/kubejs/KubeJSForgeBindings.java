@@ -1,9 +1,6 @@
 package com.github.b4ndithelps.forge.kubejs;
 
-import com.github.b4ndithelps.forge.systems.BodyStatusHelper;
-import com.github.b4ndithelps.forge.systems.PowerStockHelper;
-import com.github.b4ndithelps.forge.systems.QuirkFactorHelper;
-import com.github.b4ndithelps.forge.systems.StaminaHelper;
+import com.github.b4ndithelps.forge.systems.*;
 import com.github.b4ndithelps.forge.config.ConfigHelper;
 import com.github.b4ndithelps.util.FileManager;
 import dev.latvian.mods.kubejs.KubeJSPlugin;
@@ -27,6 +24,7 @@ public class KubeJSForgeBindings extends KubeJSPlugin {
         event.add("QuirkFactor", new QuirkFactorHelper());
         event.add("BanditUtils", new BanditUtils());
         event.add("PowerstockHelper", new PowerStockHelper());
+        event.add("QuirkRegistry", new QuirkRandomizer());
     }
 
     public static class FileUtilsJS {
