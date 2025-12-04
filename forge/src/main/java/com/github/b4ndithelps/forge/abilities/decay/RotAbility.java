@@ -1,4 +1,4 @@
-package com.github.b4ndithelps.forge.abilities;
+package com.github.b4ndithelps.forge.abilities.decay;
 
 import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
 import com.github.b4ndithelps.forge.effects.ModEffects;

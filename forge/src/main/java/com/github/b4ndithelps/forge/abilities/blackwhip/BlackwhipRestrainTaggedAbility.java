@@ -1,4 +1,4 @@
-package com.github.b4ndithelps.forge.abilities;
+package com.github.b4ndithelps.forge.abilities.blackwhip;
 
 import com.github.b4ndithelps.forge.effects.ModEffects;
 import com.github.b4ndithelps.forge.network.BQLNetwork;

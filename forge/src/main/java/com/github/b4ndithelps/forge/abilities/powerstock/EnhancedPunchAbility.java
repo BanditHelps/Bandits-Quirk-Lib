@@ -1,4 +1,4 @@
-package com.github.b4ndithelps.forge.abilities;
+package com.github.b4ndithelps.forge.abilities.powerstock;
 
 import com.github.b4ndithelps.forge.effects.ModEffects;
 import net.minecraft.sounds.SoundEvents;

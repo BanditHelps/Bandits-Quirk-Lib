@@ -1,4 +1,4 @@
-package com.github.b4ndithelps.forge.abilities;
+package com.github.b4ndithelps.forge.abilities.powerstock;
 
 
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;

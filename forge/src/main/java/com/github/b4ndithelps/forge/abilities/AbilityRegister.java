@@ -1,5 +1,9 @@
 package com.github.b4ndithelps.forge.abilities;
 
+import com.github.b4ndithelps.forge.abilities.blackwhip.*;
+import com.github.b4ndithelps.forge.abilities.decay.EnvironmentDecayAbility;
+import com.github.b4ndithelps.forge.abilities.decay.RotAbility;
+import com.github.b4ndithelps.forge.abilities.powerstock.*;
 import net.threetag.palladium.power.ability.Ability;
 import net.threetag.palladiumcore.registry.DeferredRegister;
 import net.threetag.palladiumcore.registry.RegistrySupplier;

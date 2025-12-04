@@ -1,4 +1,4 @@
-package com.github.b4ndithelps.forge.abilities;
+package com.github.b4ndithelps.forge.abilities.blackwhip;
 
 import com.github.b4ndithelps.forge.systems.BlackwhipTags;
 import com.github.b4ndithelps.forge.systems.BodyStatusHelper;
