@@ -1,0 +1,33 @@
+{
+  "name": "Frost",
+  "background": "minecraft:textures/block/ice.png",
+  "icon": "minecraft:ice",
+  "gui_display_type": "tree",
+  "persistent_data": true,
+  "abilities": {
+    "snow_ray": {
+      "type": "bandits_quirk_lib:frost_snow_beam",
+      "icon": "minecraft:snowball",
+      "title": "Snow Beam",
+      "bar_color": "light_gray",
+      "hidden": false,
+      "hidden_in_bar": false,
+      "list_index": -1,
+      "beam_range": 14,
+      "beam_radius": 0.65,
+      "snow_layers_per_tick": 2,
+      "frost_duration": 80,
+      "frost_amplifier": 1,
+      "freeze_buildup": 12,
+      "snow_height_cap": 10,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:held",
+            "key_type": "key_bind"
+          }
+        ]
+      }
+    }
+  }
+}
