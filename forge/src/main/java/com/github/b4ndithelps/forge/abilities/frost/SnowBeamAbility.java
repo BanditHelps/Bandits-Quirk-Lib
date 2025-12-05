@@ -1,12 +1,16 @@
 package com.github.b4ndithelps.forge.abilities.frost;
 
+import com.github.b4ndithelps.forge.systems.BodyStatusHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SnowLayerBlock;
@@ -21,6 +25,7 @@ import net.threetag.palladium.power.ability.AbilityInstance;
 import net.threetag.palladium.util.property.FloatProperty;
 import net.threetag.palladium.util.property.IntegerProperty;
 import net.threetag.palladium.util.property.PalladiumProperty;
+import net.threetag.palladium.util.property.StringProperty;
 
 import java.util.List;
 
@@ -44,6 +49,13 @@ public class SnowBeamAbility extends Ability {
             .configurable("Ticks of freeze progress added to hit targets");
     public static final PalladiumProperty<Integer> SNOW_HEIGHT_CAP = new IntegerProperty("snow_height_cap")
             .configurable("Maximum height in blocks that snow piles created by the beam may reach");
+    public static final PalladiumProperty<String> CONE_BODY_PART = new StringProperty("cone_body_part")
+            .configurable("Body part storing the cone control value (e.g., 'chest')");
+    public static final PalladiumProperty<String> CONE_BODY_KEY = new StringProperty("cone_body_key")
+            .configurable("Custom float key (0-1) that determines spread from point to cone");
+
+    private static final float MAX_CONE_EXPANSION = 3.0F;
+    private static final int MAX_SNOW_RADIUS = 6;
 
     public SnowBeamAbility() {
         super();
@@ -53,7 +65,9 @@ public class SnowBeamAbility extends Ability {
                 .withProperty(FROST_DURATION, 80)
                 .withProperty(FROST_AMPLIFIER, 1)
                 .withProperty(FREEZE_BUILDUP, 12)
-                .withProperty(SNOW_HEIGHT_CAP, 6);
+                .withProperty(SNOW_HEIGHT_CAP, 6)
+                .withProperty(CONE_BODY_PART, "chest")
+                .withProperty(CONE_BODY_KEY, "frost_beam_shape");
     }
 
     @Override
@@ -74,6 +88,8 @@ public class SnowBeamAbility extends Ability {
 
         float configuredRange = Math.max(0.5F, entry.getProperty(RANGE));
         Vec3 end = start.add(normalized.scale(configuredRange));
+        float baseRadius = Math.max(0.2F, entry.getProperty(BEAM_RADIUS));
+        float coneFactor = getConeFactor(entity, entry);
 
         ClipContext context = new ClipContext(start, end, ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, entity);
         BlockHitResult blockHit = entity.level().clip(context);
@@ -81,30 +97,32 @@ public class SnowBeamAbility extends Ability {
 
         if (blockHit != null && blockHit.getType() == HitResult.Type.BLOCK) {
             beamLength = Math.min(beamLength, blockHit.getLocation().distanceTo(start));
-            handleSnowImpact(serverLevel, blockHit, entry);
+            handleSnowImpact(serverLevel, blockHit, entry, beamLength, configuredRange, baseRadius, coneFactor);
         }
 
-        applyBeamToEntities(serverLevel, entity, start, normalized, beamLength, entry);
-        spawnBeamParticles(serverLevel, start, normalized, beamLength);
+        applyBeamToEntities(serverLevel, entity, start, normalized, beamLength, entry, baseRadius, coneFactor);
+        spawnBeamParticles(serverLevel, start, normalized, beamLength, baseRadius, coneFactor);
     }
 
-    private void applyBeamToEntities(ServerLevel level, LivingEntity caster, Vec3 start, Vec3 direction, double beamLength, AbilityInstance entry) {
-        float radius = Math.max(0.2F, entry.getProperty(BEAM_RADIUS));
+    private void applyBeamToEntities(ServerLevel level, LivingEntity caster, Vec3 start, Vec3 direction, double beamLength,
+                                     AbilityInstance entry, float baseRadius, float coneFactor) {
         Vec3 end = start.add(direction.scale(beamLength));
-        AABB searchBox = new AABB(start, end).inflate(radius + 0.5);
+        float maxRadius = computeRadiusAtFraction(baseRadius, coneFactor, 1.0D);
+        AABB searchBox = new AABB(start, end).inflate(maxRadius + 0.5);
 
         List<LivingEntity> targets = level.getEntitiesOfClass(LivingEntity.class, searchBox,
                 target -> target.isAlive() && target != caster && !target.isSpectator());
 
         for (LivingEntity target : targets) {
-            if (!shouldAffect(caster, target, start, direction, beamLength, radius)) {
+            if (!shouldAffect(caster, target, start, direction, beamLength, baseRadius, coneFactor)) {
                 continue;
             }
             applyFrost(target, entry);
         }
     }
 
-    private boolean shouldAffect(LivingEntity caster, LivingEntity target, Vec3 start, Vec3 direction, double beamLength, float radius) {
+    private boolean shouldAffect(LivingEntity caster, LivingEntity target, Vec3 start, Vec3 direction, double beamLength,
+                                 float baseRadius, float coneFactor) {
         if (caster.isAlliedTo(target)) {
             return false;
         }
@@ -118,9 +136,12 @@ public class SnowBeamAbility extends Ability {
             return false;
         }
 
-        double clampedProjection = Math.max(0.0, Math.min(beamLength, projection));
+        double clampedProjection = Mth.clamp(projection, 0.0, beamLength);
+        double fraction = beamLength <= 1.0e-3 ? 0.0 : clampedProjection / beamLength;
+        float dynamicRadius = computeRadiusAtFraction(baseRadius, coneFactor, fraction);
+
         Vec3 closestPoint = start.add(direction.scale(clampedProjection));
-        double allowed = radius + target.getBbWidth() * 0.5;
+        double allowed = dynamicRadius + target.getBbWidth() * 0.5;
         return closestPoint.distanceToSqr(targetCenter) <= allowed * allowed;
     }
 
@@ -140,7 +161,8 @@ public class SnowBeamAbility extends Ability {
         }
     }
 
-    private void handleSnowImpact(ServerLevel level, BlockHitResult hitResult, AbilityInstance entry) {
+    private void handleSnowImpact(ServerLevel level, BlockHitResult hitResult, AbilityInstance entry, double beamLength,
+                                  float configuredRange, float baseRadius, float coneFactor) {
         int layersPerTick = Math.max(0, entry.getProperty(SNOW_BUILDUP));
         if (layersPerTick <= 0) {
             return;
@@ -168,8 +190,28 @@ public class SnowBeamAbility extends Ability {
             return;
         }
 
-        BlockPos columnBase = findColumnBase(level, targetPos);
-        addSnowLayers(level, targetPos, layersPerTick, columnBase, capBlocks);
+        double normalization = configuredRange <= 1.0e-3F ? 0.0 : Math.min(1.0, beamLength / configuredRange);
+        float spreadRadius = computeRadiusAtFraction(baseRadius, coneFactor, normalization);
+        int horizontalRadius = Math.min(MAX_SNOW_RADIUS, Math.max(0, Mth.floor(spreadRadius)));
+
+        if (horizontalRadius <= 0) {
+            BlockPos columnBase = findColumnBase(level, targetPos);
+            addSnowLayers(level, targetPos, layersPerTick, columnBase, capBlocks);
+            return;
+        }
+
+        int radiusSq = horizontalRadius * horizontalRadius;
+        for (int dx = -horizontalRadius; dx <= horizontalRadius; dx++) {
+            for (int dz = -horizontalRadius; dz <= horizontalRadius; dz++) {
+                if (dx * dx + dz * dz > radiusSq) continue;
+
+                BlockPos areaPos = targetPos.offset(dx, 0, dz);
+                if (!level.hasChunkAt(areaPos)) continue;
+
+                BlockPos columnBase = findColumnBase(level, areaPos);
+                addSnowLayers(level, areaPos, layersPerTick, columnBase, capBlocks);
+            }
+        }
     }
 
     private BlockPos findColumnBase(ServerLevel level, BlockPos start) {
@@ -238,7 +280,38 @@ public class SnowBeamAbility extends Ability {
         return state.is(Blocks.SNOW) || state.is(Blocks.SNOW_BLOCK);
     }
 
-    private void spawnBeamParticles(ServerLevel level, Vec3 start, Vec3 direction, double beamLength) {
+    private float getConeFactor(LivingEntity entity, AbilityInstance entry) {
+        if (!(entity instanceof Player player)) {
+            return 0.0F;
+        }
+        if (!BodyStatusHelper.isBodyStatusAvailable(player)) {
+            return 0.0F;
+        }
+
+        String part = entry.getProperty(CONE_BODY_PART);
+        String key = entry.getProperty(CONE_BODY_KEY);
+        if (part == null || part.isEmpty() || key == null || key.isEmpty()) {
+            return 0.0F;
+        }
+
+        try {
+            float value = BodyStatusHelper.getCustomFloat(player, part, key);
+            return Mth.clamp(value, 0.0F, 1.0F);
+        } catch (RuntimeException ignored) {
+            return 0.0F;
+        }
+    }
+
+    private float computeRadiusAtFraction(float baseRadius, float coneFactor, double fraction) {
+        float clampedFactor = Mth.clamp(coneFactor, 0.0F, 1.0F);
+        float normalized = (float) Mth.clamp(fraction, 0.0, 1.0);
+        float expansionMultiplier = 1.0F + normalized * MAX_CONE_EXPANSION;
+        float lerpedMultiplier = (float) Mth.lerp(clampedFactor, 1.0F, expansionMultiplier);
+        return baseRadius * lerpedMultiplier;
+    }
+
+    private void spawnBeamParticles(ServerLevel level, Vec3 start, Vec3 direction, double beamLength,
+                                    float baseRadius, float coneFactor) {
         if (beamLength <= 0.0D) {
             return;
         }
@@ -248,6 +321,7 @@ public class SnowBeamAbility extends Ability {
         Vec3 unit = direction.normalize();
 
         double viewBuffer = 1.1D; // keep immediate area near player clear
+        RandomSource random = level.getRandom();
 
         for (int i = 0; i <= steps; i++) {
             double distance = Math.min(beamLength, i * spacing);
@@ -255,9 +329,15 @@ public class SnowBeamAbility extends Ability {
                 continue;
             }
 
-            Vec3 pos = start.add(unit.scale(distance));
+            double fraction = beamLength <= 1.0e-3 ? 0.0 : distance / beamLength;
+            float visualRadius = computeRadiusAtFraction(baseRadius, coneFactor, fraction) * 0.45F;
+            double angle = random.nextDouble() * (Math.PI * 2);
+            double radial = coneFactor <= 0.0F ? 0.0 : random.nextDouble() * visualRadius;
+            Vec3 offset = new Vec3(Math.cos(angle) * radial, 0.0, Math.sin(angle) * radial);
+
+            Vec3 pos = start.add(unit.scale(distance)).add(offset);
             level.sendParticles(ParticleTypes.SNOWFLAKE, pos.x, pos.y, pos.z, 1, 0.02, 0.02, 0.02, 0.0);
-            if (i % 4 == 0) {
+            if (i % 4 == 0 && coneFactor > 0.0F) {
                 level.sendParticles(ParticleTypes.CLOUD, pos.x, pos.y, pos.z, 1, 0.015, 0.01, 0.015, 0.0);
             }
         }
