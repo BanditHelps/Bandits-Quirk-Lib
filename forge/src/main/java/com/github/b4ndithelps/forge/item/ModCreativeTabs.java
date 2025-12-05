@@ -38,6 +38,7 @@ public class ModCreativeTabs {
                 output.accept(ModItems.GENE_VIAL_QUIRK.get());
                 output.accept(ModItems.GENE_DATABASE.get());
                 output.accept(ModItems.INJECTOR.get());
+                output.accept(ModItems.FROST_KNOCKBACK_SNOWBALL.get());
             })
             .build());
 

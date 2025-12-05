@@ -28,6 +28,78 @@
           }
         ]
       }
+    },
+    "snowball_creation": {
+      "type": "bandits_quirk_lib:snowball_creation",
+      "icon": "minecraft:snowball",
+      "title": "Packed Snowballs",
+      "bar_color": "white",
+      "hidden": false,
+      "hidden_in_bar": false,
+      "list_index": 1,
+      "snowball_count": 1,
+      "spawn_radius": 1.6,
+      "vertical_variance": 0.4,
+      "base_knockback": 1.15,
+      "reinforced_damage": 4.0,
+      "add_momentum": true,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:action",
+            "key_type": "key_bind"
+          }
+        ]
+      }
+    },
+    "snow_wall": {
+      "type": "bandits_quirk_lib:snow_wall",
+      "icon": "minecraft:snow_block",
+      "title": "Snow Wall",
+      "bar_color": "light_gray",
+      "hidden": false,
+      "hidden_in_bar": false,
+      "list_index": 2,
+      "path_length": 6,
+      "path_width": 2,
+      "path_layers": 4,
+      "path_interval": 3,
+      "path_height_cap": 4,
+      "wall_width": 3,
+      "wall_height": 4,
+      "wall_thickness": 1,
+      "wall_distance": 4.0,
+      "wall_lifetime": 200,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:held",
+            "key_type": "key_bind"
+          }
+        ]
+      }
+    },
+    "whiteout": {
+      "type": "bandits_quirk_lib:snow_whiteout",
+      "icon": "minecraft:powder_snow_bucket",
+      "title": "Whiteout",
+      "bar_color": "light_gray",
+      "hidden": false,
+      "hidden_in_bar": false,
+      "list_index": 3,
+      "max_radius": 10,
+      "radius_growth": 0.25,
+      "snow_blindness_duration": 80,
+      "snow_blindness_amp": 0,
+      "particle_density": 35,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:toggle",
+            "key_type": "key_bind"
+          }
+        ]
+      }
     }
   }
 }

@@ -10,6 +10,8 @@
   "item.bandits_quirk_lib.trigger_tier1": "Tier 1 Trigger",
   "item.bandits_quirk_lib.trigger_tier2": "Tier 2 Trigger",
   "item.bandits_quirk_lib.trigger_tier3": "Tier 3 Trigger",
+  "item.bandits_quirk_lib.frost_knockback_snowball": "Packed Snowball",
+  "item.bandits_quirk_lib.frost_knockback_snowball.reinforced": "Stone Core",
 
   "block.bandits_quirk_lib.research_table_block": "Research Table",
   "block.bandits_quirk_lib.bio_terminal": "Bio Terminal",

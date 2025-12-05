@@ -4,6 +4,9 @@ import com.github.b4ndithelps.forge.abilities.blackwhip.*;
 import com.github.b4ndithelps.forge.abilities.decay.EnvironmentDecayAbility;
 import com.github.b4ndithelps.forge.abilities.decay.RotAbility;
 import com.github.b4ndithelps.forge.abilities.frost.SnowBeamAbility;
+import com.github.b4ndithelps.forge.abilities.frost.SnowWallAbility;
+import com.github.b4ndithelps.forge.abilities.frost.SnowballCreationAbility;
+import com.github.b4ndithelps.forge.abilities.frost.WhiteoutAbility;
 import com.github.b4ndithelps.forge.abilities.powerstock.*;
 import net.threetag.palladium.power.ability.Ability;
 import net.threetag.palladiumcore.registry.DeferredRegister;
@@ -52,7 +55,10 @@ public class AbilityRegister {
     public static final RegistrySupplier<Ability> BLACKWHIP_MOVE_TAGGED;
     public static final RegistrySupplier<Ability> BLACKWHIP_BLOCK_GRAB;
     public static final RegistrySupplier<Ability> BLACKWHIP_AOE_TAG;
-    public static final RegistrySupplier<Ability> FROST_SNOW_BEAM;
+    public static final RegistrySupplier<Ability> SNOW_BEAM;
+    public static final RegistrySupplier<Ability> SNOWBALL_CREATION;
+    public static final RegistrySupplier<Ability> SNOW_WALL;
+    public static final RegistrySupplier<Ability> SNOW_WHITEOUT;
 
 
     public AbilityRegister() { }
@@ -100,6 +106,9 @@ public class AbilityRegister {
         BLACKWHIP_MOVE_TAGGED = ABILITIES.register("blackwhip_move_tagged", BlackwhipMoveTaggedAbility::new);
         BLACKWHIP_BLOCK_GRAB = ABILITIES.register("blackwhip_block_grab", BlackwhipBlockGrabAbility::new);
         BLACKWHIP_AOE_TAG = ABILITIES.register("blackwhip_aoe_tag", BlackwhipAoETagAbility::new);
-        FROST_SNOW_BEAM = ABILITIES.register("frost_snow_beam", SnowBeamAbility::new);
+        SNOW_BEAM = ABILITIES.register("frost_snow_beam", SnowBeamAbility::new);
+        SNOWBALL_CREATION = ABILITIES.register("snowball_creation", SnowballCreationAbility::new);
+        SNOW_WALL = ABILITIES.register("snow_wall", SnowWallAbility::new);
+        SNOW_WHITEOUT = ABILITIES.register("snow_whiteout", WhiteoutAbility::new);
     }
 }

@@ -5,6 +5,7 @@ import com.github.b4ndithelps.forge.client.blackwhip.BlackwhipStruggleClient;
 import com.github.b4ndithelps.forge.client.renderer.entity.BetterWallProjectileRenderer;
 import com.github.b4ndithelps.forge.client.renderer.entity.BlockStackEntityRenderer;
 import com.github.b4ndithelps.forge.client.renderer.entity.ThrownHeldItemRenderer;
+import com.github.b4ndithelps.forge.effects.ModEffects;
 import com.github.b4ndithelps.forge.entities.ModEntities;
 import com.github.b4ndithelps.forge.entities.WindProjectileEntity;
 import com.github.b4ndithelps.forge.network.BQLNetwork;
@@ -12,12 +13,16 @@ import com.github.b4ndithelps.forge.network.DoubleJumpC2SPacket;
 import com.github.b4ndithelps.forge.network.ZoomStatePacket;
 import com.github.b4ndithelps.util.FileManager;
 import com.github.b4ndithelps.forge.blocks.ModMenus;
+import com.mojang.blaze3d.shaders.FogShape;
 import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
+import net.minecraft.client.renderer.entity.ThrownItemRenderer;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
@@ -44,6 +49,7 @@ public class ClientEventHandler {
             event.registerEntityRenderer(ModEntities.BETTER_WALL_PROJECTILE.get(), BetterWallProjectileRenderer::new);
             event.registerEntityRenderer(ModEntities.BLOCK_STACK.get(), BlockStackEntityRenderer::new);
             event.registerEntityRenderer(ModEntities.THROWN_HELD_ITEM.get(), ThrownHeldItemRenderer::new);
+            event.registerEntityRenderer(ModEntities.FROST_SNOWBALL.get(), ThrownItemRenderer::new);
         }
 
         @SubscribeEvent
@@ -152,5 +158,43 @@ public class ClientEventHandler {
             return new ResourceLocation(BanditsQuirkLib.MOD_ID, "textures/entity/wind_projectile.png");
         }
         // Don't render anything - particles handle the visuals
+    }
+
+    @SubscribeEvent
+    public static void onComputeFogColor(ViewportEvent.ComputeFogColor event) {
+        MobEffectInstance snowBlindness = getActiveSnowBlindness();
+        if (snowBlindness == null) {
+            return;
+        }
+
+        float intensity = 0.55F + 0.12F * (snowBlindness.getAmplifier() + 1);
+        intensity = Math.min(1.0F, intensity);
+        event.setRed(0.85F + 0.1F * intensity);
+        event.setGreen(0.9F + 0.08F * intensity);
+        event.setBlue(0.95F + 0.05F * intensity);
+    }
+
+    @SubscribeEvent
+    public static void onRenderFog(ViewportEvent.RenderFog event) {
+        MobEffectInstance snowBlindness = getActiveSnowBlindness();
+        if (snowBlindness == null) {
+            return;
+        }
+
+        float baseRange = 8.0F - snowBlindness.getAmplifier() * 1.5F;
+        float far = Math.max(3.0F, baseRange);
+        event.setNearPlaneDistance(0.25F);
+        event.setFarPlaneDistance(far);
+        event.setFogShape(FogShape.SPHERE);
+        event.setCanceled(true);
+    }
+
+    private static MobEffectInstance getActiveSnowBlindness() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) {
+            return null;
+        }
+
+        return mc.player.getEffect(ModEffects.SNOW_BLINDNESS.get());
     }
 }

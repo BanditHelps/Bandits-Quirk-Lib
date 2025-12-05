@@ -43,6 +43,14 @@ public class ModEntities {
                             .updateInterval(1)
                             .build("thrown_held_item"));
 
+    public static final RegistryObject<EntityType<FrostKnockbackSnowballEntity>> FROST_SNOWBALL =
+            ENTITY_TYPES.register("frost_snowball", () ->
+                    EntityType.Builder.<FrostKnockbackSnowballEntity>of(FrostKnockbackSnowballEntity::new, MobCategory.MISC)
+                            .sized(0.25F, 0.25F)
+                            .clientTrackingRange(64)
+                            .updateInterval(10)
+                            .build("frost_snowball"));
+
     public static void register(IEventBus eventBus) {
         ENTITY_TYPES.register(eventBus);
     }

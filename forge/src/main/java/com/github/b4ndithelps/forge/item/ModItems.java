@@ -43,6 +43,9 @@ public class ModItems {
     public static final RegistryObject<Item> FAILED_SAMPLE = ITEMS.register("failed_sample",
             () -> new FailedSampleItem(new Item.Properties().stacksTo(1)));
 
+    public static final RegistryObject<Item> FROST_KNOCKBACK_SNOWBALL = ITEMS.register("frost_knockback_snowball",
+            () -> new FrostKnockbackSnowballItem(new Item.Properties().stacksTo(16)));
+
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
     }

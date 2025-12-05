@@ -38,6 +38,9 @@ public class ModEffects {
     public static final RegistryObject<MobEffect> HUNGER_RESISTANCE =
             MOB_EFFECTS.register("hunger_resistance", HungerResistanceEffect::new);
 
+    public static final RegistryObject<MobEffect> SNOW_BLINDNESS =
+            MOB_EFFECTS.register("snow_blindness", SnowBlindnessEffect::new);
+
     public static void register(IEventBus eventBus) {
         MOB_EFFECTS.register(eventBus);
     }
