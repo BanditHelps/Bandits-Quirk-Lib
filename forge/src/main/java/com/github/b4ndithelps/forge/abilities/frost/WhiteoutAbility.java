@@ -1,6 +1,7 @@
 package com.github.b4ndithelps.forge.abilities.frost;
 
 import com.github.b4ndithelps.forge.effects.ModEffects;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
@@ -9,12 +10,20 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.SnowLayerBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.threetag.palladium.power.IPowerHolder;
 import net.threetag.palladium.power.ability.Ability;
 import net.threetag.palladium.power.ability.AbilityInstance;
-import net.threetag.palladium.util.property.*;
+import net.threetag.palladium.util.property.FloatProperty;
+import net.threetag.palladium.util.property.IntegerProperty;
+import net.threetag.palladium.util.property.PalladiumProperty;
+import net.threetag.palladium.util.property.PropertyManager;
+import net.threetag.palladium.util.property.SyncType;
 
 import java.util.List;
 
@@ -31,16 +40,20 @@ public class WhiteoutAbility extends Ability {
             new IntegerProperty("snow_blindness_amp").configurable("Amplifier applied to snow blindness (0 = level I)");
     public static final PalladiumProperty<Integer> PARTICLE_DENSITY =
             new IntegerProperty("particle_density").configurable("Number of flakes spawned per tick");
+    public static final PalladiumProperty<Integer> SNOW_PILE_ATTEMPTS =
+            new IntegerProperty("snow_pile_attempts").configurable("Random snow pile attempts per tick while active");
 
     private static final PalladiumProperty<Float> CURRENT_RADIUS =
             new FloatProperty("whiteout_internal_radius").sync(SyncType.NONE).disablePersistence();
+    private static final float SNOW_PILE_CHANCE = 0.35F;
 
     public WhiteoutAbility() {
         this.withProperty(MAX_RADIUS, 10.0F)
                 .withProperty(RADIUS_GROWTH, 0.25F)
                 .withProperty(SNOW_BLINDNESS_DURATION, 80)
                 .withProperty(SNOW_BLINDNESS_AMPLIFIER, 0)
-                .withProperty(PARTICLE_DENSITY, 30);
+                .withProperty(PARTICLE_DENSITY, 30)
+                .withProperty(SNOW_PILE_ATTEMPTS, 1);
     }
 
     @Override
@@ -71,6 +84,7 @@ public class WhiteoutAbility extends Ability {
 
         spawnWhiteoutParticles(serverLevel, entity, newRadius, entry.getProperty(PARTICLE_DENSITY));
         applySnowBlindness(serverLevel, entity, entry, newRadius);
+        scatterSnowPiles(serverLevel, entity, newRadius, entry.getProperty(SNOW_PILE_ATTEMPTS));
     }
 
     @Override
@@ -91,7 +105,7 @@ public class WhiteoutAbility extends Ability {
         for (int i = 0; i < flakes; i++) {
             double angle = random.nextDouble() * Math.PI * 2;
             double distance = random.nextDouble() * radius;
-            double height = (random.nextDouble() - 0.5) * radius * 0.4 + origin.y;
+            double height = (random.nextDouble() - 0.5) * radius * 0.8 + origin.y;
             double x = origin.x + Math.cos(angle) * distance;
             double z = origin.z + Math.sin(angle) * distance;
             level.sendParticles(ParticleTypes.SNOWFLAKE, x, height, z, 1, 0.05, 0.05, 0.05, 0.0);
@@ -127,6 +141,80 @@ public class WhiteoutAbility extends Ability {
         }
     }
 
+    private void scatterSnowPiles(ServerLevel level, LivingEntity entity, float radius, int configuredAttempts) {
+        int attempts = Mth.clamp(configuredAttempts, 0, 24);
+        if (radius <= 1.0F || attempts <= 0) {
+            return;
+        }
+        RandomSource random = level.getRandom();
+        Vec3 origin = entity.position();
+
+        for (int i = 0; i < attempts; i++) {
+            if (random.nextFloat() > SNOW_PILE_CHANCE) {
+                continue;
+            }
+            double angle = random.nextDouble() * Math.PI * 2;
+            double distance = random.nextDouble() * radius;
+            double sampleX = origin.x + Math.cos(angle) * distance;
+            double sampleZ = origin.z + Math.sin(angle) * distance;
+            BlockPos column = BlockPos.containing(sampleX, origin.y, sampleZ);
+            if (!level.hasChunkAt(column)) {
+                continue;
+            }
+            BlockPos surface = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, column);
+            BlockPos placement = resolveSnowPlacement(level, surface);
+            if (placement == null) {
+                continue;
+            }
+            placeSnowLayer(level, placement);
+        }
+    }
+
+    private BlockPos resolveSnowPlacement(ServerLevel level, BlockPos surface) {
+        if (surface.getY() <= level.getMinBuildHeight() || surface.getY() >= level.getMaxBuildHeight()) {
+            return null;
+        }
+        BlockState stateAtSurface = level.getBlockState(surface);
+        if (isSnowMaterial(stateAtSurface)) {
+            return null;
+        }
+        if (!stateAtSurface.isAir()) {
+            BlockPos above = surface.above();
+            if (above.getY() >= level.getMaxBuildHeight()) {
+                return null;
+            }
+            surface = above;
+        }
+        BlockPos below = surface.below();
+        if (below.getY() < level.getMinBuildHeight()) {
+            return null;
+        }
+        BlockState belowState = level.getBlockState(below);
+        if (isSnowMaterial(belowState)) {
+            return null;
+        }
+        BlockState snow = Blocks.SNOW.defaultBlockState();
+        if (!snow.canSurvive(level, surface)) {
+            return null;
+        }
+        return surface;
+    }
+
+    private void placeSnowLayer(ServerLevel level, BlockPos pos) {
+        if (pos.getY() <= level.getMinBuildHeight() || pos.getY() >= level.getMaxBuildHeight()) {
+            return;
+        }
+        BlockState snow = Blocks.SNOW.defaultBlockState().setValue(SnowLayerBlock.LAYERS, 1);
+        if (!snow.canSurvive(level, pos)) {
+            return;
+        }
+        level.setBlockAndUpdate(pos, snow);
+    }
+
+    private boolean isSnowMaterial(BlockState state) {
+        return state.is(Blocks.SNOW) || state.is(Blocks.SNOW_BLOCK);
+    }
+
     private void collapseBurst(ServerLevel level, Vec3 position) {
         RandomSource random = level.getRandom();
         for (int i = 0; i < 20; i++) {
@@ -142,6 +230,6 @@ public class WhiteoutAbility extends Ability {
     @Override
     public String getDocumentationDescription() {
         return "Toggles a growing whiteout that blinds other players within range. The longer it stays active, "
-                + "the larger the storm grows until it reaches its configured maximum radius.";
+                + "the larger the storm grows until it reaches its configured maximum radius, scattering light snow piles.";
     }
 }
