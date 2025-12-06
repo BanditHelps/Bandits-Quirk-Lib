@@ -12,7 +12,7 @@
       "bar_color": "light_gray",
       "hidden": false,
       "hidden_in_bar": false,
-      "list_index": -1,
+      "list_index": 0,
       "beam_range": 14,
       "beam_radius": 0.65,
       "snow_layers_per_tick": 2,
@@ -61,15 +61,12 @@
       "hidden_in_bar": false,
       "list_index": 2,
       "path_length": 6,
-      "path_width": 2,
-      "path_layers": 4,
+      "path_layers": 1,
       "path_interval": 3,
-      "path_height_cap": 4,
       "wall_width": 3,
       "wall_height": 4,
-      "wall_thickness": 1,
-      "wall_distance": 4.0,
-      "wall_lifetime": 200,
+      "wall_thickness": 2,
+      "wall_lifetime": 400,
       "conditions": {
         "enabling": [
           {
