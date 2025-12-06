@@ -28,6 +28,7 @@ public class ModCreativeTabs {
                 output.accept(ModBlocks.BIO_PRINTER.get());
                 output.accept(ModBlocks.GENE_COMBINER.get());
                 output.accept(ModBlocks.BIO_CABLE.get());
+                output.accept(ModBlocks.PERMAFROST_ICE.get());
                 output.accept(ModItems.TISSUE_EXTRACTOR.get());
                 output.accept(ModItems.TISSUE_SAMPLE.get());
                 output.accept(ModItems.SEQUENCED_SAMPLE.get());

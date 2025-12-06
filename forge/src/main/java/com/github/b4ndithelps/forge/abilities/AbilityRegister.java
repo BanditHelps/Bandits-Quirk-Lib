@@ -3,6 +3,7 @@ package com.github.b4ndithelps.forge.abilities;
 import com.github.b4ndithelps.forge.abilities.blackwhip.*;
 import com.github.b4ndithelps.forge.abilities.decay.EnvironmentDecayAbility;
 import com.github.b4ndithelps.forge.abilities.decay.RotAbility;
+import com.github.b4ndithelps.forge.abilities.frost.IcyTouchAbility;
 import com.github.b4ndithelps.forge.abilities.frost.SnowBeamAbility;
 import com.github.b4ndithelps.forge.abilities.frost.SnowWallAbility;
 import com.github.b4ndithelps.forge.abilities.frost.SnowballCreationAbility;
@@ -59,6 +60,7 @@ public class AbilityRegister {
     public static final RegistrySupplier<Ability> SNOWBALL_CREATION;
     public static final RegistrySupplier<Ability> SNOW_WALL;
     public static final RegistrySupplier<Ability> SNOW_WHITEOUT;
+    public static final RegistrySupplier<Ability> ICY_TOUCH;
 
 
     public AbilityRegister() { }
@@ -110,5 +112,6 @@ public class AbilityRegister {
         SNOWBALL_CREATION = ABILITIES.register("snowball_creation", SnowballCreationAbility::new);
         SNOW_WALL = ABILITIES.register("snow_wall", SnowWallAbility::new);
         SNOW_WHITEOUT = ABILITIES.register("snow_whiteout", WhiteoutAbility::new);
+        ICY_TOUCH = ABILITIES.register("icy_touch", IcyTouchAbility::new);
     }
 }
