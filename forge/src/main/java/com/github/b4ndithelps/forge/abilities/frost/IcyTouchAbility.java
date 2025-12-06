@@ -7,23 +7,22 @@ import com.github.b4ndithelps.forge.systems.TempHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.ClipContext;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.HitResult;
-import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.player.AttackEntityEvent;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.threetag.palladium.power.IPowerHolder;
 import net.threetag.palladium.power.ability.Ability;
 import net.threetag.palladium.power.ability.AbilityInstance;
+import net.threetag.palladium.power.ability.AbilityUtil;
 import net.threetag.palladium.util.property.FloatProperty;
 import net.threetag.palladium.util.property.IntegerProperty;
 import net.threetag.palladium.util.property.PalladiumProperty;
@@ -60,99 +59,126 @@ public class IcyTouchAbility extends Ability {
             new IntegerProperty("ice_duration").configurable("Base lifetime in ticks before the ice reverts");
     public static final PalladiumProperty<Integer> QUIRK_DURATION_BONUS =
             new IntegerProperty("quirk_duration_bonus").configurable("Extra lifetime (ticks) per point of quirk factor");
+    public static final PalladiumProperty<Float> ENTITY_FROST_DAMAGE =
+            new FloatProperty("entity_frost_damage").configurable("Extra freeze damage dealt when punching living targets");
+    public static final PalladiumProperty<Integer> ENTITY_FREEZE_BUILDUP =
+            new IntegerProperty("entity_freeze_buildup").configurable("Ticks of freeze buildup applied to punched entities");
 
     private static final SpreadTracker SPREAD_TRACKER = new SpreadTracker();
     private static final ConversionTracker CONVERSION_TRACKER = new ConversionTracker();
+    private static final Map<UUID, AbilityConfig> ACTIVE_CONFIGS = new HashMap<>();
+    private static final ResourceLocation FROST_POWER = ResourceLocation.parse("bql:frost");
 
     public IcyTouchAbility() {
         this.withProperty(TOUCH_RANGE, 6.0F)
-                .withProperty(MAX_SPREAD_RADIUS, 5)
-                .withProperty(SPREAD_ATTEMPTS, 4)
-                .withProperty(SPREAD_INTERVAL, 3)
-                .withProperty(BASE_CONVERT_COUNT, 24)
-                .withProperty(CONVERTS_PER_QUIRK, 8)
+                .withProperty(MAX_SPREAD_RADIUS, 4)
+                .withProperty(SPREAD_ATTEMPTS, 3)
+                .withProperty(SPREAD_INTERVAL, 4)
+                .withProperty(BASE_CONVERT_COUNT, 12)
+                .withProperty(CONVERTS_PER_QUIRK, 5)
                 .withProperty(ICE_DURATION, 160)
-                .withProperty(QUIRK_DURATION_BONUS, 80);
+                .withProperty(QUIRK_DURATION_BONUS, 80)
+                .withProperty(ENTITY_FROST_DAMAGE, 3.0F)
+                .withProperty(ENTITY_FREEZE_BUILDUP, 80);
     }
 
     @Override
     public void firstTick(LivingEntity entity, AbilityInstance entry, IPowerHolder holder, boolean enabled) {
-        if (!enabled) {
+        if (!enabled || !(entity instanceof ServerPlayer player)) {
             return;
         }
-        if (!(entity.level() instanceof ServerLevel serverLevel)) {
-            return;
-        }
-        if (entity instanceof Player player && TempHelper.isOverheated(player)) {
-            return;
-        }
-
-        double quirkFactor = resolveQuirkFactor(entity);
-        int lifetime = computeLifetimeTicks(entry, quirkFactor);
-        int maxBlocks = computeMaxBlocks(entry, quirkFactor);
-        int radius = Math.max(1, entry.getProperty(MAX_SPREAD_RADIUS));
-        int attemptsPerPulse = Math.max(1, entry.getProperty(SPREAD_ATTEMPTS));
-        int interval = computeSpreadInterval(entry, quirkFactor);
-
-        double range = Math.max(1.0D, entry.getProperty(TOUCH_RANGE));
-        BlockPos target = resolveTargetBlock(entity, range);
-        if (target == null) {
-            return;
-        }
-        BlockState state = serverLevel.getBlockState(target);
-        if (state.isAir()) {
-            return;
-        }
-
-        SPREAD_TRACKER.startCascade(entity, serverLevel, target.immutable(), lifetime, maxBlocks, radius, attemptsPerPulse, interval);
+        AbilityConfig config = new AbilityConfig(entry);
+        config.refresh(player);
+        ACTIVE_CONFIGS.put(player.getUUID(), config);
     }
 
-    private double resolveQuirkFactor(LivingEntity entity) {
+    @Override
+    public void tick(LivingEntity entity, AbilityInstance entry, IPowerHolder holder, boolean enabled) {
+        // No-op: reacts only when the player throws punches.
+    }
+
+    @Override
+    public void lastTick(LivingEntity entity, AbilityInstance entry, IPowerHolder holder, boolean enabled) {
         if (entity instanceof ServerPlayer player) {
-            return Math.max(0.0, QuirkFactorHelper.getQuirkFactor(player));
+            ACTIVE_CONFIGS.remove(player.getUUID());
         }
-        return 0.0;
-    }
-
-    private int computeLifetimeTicks(AbilityInstance entry, double quirkFactor) {
-        int base = Math.max(40, entry.getProperty(ICE_DURATION));
-        int perQuirk = Math.max(0, entry.getProperty(QUIRK_DURATION_BONUS));
-        int bonus = (int) Math.round(perQuirk * quirkFactor);
-        return Math.max(20, base + bonus);
-    }
-
-    private int computeMaxBlocks(AbilityInstance entry, double quirkFactor) {
-        int base = Math.max(1, entry.getProperty(BASE_CONVERT_COUNT));
-        int perQuirk = Math.max(0, entry.getProperty(CONVERTS_PER_QUIRK));
-        int bonus = (int) Math.round(perQuirk * quirkFactor);
-        return Math.max(1, base + bonus);
-    }
-
-    private int computeSpreadInterval(AbilityInstance entry, double quirkFactor) {
-        int configured = Math.max(1, entry.getProperty(SPREAD_INTERVAL));
-        double speedMultiplier = 1.0 + (quirkFactor * 2.5);
-        return Math.max(1, (int) Math.round(configured / speedMultiplier));
-    }
-
-    private BlockPos resolveTargetBlock(LivingEntity entity, double range) {
-        Vec3 direction = entity.getLookAngle();
-        if (direction.lengthSqr() < 1.0e-6D) {
-            return null;
-        }
-        Vec3 start = entity.getEyePosition();
-        Vec3 end = start.add(direction.normalize().scale(range));
-        ClipContext context = new ClipContext(start, end, ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, entity);
-        BlockHitResult result = entity.level().clip(context);
-        if (result == null || result.getType() != HitResult.Type.BLOCK) {
-            return null;
-        }
-        return result.getBlockPos();
     }
 
     @Override
     public String getDocumentationDescription() {
-        return "Tap the key to flash-freeze the block you're looking at, then watch the cold radiate outward in even waves. "
-                + "The cascade converts a quirk-scaled number of solid blocks into permafrost ice before the chill wears off.";
+        return "Toggle to sheath your fists in frost. Every punch splinters outward from the impact point, freezing nearby blocks in small bursts, "
+                + "and striking a living target deals extra freeze damage while ramping up their frozen timer.";
+    }
+
+    private static class AbilityConfig {
+        private final AbilityInstance entry;
+        private int lifetimeTicks;
+        private int maxBlocks;
+        private int radius;
+        private int spreadAttempts;
+        private int spreadInterval;
+        private float frostDamage;
+        private int freezeBuildup;
+
+        private AbilityConfig(AbilityInstance entry) {
+            this.entry = entry;
+        }
+
+        private void refresh(ServerPlayer player) {
+            double quirkFactor = Math.max(0.0, QuirkFactorHelper.getQuirkFactor(player));
+            int baseLifetime = Math.max(40, entry.getProperty(ICE_DURATION));
+            int lifetimeBonus = Math.max(0, entry.getProperty(QUIRK_DURATION_BONUS));
+            this.lifetimeTicks = Math.max(20, baseLifetime + (int) Math.round(lifetimeBonus * quirkFactor));
+
+            int baseBlocks = Math.max(1, entry.getProperty(BASE_CONVERT_COUNT));
+            int perQuirk = Math.max(0, entry.getProperty(CONVERTS_PER_QUIRK));
+            this.maxBlocks = Math.max(1, baseBlocks + (int) Math.round(perQuirk * quirkFactor));
+
+            this.radius = Math.max(1, entry.getProperty(MAX_SPREAD_RADIUS));
+            this.spreadAttempts = Math.max(1, entry.getProperty(SPREAD_ATTEMPTS));
+            int configuredInterval = Math.max(1, entry.getProperty(SPREAD_INTERVAL));
+            double speedMultiplier = 1.0 + (quirkFactor * 2.5);
+            this.spreadInterval = Math.max(1, (int) Math.round(configuredInterval / speedMultiplier));
+
+            this.frostDamage = Math.max(0.0F, entry.getProperty(ENTITY_FROST_DAMAGE));
+            this.freezeBuildup = Math.max(0, entry.getProperty(ENTITY_FREEZE_BUILDUP));
+        }
+    }
+
+    private static boolean hasAbilityEnabled(ServerPlayer player) {
+        return AbilityUtil.isEnabled(player, FROST_POWER, "icy_touch");
+    }
+
+    private static void triggerCascade(ServerPlayer player, BlockPos origin, AbilityConfig config) {
+        ServerLevel level = player.serverLevel();
+        if (!level.hasChunkAt(origin)) {
+            return;
+        }
+        BlockState state = level.getBlockState(origin);
+        if (state.isAir()) {
+            BlockPos below = origin.below();
+            if (!level.hasChunkAt(below)) {
+                return;
+            }
+            state = level.getBlockState(below);
+            if (state.isAir()) {
+                return;
+            }
+            origin = below;
+        }
+        SPREAD_TRACKER.startCascade(player, level, origin.immutable(), config.lifetimeTicks, config.maxBlocks,
+                config.radius, config.spreadAttempts, config.spreadInterval);
+    }
+
+    private static void applyFrostPayload(ServerPlayer player, LivingEntity target, AbilityConfig config) {
+        if (config.frostDamage > 0.0F) {
+            target.hurt(target.damageSources().freeze(), config.frostDamage);
+        }
+        if (config.freezeBuildup > 0) {
+            int required = target.getTicksRequiredToFreeze();
+            int updated = Math.min(required, target.getTicksFrozen() + config.freezeBuildup);
+            target.setTicksFrozen(updated);
+        }
     }
 
     private static class SpreadTracker {
@@ -187,6 +213,52 @@ public class IcyTouchAbility extends Ability {
             }
             if (active.isEmpty()) {
                 cascades.remove(level);
+            }
+        }
+    }
+
+    @Mod.EventBusSubscriber(modid = BanditsQuirkLib.MOD_ID)
+    public static class PunchHandler {
+
+        @SubscribeEvent
+        public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
+            if (!(event.getEntity() instanceof ServerPlayer player)) {
+                return;
+            }
+            if (player.level().isClientSide) {
+                return;
+            }
+            AbilityConfig config = ACTIVE_CONFIGS.get(player.getUUID());
+            if (config == null || !hasAbilityEnabled(player)) {
+                return;
+            }
+            if (TempHelper.isOverheated(player)) {
+                return;
+            }
+            config.refresh(player);
+            triggerCascade(player, event.getPos(), config);
+        }
+
+        @SubscribeEvent
+        public static void onAttackEntity(AttackEntityEvent event) {
+            if (!(event.getEntity() instanceof ServerPlayer player)) {
+                return;
+            }
+            if (player.level().isClientSide) {
+                return;
+            }
+            AbilityConfig config = ACTIVE_CONFIGS.get(player.getUUID());
+            if (config == null || !hasAbilityEnabled(player)) {
+                return;
+            }
+            if (TempHelper.isOverheated(player)) {
+                return;
+            }
+            BlockPos impactPos = BlockPos.containing(event.getTarget().position());
+            config.refresh(player);
+            triggerCascade(player, impactPos, config);
+            if (event.getTarget() instanceof LivingEntity living) {
+                applyFrostPayload(player, living, config);
             }
         }
     }

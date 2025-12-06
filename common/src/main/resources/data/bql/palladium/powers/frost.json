@@ -108,16 +108,18 @@
       "list_index": 4,
       "touch_range": 6.0,
       "max_spread_radius": 5,
-      "spread_attempts": 4,
-      "spread_interval": 3,
-      "base_convert_count": 24,
-      "convert_per_quirk": 8,
+      "spread_attempts": 3,
+      "spread_interval": 4,
+      "base_convert_count": 12,
+      "convert_per_quirk": 5,
       "ice_duration": 160,
       "quirk_duration_bonus": 80,
+      "entity_frost_damage": 3.0,
+      "entity_freeze_buildup": 80,
       "conditions": {
         "enabling": [
           {
-            "type": "palladium:action",
+            "type": "palladium:toggle",
             "key_type": "key_bind"
           }
         ]
