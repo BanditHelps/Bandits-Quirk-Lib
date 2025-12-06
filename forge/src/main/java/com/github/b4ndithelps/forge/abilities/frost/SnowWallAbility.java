@@ -2,6 +2,7 @@ package com.github.b4ndithelps.forge.abilities.frost;
 
 import com.github.b4ndithelps.BanditsQuirkLib;
 import com.github.b4ndithelps.forge.systems.QuirkFactorHelper;
+import com.github.b4ndithelps.forge.systems.TempHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -9,7 +10,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.level.Level;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SnowLayerBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -74,6 +75,9 @@ public class SnowWallAbility extends Ability {
     private static final int WALL_LATERAL_INCREMENT = 2;
     private static final int WALL_DEPTH_INCREMENT = 3;
 
+    private static final float TEMP_DROP_PER_TRAIL_STEP = 0.15F;
+    private static final float TEMP_WALL_SPIKE_DROP = 2.0F;
+
     public SnowWallAbility() {
         this.withProperty(PATH_LENGTH, 6)
                 .withProperty(PATH_LAYERS, 1)
@@ -109,12 +113,21 @@ public class SnowWallAbility extends Ability {
             return;
         }
 
+        if (entity instanceof Player player && TempHelper.isOverheated(player)) {
+            resetTrailState(entity, entry);
+            return;
+        }
+
         advanceSnowTrail(serverLevel, entity, entry);
     }
 
     @Override
     public void lastTick(LivingEntity entity, AbilityInstance entry, IPowerHolder holder, boolean enabled) {
         if (!(entity.level() instanceof ServerLevel serverLevel)) {
+            resetTrailState(entity, entry);
+            return;
+        }
+        if (entity instanceof Player player && TempHelper.isOverheated(player)) {
             resetTrailState(entity, entry);
             return;
         }
@@ -148,7 +161,9 @@ public class SnowWallAbility extends Ability {
             return;
         }
 
+        boolean placedSnow = false;
         placeSingleLayer(level, anchorPlacement);
+        placedSnow = true;
         if (TRAIL_HALF_WIDTH > 0) {
             Vec3 side = new Vec3(-dir.z, 0.0, dir.x);
             for (int tempOffset = -TRAIL_HALF_WIDTH; tempOffset <= TRAIL_HALF_WIDTH; tempOffset++) {
@@ -159,6 +174,7 @@ public class SnowWallAbility extends Ability {
                 BlockPos placement = computeTrailPlacement(level, lateral, SURFACE_SEARCH_RANGE);
                 if (placement != null) {
                     placeSingleLayer(level, placement);
+                    placedSnow = true;
                 }
             }
         }
@@ -171,6 +187,10 @@ public class SnowWallAbility extends Ability {
         entry.setUniqueProperty(MARKER_DIR_Z, (float) dir.z);
         entry.setUniqueProperty(CURRENT_STEPS, currentSteps + 1);
         entry.setUniqueProperty(HAS_MARKER, true);
+
+        if (placedSnow && entity instanceof Player player) {
+            TempHelper.lowerInnerTemp(player, TEMP_DROP_PER_TRAIL_STEP);
+        }
     }
 
     private Vec3 getMarkerPosition(LivingEntity entity, AbilityInstance entry) {
@@ -267,6 +287,7 @@ public class SnowWallAbility extends Ability {
                 : 0.0;
         int thickness = (int) Math.max(1, baseThickness + quirkFactor);
 
+        boolean builtWall = false;
         for (int lateral = -halfWidth; lateral <= halfWidth; lateral++) {
             for (int depth = 0; depth < thickness; depth++) {
                 Vec3 offsetVec = centerVec.add(side.scale(lateral)).add(dir.scale(depth));
@@ -284,8 +305,13 @@ public class SnowWallAbility extends Ability {
                             + depth * WALL_DEPTH_INCREMENT
                             + random.nextInt(4);
                     schedulePowderSnowGrowth(level, place, delay, lifetime + random.nextInt(20));
+                    builtWall = true;
                 }
             }
+        }
+
+        if (builtWall && entity instanceof Player player) {
+            TempHelper.lowerInnerTemp(player, TEMP_WALL_SPIKE_DROP);
         }
     }
 

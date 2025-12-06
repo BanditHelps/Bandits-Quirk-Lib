@@ -1,6 +1,7 @@
 package com.github.b4ndithelps.forge.abilities.frost;
 
 import com.github.b4ndithelps.forge.systems.BodyStatusHelper;
+import com.github.b4ndithelps.forge.systems.TempHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
@@ -34,6 +35,8 @@ import java.util.List;
  */
 @SuppressWarnings("removal")
 public class SnowBeamAbility extends Ability {
+
+    private static final float TEMP_DROP_PER_ACTIVE_TICK = 0.5F;
 
     public static final PalladiumProperty<Float> RANGE = new FloatProperty("beam_range")
             .configurable("Maximum reach of the snow beam in blocks");
@@ -79,6 +82,10 @@ public class SnowBeamAbility extends Ability {
             return;
         }
 
+        if (entity instanceof Player player && TempHelper.isOverheated(player)) {
+            return;
+        }
+
         Vec3 direction = entity.getLookAngle();
         if (direction.lengthSqr() < 1.0e-6) {
             return;
@@ -102,6 +109,10 @@ public class SnowBeamAbility extends Ability {
 
         applyBeamToEntities(serverLevel, entity, start, normalized, beamLength, entry, baseRadius, coneFactor);
         spawnBeamParticles(serverLevel, start, normalized, beamLength, baseRadius, coneFactor);
+
+        if (entity instanceof Player player) {
+            TempHelper.lowerInnerTemp(player, TEMP_DROP_PER_ACTIVE_TICK);
+        }
     }
 
     private void applyBeamToEntities(ServerLevel level, LivingEntity caster, Vec3 start, Vec3 direction, double beamLength,

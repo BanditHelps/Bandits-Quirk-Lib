@@ -8,6 +8,7 @@ import com.github.b4ndithelps.forge.network.MineHaSlotSyncPacket;
 import com.github.b4ndithelps.forge.network.StaminaSyncPacket;
 import com.github.b4ndithelps.forge.systems.*;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.resources.ResourceLocation;
@@ -40,6 +41,7 @@ import net.threetag.palladium.power.SuperpowerUtil;
 import net.threetag.palladium.power.ability.AbilityUtil;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -239,6 +241,13 @@ public class PlayerEventHandler {
         if (event.phase != TickEvent.Phase.END) return;
 
         if (!(event.player instanceof ServerPlayer player)) return;
+
+        TempHelper.tickNaturalCooling(player);
+        if (player.getPersistentData().getBoolean("Bql.TempDebug")) {
+            float temp = TempHelper.getInnerTemp(player);
+            String text = String.format(Locale.ROOT, "Temp: %.1f", temp);
+            player.displayClientMessage(Component.literal(text), true);
+        }
         // Update per-tick double jump availability and cooldown
         DoubleJumpSystem.serverTick(player);
         // Apply genome-driven resistance and utility effects

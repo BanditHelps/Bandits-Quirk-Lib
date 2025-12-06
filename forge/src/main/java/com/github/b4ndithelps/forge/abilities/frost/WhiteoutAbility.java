@@ -1,6 +1,7 @@
 package com.github.b4ndithelps.forge.abilities.frost;
 
 import com.github.b4ndithelps.forge.effects.ModEffects;
+import com.github.b4ndithelps.forge.systems.TempHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
@@ -29,6 +30,8 @@ import java.util.List;
 
 @SuppressWarnings("removal")
 public class WhiteoutAbility extends Ability {
+
+    private static final float TEMP_DROP_PER_STORM_TICK = 0.18F;
 
     public static final PalladiumProperty<Float> MAX_RADIUS =
             new FloatProperty("max_radius").configurable("Maximum storm radius in blocks");
@@ -76,6 +79,10 @@ public class WhiteoutAbility extends Ability {
             return;
         }
 
+        if (entity instanceof Player player && TempHelper.isOverheated(player)) {
+            return;
+        }
+
         float maxRadius = Math.max(1.0F, entry.getProperty(MAX_RADIUS));
         float growth = Math.max(0.01F, entry.getProperty(RADIUS_GROWTH));
         float currentRadius = entry.getProperty(CURRENT_RADIUS);
@@ -85,6 +92,10 @@ public class WhiteoutAbility extends Ability {
         spawnWhiteoutParticles(serverLevel, entity, newRadius, entry.getProperty(PARTICLE_DENSITY));
         applySnowBlindness(serverLevel, entity, entry, newRadius);
         scatterSnowPiles(serverLevel, entity, newRadius, entry.getProperty(SNOW_PILE_ATTEMPTS));
+
+        if (entity instanceof Player player) {
+            TempHelper.lowerInnerTemp(player, TEMP_DROP_PER_STORM_TICK);
+        }
     }
 
     @Override

@@ -2,6 +2,7 @@ package com.github.b4ndithelps.forge.abilities.frost;
 
 import com.github.b4ndithelps.forge.item.FrostKnockbackSnowballItem;
 import com.github.b4ndithelps.forge.item.ModItems;
+import com.github.b4ndithelps.forge.systems.TempHelper;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -24,6 +25,8 @@ import net.threetag.palladium.util.property.IntegerProperty;
 import net.threetag.palladium.util.property.PalladiumProperty;
 
 public class SnowballCreationAbility extends Ability {
+
+    private static final float TEMP_DROP_PER_SNOWBALL = 0.05F;
     public static final PalladiumProperty<Integer> SNOWBALL_COUNT =
             new IntegerProperty("snowball_count").configurable("Number of snowballs created per activation");
     public static final PalladiumProperty<Float> SPAWN_RADIUS =
@@ -59,6 +62,10 @@ public class SnowballCreationAbility extends Ability {
             return;
         }
 
+        if (TempHelper.isOverheated(player)) {
+            return;
+        }
+
         RandomSource random = serverLevel.getRandom();
         int count = Math.max(1, entry.getProperty(SNOWBALL_COUNT));
         float radius = Math.max(0.1F, entry.getProperty(SPAWN_RADIUS));
@@ -71,6 +78,7 @@ public class SnowballCreationAbility extends Ability {
             boolean reinforced = tryConsumeStone(player);
             ItemStack stack = createConfiguredSnowball(knockback, reinforcedDamage, reinforced);
             dropConfiguredStack(serverLevel, player, stack, radius, variance, addMomentum, random);
+            TempHelper.lowerInnerTemp(player, TEMP_DROP_PER_SNOWBALL);
         }
 
         serverLevel.playSound(null, player.blockPosition(), SoundEvents.SNOW_BREAK, SoundSource.PLAYERS, 0.5F, 1.1F);

@@ -17,5 +17,6 @@ public class CommandEventHandler {
         BodyStatusCommand.register(event.getDispatcher());
         ConfigCommand.register(event.getDispatcher());
         GenomeCommand.register(event.getDispatcher());
+        TemperatureCommand.register(event.getDispatcher());
     }
 }
