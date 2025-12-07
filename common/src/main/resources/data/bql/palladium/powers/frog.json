@@ -1,0 +1,242 @@
+{
+  "name": "Frog",
+  "background": "minecraft:textures/block/green_wool.png",
+  "icon": "minecraft:scute",
+  "gui_display_type": "tree",
+  "abilities": {
+    "GUI Center": {
+      "title" : "Frog",
+      "icon" : "minecraft:scute",
+      "type": "palladium:dummy",
+      "description": "Gives you powers of a frog.",
+      "hidden": false,
+      "gui_position": [0,0]
+    },
+    "Passive - Webbed fingers": {
+      "title" : "Passive - Webbed fingers",
+      "icon" : "minecraft:heart_of_the_sea",
+      "type": "palladium:attribute_modifier",
+      "description": "You now have webbed fingers, increasing your swim speed.",
+      "hidden": false,
+      "gui_position": [-1,1],
+      "conditions": {
+        "unlocking": [
+          {
+            "type": "palladium:ability_unlocked",
+            "power": "null",
+            "ability": "GUI Center"
+          }]
+      },
+      "attribute": "forge:swim_speed",
+      "amount": 0.6,
+      "operation": 0
+    },
+    "Passive - Jumper": {
+      "title" : "Passive - Jumper",
+      "icon" : "minecraft:leather_boots",
+      "type": "bandits_quirk_lib:frog_jumper",
+      "description": "You have jump boost and don't take minor fall damage",
+      "hidden": false,
+      "gui_position": [1,1],
+      "conditions": {
+        "unlocking": [
+          {
+            "type": "palladium:ability_unlocked",
+            "power": "null",
+            "ability": "GUI Center"
+          },
+          {
+            "type": "bandits_quirk_lib:upgrade_point_buy",
+            "points": 1,
+            "icon": "minecraft:command_block",
+            "description": {
+              "text": "Upgrade Points"
+            }
+          }],
+        "enabling": [
+          {
+            "type": "palladium:crouching"
+          }
+        ]
+      }
+    },
+    "JumperToggle": {
+      "title" : "Toggle Jumper",
+      "icon" : "minecraft:leather_boots",
+      "type": "palladium:command",
+      "description": "Toggle the jump boost and particles from the jumper ability.",
+      "hidden": false,
+      "gui_position": [2,1],
+      "first_tick_commands": ["ability lock @s bql:frog JumperToggle","body @s add float chest frog_jumper_toggle 1" ],
+      "conditions": {
+        "unlocking": [
+          {
+            "type": "palladium:ability_unlocked",
+            "power": "null",
+            "ability": "GUI Center"
+          },
+          {
+            "type": "bandits_quirk_lib:upgrade_point_buy",
+            "points": 0,
+            "icon": "minecraft:command_block",
+            "description": {
+              "text": "Upgrade Points"
+            }
+          }]
+      }
+    },
+    "Sticky Fingers": {
+      "title": "Sticky Fingers",
+      "icon" : "minecraft:slime_ball",
+      "type": "bandits_quirk_lib:climb",
+      "hidden": false,
+      "list_index": 0,
+      "stamina_first_cost": 5,
+      "stamina_interval_cost": 2,
+      "stamina_interval": 10,
+      "description": "Ability that makes you able to climb on walls. (Shift to stay in place)",
+      "gui_position": [0,-1],
+      "conditions": {
+        "unlocking": [
+          {
+            "type": "palladium:ability_unlocked",
+            "power": "null",
+            "ability": "GUI Center"
+          }],
+        "enabling": [
+          {
+            "type": "palladium:held",
+            "cooldown": 100,
+            "key_type": "key_bind",
+            "needs_empty_hand": false
+          }
+        ]
+      }
+    },
+    "Tongue Grab Front": {
+      "title": "Tongue Grab",
+      "icon" : "minecraft:prismarine_crystals",
+      "type": "palladium:dummy",
+      "hidden": false,
+      "hidden_in_bar" : true,
+      "description": "Wrap your long tongue around entity and stun them.",
+      "gui_position": [0,-2],
+      "conditions": {
+        "unlocking": [
+          {
+            "type": "palladium:ability_unlocked",
+            "power": "null",
+            "ability": "GUI Center"
+          },
+          {
+            "type": "bandits_quirk_lib:upgrade_point_buy",
+            "points": 2,
+            "icon": "minecraft:command_block",
+            "description": {
+              "text": "Upgrade Points"
+            }
+          }]
+      }
+    },
+    "Tongue Grab": {
+      "title": "Tongue Grab",
+      "icon" : "minecraft:prismarine_crystals",
+      "type": "palladium:dummy",
+      "hidden": true,
+      "hidden_in_bar" : false
+    },
+    "Store Item Front": {
+      "title": "Store Item",
+      "icon" : "minecraft:chest",
+      "type": "palladium:dummy",
+      "hidden": false,
+      "hidden_in_bar" : true,
+      "list_index": 1,
+      "description": "Store Items (Be carefull since items will get disolved after time)",
+      "gui_position": [1,-2],
+      "conditions": {
+        "unlocking": [
+          {
+            "type": "palladium:ability_unlocked",
+            "power": "null",
+            "ability": "Tongue Grab Front"
+          },
+          {
+            "type": "bandits_quirk_lib:upgrade_point_buy",
+            "points": 3,
+            "icon": "minecraft:command_block",
+            "description": {
+              "text": "Upgrade Points"
+            }
+          }]
+      }
+    },
+    "Store Item": {
+      "icon" : "minecraft:chest",
+      "type": "bandits_quirk_lib:frog_store",
+      "hidden": true,
+      "hidden_in_bar" : false,
+      "list_index": 1,
+      "stamina_first_cost": 20,
+      "conditions": {
+        "unlocking": [
+          {
+            "type": "palladium:ability_unlocked",
+            "power": "null",
+            "ability": "Store Item Front"
+          },
+          {
+            "type": "palladium:crouching"
+          }],
+        "enabling": [
+          {
+            "type": "palladium:activation",
+            "cooldown": 20,
+            "ticks": 1,
+            "key_type": "key_bind",
+            "needs_empty_hand": false,
+            "allow_scrolling_when_crouching": true
+          }
+        ]
+      }
+    },
+    "Frog storage CD": {
+      "hidden": true,
+      "type": "bandits_quirk_lib:frog_store_cd",
+      "conditions": {
+        "unlocking": [
+          {
+            "type": "palladium:ability_unlocked",
+            "power": "null",
+            "ability": "Store Item Front"
+          }]
+      }
+    },
+    "Camouflage": {
+      "title": "Camouflage",
+      "hidden": false,
+      "icon" : "minecraft:glass",
+      "type": "bandits_quirk_lib:transparency",
+      "description": "Blend in with your surroundings .",
+      "gui_position": [2,-1],
+      "value": 0.4,
+      "conditions": {
+        "enabling": [
+          {
+            "type": "palladium:toggle",
+            "cooldown": 120,
+            "key_type": "key_bind",
+            "needs_empty_hand": false,
+            "allow_scrolling_when_crouching": true
+          }
+        ],
+        "unlocking": [
+          {
+            "type": "palladium:ability_unlocked",
+            "power": "null",
+            "ability": "Store Item Front"
+          }]
+      }
+    }
+  }
+}

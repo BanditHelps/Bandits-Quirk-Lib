@@ -585,6 +585,13 @@
           }
         ]
       }
+    },
+    "Semi-Transparency Renderer": {
+      "description": "In order for semi-transparency to (rendering to trigger), we need to extra rendering on player. ",
+      "type": "palladium:render_layer",
+      "hidden": true,
+      "hidden_in_bar": true,
+      "render_layer": "bql:transparency_fallback"
     }
   }
 }

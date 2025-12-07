@@ -1,5 +1,7 @@
 package com.github.b4ndithelps.forge.abilities;
 
+import com.github.b4ndithelps.forge.abilities.frog.*;
+
 import net.threetag.palladium.power.ability.Ability;
 import net.threetag.palladiumcore.registry.DeferredRegister;
 import net.threetag.palladiumcore.registry.RegistrySupplier;
@@ -45,6 +47,11 @@ public class AbilityRegister {
     public static final RegistrySupplier<Ability> BLACKWHIP_QUAD_ZIP;
     public static final RegistrySupplier<Ability> BLACKWHIP_MOVE_TAGGED;
     public static final RegistrySupplier<Ability> BLACKWHIP_BLOCK_GRAB;
+    public static final RegistrySupplier<Ability> CLIMB;
+    public static final RegistrySupplier<Ability> FROG_JUMPER;
+    public static final RegistrySupplier<Ability> FROG_STORE;
+    public static final RegistrySupplier<Ability> FROG_STORE_CD;
+    public static final RegistrySupplier<Ability> TRANSPARENCY;
 
 
     public AbilityRegister() { }
@@ -90,5 +97,10 @@ public class AbilityRegister {
         BLACKWHIP_QUAD_ZIP = ABILITIES.register("blackwhip_quad_zip", BlackwhipQuadZipAbility::new);
         BLACKWHIP_MOVE_TAGGED = ABILITIES.register("blackwhip_move_tagged", BlackwhipMoveTaggedAbility::new);
         BLACKWHIP_BLOCK_GRAB = ABILITIES.register("blackwhip_block_grab", BlackwhipBlockGrabAbility::new);
+        CLIMB = ABILITIES.register("climb", ClimbAbility::new);
+        FROG_JUMPER = ABILITIES.register("frog_jumper", JumperAbility::new);
+        FROG_STORE = ABILITIES.register("frog_store", StoreAbility::new);
+        FROG_STORE_CD = ABILITIES.register("frog_store_cd", StoreCooldownAbility::new);
+        TRANSPARENCY = ABILITIES.register("transparency", TransparencyAbility::new);
     }
 }

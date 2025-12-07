@@ -193,5 +193,12 @@ public final class BQLNetwork {
                 .consumerMainThread(PlayerAnimationPacket::handle)
                 .add();
 
+        // Particle Network
+        CHANNEL.messageBuilder(ParticlePacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(ParticlePacket::encode)
+                .decoder(ParticlePacket::decode)
+                .consumerMainThread(ParticlePacket::handle)
+                .add();
+
         }
 }

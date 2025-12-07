@@ -2,6 +2,7 @@ package com.github.b4ndithelps.forge.events;
 
 import com.github.b4ndithelps.forge.BanditsQuirkLibForge;
 import com.github.b4ndithelps.forge.abilities.HappenOnceAbility;
+import com.github.b4ndithelps.forge.utils.TransparencyManager;
 import com.github.b4ndithelps.forge.item.FactorTrigger;
 import com.github.b4ndithelps.forge.network.PlayerAnimationPacket;
 import com.github.b4ndithelps.forge.network.MineHaSlotSyncPacket;
@@ -18,9 +19,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.item.ItemTossEvent;
-import net.minecraftforge.event.entity.living.LivingDropsEvent;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
-import net.minecraftforge.event.entity.living.LivingAttackEvent;
+import net.minecraftforge.event.entity.living.*;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
@@ -72,6 +71,17 @@ public class PlayerEventHandler {
         HappenOnceAbility.cleanupPlayerData(playerUUID);
 
         BanditsQuirkLibForge.LOGGER.info("Cleaned up player data");
+    }
+
+    @SubscribeEvent
+    public static void onLivingFall(LivingFallEvent event) {
+        if (event.getEntity() instanceof Player player) {
+
+            if (SuperpowerUtil.hasSuperpower(player, ResourceLocation.parse("bql:frog")) && event.getDistance() < 10.0F) {
+                event.setCanceled(true);
+            }
+
+        }
     }
 
     @SubscribeEvent
@@ -217,7 +227,14 @@ public class PlayerEventHandler {
             SuperpowerUtil.addSuperpower(player, ResourceLocation.parse("bql:body_status"));
         }
 
+
+        // Ensure player is initialized
         if (player instanceof ServerPlayer sp) {
+
+            UUID uuid = event.getEntity().getUUID();
+
+            TransparencyManager.initializePlayer(uuid);
+
 
             // Send full stamina sync on login to ensure client-side GUI shows correct values
             BQLNetwork.CHANNEL.send(
