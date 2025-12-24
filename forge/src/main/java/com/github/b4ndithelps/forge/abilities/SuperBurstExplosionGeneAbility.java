@@ -1,6 +1,7 @@
 package com.github.b4ndithelps.forge.abilities;
 
 
+import com.github.b4ndithelps.forge.config.BQLConfig;
 import com.github.b4ndithelps.forge.network.BQLNetwork;
 import com.github.b4ndithelps.forge.network.PlayerAnimationPacket;
 import com.github.b4ndithelps.forge.systems.BodyStatusHelper;
@@ -9,6 +10,7 @@ import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.network.PacketDistributor;
@@ -18,7 +20,6 @@ import net.threetag.palladium.power.ability.AbilityInstance;
 import org.joml.Vector3f;
 
 public class SuperBurstExplosionGeneAbility extends Ability {
-    private static final float FACTOR_SCALING = 10F;
 
     public SuperBurstExplosionGeneAbility() {
         super();
@@ -47,15 +48,17 @@ public class SuperBurstExplosionGeneAbility extends Ability {
 
 
     private void executeBurst(ServerPlayer player, ServerLevel level) {
+        double FACTOR_SCALING = BQLConfig.INSTANCE.superBurstFactorScaling.get();
+
         float charge = BodyStatusHelper.getCustomFloat(player, "chest", "super_burst_charge");
         float factor = (float) (QuirkFactorHelper.getQuirkFactor(player)+1) * charge/20;
-        player.hurt(level.damageSources().generic(), factor*FACTOR_SCALING);
+        player.hurt(level.damageSources().generic(), (float) (factor*FACTOR_SCALING));
         level.explode(
-                player,                  // entity that caused it (null = no source)
+                (Entity) player,                  // entity that caused it (null = no source)
                 player.getX(),           // x
                 player.getY() + 1,           // y
                 player.getZ(),           // z
-                factor * FACTOR_SCALING * 1.5F,                    // factor * FACTOR_SCALING * 1.5F
+                (float) (factor * FACTOR_SCALING * 1.5F),                    // factor * FACTOR_SCALING * 1.5F
                 Level.ExplosionInteraction.TNT // what kind of explosion (controls block damage)
         );
         float playersHealthResistance = (float) Math.max(0.01 ,1 - ((player.getMaxHealth() - factor*FACTOR_SCALING) / player.getMaxHealth()));

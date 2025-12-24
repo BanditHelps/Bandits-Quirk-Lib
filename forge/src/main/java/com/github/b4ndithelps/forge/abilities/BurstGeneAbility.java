@@ -1,6 +1,7 @@
 package com.github.b4ndithelps.forge.abilities;
 
 
+import com.github.b4ndithelps.forge.config.BQLConfig;
 import com.github.b4ndithelps.forge.particle.ModParticles;
 import com.github.b4ndithelps.forge.sounds.ModSounds;
 import com.github.b4ndithelps.forge.systems.BodyStatusHelper;
@@ -47,7 +48,6 @@ import static com.github.b4ndithelps.forge.systems.PowerStockHelper.sendPlayerPe
 import static com.github.b4ndithelps.forge.utils.ActionBarHelper.sendPercentageDisplay;
 
 public class BurstGeneAbility extends Ability {
-    private static final float FACTOR_SCALING = 2.5F;
     // Unique properties for tracking state
     public static final PalladiumProperty<Integer> CHARGE_TICKS;
 
@@ -141,67 +141,21 @@ public class BurstGeneAbility extends Ability {
 
     }
 
-//    @Override
-//    public void lastTick(LivingEntity entity, AbilityInstance entry, IPowerHolder holder, boolean enabled) {
-//        if (entity instanceof ServerPlayer player && entity.level() instanceof ServerLevel serverLevel) {
-//            int chargeTicks = entry.getProperty(CHARGE_TICKS);
-//
-//            // Prevent bug where it forces a smash on reload
-//            if (chargeTicks == 0) return;
-//
-//            // Trigger arm swing animation
-////            player.swing(InteractionHand.MAIN_HAND, true);
-//
-//            // Execute the Detroit Smash
-//            executeBurst(player, serverLevel, entry, chargeTicks);
-//
-//            // Reset charge
-//            entry.setUniqueProperty(CHARGE_TICKS, 0);
-//            BodyStatusHelper.setCustomFloat(player, "chest", "burst_gene_charge", 0.0f);
-//        }
-//    }
-
-//    private void handleChargingPhase(ServerPlayer player, ServerLevel level, AbilityInstance entry) {
-//        int maxChargeTicks = MAX_CHARGE_TICKS;
-//        int currentChargeTicks = entry.getProperty(CHARGE_TICKS);
-//
-//        // Increment charge if not at max
-//        if (currentChargeTicks < maxChargeTicks) {
-//            currentChargeTicks++;
-//            entry.setUniqueProperty(CHARGE_TICKS, currentChargeTicks);
-//            BodyStatusHelper.setCustomFloat(player, "chest", "burst_gene_charge", currentChargeTicks);
-//        }
-//
-//        float chargeAmount = (float) (CHARGE_SCALING * currentChargeTicks * (QuirkFactorHelper.getQuirkFactor(player)+1) / 20);
-//        float currentHealth = player.getHealth();
-//
-//        var color = ChatFormatting.GREEN;
-//
-//        if (chargeAmount * 4 >= currentHealth) {
-//            color = ChatFormatting.BLACK;
-//        } else if (chargeAmount * 4 >= currentHealth * 0.75f) {
-//            color = ChatFormatting.DARK_RED;
-//        } else if (chargeAmount * 4 >= currentHealth * 0.4f) {
-//            color = ChatFormatting.YELLOW;
-//        }
-//
-//        sendPercentageDisplay(player, "Burst Gene Charge", (currentChargeTicks / (float)maxChargeTicks) * 100.0f,
-//                ChatFormatting.GRAY, color, currentChargeTicks == maxChargeTicks ? "MAX" : "Charging");;
-//    }
-
     private void executeBurst(ServerPlayer player, ServerLevel level, AbilityInstance entry) {
         float factor = (float) (QuirkFactorHelper.getQuirkFactor(player)+1);
-        player.hurt(level.damageSources().generic(), factor*FACTOR_SCALING*3);
+        double factor_scaling = BQLConfig.INSTANCE.burstGeneFactorScaling.get();
+        float damageDone = (float) (factor * factor_scaling * 3);
+        player.hurt(level.damageSources().generic(), damageDone);
         level.explode(
                 (Entity) player,                  // entity that caused it (null = no source)
                 player.getX(),           // x
                 player.getY() + 1,           // y
                 player.getZ(),           // z
-                factor * FACTOR_SCALING * 1.5F,                    // explosion power (TNT = 4)
+                (float) (factor * factor_scaling * 1.5F),                    // explosion power (TNT = 4)
                 Level.ExplosionInteraction.MOB // what kind of explosion (controls block damage)
         );
-        float playersHealthResistance = (float) Math.max(1, (player.getMaxHealth() - 20) * 0.5);
-        BodyStatusHelper.damageAll(player, factor * FACTOR_SCALING * 15 / playersHealthResistance);
+
+        BodyStatusHelper.damageAll(player, (player.getMaxHealth() - damageDone) / player.getMaxHealth());
     }
 
 

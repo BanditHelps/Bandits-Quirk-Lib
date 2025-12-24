@@ -1,6 +1,7 @@
 package com.github.b4ndithelps.forge.abilities;
 
 
+import com.github.b4ndithelps.forge.config.BQLConfig;
 import com.github.b4ndithelps.forge.effects.ModEffects;
 import com.github.b4ndithelps.forge.network.BQLNetwork;
 import com.github.b4ndithelps.forge.network.PlayerAnimationPacket;
@@ -24,7 +25,6 @@ import net.threetag.palladium.power.ability.AbilityInstance;
 import net.threetag.palladium.util.property.*;
 
 public class SuperBurstChargeGeneAbility extends Ability {
-    private static final float FACTOR_SCALING = 10F;
     // Unique properties for tracking state
     public static final PalladiumProperty<Integer> CHARGE_TICKS;
 
@@ -84,7 +84,7 @@ public class SuperBurstChargeGeneAbility extends Ability {
         }
 
         sendInfoMessage(player, charge, factor);
-        if (player.getHealth() - factor*FACTOR_SCALING <= 0) {
+        if (player.getHealth() - factor*BQLConfig.INSTANCE.superBurstFactorScaling.get() <= 0) {
             BodyStatusHelper.setCustomFloat(player, "chest", "super_burst_charge", charge-0.5f);
         }
         BodyStatusHelper.setCustomFloat(player, "chest", "super_burst_charge", ++charge);
@@ -104,11 +104,13 @@ public class SuperBurstChargeGeneAbility extends Ability {
     private void sendInfoMessage(ServerPlayer player, float chargePercent, float factor) {
         ChatFormatting color = ChatFormatting.GREEN;
 
-        if (player.getHealth() - factor*FACTOR_SCALING <= 0) {
+        double factorScaling = BQLConfig.INSTANCE.superBurstFactorScaling.get();
+
+        if (player.getHealth() - factor*factorScaling <= 0) {
             color = ChatFormatting.BLACK;
-        } else if (player.getHealth() - factor*FACTOR_SCALING <= player.getHealth() * 0.25f) {
+        } else if (player.getHealth() - factor*factorScaling <= player.getHealth() * 0.25f) {
             color = ChatFormatting.DARK_RED;
-        } else if (player.getHealth() - factor*FACTOR_SCALING <= player.getHealth() * 0.6f) {
+        } else if (player.getHealth() - factor*factorScaling <= player.getHealth() * 0.6f) {
             color = ChatFormatting.YELLOW;
         }
         ActionBarHelper.sendPercentageDisplay(

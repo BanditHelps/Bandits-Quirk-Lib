@@ -79,6 +79,11 @@ public class BQLConfig {
     public final ForgeConfigSpec.ConfigValue<List<? extends Integer>> seqLenZombieRange;
     public final ForgeConfigSpec.ConfigValue<List<? extends Integer>> seqLenHuskRange;
     public final ForgeConfigSpec.ConfigValue<List<? extends Integer>> seqLenDrownedRange;
+    public final ForgeConfigSpec.IntValue adrenalineDurationSeconds;
+    public final ForgeConfigSpec.IntValue adrenalineCooldown;
+    public final ForgeConfigSpec.DoubleValue burstGeneFactorScaling;
+    public final ForgeConfigSpec.DoubleValue superBurstFactorScaling;
+    public final ForgeConfigSpec.IntValue enderGeneTpDistance;
 
     // Player Genome
     public final ForgeConfigSpec.IntValue playerMaxGenes;
@@ -320,6 +325,26 @@ public class BQLConfig {
         this.playerMaxGenes = builder
                 .comment("Maximum number of genes a player can have at once")
                 .defineInRange("player_max_genes", 12, 1, 64);
+
+        this.adrenalineDurationSeconds = builder
+                .comment("Duration in seconds of movement speed buff applied by the Adrenaline gene")
+                .defineInRange("adrenaline_duration_seconds", 10, 1, 3600);
+
+        this.adrenalineCooldown = builder
+                .comment("Cooldown in seconds for the Adrenaline ability")
+                .defineInRange("adrenaline_cooldown", 60, 0, 100000);
+
+        this.burstGeneFactorScaling = builder
+                .comment("Scaling factor used by the general burst gene damage/force calculations")
+                .defineInRange("burst_gene_factor_scaling", 2.5, 0.0, 100.0);
+
+        this.superBurstFactorScaling = builder
+                .comment("Scaling factor used by the Super Burst gene ability)")
+                .defineInRange("super_burst_factor_scaling", 10.0, 0.0, 100.0);
+
+        this.enderGeneTpDistance = builder
+                .comment("Maximum teleport distance (blocks) for the Ender gene")
+                .defineInRange("ender_gene_tpdistance", 16, 1, 1024);
 
         builder.pop();
     }

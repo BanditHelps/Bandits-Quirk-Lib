@@ -1,5 +1,6 @@
 package com.github.b4ndithelps.forge.abilities;
 
+import com.github.b4ndithelps.forge.config.BQLConfig;
 import com.github.b4ndithelps.forge.network.BQLNetwork;
 import com.github.b4ndithelps.forge.network.BlackScreenNetwork;
 import net.minecraft.network.chat.Component;
@@ -31,10 +32,12 @@ public class EnderGeneTP extends Ability {
         double startY = entity.getY();
         double startZ = entity.getZ();
 
+        int distance = BQLConfig.INSTANCE.enderGeneTpDistance.get();
+
         for (int i = 0; i < 16; ++i) { // 16 attempts, just like vanilla
-            double targetX = startX + (entity.getRandom().nextDouble() - 0.5D) * 16.0D;
-            double targetY = startY + (entity.getRandom().nextInt(16) - 8);
-            double targetZ = startZ + (entity.getRandom().nextDouble() - 0.5D) * 16.0D;
+            double targetX = startX + (entity.getRandom().nextDouble() - 0.5D) * distance;
+            double targetY = startY + (entity.getRandom().nextInt(distance) - distance/2.0);
+            double targetZ = startZ + (entity.getRandom().nextDouble() - 0.5D) * distance;
 
             if (entity.isPassenger()) entity.stopRiding();
 
