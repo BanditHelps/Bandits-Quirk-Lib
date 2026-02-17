@@ -28,10 +28,10 @@ public class CustomConditionSerializers {
         UPGRADE_POINT_BUYABLE = CUSTOM_SERIALIZERS.register("upgrade_point_buy", UpgradePointBuyCondition.Serializer::new);
         BODY_CHECK = CUSTOM_SERIALIZERS.register("body_damage", BodyCheckCondition.Serializer::new);
         POWERS_ENABLED = CUSTOM_SERIALIZERS.register("powers_enabled", PowersEnabledCondition.Serializer::new);
-        HELD_WITH_COOLDOWN = CUSTOM_SERIALIZERS.register("held_with_cooldown", HeldWithCooldownCondition.Serializer::new);
         BODY_FLOAT_CHECK = CUSTOM_SERIALIZERS.register("body_float_check", BodyFloatCondition.Serializer::new);
         RANDOM_CHANCE = CUSTOM_SERIALIZERS.register("random_chance", RandomChanceCondition.Serializer::new);
         GENOME_HAS_GENE = CUSTOM_SERIALIZERS.register("genome_has_gene", GenomeHasGeneCondition.Serializer::new);
         HOLDING_SHIFT = CUSTOM_SERIALIZERS.register("is_holding_shift", HoldingShiftCondition.Serializer::new);
+        HELD_WITH_COOLDOWN = CUSTOM_SERIALIZERS.register("held_with_cooldown", HeldWithCooldownCondition.Serializer::new);
     }
 }
